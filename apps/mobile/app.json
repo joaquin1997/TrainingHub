@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "Workout Tracker",
+    "slug": "workout-tracker",
+    "scheme": "workouttracker",
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}
+

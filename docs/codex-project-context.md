@@ -1,0 +1,311 @@
+# Architecture
+
+## Product goal
+Build a workout tracking app inspired by Hevy.
+
+Primary target:
+- iOS first
+
+Secondary goal:
+- Android support must be considered from the beginning at the architecture level
+
+Product strategy:
+- Mobile app first
+- Backend as a thin API
+- Generate only skeletons and minimal implementations first
+- Manually complete deeper business logic later to preserve control, reduce token usage and avoid overgeneration
+
+---
+
+## Current MVP scope
+The current implementation scope is intentionally limited to the following:
+
+- Authentication architecture prepared for federated login, with Apple as the first provider
+- Exercise catalog
+- Routine creation, editing and listing
+- Workout session start and tracking
+- Workout session completion and persistence
+- Basic progress tracking
+- Health integration abstractions prepared but not fully implemented
+- Future-ready architecture for Apple Watch integration, without implementing advanced native behavior yet
+
+---
+
+## Explicitly out of scope for now
+The following items must not be fully implemented unless explicitly requested:
+
+- Full Apple Watch native integration
+- Full Apple Health sync implementation
+- Advanced progression analytics
+- Automatic training recommendations
+- Full offline sync engine
+- Complex conflict resolution
+- Deep native platform modules
+- Full production-grade auth flows for multiple providers
+- Premature performance optimizations
+- Broad feature expansion beyond the current prompt
+
+When in doubt, prefer architecture readiness over full implementation.
+
+---
+
+## Tech stack
+- Monorepo
+- Mobile app: React Native with Expo and TypeScript
+- Backend API: Fastify with TypeScript
+- ORM: Prisma
+- Database: PostgreSQL
+- Shared domain/contracts package
+
+---
+
+## Monorepo structure
+```txt
+apps/
+  mobile/
+  api/
+packages/
+  domain/
+```
+
+### Repository rules
+- `apps/mobile` contains the mobile application
+- `apps/api` contains the backend API
+- `packages/domain` contains shared domain types and contracts
+- Shared types must not be duplicated across apps
+- Package boundaries must remain explicit
+- Do not introduce new top-level packages unless clearly justified
+
+---
+
+## Architectural principles
+- Use pragmatic SOLID, not ceremonial SOLID
+- Keep code minimal and easy to extend
+- Avoid overengineering
+- Prefer mature, trusted and actively maintained libraries
+- Do not add dependencies unless they clearly reduce complexity
+- Prefer simple and explicit structures over abstract and speculative ones
+- Keep business concepts clear before optimizing implementation details
+- Prefer architecture that is easy to continue manually
+
+---
+
+## Domain boundaries
+
+### Core conceptual model
+- `Routine` is a reusable workout template
+- `RoutineExercise` is an exercise definition inside a routine template
+- `WorkoutSession` is a real performed training session
+- `WorkoutExercise` belongs to a specific `WorkoutSession`
+- `WorkoutSet` stores actual logged data for a performed set
+- `Exercise` may be system-defined now and user-defined later
+- `HealthSyncRecord` stores sync metadata only
+
+### Domain separation rules
+- Never mix routine template data with performed workout data
+- A routine describes intended training
+- A workout session describes actual training performed
+- Shared domain types and contracts must live in `packages/domain`
+- Framework-specific code must not define the source of truth of the domain model
+
+---
+
+## Backend architecture rules
+
+### Stack rules
+- Use Fastify with TypeScript
+- Use Prisma as the only ORM
+- Use PostgreSQL as the primary relational database
+
+### Structure rules
+- Use modular structure by feature
+- Keep the backend thin
+- Keep HTTP wiring, domain logic and persistence concerns reasonably separated
+- Route handlers may start as placeholders
+- Prefer explicit modules over heavy framework patterns
+- Avoid Nest-like enterprise complexity unless explicitly needed
+
+### Implementation rules
+- Validate input
+- Avoid deep business logic unless requested
+- Use TODOs where implementation is intentionally postponed
+- Keep route and module boundaries clear
+- Do not build complex service hierarchies unless they solve a real problem
+- Do not implement speculative infrastructure
+
+### Expected backend feature modules
+- `auth`
+- `users`
+- `exercises`
+- `routines`
+- `workouts`
+- `progress`
+- `health`
+
+---
+
+## Mobile architecture rules
+
+### Stack rules
+- Use React Native with Expo and TypeScript
+- Use Expo Router
+- Use feature-based folders
+
+### Structure rules
+- Keep screens simple and functional
+- Use reusable UI components only when justified
+- Avoid premature design systems and abstraction layers
+- Use placeholders and mocks where real integration is not ready
+- Keep architecture ready for offline-friendly evolution, even if full offline support is deferred
+
+### Implementation rules
+- Prefer local simple state in early phases
+- Avoid premature state-management complexity
+- Keep navigation explicit
+- Do not optimize UI prematurely
+- Add future integration points through stubs and interfaces, not deep implementations
+
+### Expected mobile feature areas
+- `auth`
+- `exercises`
+- `routines`
+- `workouts`
+- `progress`
+- `health`
+
+---
+
+## Shared package rules
+`packages/domain` is the source of truth for shared domain types and contracts.
+
+### Rules
+- Keep shared types simple and extensible
+- Store shared entities, value objects, DTO contracts and integration-facing interfaces here when appropriate
+- Do not duplicate shared domain types in mobile or api
+- Avoid leaking framework-specific types into the shared package
+- Prefer stable domain naming over UI-specific or transport-specific naming
+
+---
+
+## Authentication architecture
+Authentication must be provider-based.
+
+### Current direction
+- Apple is the first provider
+
+### Future providers may include
+- Google
+- Email/password
+- Self-hosted OIDC
+
+### Rules
+- Provider-specific code must remain isolated
+- Shared auth contracts should be explicit
+- Do not hardcode the system around a single provider
+- Do not fully implement all providers now
+- Start with interfaces and stubs before deep integration
+- Keep session handling and provider validation concerns separate where reasonable
+
+---
+
+## Health integration architecture
+Health integrations must be abstracted behind interfaces.
+
+### Current direction
+- Prepare architecture for Apple Health
+- Prepare architecture for Android Health Connect
+- Keep provider implementations isolated
+
+### Rules
+- Do not fully implement native health integrations yet
+- Keep sync responsibilities explicit
+- Treat health sync as an integration boundary, not core domain logic
+- Store sync metadata separately from workout data
+- Prefer stubs and TODOs over partial native implementations
+
+---
+
+## Apple Watch integration boundaries
+Apple Watch support is future-ready only at this stage.
+
+### Current rule
+- Do not implement advanced native Apple Watch behavior unless explicitly requested
+
+### Allowed now
+- Interface definitions
+- Placeholder integration points
+- Comments and TODOs for future live workout mirroring
+- Architectural preparation for heart rate and workout sync
+
+### Not allowed now unless explicitly requested
+- Full live mirroring
+- Native workout session orchestration
+- Background sync complexity
+- Production-ready watch-to-phone state management
+
+---
+
+## Development workflow with Codex
+Development must happen in small, sequential steps.
+
+### Workflow rules
+- Work in small incremental prompts
+- Each step must be independently runnable or at least structurally valid
+- Review, run and commit between steps
+- Do not request the whole app in one go
+- Do not rewrite large parts of the codebase unless explicitly asked
+- Prefer skeletons, stubs, TODOs and mocks over deep implementations
+- Keep the codebase easy to understand and continue manually
+
+### Recommended execution loop
+1. Send one small prompt
+2. Review the generated code
+3. Run the affected app or module
+4. Fix the minimum required issues
+5. Commit
+6. Move to the next prompt
+
+---
+
+## Code generation rules for Codex
+These rules must be applied by default for future code generation tasks.
+
+### General rules
+- Keep changes minimal and local
+- Do not rewrite existing architecture unless strictly necessary
+- Do not introduce unnecessary abstractions
+- Do not add new dependencies unless essential
+- Prefer TODO comments and stubs over incomplete deep implementations
+- Prefer mock data over fake complex integrations
+- Keep naming clear, predictable and consistent
+- Avoid dead code
+- Avoid speculative code
+
+### Scope control rules
+- Do not implement the whole product at once
+- Build only what is needed for the current prompt
+- Do not fully implement Apple Watch integration unless explicitly requested
+- Do not fully implement Apple Health sync unless explicitly requested
+- Do not add analytics, recommendations or advanced progression logic yet
+
+### Output rules
+- Update only the files needed for the requested task
+- Briefly explain what was added or changed
+- Ensure the result is runnable when applicable
+- If something cannot be completed cleanly, leave a TODO instead of inventing a half-solution
+
+### Self-check rule
+Before generating code, briefly state whether the requested task fits these project rules.
+If it does not, adjust the implementation to remain compliant.
+
+---
+
+## Decision heuristic
+When making implementation decisions, prefer this order:
+
+1. Minimal correct structure
+2. Clear domain boundaries
+3. Low dependency count
+4. Ease of manual continuation
+5. Future extensibility
+6. Performance and advanced optimizations later

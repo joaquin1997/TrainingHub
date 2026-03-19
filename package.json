@@ -1,0 +1,14 @@
+{
+  "name": "workout-tracker",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@9.10.0",
+  "scripts": {
+    "mobile": "pnpm --filter @workout/mobile dev",
+    "api": "pnpm --filter @workout/api dev",
+    "typecheck": "pnpm -r --if-present typecheck"
+  },
+  "devDependencies": {
+    "typescript": "5.8.3"
+  }
+}
