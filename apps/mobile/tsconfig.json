@@ -4,6 +4,9 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
+      "@workout/domain": [
+        "../../packages/domain/src/index.ts"
+      ],
       "@/*": [
         "./src/*"
       ]
@@ -14,4 +17,3 @@
     "src/**/*.tsx"
   ]
 }
-

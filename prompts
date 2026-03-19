@@ -578,3 +578,720 @@ Entre prompt y prompt:
 Si algo no arranca, no sigas.
 
 Si quieres, te lo empaqueto también en un archivo .txt descargable para que los tengas todos juntos.
+
+
+Workout Tracker Codex Prompts
+
+General usage rule:
+Start future prompts with:
+Use docs/architecture.md as the source of truth for this task.
+Keep changes minimal and consistent with the current codebase.
+
+==================================================
+FOUNDATION / SCAFFOLDING PROMPTS
+==================================================
+
+1) Use architecture.md as permanent reference
+
+Use docs/architecture.md as the source of truth for future code generation tasks in this repository.
+Follow it by default unless I explicitly override a rule.
+
+Task:
+Do not generate product code yet.
+Only acknowledge the architecture constraints and summarize the immediate next implementation step you recommend.
+
+Constraints:
+- Keep the answer short
+- Do not modify files
+- Do not propose implementing the whole app at once
+
+--------------------------------------------------
+
+2) Bootstrap monorepo
+
+Use docs/architecture.md as the source of truth for this task.
+Keep changes minimal and consistent with the current codebase.
+
+Task:
+Create the initial monorepo structure for this project with:
+- apps/mobile
+- apps/api
+- packages/domain
+
+Requirements:
+- Mobile app: React Native with Expo and TypeScript
+- Backend API: Fastify with TypeScript
+- Shared package for domain types
+- Minimal workspace configuration
+- Minimal TypeScript configuration
+- Basic scripts to run mobile and api separately
+
+Constraints:
+- Do not implement product features yet
+- Do not add unnecessary dependencies
+- Add only the minimal files required for a clean skeleton
+- Add README files in each top-level app/package with a short explanation
+- Prefer simple configuration over complex tooling
+
+Output:
+- Create only the project skeleton
+- Briefly explain the structure created
+
+--------------------------------------------------
+
+3) Backend minimum runnable
+
+Use docs/architecture.md as the source of truth for this task.
+Keep changes minimal and consistent with the current codebase.
+
+Task:
+Set up apps/api so the backend starts correctly with Fastify and exposes:
+- GET /health returning a simple JSON response
+
+Requirements:
+- TypeScript
+- Minimal Fastify bootstrap
+- Clear folder structure for future feature modules
+- Basic route registration structure
+
+Constraints:
+- Do not implement business modules yet
+- Do not add unnecessary abstractions
+- Keep the backend thin
+- Add TODO comments where future structure is expected
+
+Output:
+- Make the API runnable locally
+- Briefly explain the files added
+
+--------------------------------------------------
+
+4) Frontend minimum runnable
+
+Use docs/architecture.md as the source of truth for this task.
+Keep changes minimal and consistent with the current codebase.
+
+Task:
+Set up apps/mobile so the mobile app starts correctly using Expo Router and TypeScript.
+
+Create placeholder screens for:
+- Auth landing
+- Routines list
+- Routine detail
+- Active workout
+- Progress overview
+
+Requirements:
+- Use Expo Router
+- Use simple placeholder UI and text
+- Keep navigation explicit and easy to extend
+
+Constraints:
+- No backend integration
+- No advanced styling
+- No state management library unless strictly necessary
+- No deep reusable component system yet
+
+Output:
+- Make the mobile app runnable locally
+- Briefly explain the routes and folders created
+
+--------------------------------------------------
+
+5) Shared packages/domain
+
+Use docs/architecture.md as the source of truth for this task.
+Keep changes minimal and consistent with the current codebase.
+
+Task:
+Create the shared packages/domain package with TypeScript domain types for:
+- User
+- Exercise
+- Routine
+- RoutineExercise
+- WorkoutSession
+- WorkoutExercise
+- WorkoutSet
+- HealthSyncRecord
+
+Requirements:
+- Keep types simple and extensible
+- Reflect the architecture document exactly
+- Separate routine templates from real workout execution
+- Add comments explaining the purpose of each entity
+
+Constraints:
+- No business logic yet
+- No framework-specific types
+- No duplicated types across apps
+
+Output:
+- Generate only the shared package files needed
+- Briefly explain the design choices
+
+--------------------------------------------------
+
+6) Initial Prisma schema
+
+Use docs/architecture.md as the source of truth for this task.
+Keep changes minimal and consistent with the current codebase.
+
+Task:
+Add Prisma setup to apps/api and create an initial Prisma schema for:
+- User
+- Exercise
+- Routine
+- RoutineExercise
+- WorkoutSession
+- WorkoutExercise
+- WorkoutSet
+- HealthSyncRecord
+
+Requirements:
+- Use PostgreSQL
+- Keep relationships explicit and simple
+- Support system exercises now and user-created exercises later
+- Align the schema with packages/domain
+
+Constraints:
+- Do not implement advanced constraints unless clearly needed
+- Add TODO comments where the schema may evolve later
+- Keep the setup lean
+
+Output:
+- Add only the required Prisma files and configuration
+- Briefly explain the main relationships
+
+--------------------------------------------------
+
+7) Backend exercises module
+
+Use docs/architecture.md as the source of truth for this task.
+Keep changes minimal and consistent with the current codebase.
+
+Task:
+Add a minimal exercises module to apps/api with:
+- GET /exercises
+- GET /exercises/:id
+
+Requirements:
+- Follow the feature-based modular structure
+- Keep handlers simple
+- Return placeholder or mock data for now
+- Prepare the module so real Prisma persistence can be added later
+
+Constraints:
+- Keep the backend thin
+- Do not add unnecessary service layers
+- Use TODOs where business logic is intentionally deferred
+
+Output:
+- Update only the files needed for the exercises module
+- Briefly explain the structure added
+
+--------------------------------------------------
+
+8) Backend routines module
+
+Use docs/architecture.md as the source of truth for this task.
+Keep changes minimal and consistent with the current codebase.
+
+Task:
+Add a minimal routines module to apps/api with:
+- GET /routines
+- GET /routines/:id
+- POST /routines
+- PUT /routines/:id
+- DELETE /routines/:id
+
+Requirements:
+- Keep route handlers simple
+- Use placeholder or mock logic where needed
+- Keep the structure ready for future Prisma integration
+- Separate route registration from module logic where reasonable
+
+Constraints:
+- Do not implement full validation or business rules yet
+- Do not rewrite unrelated backend files
+- Prefer TODOs over incomplete deep logic
+
+Output:
+- Update only the required files
+- Briefly explain what was added
+
+--------------------------------------------------
+
+9) Mobile routines screens
+
+Use docs/architecture.md as the source of truth for this task.
+Keep changes minimal and consistent with the current codebase.
+
+Task:
+Implement the frontend skeleton for the routines feature in apps/mobile.
+
+Create:
+- Routines list screen
+- Routine detail screen
+- Create/Edit routine screen
+
+Requirements:
+- Use feature-based folders
+- Use mock data only
+- Show routine name and a trimmed summary of included exercises
+- Keep the UI simple and easy to extend
+
+Constraints:
+- No real backend integration yet
+- No complex form architecture
+- No unnecessary reusable components
+
+Output:
+- Update only the required mobile files
+- Briefly explain the screens and folder structure
+
+--------------------------------------------------
+
+10) Backend workouts module
+
+Use docs/architecture.md as the source of truth for this task.
+Keep changes minimal and consistent with the current codebase.
+
+Task:
+Add a minimal workouts module to apps/api with:
+- POST /workouts/start
+- POST /workouts/:id/sets
+- POST /workouts/:id/finish
+- GET /workouts
+- GET /workouts/:id
+
+Requirements:
+- Reflect the difference between Routine and WorkoutSession
+- Keep it as a skeleton for now
+- Use placeholder data or mock responses where needed
+- Keep naming aligned with packages/domain
+
+Constraints:
+- Do not implement deep business logic
+- Do not build speculative abstractions
+- Use TODOs where implementation is intentionally postponed
+
+Output:
+- Update only the necessary files
+- Briefly explain how workout data is structured
+
+--------------------------------------------------
+
+11) Active workout flow on mobile
+
+Use docs/architecture.md as the source of truth for this task.
+Keep changes minimal and consistent with the current codebase.
+
+Task:
+Implement the frontend skeleton for workout execution in apps/mobile.
+
+Create:
+- Start workout flow from a routine
+- Active workout screen
+- Workout summary screen
+
+Requirements:
+- Use mock data
+- Show exercise name, optional image placeholder, target values and editable actual values
+- Keep state management simple and local
+- Make the flow easy to connect to the backend later
+
+Constraints:
+- No advanced timers yet
+- No Apple Watch implementation
+- No health sync implementation
+- Prefer TODOs for future integrations
+
+Output:
+- Update only the required files
+- Briefly explain the screen flow and local state approach
+
+--------------------------------------------------
+
+12) Basic progress backend + mobile
+
+Use docs/architecture.md as the source of truth for this task.
+Keep changes minimal and consistent with the current codebase.
+
+Task:
+Add a minimal progress feature skeleton.
+
+Backend:
+- Add GET /progress/exercises/:exerciseId returning placeholder progress data
+
+Mobile:
+- Add a progress overview screen
+- Add an exercise progress detail placeholder screen
+
+Requirements:
+- Keep it minimal
+- Use simple placeholder data
+- Focus on structure and extensibility
+
+Constraints:
+- Do not implement advanced analytics
+- Do not add recommendation logic
+- Do not rewrite unrelated files
+
+Output:
+- Update only the necessary files
+- Briefly explain the progress feature structure
+
+--------------------------------------------------
+
+13) Auth abstraction
+
+Use docs/architecture.md as the source of truth for this task.
+Keep changes minimal and consistent with the current codebase.
+
+Task:
+Add authentication abstractions across apps/mobile, apps/api and packages/domain.
+
+Requirements:
+- Define a provider-based auth design
+- Apple is the first provider
+- Future providers may include Google, email/password and self-hosted OIDC
+- Keep contracts explicit and extensible
+
+Constraints:
+- Do not implement full authentication yet
+- Add interfaces and stubs only
+- Keep provider-specific code isolated
+- Add TODOs for future session handling and token validation
+
+Output:
+- Update only the files needed for auth abstractions
+- Briefly explain the provider boundaries
+
+--------------------------------------------------
+
+14) Apple auth stub
+
+Use docs/architecture.md as the source of truth for this task.
+Keep changes minimal and consistent with the current codebase.
+
+Task:
+Add an Apple authentication stub.
+
+Backend:
+- Add an AppleAuthProvider stub
+- Add a placeholder auth route for Apple login
+
+Mobile:
+- Add a Sign in with Apple placeholder button
+- Wire it to a mock auth flow
+
+Requirements:
+- Keep the design open for future auth providers
+- Mark placeholder behavior clearly
+- Keep provider-specific code isolated
+
+Constraints:
+- No real provider integration yet
+- No production-ready token flow yet
+- No additional auth providers yet
+
+Output:
+- Update only the necessary files
+- Briefly explain what remains as TODO
+
+--------------------------------------------------
+
+15) Health abstractions
+
+Use docs/architecture.md as the source of truth for this task.
+Keep changes minimal and consistent with the current codebase.
+
+Task:
+Create health integration abstractions across the project.
+
+Requirements:
+- Define interfaces for HealthIntegration, WorkoutSyncService and LiveWorkoutBridge
+- Prepare Apple Health stubs
+- Prepare Android Health Connect stubs
+- Keep provider implementations isolated
+
+Constraints:
+- Do not implement native provider details
+- Do not add deep sync logic
+- Keep mobile vs backend responsibilities explicit
+- Prefer interfaces, TODOs and stubs
+
+Output:
+- Update only the needed files
+- Briefly explain the architecture boundaries
+
+--------------------------------------------------
+
+16) Apple Health / Watch stubs
+
+Use docs/architecture.md as the source of truth for this task.
+Keep changes minimal and consistent with the current codebase.
+
+Task:
+Add placeholder integration points for:
+- Syncing workout completion to Apple Health
+- Future live workout mirroring with Apple Watch
+
+Requirements:
+- Add clear extension points in the mobile app
+- Add clear TODOs for future native modules
+- Keep the current implementation minimal and non-invasive
+
+Constraints:
+- Do not implement native Apple Health details
+- Do not implement Apple Watch live mirroring
+- Do not affect Android behavior
+- Do not introduce speculative complexity
+
+Output:
+- Update only the necessary files
+- Briefly explain the future extension points
+
+--------------------------------------------------
+
+17) Minimal module docs
+
+Use docs/architecture.md as the source of truth for this task.
+Keep changes minimal and consistent with the current codebase.
+
+Task:
+Add short README files or module notes where helpful in:
+- apps/api
+- apps/mobile
+- packages/domain
+
+Requirements:
+- Explain the purpose of each major module
+- Explain what is implemented vs intentionally stubbed
+- Keep the documentation short and operational
+
+Constraints:
+- Do not create excessive documentation
+- Do not duplicate architecture.md
+- Focus only on information useful for continuing development manually
+
+Output:
+- Update only the needed documentation files
+- Briefly explain what was documented
+
+--------------------------------------------------
+
+18) Light consistency cleanup
+
+Use docs/architecture.md as the source of truth for this task.
+Keep changes minimal and consistent with the current codebase.
+
+Task:
+Review the current codebase for consistency with docs/architecture.md.
+
+Focus only on:
+- folder naming consistency
+- duplicated shared types
+- obviously unnecessary abstractions
+- obviously unused files created during scaffolding
+- mismatches between domain naming and route/module naming
+
+Constraints:
+- Do not perform a broad rewrite
+- Do not change working behavior unless clearly necessary
+- Keep changes minimal and local
+- Prefer a short cleanup pass only
+
+Output:
+- Make only the smallest justified consistency fixes
+- Briefly explain what was cleaned up
+
+==================================================
+UNATTENDED / LOW-RISK EXECUTION TEMPLATE
+==================================================
+
+Use docs/architecture.md as the source of truth for this task.
+Keep changes minimal and consistent with the current codebase.
+
+Task:
+[DESCRIBE ONE SMALL TASK ONLY]
+
+Execution rules:
+- Make the smallest possible change set
+- After changes, run the minimum relevant verification commands
+- If a verification step fails, make only one small follow-up fix attempt
+- Re-run verification once
+- If it still fails, stop and report the exact failure clearly
+- Do not continue with additional features
+- Do not rewrite unrelated files
+- Do not add dependencies unless strictly necessary
+
+Verification:
+- Run only the checks relevant to this task
+- Report which commands passed and which failed
+- Report the final status as one of:
+  - DONE
+  - PARTIALLY DONE
+  - BLOCKED
+
+Output:
+- Brief summary of files changed
+- Commands executed
+- Final status
+- Remaining TODOs, if any
+
+==================================================
+NEXT PHASE: VERTICAL SLICE STRATEGY
+==================================================
+
+After the initial scaffolding and cleanup, stop expanding placeholders everywhere.
+Continue with small end-to-end vertical slices.
+
+Recommended first vertical slice:
+Routines
+- backend persistence
+- API client
+- mobile list/detail/create-edit
+- refresh after save
+- simple loading/empty/error states
+
+Do not start with full auth or health integrations.
+Use a temporary development user if needed.
+
+==================================================
+VERTICAL SLICE PROMPTS: ROUTINES
+==================================================
+
+19 Backend real persistence for routines
+
+Use docs/architecture.md as the source of truth for this task.
+Keep changes minimal and consistent with the current codebase.
+
+Task:
+Replace the placeholder routines backend implementation with a minimal real persistence flow using Prisma.
+
+Requirements:
+- Implement GET /routines
+- Implement GET /routines/:id
+- Implement POST /routines
+- Implement PUT /routines/:id
+- Implement DELETE /routines/:id
+- Keep the data model aligned with the shared domain types
+- Keep validation minimal but explicit
+
+Constraints:
+- No auth yet; use a temporary fixed development user strategy if needed
+- Keep the backend thin
+- Do not add unnecessary abstractions
+- Do not implement advanced business rules yet
+
+Execution rules:
+- After changes, run the minimum relevant build or typecheck commands
+- If something fails, make one small follow-up fix and retry once
+- Stop after that and report status
+
+Output:
+- Files changed
+- Commands run
+- Final status: DONE / PARTIALLY DONE / BLOCKED
+- Remaining TODOs
+
+--------------------------------------------------
+
+20 Mobile API client for routines
+
+Use docs/architecture.md as the source of truth for this task.
+Keep changes minimal and consistent with the current codebase.
+
+Task:
+Connect the mobile routines feature to the backend with a minimal API client.
+
+Requirements:
+- Add a simple routines client for list, detail, create, update and delete
+- Keep the client explicit and easy to replace later
+- Add a temporary base URL configuration suitable for local development
+- Keep the implementation minimal
+
+Constraints:
+- No auth integration yet
+- No complex networking layer
+- No extra dependencies unless strictly necessary
+
+Execution rules:
+- Run the minimum relevant typecheck or lint commands
+- If something fails, make one small follow-up fix and retry once
+- Stop after that and report status
+
+Output:
+- Files changed
+- Commands run
+- Final status: DONE / PARTIALLY DONE / BLOCKED
+- Remaining TODOs
+
+--------------------------------------------------
+
+21 Routines list + detail with real data
+
+Use docs/architecture.md as the source of truth for this task.
+Keep changes minimal and consistent with the current codebase.
+
+Task:
+Update the mobile routines list and routine detail screens to use real backend data instead of mock data.
+
+Requirements:
+- Fetch routines list from the backend
+- Fetch routine detail from the backend
+- Add simple loading, empty and error states
+- Keep UI simple and functional
+- Preserve the existing route structure
+
+Constraints:
+- No complex state management
+- No advanced caching yet
+- No styling polish
+- Keep changes local to the routines feature
+
+Execution rules:
+- Run the minimum relevant checks
+- If something fails, make one small follow-up fix and retry once
+- Stop after that and report status
+
+Output:
+- Files changed
+- Commands run
+- Final status: DONE / PARTIALLY DONE / BLOCKED
+- Remaining TODOs
+
+--------------------------------------------------
+
+22 Functional create/edit routine flow
+
+Use docs/architecture.md as the source of truth for this task.
+Keep changes minimal and consistent with the current codebase.
+
+Task:
+Make the create/edit routine flow functional in the mobile app using the existing backend routines endpoints.
+
+Requirements:
+- The user can create a routine
+- The user can edit a routine
+- The user returns to the correct screen after saving
+- The routines list refreshes after changes
+- Keep the form minimal and aligned with the current domain model
+
+Constraints:
+- No advanced form library unless already present
+- No deep validation rules yet
+- No drag and drop or advanced exercise editing yet
+- Keep the implementation simple and local
+
+Execution rules:
+- Run the minimum relevant checks
+- If something fails, make one small follow-up fix and retry once
+- Stop after that and report status
+
+Output:
+- Files changed
+- Commands run
+- Final status: DONE / PARTIALLY DONE / BLOCKED
+- Remaining TODOs

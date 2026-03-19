@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String    @id
+  displayName String
+  email       String?
+  avatarUrl   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  routines    Routine[]
+}
+
+model Routine {
+  id          String            @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises   RoutineExercise[]
+
+  @@index([userId, createdAt])
+}
+
+model RoutineExercise {
+  id           String   @id @default(cuid())
+  routineId    String
+  exerciseName String
+  orderIndex   Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  routine      Routine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  sets         RoutineExerciseSet[]
+
+  @@index([routineId, orderIndex])
+}
+
+model RoutineExerciseSet {
+  id                String          @id @default(cuid())
+  routineExerciseId String
+  setNumber         Int
+  minReps           Int?
+  maxReps           Int?
+  targetWeight      Float?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  routineExercise   RoutineExercise @relation(fields: [routineExerciseId], references: [id], onDelete: Cascade)
+
+  @@index([routineExerciseId, setNumber])
+}

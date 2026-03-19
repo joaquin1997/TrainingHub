@@ -50,13 +50,23 @@ export interface Routine {
 export interface RoutineExercise {
   id: EntityId;
   routineId: EntityId;
-  exerciseId: EntityId;
-  order: number;
-  notes?: string;
-  targetSets?: number;
-  targetMinReps?: number;
-  targetMaxReps?: number;
-  targetWeightKg?: number;
+  exerciseName: string;
+  orderIndex: number;
+  sets: RoutineExerciseSet[];
+  createdAt: ISODateString;
+  updatedAt: ISODateString;
+}
+
+/**
+ * Represents one target set definition inside a routine exercise template.
+ */
+export interface RoutineExerciseSet {
+  id: EntityId;
+  routineExerciseId: EntityId;
+  setNumber: number;
+  minReps?: number;
+  maxReps?: number;
+  targetWeight?: number;
   createdAt: ISODateString;
   updatedAt: ISODateString;
 }
@@ -125,4 +135,3 @@ export interface HealthSyncRecord {
   createdAt: ISODateString;
   updatedAt: ISODateString;
 }
-

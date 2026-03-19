@@ -6,6 +6,7 @@ type RouteKey =
   | 'routines'
   | 'routine-detail'
   | 'active-workout'
+  | 'workout-summary'
   | 'progress';
 
 type RouteLinksProps = {
@@ -13,14 +14,20 @@ type RouteLinksProps = {
 };
 
 const ROUTES: Array<{
-  href: '/auth' | '/routines' | '/routines/sample-routine' | '/workouts/active' | '/progress';
+  href:
+    | '/auth'
+    | '/routines'
+    | '/routines/routine-upper-a'
+    | '/workouts/active'
+    | '/workouts/summary'
+    | '/progress';
   key: RouteKey;
   label: string;
 }> = [
   { href: '/auth', key: 'auth', label: 'Auth landing' },
   { href: '/routines', key: 'routines', label: 'Routines list' },
   {
-    href: '/routines/sample-routine',
+    href: '/routines/routine-upper-a',
     key: 'routine-detail',
     label: 'Routine detail',
   },
@@ -28,6 +35,11 @@ const ROUTES: Array<{
     href: '/workouts/active',
     key: 'active-workout',
     label: 'Active workout',
+  },
+  {
+    href: '/workouts/summary',
+    key: 'workout-summary',
+    label: 'Workout summary',
   },
   { href: '/progress', key: 'progress', label: 'Progress overview' },
 ];
@@ -69,4 +81,3 @@ const styles = StyleSheet.create({
     color: '#2563eb',
   },
 });
-
