@@ -4,12 +4,14 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   buildWorkoutSessionDraft,
   clearActiveWorkout,
+  countWorkoutSets,
   getActiveWorkout,
   hasActiveWorkout,
   isActiveWorkoutForRoutine,
   setActiveWorkout,
   startActiveWorkout,
   toCreateWorkoutSessionInput,
+  toggleWorkoutSetDone,
   type WorkoutSessionDraft,
 } from './workoutDraftStore';
 
@@ -97,8 +99,8 @@ describe('toCreateWorkoutSessionInput', () => {
           routineExerciseId: 're-bench',
           order: 1,
           entries: [
-            { id: 's1', order: 1, reps: '8', weightKg: '60' },
-            { id: 's2', order: 2, reps: '', weightKg: '' },
+            { id: 's1', order: 1, reps: '8', weightKg: '60', done: false },
+            { id: 's2', order: 2, reps: '', weightKg: '', done: false },
           ],
         },
       ],
@@ -157,5 +159,30 @@ describe('active workout state', () => {
 
     expect(hasActiveWorkout()).toBe(false);
     expect(getActiveWorkout()).toBeNull();
+  });
+});
+
+describe('set completion', () => {
+  it('builds sets as not done and toggles a single set', () => {
+    const draft = buildWorkoutSessionDraft(routine);
+    const exercise = draft.exercises[0]!;
+    const setId = exercise.entries[0]!.id;
+
+    expect(exercise.entries[0]!.done).toBe(false);
+
+    const toggled = toggleWorkoutSetDone(draft, exercise.id, setId);
+    expect(toggled.exercises[0]!.entries[0]!.done).toBe(true);
+
+    const back = toggleWorkoutSetDone(toggled, exercise.id, setId);
+    expect(back.exercises[0]!.entries[0]!.done).toBe(false);
+  });
+
+  it('counts done vs total sets', () => {
+    const draft = buildWorkoutSessionDraft(routine);
+    const exercise = draft.exercises[0]!;
+    const toggled = toggleWorkoutSetDone(draft, exercise.id, exercise.entries[0]!.id);
+
+    expect(countWorkoutSets(draft)).toEqual({ done: 0, total: 2 });
+    expect(countWorkoutSets(toggled)).toEqual({ done: 1, total: 2 });
   });
 });

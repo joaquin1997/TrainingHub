@@ -9,6 +9,7 @@ export type WorkoutSetDraft = {
   order: number;
   reps: string;
   weightKg: string;
+  done: boolean;
   minReps?: number;
   maxReps?: number;
   targetWeight?: number;
@@ -55,6 +56,7 @@ function buildExerciseDrafts(routine: Routine): WorkoutExerciseDraft[] {
           reps: '',
           weightKg:
             set.targetWeight !== undefined ? String(set.targetWeight) : '',
+          done: false,
           minReps: set.minReps,
           maxReps: set.maxReps,
           targetWeight: set.targetWeight,
@@ -96,6 +98,38 @@ export function updateWorkoutSetDraft(
       };
     }),
   };
+}
+
+export function toggleWorkoutSetDone(
+  workoutDraft: WorkoutSessionDraft,
+  workoutExerciseId: string,
+  workoutSetId: string,
+): WorkoutSessionDraft {
+  return {
+    ...workoutDraft,
+    exercises: workoutDraft.exercises.map((exercise) => {
+      if (exercise.id !== workoutExerciseId) {
+        return exercise;
+      }
+
+      return {
+        ...exercise,
+        entries: exercise.entries.map((set) =>
+          set.id === workoutSetId ? { ...set, done: !set.done } : set,
+        ),
+      };
+    }),
+  };
+}
+
+export function countWorkoutSets(workoutDraft: WorkoutSessionDraft) {
+  return workoutDraft.exercises.reduce(
+    (totals, exercise) => ({
+      done: totals.done + exercise.entries.filter((set) => set.done).length,
+      total: totals.total + exercise.entries.length,
+    }),
+    { done: 0, total: 0 },
+  );
 }
 
 /**
