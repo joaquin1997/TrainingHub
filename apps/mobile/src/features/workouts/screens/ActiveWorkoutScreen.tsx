@@ -19,8 +19,10 @@ import {
   syncWorkoutCompletionToAppleHealth,
 } from '@/features/health/integrations/appleWorkoutIntegration';
 import {
-  buildWorkoutSessionDraft,
+  clearActiveWorkout,
   saveCompletedWorkout,
+  setActiveWorkout,
+  startActiveWorkout,
   toCreateWorkoutSessionInput,
   toWorkoutSessionSkeleton,
   updateWorkoutSetDraft,
@@ -56,7 +58,7 @@ export function ActiveWorkoutScreen() {
           return;
         }
 
-        setWorkoutDraft(buildWorkoutSessionDraft(routine));
+        setWorkoutDraft(startActiveWorkout(routine));
         setStatus('ready');
       })
       .catch((error: unknown) => {
@@ -117,6 +119,7 @@ export function ActiveWorkoutScreen() {
       const workoutSession = toWorkoutSessionSkeleton(workoutDraft);
 
       saveCompletedWorkout(workoutDraft);
+      clearActiveWorkout();
 
       void notifyAppleWorkoutFinished(
         workoutDraft,
@@ -133,6 +136,28 @@ export function ActiveWorkoutScreen() {
     }
   };
 
+  const handleSetChange = (
+    workoutExerciseId: string,
+    workoutSetId: string,
+    field: 'reps' | 'weightKg',
+    value: string,
+  ) => {
+    if (!workoutDraft) {
+      return;
+    }
+
+    const nextDraft = updateWorkoutSetDraft(
+      workoutDraft,
+      workoutExerciseId,
+      workoutSetId,
+      field,
+      value,
+    );
+
+    setWorkoutDraft(nextDraft);
+    setActiveWorkout(nextDraft);
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Active Workout</Text>
@@ -140,8 +165,8 @@ export function ActiveWorkoutScreen() {
         {workoutDraft.routineName}
       </Text>
       <Text style={styles.meta}>
-        Started from routine template. Actual workout values stay local to this
-        screen for now.
+        Started from your routine. Logged values are kept while in progress, so
+        you can leave and resume this workout.
       </Text>
       {workoutDraft.exercises.map((exercise) => (
         <View key={exercise.id} style={styles.card}>
@@ -169,19 +194,9 @@ export function ActiveWorkoutScreen() {
                     <TextInput
                       keyboardType="number-pad"
                       value={set.reps}
-                      onChangeText={(value) => {
-                        setWorkoutDraft((currentDraft) =>
-                          currentDraft
-                            ? updateWorkoutSetDraft(
-                                currentDraft,
-                                exercise.id,
-                                set.id,
-                                'reps',
-                                value,
-                              )
-                            : currentDraft,
-                        );
-                      }}
+                      onChangeText={(value) =>
+                        handleSetChange(exercise.id, set.id, 'reps', value)
+                      }
                       style={styles.input}
                     />
                   </View>
@@ -190,19 +205,9 @@ export function ActiveWorkoutScreen() {
                     <TextInput
                       keyboardType="decimal-pad"
                       value={set.weightKg}
-                      onChangeText={(value) => {
-                        setWorkoutDraft((currentDraft) =>
-                          currentDraft
-                            ? updateWorkoutSetDraft(
-                                currentDraft,
-                                exercise.id,
-                                set.id,
-                                'weightKg',
-                                value,
-                              )
-                            : currentDraft,
-                        );
-                      }}
+                      onChangeText={(value) =>
+                        handleSetChange(exercise.id, set.id, 'weightKg', value)
+                      }
                       style={styles.input}
                     />
                   </View>
