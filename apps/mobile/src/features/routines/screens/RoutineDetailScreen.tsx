@@ -4,11 +4,22 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { routinesClient } from '@/features/routines/api/routinesClient';
-import {
-  getRoutineExerciseNames,
-  getRoutineExerciseSummary,
-} from '@/features/routines/utils/routineSummary';
-import type { Routine } from '@workout/domain';
+import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
+import type { RoutineExerciseSet, Routine } from '@workout/domain';
+
+function formatSetTarget(set: RoutineExerciseSet) {
+  const reps =
+    set.minReps !== undefined && set.maxReps !== undefined
+      ? `${set.minReps}-${set.maxReps} reps`
+      : set.minReps !== undefined
+        ? `${set.minReps}+ reps`
+        : set.maxReps !== undefined
+          ? `up to ${set.maxReps} reps`
+          : '— reps';
+  const weight = set.targetWeight !== undefined ? ` · ${set.targetWeight} kg` : '';
+
+  return `${reps}${weight}`;
+}
 
 export function RoutineDetailScreen() {
   const { routineId } = useLocalSearchParams<{ routineId?: string }>();
@@ -141,11 +152,28 @@ export function RoutineDetailScreen() {
         <Text style={styles.meta}>No exercises in this routine yet.</Text>
       ) : (
         <View style={styles.exerciseList}>
-          {getRoutineExerciseNames(routine).map((exerciseName, index) => (
-            <Text key={exerciseName} style={styles.exerciseItem}>
-              {index + 1}. {exerciseName}
-            </Text>
-          ))}
+          {routine.exercises
+            .slice()
+            .sort((left, right) => left.orderIndex - right.orderIndex)
+            .map((exercise) => (
+              <View key={exercise.id} style={styles.exerciseCard}>
+                <Text style={styles.exerciseTitle}>
+                  {exercise.orderIndex}. {exercise.exerciseName}
+                </Text>
+                {exercise.sets.length === 0 ? (
+                  <Text style={styles.meta}>No target sets</Text>
+                ) : (
+                  exercise.sets
+                    .slice()
+                    .sort((left, right) => left.setNumber - right.setNumber)
+                    .map((set) => (
+                      <Text key={set.id} style={styles.exerciseItem}>
+                        Set {set.setNumber}: {formatSetTarget(set)}
+                      </Text>
+                    ))
+                )}
+              </View>
+            ))}
         </View>
       )}
       <View style={styles.links}>
@@ -214,7 +242,18 @@ const styles = StyleSheet.create({
     color: '#b91c1c',
   },
   exerciseList: {
-    gap: 8,
+    gap: 12,
+  },
+  exerciseCard: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 12,
+    padding: 16,
+    gap: 6,
+  },
+  exerciseTitle: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   exerciseItem: {
     fontSize: 14,
