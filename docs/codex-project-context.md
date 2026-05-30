@@ -21,7 +21,7 @@ Product strategy:
 Development advances by vertical slices. Status so far:
 
 - **Routines** — done end-to-end (Prisma persistence, mobile create/edit/list/detail)
-- **Workouts** — done: start from a routine, log sets, save the completed session, history + detail
+- **Workouts** — done: start from a routine, log sets, save the completed session, history + detail. One workout can be active (in-progress) at a time; it is resumable, and editing its routine is locked until it is finished or discarded
 - **Progress** — done: per-exercise summaries and per-session points aggregated from saved workouts
 - **Exercises** — catalog browsing + search + detail (seeded from wger), used by the routine builder
 
