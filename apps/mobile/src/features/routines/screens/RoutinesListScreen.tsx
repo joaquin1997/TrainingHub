@@ -1,10 +1,10 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { routinesClient } from '@/features/routines/api/routinesClient';
-import { getRoutineExerciseSummary } from '@/features/routines/mocks/mockRoutines';
+import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
 import type { Routine } from '@workout/domain';
 
 export function RoutinesListScreen() {
@@ -54,7 +54,7 @@ export function RoutinesListScreen() {
   const hasListState = !isLoading && !errorMessage && routines.length > 0;
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
       <Text style={styles.title}>Routines List</Text>
       <Text style={styles.body}>
         Routines are loaded from the backend. Template data stays separate from
@@ -115,13 +115,16 @@ export function RoutinesListScreen() {
         </View>
       ) : null}
       <RouteLinks currentRoute="routines" />
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
+  },
+  container: {
+    flexGrow: 1,
     padding: 24,
     gap: 12,
   },

@@ -15,7 +15,7 @@ import {
 } from '@/features/routines/api/exercisesClient';
 import { CustomExerciseModal } from '@/features/routines/components/CustomExerciseModal';
 import { routinesClient } from '@/features/routines/api/routinesClient';
-import { getRoutineExerciseSummary } from '@/features/routines/mocks/mockRoutines';
+import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
 import type {
   Exercise,
   Routine,

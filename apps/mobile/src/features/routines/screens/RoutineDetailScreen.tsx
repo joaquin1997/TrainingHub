@@ -1,13 +1,13 @@
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import {
   getRoutineExerciseNames,
   getRoutineExerciseSummary,
-} from '@/features/routines/mocks/mockRoutines';
+} from '@/features/routines/utils/routineSummary';
 import type { Routine } from '@workout/domain';
 
 export function RoutineDetailScreen() {
@@ -126,7 +126,7 @@ export function RoutineDetailScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
       <Text style={styles.title}>Routine Detail</Text>
       <Text style={styles.body}>{routine.name}</Text>
       {routine.description ? (
@@ -180,13 +180,16 @@ export function RoutineDetailScreen() {
         </Text>
       </Pressable>
       <RouteLinks currentRoute="routine-detail" />
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
+  },
+  container: {
+    flexGrow: 1,
     padding: 24,
     gap: 12,
   },

@@ -1,4 +1,4 @@
-import type { Exercise, Routine } from '@workout/domain';
+import type { Exercise } from '@workout/domain';
 
 const mockExercises: Exercise[] = [
   {
@@ -42,30 +42,6 @@ const mockExercises: Exercise[] = [
     updatedAt: '2026-01-01T00:00:00.000Z',
   },
 ];
-
-export function getRoutineExerciseNames(routine: Routine) {
-  return routine.exercises
-    .slice()
-    .sort((left, right) => left.orderIndex - right.orderIndex)
-    .map((routineExercise) => routineExercise.exerciseName);
-}
-
-export function getRoutineExerciseSummary(routine: Routine, maxItems = 2) {
-  const exerciseNames = getRoutineExerciseNames(routine);
-
-  if (exerciseNames.length === 0) {
-    return 'No exercises yet';
-  }
-
-  const visibleNames = exerciseNames.slice(0, maxItems);
-  const remainingCount = exerciseNames.length - visibleNames.length;
-
-  if (remainingCount <= 0) {
-    return visibleNames.join(', ');
-  }
-
-  return `${visibleNames.join(', ')} +${remainingCount} more`;
-}
 
 export function findMockExerciseById(exerciseId?: string) {
   if (!exerciseId) {
