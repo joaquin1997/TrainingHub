@@ -5,6 +5,7 @@ type RouteKey =
   | 'auth'
   | 'routines'
   | 'routine-detail'
+  | 'exercises'
   | 'active-workout'
   | 'workout-summary'
   | 'workout-history'
@@ -18,6 +19,7 @@ const ROUTES: Array<{
   href:
     | '/auth'
     | '/routines'
+    | '/exercises'
     | '/workouts/active'
     | '/workouts/summary'
     | '/workouts/history'
@@ -27,6 +29,7 @@ const ROUTES: Array<{
 }> = [
   { href: '/auth', key: 'auth', label: 'Auth landing' },
   { href: '/routines', key: 'routines', label: 'Routines list' },
+  { href: '/exercises', key: 'exercises', label: 'Exercises catalog' },
   {
     href: '/workouts/active',
     key: 'active-workout',
