@@ -83,12 +83,57 @@ describe('buildExerciseProgressDetail', () => {
     const detail = buildExerciseProgressDetail(sessions, 'bench');
 
     expect(detail?.points).toEqual([
-      { date: '2026-05-01T09:00:00.000Z', bestWeightKg: 65, bestReps: 10, totalVolume: 1120 },
-      { date: '2026-05-08T09:00:00.000Z', bestWeightKg: 70, bestReps: 6, totalVolume: 420 },
+      {
+        date: '2026-05-01T09:00:00.000Z',
+        bestWeightKg: 65,
+        bestReps: 10,
+        totalVolume: 1120,
+        estimatedOneRepMax: 82.3,
+      },
+      {
+        date: '2026-05-08T09:00:00.000Z',
+        bestWeightKg: 70,
+        bestReps: 6,
+        totalVolume: 420,
+        estimatedOneRepMax: 84,
+      },
     ]);
   });
 
   it('returns null for an unknown exercise', () => {
     expect(buildExerciseProgressDetail(sessions, 'squat')).toBeNull();
+  });
+});
+
+describe('records & estimated 1RM', () => {
+  it('flags a new max-weight record on the most recent session', () => {
+    const summaries = buildExerciseProgressSummaries(sessions);
+    const bench = summaries.find((s) => s.exerciseId === 'bench');
+
+    // session 2 (70kg) beats session 1 (65kg) -> record
+    expect(bench?.isRecordSession).toBe(true);
+    expect(bench?.bestEstimatedOneRepMax).toBe(84);
+  });
+
+  it('does not flag a record when the last session is not a max', () => {
+    const cooling: ProgressSessionInput[] = [
+      {
+        date: '2026-05-01T09:00:00.000Z',
+        exercises: [
+          { exerciseId: 'bench', exerciseName: 'Bench', sets: [{ reps: 5, weightKg: 100 }] },
+        ],
+      },
+      {
+        date: '2026-05-08T09:00:00.000Z',
+        exercises: [
+          { exerciseId: 'bench', exerciseName: 'Bench', sets: [{ reps: 5, weightKg: 80 }] },
+        ],
+      },
+    ];
+
+    const bench = buildExerciseProgressSummaries(cooling).find(
+      (s) => s.exerciseId === 'bench',
+    );
+    expect(bench?.isRecordSession).toBe(false);
   });
 });

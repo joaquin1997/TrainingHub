@@ -28,6 +28,18 @@ function maxDefined(values: Array<number | null | undefined>): number | undefine
   return defined.length > 0 ? Math.max(...defined) : undefined;
 }
 
+/** Epley estimated one-rep max for a single set, rounded to one decimal. */
+function estimateOneRepMax(
+  reps: number | null | undefined,
+  weightKg: number | null | undefined,
+): number | undefined {
+  if (typeof reps !== 'number' || typeof weightKg !== 'number' || weightKg <= 0) {
+    return undefined;
+  }
+
+  return Math.round(weightKg * (1 + reps / 30) * 10) / 10;
+}
+
 function buildAccumulators(
   sessions: ProgressSessionInput[],
 ): Map<string, ProgressAccumulator> {
@@ -53,6 +65,9 @@ function buildAccumulators(
           (sum, set) => sum + (set.reps ?? 0) * (set.weightKg ?? 0),
           0,
         ),
+        estimatedOneRepMax: maxDefined(
+          exercise.sets.map((set) => estimateOneRepMax(set.reps, set.weightKg)),
+        ),
       });
 
       byExercise.set(exercise.exerciseId, accumulator);
@@ -63,17 +78,28 @@ function buildAccumulators(
 }
 
 function toSummary(accumulator: ProgressAccumulator): ExerciseProgressSummary {
-  const lastPoint = accumulator.points[accumulator.points.length - 1];
+  const { points } = accumulator;
+  const lastPoint = points[points.length - 1];
+  const priorBestWeight = maxDefined(
+    points.slice(0, -1).map((point) => point.bestWeightKg),
+  );
+  const isRecordSession =
+    lastPoint?.bestWeightKg !== undefined &&
+    (priorBestWeight === undefined || lastPoint.bestWeightKg > priorBestWeight);
 
   return {
     exerciseId: accumulator.exerciseId,
     exerciseName: accumulator.exerciseName,
-    sessionCount: accumulator.points.length,
+    sessionCount: points.length,
     lastPerformedAt: lastPoint?.date,
     latestWeightKg: lastPoint?.bestWeightKg,
     latestReps: lastPoint?.bestReps,
-    personalBestWeightKg: maxDefined(accumulator.points.map((point) => point.bestWeightKg)),
-    personalBestReps: maxDefined(accumulator.points.map((point) => point.bestReps)),
+    personalBestWeightKg: maxDefined(points.map((point) => point.bestWeightKg)),
+    personalBestReps: maxDefined(points.map((point) => point.bestReps)),
+    bestEstimatedOneRepMax: maxDefined(
+      points.map((point) => point.estimatedOneRepMax),
+    ),
+    isRecordSession,
   };
 }
 

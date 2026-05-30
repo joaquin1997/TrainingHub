@@ -222,6 +222,7 @@ export interface ExerciseProgressPoint {
   bestWeightKg?: number;
   bestReps?: number;
   totalVolume: number;
+  estimatedOneRepMax?: number;
 }
 
 /**
@@ -236,6 +237,9 @@ export interface ExerciseProgressSummary {
   latestReps?: number;
   personalBestWeightKg?: number;
   personalBestReps?: number;
+  bestEstimatedOneRepMax?: number;
+  /** True when the most recent session set a new max-weight record. */
+  isRecordSession: boolean;
 }
 
 /**
