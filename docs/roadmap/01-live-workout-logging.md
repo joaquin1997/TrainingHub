@@ -4,7 +4,7 @@ Make the in-progress workout behave like Hevy: edit sets/exercises live, see
 previous performance, set types, and persist completion.
 
 ## Checklist
-- [ ] Persist per-set completion (`completedAt`) + `isWarmup` in the API
+- [x] Persist per-set completion (`completedAt`) + `isWarmup` in the API
 - [ ] Add / remove sets during a workout
 - [ ] Add / remove exercises during a workout
 - [ ] Reorder exercises and sets (up/down)

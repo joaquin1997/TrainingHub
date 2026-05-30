@@ -141,10 +141,12 @@ export function countWorkoutSets(workoutDraft: WorkoutSessionDraft) {
 export function toCreateWorkoutSessionInput(
   workoutDraft: WorkoutSessionDraft,
 ): CreateWorkoutSessionInput {
+  const completedAt = new Date().toISOString();
+
   return {
     routineId: workoutDraft.routineId,
     startedAt: workoutDraft.startedAt,
-    completedAt: new Date().toISOString(),
+    completedAt,
     notes: workoutDraft.notes?.trim() ? workoutDraft.notes.trim() : undefined,
     exercises: workoutDraft.exercises.map((exercise) => ({
       exerciseId: exercise.exerciseId,
@@ -154,6 +156,7 @@ export function toCreateWorkoutSessionInput(
         order: set.order,
         reps: Number(set.reps) || undefined,
         weightKg: Number(set.weightKg) || undefined,
+        completedAt: set.done ? completedAt : undefined,
       })),
     })),
   };

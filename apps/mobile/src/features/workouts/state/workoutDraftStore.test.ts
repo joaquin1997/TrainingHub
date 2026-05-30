@@ -116,6 +116,33 @@ describe('toCreateWorkoutSessionInput', () => {
       { order: 2, reps: undefined, weightKg: undefined },
     ]);
   });
+
+  it('stamps completedAt on sets marked done', () => {
+    const draft: WorkoutSessionDraft = {
+      id: 'w1',
+      routineId: 'routine-1',
+      routineName: 'Push Day',
+      startedAt: '2026-05-30T09:00:00.000Z',
+      exercises: [
+        {
+          id: 'we-1',
+          exerciseId: 'ex-bench',
+          exerciseName: 'Bench',
+          order: 1,
+          entries: [
+            { id: 's1', order: 1, reps: '8', weightKg: '60', done: true },
+            { id: 's2', order: 2, reps: '6', weightKg: '65', done: false },
+          ],
+        },
+      ],
+    };
+
+    const input = toCreateWorkoutSessionInput(draft);
+    const sets = input.exercises[0]!.sets;
+
+    expect(sets[0]!.completedAt).toBe(input.completedAt);
+    expect(sets[1]!.completedAt).toBeUndefined();
+  });
 });
 
 describe('active workout state', () => {

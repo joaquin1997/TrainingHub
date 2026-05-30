@@ -97,6 +97,7 @@ function toWorkoutExerciseCreateInput(
         durationSeconds: set.durationSeconds,
         distanceMeters: set.distanceMeters,
         isWarmup: set.isWarmup ?? false,
+        completedAt: set.completedAt ? new Date(set.completedAt) : undefined,
       })),
     },
   };

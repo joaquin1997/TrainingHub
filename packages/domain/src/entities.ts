@@ -183,6 +183,7 @@ export interface WorkoutSetInput {
   durationSeconds?: number;
   distanceMeters?: number;
   isWarmup?: boolean;
+  completedAt?: ISODateString;
 }
 
 /**

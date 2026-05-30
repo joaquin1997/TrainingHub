@@ -43,6 +43,7 @@ function parseWorkoutSetInput(
     durationSeconds: parseOptionalInteger(value.durationSeconds),
     distanceMeters: parseOptionalNumber(value.distanceMeters),
     isWarmup: typeof value.isWarmup === 'boolean' ? value.isWarmup : undefined,
+    completedAt: parseOptionalString(value.completedAt),
   };
 }
 
