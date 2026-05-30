@@ -2,9 +2,11 @@ import type { Routine } from '@workout/domain';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  addSetToWorkoutExercise,
   buildWorkoutSessionDraft,
   clearActiveWorkout,
   countWorkoutSets,
+  removeSetFromWorkoutExercise,
   getActiveWorkout,
   hasActiveWorkout,
   isActiveWorkoutForRoutine,
@@ -211,5 +213,34 @@ describe('set completion', () => {
 
     expect(countWorkoutSets(draft)).toEqual({ done: 0, total: 2 });
     expect(countWorkoutSets(toggled)).toEqual({ done: 1, total: 2 });
+  });
+});
+
+describe('add / remove sets', () => {
+  it('appends an empty set, prefilling weight from the previous set', () => {
+    const draft = buildWorkoutSessionDraft(routine);
+    const exerciseId = draft.exercises[1]!.id; // Row, has a set with target 50
+
+    const next = addSetToWorkoutExercise(draft, exerciseId);
+    const entries = next.exercises[1]!.entries;
+
+    expect(entries).toHaveLength(2);
+    expect(entries[1]!.order).toBe(2);
+    expect(entries[1]!.reps).toBe('');
+    expect(entries[1]!.weightKg).toBe('50');
+    expect(entries[1]!.done).toBe(false);
+  });
+
+  it('removes a set and renumbers the rest', () => {
+    const draft = buildWorkoutSessionDraft(routine);
+    const exerciseId = draft.exercises[1]!.id;
+    const withTwo = addSetToWorkoutExercise(draft, exerciseId);
+    const firstSetId = withTwo.exercises[1]!.entries[0]!.id;
+
+    const next = removeSetFromWorkoutExercise(withTwo, exerciseId, firstSetId);
+    const entries = next.exercises[1]!.entries;
+
+    expect(entries).toHaveLength(1);
+    expect(entries[0]!.order).toBe(1);
   });
 });

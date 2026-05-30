@@ -21,8 +21,10 @@ import {
   syncWorkoutCompletionToAppleHealth,
 } from '@/features/health/integrations/appleWorkoutIntegration';
 import {
+  addSetToWorkoutExercise,
   clearActiveWorkout,
   countWorkoutSets,
+  removeSetFromWorkoutExercise,
   saveCompletedWorkout,
   setActiveWorkout,
   startActiveWorkout,
@@ -179,6 +181,33 @@ export function ActiveWorkoutScreen() {
     setActiveWorkout(nextDraft);
   };
 
+  const handleAddSet = (workoutExerciseId: string) => {
+    if (!workoutDraft) {
+      return;
+    }
+
+    const nextDraft = addSetToWorkoutExercise(workoutDraft, workoutExerciseId);
+    setWorkoutDraft(nextDraft);
+    setActiveWorkout(nextDraft);
+  };
+
+  const handleRemoveSet = (
+    workoutExerciseId: string,
+    workoutSetId: string,
+  ) => {
+    if (!workoutDraft) {
+      return;
+    }
+
+    const nextDraft = removeSetFromWorkoutExercise(
+      workoutDraft,
+      workoutExerciseId,
+      workoutSetId,
+    );
+    setWorkoutDraft(nextDraft);
+    setActiveWorkout(nextDraft);
+  };
+
   const handleNotesChange = (value: string) => {
     if (!workoutDraft) {
       return;
@@ -229,7 +258,15 @@ export function ActiveWorkoutScreen() {
           <View style={styles.setList}>
             {exercise.entries.map((set) => (
               <View key={set.id} style={styles.setCard}>
-                <Text style={styles.setTitle}>Set {set.order}</Text>
+                <View style={styles.setHeader}>
+                  <Text style={styles.setTitle}>Set {set.order}</Text>
+                  <Pressable
+                    onPress={() => handleRemoveSet(exercise.id, set.id)}
+                    hitSlop={8}
+                  >
+                    <Text style={styles.removeText}>Remove</Text>
+                  </Pressable>
+                </View>
                 <Text style={styles.setTarget}>
                   Target: {set.minReps ?? '?'}-{set.maxReps ?? '?'} reps
                   {set.targetWeight !== undefined ? `, ${set.targetWeight} kg` : ''}
@@ -277,6 +314,12 @@ export function ActiveWorkoutScreen() {
               </View>
             ))}
           </View>
+          <Pressable
+            onPress={() => handleAddSet(exercise.id)}
+            style={styles.addSetButton}
+          >
+            <Text style={styles.addSetText}>+ Add set</Text>
+          </Pressable>
         </View>
       ))}
       {finishError ? <Text style={styles.errorText}>{finishError}</Text> : null}
@@ -368,8 +411,27 @@ const styles = StyleSheet.create({
     borderTopColor: '#e5e7eb',
     paddingTop: 10,
   },
+  setHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   setTitle: {
     fontSize: 15,
+    fontWeight: '600',
+  },
+  removeText: {
+    fontSize: 13,
+    color: '#b91c1c',
+    fontWeight: '600',
+  },
+  addSetButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
+  },
+  addSetText: {
+    fontSize: 15,
+    color: '#2563eb',
     fontWeight: '600',
   },
   setTarget: {

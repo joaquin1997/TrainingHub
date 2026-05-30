@@ -36,6 +36,22 @@ export type WorkoutSessionDraft = {
 
 let latestCompletedWorkout: WorkoutSessionDraft | null = null;
 let activeWorkout: WorkoutSessionDraft | null = null;
+let draftIdCounter = 0;
+
+function nextDraftId(prefix: string) {
+  draftIdCounter += 1;
+  return `${prefix}-gen-${draftIdCounter}`;
+}
+
+function renumberSets(entries: WorkoutSetDraft[]): WorkoutSetDraft[] {
+  return entries.map((set, index) => ({ ...set, order: index + 1 }));
+}
+
+function renumberExercises(
+  exercises: WorkoutExerciseDraft[],
+): WorkoutExerciseDraft[] {
+  return exercises.map((exercise, index) => ({ ...exercise, order: index + 1 }));
+}
 
 function buildExerciseDrafts(routine: Routine): WorkoutExerciseDraft[] {
   return routine.exercises
@@ -95,6 +111,53 @@ export function updateWorkoutSetDraft(
         ...exercise,
         entries: exercise.entries.map((set) =>
           set.id === workoutSetId ? { ...set, [field]: value } : set,
+        ),
+      };
+    }),
+  };
+}
+
+export function addSetToWorkoutExercise(
+  workoutDraft: WorkoutSessionDraft,
+  workoutExerciseId: string,
+): WorkoutSessionDraft {
+  return {
+    ...workoutDraft,
+    exercises: workoutDraft.exercises.map((exercise) => {
+      if (exercise.id !== workoutExerciseId) {
+        return exercise;
+      }
+
+      const previousSet = exercise.entries[exercise.entries.length - 1];
+      const newSet: WorkoutSetDraft = {
+        id: nextDraftId(`${exercise.id}-set`),
+        order: exercise.entries.length + 1,
+        reps: '',
+        weightKg: previousSet?.weightKg ?? '',
+        done: false,
+      };
+
+      return { ...exercise, entries: [...exercise.entries, newSet] };
+    }),
+  };
+}
+
+export function removeSetFromWorkoutExercise(
+  workoutDraft: WorkoutSessionDraft,
+  workoutExerciseId: string,
+  workoutSetId: string,
+): WorkoutSessionDraft {
+  return {
+    ...workoutDraft,
+    exercises: workoutDraft.exercises.map((exercise) => {
+      if (exercise.id !== workoutExerciseId) {
+        return exercise;
+      }
+
+      return {
+        ...exercise,
+        entries: renumberSets(
+          exercise.entries.filter((set) => set.id !== workoutSetId),
         ),
       };
     }),
