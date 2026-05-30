@@ -13,6 +13,8 @@ import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
+import { formatDuration } from '@/lib/format';
+import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { useRefresh } from '@/lib/useRefresh';
 import type { Routine } from '@workout/domain';
 
@@ -60,6 +62,7 @@ export function RoutinesListScreen() {
   );
 
   const activeWorkout = useActiveWorkout();
+  const elapsedSeconds = useElapsedSeconds(activeWorkout?.startedAt);
   const { isRefreshing, onRefresh } = useRefresh(loadRoutines);
   const showLoading = isLoading && routines.length === 0;
   const hasEmptyState = !isLoading && !errorMessage && routines.length === 0;
@@ -87,7 +90,9 @@ export function RoutinesListScreen() {
           asChild
         >
           <Pressable style={styles.banner}>
-            <Text style={styles.bannerTitle}>Workout in progress</Text>
+            <Text style={styles.bannerTitle}>
+              Workout in progress · {formatDuration(elapsedSeconds)}
+            </Text>
             <Text style={styles.bannerMeta}>
               {activeWorkout.routineName} · tap to resume
             </Text>
