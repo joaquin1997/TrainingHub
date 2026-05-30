@@ -2,13 +2,6 @@ import type { Routine, WorkoutSession } from '@workout/domain';
 
 import { findMockRoutineById } from '@/features/routines/mocks/mockRoutines';
 
-function toExerciseId(exerciseName: string) {
-  return `exercise-${exerciseName
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')}`;
-}
-
 export type WorkoutSetDraft = {
   id: string;
   order: number;
@@ -45,7 +38,7 @@ function buildExerciseDrafts(routine: Routine): WorkoutExerciseDraft[] {
     .sort((left, right) => left.orderIndex - right.orderIndex)
     .map((routineExercise) => ({
       id: `draft-${routine.id}-${routineExercise.id}`,
-      exerciseId: toExerciseId(routineExercise.exerciseName),
+      exerciseId: routineExercise.exerciseId,
       exerciseName: routineExercise.exerciseName,
       imagePlaceholderText: `${routineExercise.exerciseName} image`,
       routineExerciseId: routineExercise.id,

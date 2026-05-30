@@ -8,18 +8,75 @@ datasource db {
 }
 
 model User {
-  id          String    @id
+  id          BigInt    @id @default(autoincrement())
+  publicId    String    @unique
   displayName String
   email       String?
   avatarUrl   String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   routines    Routine[]
+  exercises   Exercise[]
+}
+
+model Exercise {
+  id                        BigInt                       @id @default(autoincrement())
+  publicId                  String                       @unique @default(cuid())
+  source                    String
+  sourceId                  String
+  name                      String
+  description               String?
+  category                  String?
+  language                  String?
+  equipment                 String[]
+  licenseAuthor             String?
+  lastSourceUpdate          DateTime?
+  isSystemDefined           Boolean                      @default(true)
+  createdByUserId           BigInt?
+  createdAt                 DateTime                     @default(now())
+  updatedAt                 DateTime                     @updatedAt
+  createdByUser             User?                        @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  primaryMuscleGroupLinks   ExercisePrimaryMuscleGroup[]
+  secondaryMuscleGroupLinks ExerciseSecondaryMuscleGroup[]
+  routineExercises          RoutineExercise[]
+
+  @@unique([source, sourceId])
+  @@index([name])
+}
+
+model MuscleGroup {
+  id                     BigInt                         @id @default(autoincrement())
+  name                   String                         @unique
+  createdAt              DateTime                       @default(now())
+  updatedAt              DateTime                       @updatedAt
+  primaryExerciseLinks   ExercisePrimaryMuscleGroup[]   @relation("PrimaryExerciseMuscleGroups")
+  secondaryExerciseLinks ExerciseSecondaryMuscleGroup[] @relation("SecondaryExerciseMuscleGroups")
+}
+
+model ExercisePrimaryMuscleGroup {
+  exerciseId    BigInt
+  muscleGroupId BigInt
+  exercise      Exercise    @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  muscleGroup   MuscleGroup @relation("PrimaryExerciseMuscleGroups", fields: [muscleGroupId], references: [id], onDelete: Cascade)
+
+  @@id([exerciseId, muscleGroupId])
+  @@index([muscleGroupId])
+}
+
+model ExerciseSecondaryMuscleGroup {
+  exerciseId    BigInt
+  muscleGroupId BigInt
+  exercise      Exercise    @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  muscleGroup   MuscleGroup @relation("SecondaryExerciseMuscleGroups", fields: [muscleGroupId], references: [id], onDelete: Cascade)
+
+  @@id([exerciseId, muscleGroupId])
+  @@index([muscleGroupId])
 }
 
 model Routine {
-  id          String            @id @default(cuid())
-  userId      String
+  id          BigInt            @id @default(autoincrement())
+  publicId    String            @unique @default(cuid())
+  userId      BigInt
   name        String
   description String?
   createdAt   DateTime          @default(now())
@@ -31,21 +88,26 @@ model Routine {
 }
 
 model RoutineExercise {
-  id           String   @id @default(cuid())
-  routineId    String
+  id           BigInt             @id @default(autoincrement())
+  publicId     String             @unique @default(cuid())
+  routineId    BigInt
+  exerciseId   BigInt
   exerciseName String
   orderIndex   Int
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   routine      Routine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  exercise     Exercise           @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
   sets         RoutineExerciseSet[]
 
+  @@index([exerciseId])
   @@index([routineId, orderIndex])
 }
 
 model RoutineExerciseSet {
-  id                String          @id @default(cuid())
-  routineExerciseId String
+  id                BigInt          @id @default(autoincrement())
+  publicId          String          @unique @default(cuid())
+  routineExerciseId BigInt
   setNumber         Int
   minReps           Int?
   maxReps           Int?

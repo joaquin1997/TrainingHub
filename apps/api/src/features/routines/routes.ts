@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 
+import { findExerciseById } from '../exercises/repository.js';
 import {
   createRoutine,
   deleteRoutine,
@@ -15,10 +16,20 @@ type RoutineExerciseSetInput = {
   targetWeight?: number;
 };
 
-type RoutineExerciseInput = {
-  exerciseName: string;
+type ParsedRoutineExerciseInput = {
+  exerciseId: string;
   orderIndex: number;
   sets: RoutineExerciseSetInput[];
+};
+
+type RoutineExerciseInput = ParsedRoutineExerciseInput & {
+  exerciseName: string;
+};
+
+type ParsedRoutineWriteInput = {
+  name: string;
+  description?: string;
+  exercises: ParsedRoutineExerciseInput[];
 };
 
 type RoutineWriteInput = {
@@ -26,6 +37,18 @@ type RoutineWriteInput = {
   description?: string;
   exercises: RoutineExerciseInput[];
 };
+
+function normalizeRoutineBody(body: unknown) {
+  if (typeof body !== 'string') {
+    return body;
+  }
+
+  try {
+    return JSON.parse(body) as unknown;
+  } catch {
+    return body;
+  }
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -67,11 +90,11 @@ function parseRoutineExerciseSetInput(
 function parseRoutineExerciseInput(
   value: unknown,
   fallbackOrderIndex: number,
-): RoutineExerciseInput | null {
+): ParsedRoutineExerciseInput | null {
   if (
     !isRecord(value) ||
-    typeof value.exerciseName !== 'string' ||
-    !value.exerciseName.trim()
+    typeof value.exerciseId !== 'string' ||
+    !value.exerciseId.trim()
   ) {
     return null;
   }
@@ -91,30 +114,73 @@ function parseRoutineExerciseInput(
   }
 
   return {
-    exerciseName: value.exerciseName.trim(),
+    exerciseId: value.exerciseId.trim(),
     orderIndex,
     sets,
   };
 }
 
-function parseRoutineWriteInput(body: unknown): RoutineWriteInput | null {
-  if (!isRecord(body) || typeof body.name !== 'string' || !body.name.trim()) {
+function parseRoutineWriteInput(body: unknown): ParsedRoutineWriteInput | null {
+  const normalizedBody = normalizeRoutineBody(body);
+
+  if (
+    !isRecord(normalizedBody) ||
+    typeof normalizedBody.name !== 'string' ||
+    !normalizedBody.name.trim()
+  ) {
     return null;
   }
 
-  const exercisesInput = Array.isArray(body.exercises) ? body.exercises : [];
+  const exercisesInput = Array.isArray(normalizedBody.exercises)
+    ? normalizedBody.exercises
+    : [];
   const exercises = exercisesInput
     .map((exercise, index) => parseRoutineExerciseInput(exercise, index + 1))
-    .filter((exercise): exercise is RoutineExerciseInput => exercise !== null);
+    .filter(
+      (exercise): exercise is ParsedRoutineExerciseInput => exercise !== null,
+    );
 
   if (exercises.length !== exercisesInput.length) {
     return null;
   }
 
   return {
-    name: body.name.trim(),
-    description: parseOptionalString(body.description),
+    name: normalizedBody.name.trim(),
+    description: parseOptionalString(normalizedBody.description),
     exercises,
+  };
+}
+
+async function hydrateRoutineWriteInput(
+  input: ParsedRoutineWriteInput,
+): Promise<RoutineWriteInput | null> {
+  const exercises = await Promise.all(
+    input.exercises.map(async (exercise) => {
+      const existingExercise = await findExerciseById(exercise.exerciseId);
+
+      if (!existingExercise) {
+        return null;
+      }
+
+      return {
+        exerciseId: existingExercise.id,
+        exerciseName: existingExercise.name,
+        orderIndex: exercise.orderIndex,
+        sets: exercise.sets,
+      };
+    }),
+  );
+
+  if (exercises.some((exercise) => exercise === null)) {
+    return null;
+  }
+
+  return {
+    name: input.name,
+    description: input.description,
+    exercises: exercises.filter(
+      (exercise): exercise is RoutineExerciseInput => exercise !== null,
+    ),
   };
 }
 
@@ -136,11 +202,35 @@ export async function registerRoutineRoutes(app: FastifyInstance) {
   });
 
   app.post<{ Body: unknown }>('/routines', async (request, reply) => {
-    const input = parseRoutineWriteInput(request.body);
+    request.log.info(
+      {
+        bodyType: typeof request.body,
+        body: request.body,
+      },
+      'Routine create request received',
+    );
+
+    const parsedInput = parseRoutineWriteInput(request.body);
+
+    if (!parsedInput) {
+      request.log.warn(
+        {
+          bodyType: typeof request.body,
+          body: request.body,
+        },
+        'Routine create payload validation failed',
+      );
+
+      return reply.code(400).send({
+        message: 'Invalid routine payload',
+      });
+    }
+
+    const input = await hydrateRoutineWriteInput(parsedInput);
 
     if (!input) {
       return reply.code(400).send({
-        message: 'Invalid routine payload',
+        message: 'Routine references unknown exercises',
       });
     }
 
@@ -152,11 +242,37 @@ export async function registerRoutineRoutes(app: FastifyInstance) {
   app.put<{ Params: { id: string }; Body: unknown }>(
     '/routines/:id',
     async (request, reply) => {
-      const input = parseRoutineWriteInput(request.body);
+      request.log.info(
+        {
+          routineId: request.params.id,
+          bodyType: typeof request.body,
+          body: request.body,
+        },
+        'Routine update request received',
+      );
+
+      const parsedInput = parseRoutineWriteInput(request.body);
+
+      if (!parsedInput) {
+        request.log.warn(
+          {
+            routineId: request.params.id,
+            bodyType: typeof request.body,
+            body: request.body,
+          },
+          'Routine update payload validation failed',
+        );
+
+        return reply.code(400).send({
+          message: 'Invalid routine payload',
+        });
+      }
+
+      const input = await hydrateRoutineWriteInput(parsedInput);
 
       if (!input) {
         return reply.code(400).send({
-          message: 'Invalid routine payload',
+          message: 'Routine references unknown exercises',
         });
       }
 

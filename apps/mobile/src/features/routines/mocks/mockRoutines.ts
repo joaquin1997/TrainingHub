@@ -53,6 +53,7 @@ const mockRoutines: Routine[] = [
       {
         id: 'routine-exercise-upper-a-bench',
         routineId: 'routine-upper-a',
+        exerciseId: 'exercise-flat-bench-press',
         exerciseName: 'Flat Bench Press',
         orderIndex: 1,
         sets: [
@@ -83,6 +84,7 @@ const mockRoutines: Routine[] = [
       {
         id: 'routine-exercise-upper-a-row',
         routineId: 'routine-upper-a',
+        exerciseId: 'exercise-barbell-row',
         exerciseName: 'Barbell Row',
         orderIndex: 2,
         sets: [
@@ -113,6 +115,7 @@ const mockRoutines: Routine[] = [
       {
         id: 'routine-exercise-lower-a-squat',
         routineId: 'routine-lower-a',
+        exerciseId: 'exercise-barbell-back-squat',
         exerciseName: 'Barbell Back Squat',
         orderIndex: 1,
         sets: [
@@ -133,6 +136,7 @@ const mockRoutines: Routine[] = [
       {
         id: 'routine-exercise-lower-a-press',
         routineId: 'routine-lower-a',
+        exerciseId: 'exercise-seated-dumbbell-press',
         exerciseName: 'Seated Dumbbell Press',
         orderIndex: 2,
         sets: [

@@ -10,6 +10,7 @@ const mockRoutines: Routine[] = [
       {
         id: 'routine-exercise-upper-a-bench',
         routineId: 'routine-upper-a',
+        exerciseId: 'exercise-flat-bench-press',
         exerciseName: 'Flat Bench Press',
         orderIndex: 1,
         sets: [

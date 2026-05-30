@@ -1,6 +1,6 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { routinesClient } from '@/features/routines/api/routinesClient';
@@ -12,40 +12,46 @@ export function RoutinesListScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
 
-  const loadRoutines = useCallback(() => {
-    let isMounted = true;
-
-    async function loadRoutines() {
+  const loadRoutines = useCallback(
+    async (shouldUpdate: () => boolean = () => true) => {
       setIsLoading(true);
+      setErrorMessage(undefined);
 
       try {
-        setErrorMessage(undefined);
         const nextRoutines = await routinesClient.list();
 
-        if (isMounted) {
+        if (shouldUpdate()) {
           setRoutines(nextRoutines);
         }
       } catch (error) {
-        if (isMounted) {
+        if (shouldUpdate()) {
           setErrorMessage(
             error instanceof Error ? error.message : 'Unable to load routines.',
           );
         }
       } finally {
-        if (isMounted) {
+        if (shouldUpdate()) {
           setIsLoading(false);
         }
       }
-    }
+    },
+    [],
+  );
 
-    void loadRoutines();
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+      void loadRoutines(() => isActive);
 
-  useFocusEffect(loadRoutines);
+      return () => {
+        isActive = false;
+      };
+    }, [loadRoutines]),
+  );
+
+  const hasEmptyState = !isLoading && !errorMessage && routines.length === 0;
+  const hasListState = !isLoading && !errorMessage && routines.length > 0;
 
   return (
     <View style={styles.container}>
@@ -57,15 +63,36 @@ export function RoutinesListScreen() {
       <Link href="/routines/create" style={styles.primaryLink}>
         Create routine
       </Link>
-      {isLoading ? <Text style={styles.meta}>Loading routines...</Text> : null}
-      {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
-      {!isLoading && !errorMessage ? (
+      {isLoading ? (
+        <View style={styles.stateCard}>
+          <Text style={styles.meta}>Loading routines...</Text>
+        </View>
+      ) : null}
+      {errorMessage ? (
+        <View style={styles.stateCard}>
+          <Text style={styles.error}>{errorMessage}</Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => void loadRoutines()}
+            style={({ pressed }) => [
+              styles.secondaryButton,
+              pressed ? styles.buttonPressed : null,
+            ]}
+          >
+            <Text style={styles.secondaryButtonText}>Retry</Text>
+          </Pressable>
+        </View>
+      ) : null}
+      {hasEmptyState ? (
+        <View style={styles.stateCard}>
+          <Text style={styles.meta}>No routines yet.</Text>
+          <Text style={styles.meta}>
+            Create one to verify the API flow.
+          </Text>
+        </View>
+      ) : null}
+      {hasListState ? (
         <View style={styles.list}>
-          {routines.length === 0 ? (
-            <Text style={styles.meta}>
-              No routines yet. Create one to verify the API flow.
-            </Text>
-          ) : null}
           {routines.map((routine) => (
             <View key={routine.id} style={styles.card}>
               <Text style={styles.cardTitle}>{routine.name}</Text>
@@ -113,6 +140,13 @@ const styles = StyleSheet.create({
   list: {
     gap: 12,
   },
+  stateCard: {
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 12,
+    padding: 16,
+  },
   card: {
     borderWidth: 1,
     borderColor: '#d1d5db',
@@ -139,6 +173,22 @@ const styles = StyleSheet.create({
   error: {
     fontSize: 14,
     color: '#b91c1c',
+  },
+  secondaryButton: {
+    alignSelf: 'flex-start',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  secondaryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  buttonPressed: {
+    opacity: 0.85,
   },
   links: {
     flexDirection: 'row',

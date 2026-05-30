@@ -4,3 +4,11 @@ dist
 .expo-shared
 .DS_Store
 
+# Local env files (never commit secrets)
+.env
+.env.local
+.env.*.local
+
+# Local scratch / temp data (e.g. importer source CSVs)
+tmp/
+

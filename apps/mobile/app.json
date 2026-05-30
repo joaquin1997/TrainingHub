@@ -1,11 +1,10 @@
 {
   "expo": {
-    "name": "Workout Tracker",
-    "slug": "workout-tracker",
-    "scheme": "workouttracker",
+    "name": "TrainingHub",
+    "slug": "traininghub",
+    "scheme": "traininghub",
     "plugins": [
       "expo-router"
     ]
   }
 }
-

@@ -1,11 +1,12 @@
 {
-  "name": "workout-tracker",
+  "name": "traininghub",
   "private": true,
   "version": "0.0.0",
   "packageManager": "pnpm@9.10.0",
   "scripts": {
     "mobile": "pnpm --filter @workout/mobile dev",
     "api": "pnpm --filter @workout/api dev",
+    "import:wger": "pnpm --filter @workout/api import:wger",
     "typecheck": "pnpm -r --if-present typecheck"
   },
   "devDependencies": {

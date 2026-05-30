@@ -17,6 +17,15 @@ Product strategy:
 
 ---
 
+## Current priority
+The current development priority is to advance by vertical slices, starting with:
+
+- **Routines end-to-end**
+
+Do not work on `auth`, `health` or secondary features until the routines flow is closed cleanly.
+
+---
+
 ## Current MVP scope
 The current implementation scope is intentionally limited to the following:
 
@@ -56,6 +65,12 @@ When in doubt, prefer architecture readiness over full implementation.
 - ORM: Prisma
 - Database: PostgreSQL
 - Shared domain/contracts package
+
+### Database & environment
+- Prisma migrations are the single source of truth for the schema. Do not hand-write raw SQL DDL that competes with the schema (the old `sql/` init script was removed for this reason).
+- Schema changes flow: edit `apps/api/prisma/schema.prisma` → `npm run db:migrate` (creates + applies a migration) → commit the generated `prisma/migrations/` folder.
+- The dev database is a Postgres container on the home server, reached over Tailscale (node `postgres-tailnet`, `100.109.119.75:5432`, db `app_db`). SSH tunnel is the fallback when off the tailnet.
+- `apps/api/.env` holds `DATABASE_URL` and is gitignored. `apps/api/.env.example` documents the shape. Never commit secrets.
 
 ---
 
@@ -264,6 +279,15 @@ Development must happen in small, sequential steps.
 4. Fix the minimum required issues
 5. Commit
 6. Move to the next prompt
+
+### Expected response format for each task
+When given a task, respond with:
+1. Brief analysis of the current state
+2. Small implementation plan
+3. Files that will be touched
+4. Concrete changes (clearly explained diff)
+5. Commands to validate (tests/lint/build if applicable)
+6. Risks or pending decisions
 
 ---
 

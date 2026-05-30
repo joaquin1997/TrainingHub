@@ -3,7 +3,7 @@ import type { Routine } from '@workout/domain';
 import { API_BASE_URL } from '@/config/api';
 
 export type RoutineExerciseWriteInput = {
-  exerciseName: string;
+  exerciseId: string;
   orderIndex: number;
   sets: Array<{
     setNumber: number;
@@ -25,10 +25,17 @@ type ErrorResponse = {
 
 async function request<T>(path: string, init?: RequestInit) {
   const headers = new Headers(init?.headers);
+  const method = init?.method ?? 'GET';
 
   if (init?.body !== undefined) {
     headers.set('Content-Type', 'application/json');
   }
+
+  console.log('[routinesClient] request', {
+    method,
+    url: `${API_BASE_URL}${path}`,
+    body: init?.body,
+  });
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
@@ -36,6 +43,12 @@ async function request<T>(path: string, init?: RequestInit) {
   });
 
   if (response.status === 204) {
+    console.log('[routinesClient] response', {
+      method,
+      url: `${API_BASE_URL}${path}`,
+      status: response.status,
+    });
+
     return undefined as T;
   }
 
@@ -43,6 +56,13 @@ async function request<T>(path: string, init?: RequestInit) {
     | T
     | ErrorResponse
     | null;
+
+  console.log('[routinesClient] response', {
+    method,
+    url: `${API_BASE_URL}${path}`,
+    status: response.status,
+    body: responseBody,
+  });
 
   if (!response.ok) {
     const message =
@@ -52,6 +72,14 @@ async function request<T>(path: string, init?: RequestInit) {
       typeof responseBody.message === 'string'
         ? responseBody.message
         : `Request failed with status ${response.status}`;
+
+    console.error('[routinesClient] error', {
+      method,
+      url: `${API_BASE_URL}${path}`,
+      status: response.status,
+      message,
+      body: responseBody,
+    });
 
     throw new Error(message);
   }

@@ -1,6 +1,7 @@
 import { Link, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
+  Keyboard,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,11 +11,20 @@ import {
 } from 'react-native';
 
 import {
+  exercisesClient,
+} from '@/features/routines/api/exercisesClient';
+import { CustomExerciseModal } from '@/features/routines/components/CustomExerciseModal';
+import {
   routinesClient,
   type RoutineExerciseWriteInput,
 } from '@/features/routines/api/routinesClient';
 import { getRoutineExerciseSummary } from '@/features/routines/mocks/mockRoutines';
-import type { Routine, RoutineExercise, RoutineExerciseSet } from '@workout/domain';
+import type {
+  Exercise,
+  Routine,
+  RoutineExercise,
+  RoutineExerciseSet,
+} from '@workout/domain';
 
 type RoutineFormScreenProps = {
   mode: 'create' | 'edit';
@@ -30,8 +40,14 @@ type EditableRoutineSet = {
 
 type EditableRoutineExercise = {
   id: string;
-  exerciseName: string;
+  exerciseId?: string;
+  exerciseQuery: string;
   sets: EditableRoutineSet[];
+};
+
+type ActiveCustomExerciseDraft = {
+  exerciseRowId: string;
+  initialName: string;
 };
 
 function createRowId(prefix: string) {
@@ -50,7 +66,8 @@ function createEmptySetRow(): EditableRoutineSet {
 function createEmptyExerciseRow(): EditableRoutineExercise {
   return {
     id: createRowId('routine-exercise-row'),
-    exerciseName: '',
+    exerciseId: undefined,
+    exerciseQuery: '',
     sets: [createEmptySetRow()],
   };
 }
@@ -70,7 +87,8 @@ function toEditableExercise(
 ): EditableRoutineExercise {
   return {
     id: routineExercise.id,
-    exerciseName: routineExercise.exerciseName,
+    exerciseId: routineExercise.exerciseId,
+    exerciseQuery: routineExercise.exerciseName,
     sets:
       routineExercise.sets.length > 0
         ? routineExercise.sets
@@ -101,6 +119,27 @@ function parseOptionalNumber(value: string) {
   return Number.isFinite(parsedValue) ? parsedValue : null;
 }
 
+function toSortedExercises(exercises: Exercise[]) {
+  return exercises
+    .slice()
+    .sort((left, right) => left.name.localeCompare(right.name));
+}
+
+function upsertExercise(currentExercises: Exercise[], nextExercise: Exercise) {
+  const existingIndex = currentExercises.findIndex(
+    (exercise) => exercise.id === nextExercise.id,
+  );
+
+  if (existingIndex === -1) {
+    return toSortedExercises([...currentExercises, nextExercise]);
+  }
+
+  const updatedExercises = currentExercises.slice();
+  updatedExercises[existingIndex] = nextExercise;
+
+  return toSortedExercises(updatedExercises);
+}
+
 export function RoutineFormScreen({
   mode,
   routineId,
@@ -116,6 +155,46 @@ export function RoutineFormScreen({
   const [isLoading, setIsLoading] = useState(isEditMode);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>();
+  const [availableExercises, setAvailableExercises] = useState<Exercise[]>([]);
+  const [isExercisesLoading, setIsExercisesLoading] = useState(true);
+  const [exerciseLoadError, setExerciseLoadError] = useState<string>();
+  const [activeExerciseSelectorRowId, setActiveExerciseSelectorRowId] = useState<
+    string | null
+  >(null);
+  const [activeCustomExerciseDraft, setActiveCustomExerciseDraft] =
+    useState<ActiveCustomExerciseDraft | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadExercises() {
+      try {
+        setIsExercisesLoading(true);
+        setExerciseLoadError(undefined);
+        const nextExercises = await exercisesClient.list();
+
+        if (isMounted) {
+          setAvailableExercises(toSortedExercises(nextExercises));
+        }
+      } catch (error) {
+        if (isMounted) {
+          setExerciseLoadError(
+            error instanceof Error ? error.message : 'Unable to load exercises.',
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setIsExercisesLoading(false);
+        }
+      }
+    }
+
+    void loadExercises();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -169,14 +248,64 @@ export function RoutineFormScreen({
     };
   }, [isEditMode, routineId]);
 
-  function updateExerciseName(exerciseId: string, value: string) {
+  function updateExerciseQuery(exerciseId: string, value: string) {
+    setActiveExerciseSelectorRowId(value.trim() ? exerciseId : null);
     setExercises((currentExercises) =>
       currentExercises.map((exercise) =>
         exercise.id === exerciseId
-          ? { ...exercise, exerciseName: value }
+          ? {
+              ...exercise,
+              exerciseId: undefined,
+              exerciseQuery: value,
+            }
           : exercise,
       ),
     );
+  }
+
+  function selectExercise(exerciseRowId: string, selectedExercise: Exercise) {
+    setActiveExerciseSelectorRowId(null);
+    setExercises((currentExercises) =>
+      currentExercises.map((exercise) =>
+        exercise.id === exerciseRowId
+          ? {
+              ...exercise,
+              exerciseId: selectedExercise.id,
+              exerciseQuery: selectedExercise.name,
+            }
+          : exercise,
+      ),
+    );
+  }
+
+  function openCustomExerciseModal(exerciseRowId: string) {
+    const exerciseRow = exercises.find((exercise) => exercise.id === exerciseRowId);
+    const exerciseName = exerciseRow?.exerciseQuery.trim();
+
+    if (!exerciseName) {
+      setErrorMessage('Enter an exercise name before creating a custom exercise.');
+      return;
+    }
+
+    Keyboard.dismiss();
+    setActiveCustomExerciseDraft({
+      exerciseRowId,
+      initialName: exerciseName,
+    });
+    setActiveExerciseSelectorRowId(null);
+    setErrorMessage(undefined);
+  }
+
+  function handleCustomExerciseCreated(createdExercise: Exercise) {
+    if (!activeCustomExerciseDraft) {
+      return;
+    }
+
+    setAvailableExercises((currentExercises) =>
+      upsertExercise(currentExercises, createdExercise),
+    );
+    selectExercise(activeCustomExerciseDraft.exerciseRowId, createdExercise);
+    setActiveCustomExerciseDraft(null);
   }
 
   function updateSetField(
@@ -259,10 +388,8 @@ export function RoutineFormScreen({
       const routineExercises: RoutineExerciseWriteInput[] = [];
 
       for (const [exerciseIndex, exercise] of exercises.entries()) {
-        const exerciseName = exercise.exerciseName.trim();
-
-        if (!exerciseName) {
-          setErrorMessage('Each routine exercise needs a name.');
+        if (!exercise.exerciseId) {
+          setErrorMessage('Select an exercise for each routine exercise.');
           return;
         }
 
@@ -291,7 +418,7 @@ export function RoutineFormScreen({
         }
 
         routineExercises.push({
-          exerciseName,
+          exerciseId: exercise.exerciseId,
           orderIndex: exerciseIndex + 1,
           sets,
         });
@@ -348,182 +475,285 @@ export function RoutineFormScreen({
   }
 
   return (
-    <ScrollView
-      style={styles.scrollView}
-      contentContainerStyle={styles.contentContainer}
-      keyboardShouldPersistTaps="handled"
-      contentInsetAdjustmentBehavior="automatic"
-    >
-      <Text style={styles.title}>
-        {isEditMode ? 'Edit Routine' : 'Create Routine'}
-      </Text>
-      <Text style={styles.body}>
-        {isEditMode
-          ? 'This form updates backend routines with nested exercise sets.'
-          : 'This form creates backend routines with nested exercise sets.'}
-      </Text>
-      {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Routine name</Text>
-        <TextInput
-          value={name}
-          onChangeText={setName}
-          placeholder="Enter routine name"
-          style={styles.input}
-        />
-      </View>
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Description</Text>
-        <TextInput
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Add a short description"
-          multiline
-          style={[styles.input, styles.multilineInput]}
-        />
-      </View>
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Routine exercises</Text>
-        <Text style={styles.meta}>
-          Add exercises, then add the target sets for each exercise.
+    <>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.contentContainer}
+        keyboardShouldPersistTaps="handled"
+        contentInsetAdjustmentBehavior="automatic"
+      >
+        <Text style={styles.title}>
+          {isEditMode ? 'Edit Routine' : 'Create Routine'}
         </Text>
-        <View style={styles.exerciseList}>
-          {exercises.map((exercise, index) => (
-            <View key={exercise.id} style={styles.exerciseCard}>
-              <Text style={styles.exerciseCardTitle}>Exercise {index + 1}</Text>
-              <TextInput
-                value={exercise.exerciseName}
-                onChangeText={(value) => updateExerciseName(exercise.id, value)}
-                placeholder="Exercise name"
-                style={styles.input}
-              />
-              <View style={styles.setList}>
-                {exercise.sets.map((set, setIndex) => (
-                  <View key={set.id} style={styles.setCard}>
-                    <Text style={styles.setCardTitle}>Set {setIndex + 1}</Text>
-                    <View style={styles.numericRow}>
-                      <TextInput
-                        value={set.minReps}
-                        onChangeText={(value) =>
-                          updateSetField(exercise.id, set.id, 'minReps', value)
-                        }
-                        placeholder="Min reps"
-                        keyboardType="number-pad"
-                        style={[styles.input, styles.numericInput]}
-                      />
-                      <TextInput
-                        value={set.maxReps}
-                        onChangeText={(value) =>
-                          updateSetField(exercise.id, set.id, 'maxReps', value)
-                        }
-                        placeholder="Max reps"
-                        keyboardType="number-pad"
-                        style={[styles.input, styles.numericInput]}
-                      />
-                      <TextInput
-                        value={set.targetWeight}
-                        onChangeText={(value) =>
-                          updateSetField(
-                            exercise.id,
-                            set.id,
-                            'targetWeight',
-                            value,
-                          )
-                        }
-                        placeholder="Kg"
-                        keyboardType="decimal-pad"
-                        style={[styles.input, styles.numericInput]}
-                      />
-                    </View>
-                    <Pressable
-                      accessibilityRole="button"
-                      onPress={() => removeSetRow(exercise.id, set.id)}
-                      style={({ pressed }) => [
-                        styles.secondaryButton,
-                        pressed ? styles.buttonPressed : null,
-                      ]}
-                    >
-                      <Text style={styles.secondaryButtonText}>Remove set</Text>
-                    </Pressable>
-                  </View>
-                ))}
-              </View>
-              <View style={styles.actionRow}>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => addSetRow(exercise.id)}
-                  style={({ pressed }) => [
-                    styles.secondaryButton,
-                    pressed ? styles.buttonPressed : null,
-                  ]}
-                >
-                  <Text style={styles.secondaryButtonText}>Add set</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => removeExerciseRow(exercise.id)}
-                  style={({ pressed }) => [
-                    styles.secondaryButton,
-                    pressed ? styles.buttonPressed : null,
-                  ]}
-                >
-                  <Text style={styles.secondaryButtonText}>Remove exercise</Text>
-                </Pressable>
-              </View>
-            </View>
-          ))}
+        <Text style={styles.body}>
+          {isEditMode
+            ? 'This form updates backend routines with nested exercise sets.'
+            : 'This form creates backend routines with nested exercise sets.'}
+        </Text>
+        {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Routine name</Text>
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            placeholder="Enter routine name"
+            style={styles.input}
+          />
         </View>
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Description</Text>
+          <TextInput
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Add a short description"
+            multiline
+            style={[styles.input, styles.multilineInput]}
+          />
+        </View>
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Routine exercises</Text>
+          <Text style={styles.meta}>
+            Add exercises, then add the target sets for each exercise.
+          </Text>
+          {isExercisesLoading ? (
+            <Text style={styles.meta}>Loading exercises...</Text>
+          ) : null}
+          {exerciseLoadError ? (
+            <View style={styles.inlineState}>
+              <Text style={styles.error}>{exerciseLoadError}</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  setIsExercisesLoading(true);
+                  setExerciseLoadError(undefined);
+                  void exercisesClient
+                    .list()
+                    .then((nextExercises) => {
+                      setAvailableExercises(toSortedExercises(nextExercises));
+                    })
+                    .catch((error: unknown) => {
+                      setExerciseLoadError(
+                        error instanceof Error
+                          ? error.message
+                          : 'Unable to load exercises.',
+                      );
+                    })
+                    .finally(() => {
+                      setIsExercisesLoading(false);
+                    });
+                }}
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  pressed ? styles.buttonPressed : null,
+                ]}
+              >
+                <Text style={styles.secondaryButtonText}>Retry exercises</Text>
+              </Pressable>
+            </View>
+          ) : null}
+          <View style={styles.exerciseList}>
+            {exercises.map((exercise, index) => (
+              <View key={exercise.id} style={styles.exerciseCard}>
+                <Text style={styles.exerciseCardTitle}>Exercise {index + 1}</Text>
+                <TextInput
+                  value={exercise.exerciseQuery}
+                  onChangeText={(value) => updateExerciseQuery(exercise.id, value)}
+                  onFocus={() => {
+                    if (exercise.exerciseQuery.trim()) {
+                      setActiveExerciseSelectorRowId(exercise.id);
+                    }
+                  }}
+                  placeholder="Search exercise"
+                  style={styles.input}
+                />
+                {exercise.exerciseId ? (
+                  <Text style={styles.meta}>Selected exercise saved by ID.</Text>
+                ) : null}
+                {activeExerciseSelectorRowId === exercise.id &&
+                exercise.exerciseQuery.trim() ? (
+                  (() => {
+                    const normalizedQuery = exercise.exerciseQuery.trim().toLowerCase();
+                    const matchingExercises = availableExercises
+                      .filter((candidate) =>
+                        candidate.name.toLowerCase().includes(normalizedQuery),
+                      )
+                      .slice(0, 5);
+
+                    return (
+                      <View style={styles.searchResults}>
+                        {matchingExercises.map((candidate) => (
+                          <Pressable
+                            key={candidate.id}
+                            accessibilityRole="button"
+                            onPress={() => selectExercise(exercise.id, candidate)}
+                            style={({ pressed }) => [
+                              styles.searchResultButton,
+                              pressed ? styles.buttonPressed : null,
+                            ]}
+                          >
+                            <Text style={styles.searchResultTitle}>{candidate.name}</Text>
+                            <Text style={styles.meta}>
+                              {candidate.isSystemDefined
+                                ? 'Existing exercise'
+                                : 'Custom exercise'}
+                            </Text>
+                          </Pressable>
+                        ))}
+                        {!isExercisesLoading &&
+                        !exerciseLoadError &&
+                        matchingExercises.length === 0 ? (
+                          <Pressable
+                            accessibilityRole="button"
+                            onPress={() => openCustomExerciseModal(exercise.id)}
+                            style={({ pressed }) => [
+                              styles.secondaryButton,
+                              pressed ? styles.buttonPressed : null,
+                            ]}
+                          >
+                            <Text style={styles.secondaryButtonText}>
+                              Create custom exercise
+                            </Text>
+                          </Pressable>
+                        ) : null}
+                      </View>
+                    );
+                  })()
+                ) : null}
+                <View style={styles.setList}>
+                  {exercise.sets.map((set, setIndex) => (
+                    <View key={set.id} style={styles.setCard}>
+                      <Text style={styles.setCardTitle}>Set {setIndex + 1}</Text>
+                      <View style={styles.numericRow}>
+                        <TextInput
+                          value={set.minReps}
+                          onChangeText={(value) =>
+                            updateSetField(exercise.id, set.id, 'minReps', value)
+                          }
+                          placeholder="Min reps"
+                          keyboardType="number-pad"
+                          style={[styles.input, styles.numericInput]}
+                        />
+                        <TextInput
+                          value={set.maxReps}
+                          onChangeText={(value) =>
+                            updateSetField(exercise.id, set.id, 'maxReps', value)
+                          }
+                          placeholder="Max reps"
+                          keyboardType="number-pad"
+                          style={[styles.input, styles.numericInput]}
+                        />
+                        <TextInput
+                          value={set.targetWeight}
+                          onChangeText={(value) =>
+                            updateSetField(
+                              exercise.id,
+                              set.id,
+                              'targetWeight',
+                              value,
+                            )
+                          }
+                          placeholder="Kg"
+                          keyboardType="decimal-pad"
+                          style={[styles.input, styles.numericInput]}
+                        />
+                      </View>
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() => removeSetRow(exercise.id, set.id)}
+                        style={({ pressed }) => [
+                          styles.secondaryButton,
+                          pressed ? styles.buttonPressed : null,
+                        ]}
+                      >
+                        <Text style={styles.secondaryButtonText}>Remove set</Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+                <View style={styles.actionRow}>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => addSetRow(exercise.id)}
+                    style={({ pressed }) => [
+                      styles.secondaryButton,
+                      pressed ? styles.buttonPressed : null,
+                    ]}
+                  >
+                    <Text style={styles.secondaryButtonText}>Add set</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => removeExerciseRow(exercise.id)}
+                    style={({ pressed }) => [
+                      styles.secondaryButton,
+                      pressed ? styles.buttonPressed : null,
+                    ]}
+                  >
+                    <Text style={styles.secondaryButtonText}>Remove exercise</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ))}
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            onPress={addExerciseRow}
+            style={({ pressed }) => [
+              styles.secondaryButton,
+              pressed ? styles.buttonPressed : null,
+            ]}
+          >
+            <Text style={styles.secondaryButtonText}>Add exercise</Text>
+          </Pressable>
+        </View>
+        {isEditMode ? (
+          routine ? (
+            <Text style={styles.meta}>
+              Current routine summary: {getRoutineExerciseSummary(routine, 3)}
+            </Text>
+          ) : (
+            <Text style={styles.meta}>Routine not found in the API response.</Text>
+          )
+        ) : null}
+        {isSubmitting ? <Text style={styles.meta}>Saving routine...</Text> : null}
         <Pressable
           accessibilityRole="button"
-          onPress={addExerciseRow}
+          onPress={() => void handleSubmit()}
+          disabled={isSubmitting}
           style={({ pressed }) => [
-            styles.secondaryButton,
+            styles.button,
             pressed ? styles.buttonPressed : null,
+            isSubmitting ? styles.buttonDisabled : null,
           ]}
         >
-          <Text style={styles.secondaryButtonText}>Add exercise</Text>
-        </Pressable>
-      </View>
-      {isEditMode ? (
-        routine ? (
-          <Text style={styles.meta}>
-            Current routine summary: {getRoutineExerciseSummary(routine, 3)}
-          </Text>
-        ) : (
-          <Text style={styles.meta}>Routine not found in the API response.</Text>
-        )
-      ) : null}
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => void handleSubmit()}
-        disabled={isSubmitting}
-        style={({ pressed }) => [
-          styles.button,
-          pressed ? styles.buttonPressed : null,
-          isSubmitting ? styles.buttonDisabled : null,
-        ]}
-      >
-        <Text style={styles.buttonText}>
-          {isSubmitting
-            ? isEditMode
+          <Text style={styles.buttonText}>
+            {isSubmitting
               ? 'Saving...'
-              : 'Creating...'
-            : isEditMode
-              ? 'Save routine'
-              : 'Create routine'}
-        </Text>
-      </Pressable>
-      <View style={styles.links}>
-        <Link href="/routines" style={styles.link}>
-          Back to routines
-        </Link>
-        {isEditMode && routine ? (
-          <Link href={`/routines/${routine.id}`} style={styles.link}>
-            Open detail
+              : isEditMode
+                ? 'Save routine'
+                : 'Create routine'}
+          </Text>
+        </Pressable>
+        <View style={styles.links}>
+          <Link href="/routines" style={styles.link}>
+            Back to routines
           </Link>
-        ) : null}
-      </View>
-    </ScrollView>
+          {isEditMode && routine ? (
+            <Link href={`/routines/${routine.id}`} style={styles.link}>
+              Open detail
+            </Link>
+          ) : null}
+        </View>
+      </ScrollView>
+      {activeCustomExerciseDraft ? (
+        <CustomExerciseModal
+          visible
+          initialName={activeCustomExerciseDraft.initialName}
+          onClose={() => setActiveCustomExerciseDraft(null)}
+          onCreated={handleCustomExerciseCreated}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -585,6 +815,25 @@ const styles = StyleSheet.create({
   },
   setList: {
     gap: 8,
+  },
+  inlineState: {
+    gap: 8,
+  },
+  searchResults: {
+    gap: 8,
+  },
+  searchResultButton: {
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  searchResultTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
   },
   setCard: {
     gap: 8,

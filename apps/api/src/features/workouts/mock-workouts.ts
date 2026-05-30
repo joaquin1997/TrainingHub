@@ -2,13 +2,6 @@ import type { WorkoutSession } from '@workout/domain';
 
 import { findMockRoutineById } from '../routines/mock-routines.js';
 
-function toExerciseId(exerciseName: string) {
-  return `exercise-${exerciseName
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')}`;
-}
-
 const mockWorkoutSessions: WorkoutSession[] = [
   {
     id: 'workout-session-1',
@@ -93,7 +86,7 @@ export function startMockWorkoutSession(payload: StartWorkoutPayload) {
       routine?.exercises.map((routineExercise) => ({
         id: `workout-exercise-${sessionId}-${routineExercise.orderIndex}`,
         workoutSessionId: sessionId,
-        exerciseId: toExerciseId(routineExercise.exerciseName),
+        exerciseId: routineExercise.exerciseId,
         routineExerciseId: routineExercise.id,
         order: routineExercise.orderIndex,
         notes: undefined,

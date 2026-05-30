@@ -23,10 +23,27 @@ export interface Exercise {
   id: EntityId;
   name: string;
   description?: string;
+  category?: string;
+  language?: string;
+  source?: string;
+  sourceId?: string;
   primaryMuscleGroups?: string[];
+  secondaryMuscleGroups?: string[];
   equipment?: string[];
+  licenseAuthor?: string;
+  lastSourceUpdate?: ISODateString;
   isSystemDefined: boolean;
   createdByUserId?: EntityId;
+  createdAt: ISODateString;
+  updatedAt: ISODateString;
+}
+
+/**
+ * Represents one normalized muscle group option from the exercise catalog.
+ */
+export interface MuscleGroup {
+  id: EntityId;
+  name: string;
   createdAt: ISODateString;
   updatedAt: ISODateString;
 }
@@ -50,6 +67,7 @@ export interface Routine {
 export interface RoutineExercise {
   id: EntityId;
   routineId: EntityId;
+  exerciseId: EntityId;
   exerciseName: string;
   orderIndex: number;
   sets: RoutineExerciseSet[];

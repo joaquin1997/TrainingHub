@@ -4,11 +4,15 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "dev": "npm run build && node dist/server.js",
-    "start": "node dist/server.js",
+    "build": "rm -rf dist && tsc -p tsconfig.json",
+    "dev": "npm run build && node dist/apps/api/src/server.js",
+    "start": "node dist/apps/api/src/server.js",
     "prisma:generate": "prisma generate --schema prisma/schema.prisma",
-    "typecheck": "tsc --noEmit"
+    "db:migrate": "prisma migrate dev --schema prisma/schema.prisma",
+    "db:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
+    "db:studio": "prisma studio --schema prisma/schema.prisma",
+    "typecheck": "tsc --noEmit",
+    "import:wger": "npm run build && node dist/apps/api/src/scripts/import-wger-exercises.js"
   },
   "dependencies": {
     "@workout/domain": "workspace:*",

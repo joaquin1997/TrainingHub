@@ -1,5 +1,5 @@
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
@@ -18,42 +18,57 @@ export function RoutineDetailScreen() {
   const [errorMessage, setErrorMessage] = useState<string>();
   const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
+  const loadRoutine = useCallback(
+    async (shouldUpdate: () => boolean = () => true) => {
+      if (shouldUpdate()) {
+        setIsLoading(true);
+        setErrorMessage(undefined);
+        setRoutine(null);
+      }
 
-    async function loadRoutine() {
       if (!routineId) {
-        setErrorMessage('Missing routine id.');
-        setIsLoading(false);
+        if (shouldUpdate()) {
+          setErrorMessage('Missing routine id.');
+          setIsLoading(false);
+        }
         return;
       }
 
       try {
-        setErrorMessage(undefined);
         const nextRoutine = await routinesClient.getById(routineId);
 
-        if (isMounted) {
+        if (shouldUpdate()) {
+          if (!nextRoutine) {
+            setErrorMessage('Routine not found.');
+            return;
+          }
+
           setRoutine(nextRoutine);
         }
       } catch (error) {
-        if (isMounted) {
+        if (shouldUpdate()) {
           setErrorMessage(
             error instanceof Error ? error.message : 'Unable to load routine.',
           );
         }
       } finally {
-        if (isMounted) {
+        if (shouldUpdate()) {
           setIsLoading(false);
         }
       }
-    }
+    },
+    [routineId],
+  );
 
-    void loadRoutine();
+  useEffect(() => {
+    let isActive = true;
+
+    void loadRoutine(() => isActive);
 
     return () => {
-      isMounted = false;
+      isActive = false;
     };
-  }, [routineId]);
+  }, [loadRoutine]);
 
   async function handleDelete() {
     if (!routineId) {
@@ -88,9 +103,20 @@ export function RoutineDetailScreen() {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Routine Detail</Text>
-        <Text style={styles.body}>
+        <Text style={styles.body}>Routine unavailable</Text>
+        <Text style={styles.error}>
           {errorMessage ?? 'Routine not found in the API response.'}
         </Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => void loadRoutine()}
+          style={({ pressed }) => [
+            styles.secondaryButton,
+            pressed ? styles.buttonPressed : null,
+          ]}
+        >
+          <Text style={styles.secondaryButtonText}>Retry</Text>
+        </Pressable>
         <Link href="/routines" style={styles.link}>
           Back to routines
         </Link>
@@ -111,13 +137,17 @@ export function RoutineDetailScreen() {
       <Text style={styles.meta}>
         Exercise summary: {getRoutineExerciseSummary(routine, 3)}
       </Text>
-      <View style={styles.exerciseList}>
-        {getRoutineExerciseNames(routine).map((exerciseName, index) => (
-          <Text key={exerciseName} style={styles.exerciseItem}>
-            {index + 1}. {exerciseName}
-          </Text>
-        ))}
-      </View>
+      {routine.exercises.length === 0 ? (
+        <Text style={styles.meta}>No exercises in this routine yet.</Text>
+      ) : (
+        <View style={styles.exerciseList}>
+          {getRoutineExerciseNames(routine).map((exerciseName, index) => (
+            <Text key={exerciseName} style={styles.exerciseItem}>
+              {index + 1}. {exerciseName}
+            </Text>
+          ))}
+        </View>
+      )}
       <View style={styles.links}>
         <Link
           href={{
@@ -202,8 +232,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
+  secondaryButton: {
+    alignSelf: 'flex-start',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
   deleteButtonPressed: {
     opacity: 0.85,
+  },
+  secondaryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
   },
   deleteButtonText: {
     color: '#ffffff',
@@ -212,5 +255,8 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  buttonPressed: {
+    opacity: 0.85,
   },
 });
