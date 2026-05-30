@@ -24,6 +24,8 @@ import {
   addSetToWorkoutExercise,
   clearActiveWorkout,
   countWorkoutSets,
+  moveWorkoutExercise,
+  moveWorkoutSet,
   removeSetFromWorkoutExercise,
   saveCompletedWorkout,
   setActiveWorkout,
@@ -181,14 +183,44 @@ export function ActiveWorkoutScreen() {
     setActiveWorkout(nextDraft);
   };
 
+  const applyDraft = (nextDraft: WorkoutSessionDraft) => {
+    setWorkoutDraft(nextDraft);
+    setActiveWorkout(nextDraft);
+  };
+
   const handleAddSet = (workoutExerciseId: string) => {
     if (!workoutDraft) {
       return;
     }
 
-    const nextDraft = addSetToWorkoutExercise(workoutDraft, workoutExerciseId);
-    setWorkoutDraft(nextDraft);
-    setActiveWorkout(nextDraft);
+    applyDraft(addSetToWorkoutExercise(workoutDraft, workoutExerciseId));
+  };
+
+  const handleMoveExercise = (
+    workoutExerciseId: string,
+    direction: 'up' | 'down',
+  ) => {
+    if (!workoutDraft) {
+      return;
+    }
+
+    applyDraft(
+      moveWorkoutExercise(workoutDraft, workoutExerciseId, direction),
+    );
+  };
+
+  const handleMoveSet = (
+    workoutExerciseId: string,
+    workoutSetId: string,
+    direction: 'up' | 'down',
+  ) => {
+    if (!workoutDraft) {
+      return;
+    }
+
+    applyDraft(
+      moveWorkoutSet(workoutDraft, workoutExerciseId, workoutSetId, direction),
+    );
   };
 
   const handleRemoveSet = (
@@ -245,7 +277,23 @@ export function ActiveWorkoutScreen() {
       />
       {workoutDraft.exercises.map((exercise) => (
         <View key={exercise.id} style={styles.card}>
-          <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
+            <View style={styles.reorderRow}>
+              <Pressable
+                onPress={() => handleMoveExercise(exercise.id, 'up')}
+                hitSlop={8}
+              >
+                <Text style={styles.reorderText}>↑</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => handleMoveExercise(exercise.id, 'down')}
+                hitSlop={8}
+              >
+                <Text style={styles.reorderText}>↓</Text>
+              </Pressable>
+            </View>
+          </View>
           <View style={styles.imagePlaceholder}>
             <Text style={styles.imagePlaceholderText}>
               {exercise.imagePlaceholderText ?? 'Image placeholder'}
@@ -260,12 +308,26 @@ export function ActiveWorkoutScreen() {
               <View key={set.id} style={styles.setCard}>
                 <View style={styles.setHeader}>
                   <Text style={styles.setTitle}>Set {set.order}</Text>
-                  <Pressable
-                    onPress={() => handleRemoveSet(exercise.id, set.id)}
-                    hitSlop={8}
-                  >
-                    <Text style={styles.removeText}>Remove</Text>
-                  </Pressable>
+                  <View style={styles.reorderRow}>
+                    <Pressable
+                      onPress={() => handleMoveSet(exercise.id, set.id, 'up')}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.reorderText}>↑</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handleMoveSet(exercise.id, set.id, 'down')}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.reorderText}>↓</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handleRemoveSet(exercise.id, set.id)}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.removeText}>Remove</Text>
+                    </Pressable>
+                  </View>
                 </View>
                 <Text style={styles.setTarget}>
                   Target: {set.minReps ?? '?'}-{set.maxReps ?? '?'} reps
@@ -381,9 +443,25 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 10,
   },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   cardTitle: {
     fontSize: 20,
     fontWeight: '600',
+    flexShrink: 1,
+  },
+  reorderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  reorderText: {
+    fontSize: 18,
+    color: '#2563eb',
+    fontWeight: '700',
   },
   imagePlaceholder: {
     alignItems: 'center',

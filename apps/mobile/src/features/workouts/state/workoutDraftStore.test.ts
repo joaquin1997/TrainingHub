@@ -6,6 +6,8 @@ import {
   buildWorkoutSessionDraft,
   clearActiveWorkout,
   countWorkoutSets,
+  moveWorkoutExercise,
+  moveWorkoutSet,
   removeSetFromWorkoutExercise,
   getActiveWorkout,
   hasActiveWorkout,
@@ -242,5 +244,39 @@ describe('add / remove sets', () => {
 
     expect(entries).toHaveLength(1);
     expect(entries[0]!.order).toBe(1);
+  });
+});
+
+describe('reorder', () => {
+  it('moves an exercise down and renumbers order', () => {
+    const draft = buildWorkoutSessionDraft(routine); // [Bench, Row]
+    const benchId = draft.exercises[0]!.id;
+
+    const next = moveWorkoutExercise(draft, benchId, 'down');
+
+    expect(next.exercises.map((e) => e.exerciseName)).toEqual(['Row', 'Bench']);
+    expect(next.exercises.map((e) => e.order)).toEqual([1, 2]);
+  });
+
+  it('is a no-op when moving the first exercise up', () => {
+    const draft = buildWorkoutSessionDraft(routine);
+    const benchId = draft.exercises[0]!.id;
+
+    const next = moveWorkoutExercise(draft, benchId, 'up');
+
+    expect(next.exercises.map((e) => e.exerciseName)).toEqual(['Bench', 'Row']);
+  });
+
+  it('moves a set within an exercise', () => {
+    const draft = buildWorkoutSessionDraft(routine);
+    const exerciseId = draft.exercises[1]!.id;
+    const withTwo = addSetToWorkoutExercise(draft, exerciseId);
+    const secondSetId = withTwo.exercises[1]!.entries[1]!.id;
+
+    const next = moveWorkoutSet(withTwo, exerciseId, secondSetId, 'up');
+    const entries = next.exercises[1]!.entries;
+
+    expect(entries[0]!.id).toBe(secondSetId);
+    expect(entries.map((s) => s.order)).toEqual([1, 2]);
   });
 });

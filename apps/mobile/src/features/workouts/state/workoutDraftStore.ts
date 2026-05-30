@@ -164,6 +164,68 @@ export function removeSetFromWorkoutExercise(
   };
 }
 
+function moveItem<T>(items: T[], index: number, direction: 'up' | 'down'): T[] {
+  const target = direction === 'up' ? index - 1 : index + 1;
+
+  if (target < 0 || target >= items.length) {
+    return items;
+  }
+
+  const copy = items.slice();
+  const moved = copy[index];
+  copy[index] = copy[target];
+  copy[target] = moved;
+  return copy;
+}
+
+export function moveWorkoutExercise(
+  workoutDraft: WorkoutSessionDraft,
+  workoutExerciseId: string,
+  direction: 'up' | 'down',
+): WorkoutSessionDraft {
+  const index = workoutDraft.exercises.findIndex(
+    (exercise) => exercise.id === workoutExerciseId,
+  );
+
+  if (index === -1) {
+    return workoutDraft;
+  }
+
+  return {
+    ...workoutDraft,
+    exercises: renumberExercises(
+      moveItem(workoutDraft.exercises, index, direction),
+    ),
+  };
+}
+
+export function moveWorkoutSet(
+  workoutDraft: WorkoutSessionDraft,
+  workoutExerciseId: string,
+  workoutSetId: string,
+  direction: 'up' | 'down',
+): WorkoutSessionDraft {
+  return {
+    ...workoutDraft,
+    exercises: workoutDraft.exercises.map((exercise) => {
+      if (exercise.id !== workoutExerciseId) {
+        return exercise;
+      }
+
+      const index = exercise.entries.findIndex((set) => set.id === workoutSetId);
+
+      if (index === -1) {
+        return exercise;
+      }
+
+      return {
+        ...exercise,
+        entries: renumberSets(moveItem(exercise.entries, index, direction)),
+      };
+    }),
+  };
+}
+
 export function toggleWorkoutSetDone(
   workoutDraft: WorkoutSessionDraft,
   workoutExerciseId: string,
