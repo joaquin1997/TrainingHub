@@ -108,7 +108,12 @@ export function ProgressOverviewScreen() {
                   pressed ? styles.cardPressed : null,
                 ]}
               >
-                <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
+                <View style={styles.cardTitleRow}>
+                  <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
+                  {exercise.isRecordSession ? (
+                    <Text style={styles.prBadge}>🏆 PR</Text>
+                  ) : null}
+                </View>
                 <Text style={styles.meta}>
                   Latest: {formatValue(exercise.latestWeightKg)} kg x{' '}
                   {formatValue(exercise.latestReps)}
@@ -117,7 +122,10 @@ export function ProgressOverviewScreen() {
                   Best: {formatValue(exercise.personalBestWeightKg)} kg x{' '}
                   {formatValue(exercise.personalBestReps)}
                 </Text>
-                <Text style={styles.meta}>{exercise.sessionCount} sessions</Text>
+                <Text style={styles.meta}>
+                  Est. 1RM: {formatValue(exercise.bestEstimatedOneRepMax)} kg ·{' '}
+                  {exercise.sessionCount} sessions
+                </Text>
               </Pressable>
             </Link>
           ))}
@@ -158,9 +166,25 @@ const styles = StyleSheet.create({
   cardPressed: {
     opacity: 0.7,
   },
+  cardTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   cardTitle: {
     fontSize: 18,
     fontWeight: '600',
+    flexShrink: 1,
+  },
+  prBadge: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#92400e',
+    backgroundColor: '#fef3c7',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    overflow: 'hidden',
   },
   meta: {
     fontSize: 14,

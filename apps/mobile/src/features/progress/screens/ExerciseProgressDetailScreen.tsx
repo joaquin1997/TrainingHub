@@ -103,7 +103,11 @@ export function ExerciseProgressDetailScreen() {
         Personal best: {formatValue(progress.personalBestWeightKg)} kg x{' '}
         {formatValue(progress.personalBestReps)}
       </Text>
-      <Text style={styles.meta}>{progress.sessionCount} sessions</Text>
+      <Text style={styles.meta}>
+        Est. 1RM: {formatValue(progress.bestEstimatedOneRepMax)} kg ·{' '}
+        {progress.sessionCount} sessions
+        {progress.isRecordSession ? ' · 🏆 recent PR' : ''}
+      </Text>
       <View style={styles.list}>
         {progress.points
           .slice()
@@ -113,7 +117,8 @@ export function ExerciseProgressDetailScreen() {
               <Text style={styles.cardTitle}>{formatDate(point.date)}</Text>
               <Text style={styles.meta}>
                 Best: {formatValue(point.bestWeightKg)} kg x{' '}
-                {formatValue(point.bestReps)} · Volume {point.totalVolume}
+                {formatValue(point.bestReps)} · Volume {point.totalVolume} · 1RM{' '}
+                {formatValue(point.estimatedOneRepMax)}
               </Text>
             </View>
           ))}
