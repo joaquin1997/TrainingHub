@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  Vibration,
   View,
 } from 'react-native';
 
@@ -95,7 +96,7 @@ export function ActiveWorkoutScreen() {
     Record<string, ExerciseLastPerformance | null>
   >({});
   const [restDuration, setRestDuration] = useState(90);
-  const restTimer = useRestTimer();
+  const restTimer = useRestTimer(() => Vibration.vibrate([0, 400, 200, 400]));
 
   useEffect(() => {
     if (!routineId) {

@@ -5,7 +5,14 @@ A configurable countdown timer between sets, like Hevy.
 ## Checklist
 - [x] Countdown timer with configurable duration
 - [x] Auto-start when a set is marked done
-- [ ] Notification / vibration when it finishes
+- [x] Notification / vibration when it finishes (vibration)
+
+## Progress log
+- Countdown (useRestTimer), presets 60/90/120s, auto-start on set done, and a
+  double vibration on completion. **Point 2 complete** for foreground use.
+- Follow-up: background OS notifications (so it fires when the app is backgrounded)
+  need `expo-notifications` (install + permissions + a scheduled local
+  notification). Deferred — vibration covers the foreground case.
 
 ## Design notes
 - Reuse `useElapsedSeconds`/`formatDuration` patterns; a countdown hook
