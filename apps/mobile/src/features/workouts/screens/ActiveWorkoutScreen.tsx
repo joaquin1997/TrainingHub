@@ -13,6 +13,8 @@ import {
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
+import { formatDuration } from '@/lib/format';
+import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import {
   notifyAppleWorkoutFinished,
   notifyAppleWorkoutStarted,
@@ -82,6 +84,8 @@ export function ActiveWorkoutScreen() {
       void notifyAppleWorkoutStarted(workoutDraft);
     }
   }, [workoutDraft]);
+
+  const elapsedSeconds = useElapsedSeconds(workoutDraft?.startedAt);
 
   if (status === 'loading') {
     return (
@@ -169,6 +173,7 @@ export function ActiveWorkoutScreen() {
       <Text style={styles.body}>
         {workoutDraft.routineName}
       </Text>
+      <Text style={styles.timer}>{formatDuration(elapsedSeconds)}</Text>
       <Text style={styles.meta}>
         Started from your routine. Logged values are kept while in progress, so
         you can leave and resume this workout.
@@ -264,6 +269,11 @@ const styles = StyleSheet.create({
   body: {
     fontSize: 24,
     fontWeight: '600',
+  },
+  timer: {
+    fontSize: 40,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
   },
   meta: {
     fontSize: 14,
