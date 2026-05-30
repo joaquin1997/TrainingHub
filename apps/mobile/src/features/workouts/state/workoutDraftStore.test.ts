@@ -1,8 +1,14 @@
 import type { Routine } from '@workout/domain';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   buildWorkoutSessionDraft,
+  clearActiveWorkout,
+  getActiveWorkout,
+  hasActiveWorkout,
+  isActiveWorkoutForRoutine,
+  setActiveWorkout,
+  startActiveWorkout,
   toCreateWorkoutSessionInput,
   type WorkoutSessionDraft,
 } from './workoutDraftStore';
@@ -107,5 +113,49 @@ describe('toCreateWorkoutSessionInput', () => {
       { order: 1, reps: 8, weightKg: 60 },
       { order: 2, reps: undefined, weightKg: undefined },
     ]);
+  });
+});
+
+describe('active workout state', () => {
+  const otherRoutine: Routine = { ...routine, id: 'routine-2', name: 'Pull Day' };
+
+  beforeEach(() => {
+    clearActiveWorkout();
+  });
+
+  it('starts and exposes an active workout for a routine', () => {
+    const started = startActiveWorkout(routine);
+
+    expect(hasActiveWorkout()).toBe(true);
+    expect(getActiveWorkout()).toBe(started);
+    expect(isActiveWorkoutForRoutine('routine-1')).toBe(true);
+    expect(isActiveWorkoutForRoutine('routine-2')).toBe(false);
+  });
+
+  it('resumes the same routine without rebuilding', () => {
+    const started = startActiveWorkout(routine);
+    const edited: WorkoutSessionDraft = { ...started, routineName: 'Edited' };
+    setActiveWorkout(edited);
+
+    const resumed = startActiveWorkout(routine);
+
+    expect(resumed).toBe(edited);
+    expect(resumed.routineName).toBe('Edited');
+  });
+
+  it('replaces the active workout when starting a different routine', () => {
+    startActiveWorkout(routine);
+    const next = startActiveWorkout(otherRoutine);
+
+    expect(next.routineId).toBe('routine-2');
+    expect(isActiveWorkoutForRoutine('routine-2')).toBe(true);
+  });
+
+  it('clears the active workout', () => {
+    startActiveWorkout(routine);
+    clearActiveWorkout();
+
+    expect(hasActiveWorkout()).toBe(false);
+    expect(getActiveWorkout()).toBeNull();
   });
 });
