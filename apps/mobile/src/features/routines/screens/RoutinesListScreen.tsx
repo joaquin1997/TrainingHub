@@ -63,6 +63,17 @@ export function RoutinesListScreen() {
       <Link href="/routines/create" style={styles.primaryLink}>
         Create routine
       </Link>
+      <View style={styles.links}>
+        <Link href="/exercises" style={styles.link}>
+          Exercises
+        </Link>
+        <Link href="/progress" style={styles.link}>
+          Progress
+        </Link>
+        <Link href="/workouts/history" style={styles.link}>
+          History
+        </Link>
+      </View>
       {isLoading ? (
         <View style={styles.stateCard}>
           <Text style={styles.meta}>Loading routines...</Text>
