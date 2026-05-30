@@ -32,9 +32,7 @@ export function WorkoutSummaryScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Workout Summary</Text>
       <Text style={styles.body}>{workoutDraft.routineName}</Text>
-      <Text style={styles.meta}>
-        Completed session skeleton ready for future backend integration.
-      </Text>
+      <Text style={styles.meta}>This workout was saved to your history.</Text>
       <Text style={styles.meta}>Workout session ID: {workoutSession.id}</Text>
       {workoutDraft.exercises.map((exercise) => (
         <View key={exercise.id} style={styles.card}>
@@ -47,10 +45,6 @@ export function WorkoutSummaryScreen() {
         </View>
       ))}
       <Text style={styles.todo}>
-        TODO: Replace this local summary handoff with persisted workout session
-        reads once the mobile app talks to the API.
-      </Text>
-      <Text style={styles.todo}>
         TODO: Surface Apple Health sync status here once native sync is wired.
       </Text>
       <View style={styles.links}>
@@ -62,6 +56,15 @@ export function WorkoutSummaryScreen() {
           }}
         >
           Back to routines
+        </Link>
+        <Link
+          href="/workouts/history"
+          style={styles.link}
+          onPress={() => {
+            clearLatestCompletedWorkout();
+          }}
+        >
+          View history
         </Link>
         <Link
           href={{
