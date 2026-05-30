@@ -7,6 +7,7 @@
     "mobile": "pnpm --filter @workout/mobile dev",
     "api": "pnpm --filter @workout/api dev",
     "import:wger": "pnpm --filter @workout/api import:wger",
+    "import:wger:db": "pnpm --filter @workout/api import:wger:db",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test"
   },
