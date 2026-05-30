@@ -1,0 +1,57 @@
+---
+alwaysApply: true
+---
+
+This repository follows the project context defined in:
+docs/codex-project-context.md
+
+Treat that document as the source of truth for:
+- architecture decisions
+- scope boundaries
+- coding conventions
+- generation workflow
+- domain modeling rules
+
+Core project direction:
+- Workout tracking app inspired by Hevy
+- iOS first
+- Android considered at the architecture level from the beginning
+- Mobile app first, backend as a thin API
+- Generate skeletons and minimal implementations first
+- Deeper business logic will be completed manually later
+
+Current product scope:
+- Authentication architecture prepared for Apple first
+- Exercise catalog
+- Routine creation, editing and listing
+- Workout session start and tracking
+- Workout session completion and persistence
+- Basic progress tracking
+- Health integration abstractions prepared but not fully implemented
+- Apple Watch treated as future-ready architecture only
+
+Tech stack:
+- Monorepo
+- Mobile: React Native + Expo + TypeScript
+- Backend: Fastify + TypeScript
+- ORM: Prisma
+- Database: PostgreSQL
+- Shared domain/contracts package
+
+High-level architecture rules:
+- Shared domain types must live in packages/domain
+- Keep backend thin
+- Use feature-based structure
+- Avoid overengineering
+- Prefer small, explicit, maintainable changes
+- Prefer stubs, TODOs and mocks before deep implementations
+- Do not implement the whole product at once
+
+Important domain rules:
+- Routine is a template
+- WorkoutSession is a real performed training session
+- Never mix planned routine data with actual performed workout data
+- Health integrations must be behind interfaces
+- Provider-specific auth code must remain isolated
+
+Whenever there is doubt, follow docs/codex-project-context.md conservatively instead of inventing a broader solution.
