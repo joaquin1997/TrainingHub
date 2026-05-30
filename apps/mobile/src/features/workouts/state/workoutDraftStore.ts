@@ -150,6 +150,7 @@ export function toWorkoutSessionSkeleton(
       id: exercise.id,
       workoutSessionId: workoutDraft.id,
       exerciseId: exercise.exerciseId,
+      exerciseName: exercise.exerciseName,
       routineExerciseId: exercise.routineExerciseId,
       order: exercise.order,
       sets: exercise.entries.map((set) => ({

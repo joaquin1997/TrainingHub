@@ -147,6 +147,7 @@ export interface WorkoutExercise {
   id: EntityId;
   workoutSessionId: EntityId;
   exerciseId: EntityId;
+  exerciseName: string;
   routineExerciseId?: EntityId;
   order: number;
   notes?: string;

@@ -10,7 +10,7 @@ type WorkoutSessionRecord = Prisma.WorkoutSessionGetPayload<{
     routine: { select: { publicId: true } };
     exercises: {
       include: {
-        exercise: { select: { publicId: true } };
+        exercise: { select: { publicId: true; name: true } };
         routineExercise: { select: { publicId: true } };
         sets: true;
       };
@@ -22,7 +22,7 @@ const workoutSessionInclude = {
   routine: { select: { publicId: true } },
   exercises: {
     include: {
-      exercise: { select: { publicId: true } },
+      exercise: { select: { publicId: true, name: true } },
       routineExercise: { select: { publicId: true } },
       sets: true,
     },
@@ -61,6 +61,7 @@ function mapWorkoutSession(record: WorkoutSessionRecord): WorkoutSession {
         id: exercise.publicId,
         workoutSessionId: record.publicId,
         exerciseId: exercise.exercise.publicId,
+        exerciseName: exercise.exercise.name,
         routineExerciseId: exercise.routineExercise?.publicId ?? undefined,
         order: exercise.order,
         notes: exercise.notes ?? undefined,
