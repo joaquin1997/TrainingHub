@@ -158,6 +158,11 @@ export function ActiveWorkoutScreen() {
     setActiveWorkout(nextDraft);
   };
 
+  const handleDiscard = () => {
+    clearActiveWorkout();
+    router.replace('/routines');
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Active Workout</Text>
@@ -226,6 +231,13 @@ export function ActiveWorkoutScreen() {
         <Text style={styles.buttonText}>
           {isFinishing ? 'Saving workout...' : 'Finish workout'}
         </Text>
+      </Pressable>
+      <Pressable
+        onPress={handleDiscard}
+        disabled={isFinishing}
+        style={styles.discardButton}
+      >
+        <Text style={styles.discardButtonText}>Discard workout</Text>
       </Pressable>
       <Text style={styles.todo}>
         TODO: Add timers, backend sync, and live workout persistence when the
@@ -336,6 +348,19 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  discardButton: {
+    alignSelf: 'flex-start',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  discardButtonText: {
+    color: '#b91c1c',
+    fontSize: 15,
+    fontWeight: '600',
   },
   errorText: {
     fontSize: 14,
