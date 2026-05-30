@@ -12,6 +12,7 @@ import {
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
+import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
 import { useRefresh } from '@/lib/useRefresh';
 import type { Routine } from '@workout/domain';
 
@@ -58,6 +59,7 @@ export function RoutinesListScreen() {
     }, [loadRoutines]),
   );
 
+  const activeWorkout = useActiveWorkout();
   const { isRefreshing, onRefresh } = useRefresh(loadRoutines);
   const showLoading = isLoading && routines.length === 0;
   const hasEmptyState = !isLoading && !errorMessage && routines.length === 0;
@@ -76,6 +78,22 @@ export function RoutinesListScreen() {
         Routines are loaded from the backend. Template data stays separate from
         workout execution.
       </Text>
+      {activeWorkout ? (
+        <Link
+          href={{
+            pathname: '/workouts/active',
+            params: { routineId: activeWorkout.routineId },
+          }}
+          asChild
+        >
+          <Pressable style={styles.banner}>
+            <Text style={styles.bannerTitle}>Workout in progress</Text>
+            <Text style={styles.bannerMeta}>
+              {activeWorkout.routineName} · tap to resume
+            </Text>
+          </Pressable>
+        </Link>
+      ) : null}
       <Link href="/routines/create" style={styles.primaryLink}>
         Create routine
       </Link>
@@ -166,6 +184,21 @@ const styles = StyleSheet.create({
   primaryLink: {
     fontSize: 16,
     color: '#2563eb',
+  },
+  banner: {
+    borderRadius: 12,
+    backgroundColor: '#111827',
+    padding: 16,
+    gap: 4,
+  },
+  bannerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  bannerMeta: {
+    fontSize: 14,
+    color: '#d1d5db',
   },
   list: {
     gap: 12,
