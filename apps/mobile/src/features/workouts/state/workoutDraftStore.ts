@@ -1,4 +1,8 @@
-import type { Routine, WorkoutSession } from '@workout/domain';
+import type {
+  CreateWorkoutSessionInput,
+  Routine,
+  WorkoutSession,
+} from '@workout/domain';
 
 export type WorkoutSetDraft = {
   id: string;
@@ -90,6 +94,31 @@ export function updateWorkoutSetDraft(
         ),
       };
     }),
+  };
+}
+
+/**
+ * Maps the local workout draft to the API write contract for a completed session.
+ * The logged reps/weight are entered as strings in the UI, so we coerce them to
+ * numbers and drop empty values.
+ */
+export function toCreateWorkoutSessionInput(
+  workoutDraft: WorkoutSessionDraft,
+): CreateWorkoutSessionInput {
+  return {
+    routineId: workoutDraft.routineId,
+    startedAt: workoutDraft.startedAt,
+    completedAt: new Date().toISOString(),
+    exercises: workoutDraft.exercises.map((exercise) => ({
+      exerciseId: exercise.exerciseId,
+      routineExerciseId: exercise.routineExerciseId,
+      order: exercise.order,
+      sets: exercise.entries.map((set) => ({
+        order: set.order,
+        reps: Number(set.reps) || undefined,
+        weightKg: Number(set.weightKg) || undefined,
+      })),
+    })),
   };
 }
 

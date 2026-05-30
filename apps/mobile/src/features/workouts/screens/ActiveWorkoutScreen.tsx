@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 
 import { routinesClient } from '@/features/routines/api/routinesClient';
+import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import {
   notifyAppleWorkoutFinished,
@@ -20,6 +21,7 @@ import {
 import {
   buildWorkoutSessionDraft,
   saveCompletedWorkout,
+  toCreateWorkoutSessionInput,
   toWorkoutSessionSkeleton,
   updateWorkoutSetDraft,
   type WorkoutSessionDraft,
@@ -34,6 +36,8 @@ export function ActiveWorkoutScreen() {
     'loading',
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isFinishing, setIsFinishing] = useState(false);
+  const [finishError, setFinishError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!routineId) {
@@ -103,18 +107,30 @@ export function ActiveWorkoutScreen() {
     );
   }
 
-  const finishWorkout = () => {
-    const workoutSession = toWorkoutSessionSkeleton(workoutDraft);
+  const finishWorkout = async () => {
+    try {
+      setIsFinishing(true);
+      setFinishError(null);
 
-    saveCompletedWorkout(workoutDraft);
+      await workoutsClient.create(toCreateWorkoutSessionInput(workoutDraft));
 
-    // TODO: Replace local in-memory workout completion with backend persistence.
-    void notifyAppleWorkoutFinished(
-      workoutDraft,
-      workoutSession.completedAt ?? workoutSession.updatedAt,
-    );
-    void syncWorkoutCompletionToAppleHealth(workoutSession);
-    router.push('/workouts/summary');
+      const workoutSession = toWorkoutSessionSkeleton(workoutDraft);
+
+      saveCompletedWorkout(workoutDraft);
+
+      void notifyAppleWorkoutFinished(
+        workoutDraft,
+        workoutSession.completedAt ?? workoutSession.updatedAt,
+      );
+      void syncWorkoutCompletionToAppleHealth(workoutSession);
+      router.push('/workouts/summary');
+    } catch (error) {
+      setFinishError(
+        error instanceof Error ? error.message : 'Could not save the workout.',
+      );
+    } finally {
+      setIsFinishing(false);
+    }
   };
 
   return (
@@ -196,8 +212,15 @@ export function ActiveWorkoutScreen() {
           </View>
         </View>
       ))}
-      <Pressable onPress={finishWorkout} style={styles.button}>
-        <Text style={styles.buttonText}>Finish workout</Text>
+      {finishError ? <Text style={styles.errorText}>{finishError}</Text> : null}
+      <Pressable
+        onPress={() => void finishWorkout()}
+        disabled={isFinishing}
+        style={[styles.button, isFinishing ? styles.buttonDisabled : null]}
+      >
+        <Text style={styles.buttonText}>
+          {isFinishing ? 'Saving workout...' : 'Finish workout'}
+        </Text>
       </Pressable>
       <Text style={styles.todo}>
         TODO: Add timers, backend sync, and live workout persistence when the
@@ -305,6 +328,13 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 15,
     fontWeight: '600',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#b91c1c',
   },
   todo: {
     fontSize: 14,

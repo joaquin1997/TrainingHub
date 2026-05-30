@@ -173,6 +173,42 @@ export interface WorkoutSet {
 }
 
 /**
+ * Write contract for one logged set when saving a completed workout session.
+ */
+export interface WorkoutSetInput {
+  order: number;
+  reps?: number;
+  weightKg?: number;
+  durationSeconds?: number;
+  distanceMeters?: number;
+  isWarmup?: boolean;
+}
+
+/**
+ * Write contract for one performed exercise when saving a workout session.
+ * References the exercise (and optionally the routine template slot) by id.
+ */
+export interface WorkoutExerciseInput {
+  exerciseId: EntityId;
+  routineExerciseId?: EntityId;
+  order: number;
+  notes?: string;
+  sets: WorkoutSetInput[];
+}
+
+/**
+ * Write contract for saving a completed workout session. The mobile app keeps
+ * the live values local during the session and sends the whole session at the end.
+ */
+export interface CreateWorkoutSessionInput {
+  routineId?: EntityId;
+  startedAt: ISODateString;
+  completedAt?: ISODateString;
+  notes?: string;
+  exercises: WorkoutExerciseInput[];
+}
+
+/**
  * Stores health integration sync metadata only, never the workout data itself.
  */
 export interface HealthSyncRecord {

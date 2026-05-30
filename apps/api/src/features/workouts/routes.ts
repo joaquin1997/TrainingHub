@@ -1,84 +1,148 @@
+import { Prisma } from '@prisma/client';
 import type { FastifyInstance } from 'fastify';
+import type {
+  CreateWorkoutSessionInput,
+  WorkoutExerciseInput,
+  WorkoutSetInput,
+} from '@workout/domain';
 
 import {
-  addMockWorkoutSet,
-  findMockWorkoutSessionById,
-  finishMockWorkoutSession,
-  listMockWorkoutSessions,
-  startMockWorkoutSession,
-} from './mock-workouts.js';
+  createWorkoutSession,
+  findWorkoutSessionById,
+  listWorkoutSessions,
+} from './repository.js';
 
-type StartWorkoutBody = {
-  userId?: string;
-  routineId?: string;
-  notes?: string;
-};
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
 
-type AddWorkoutSetBody = {
-  workoutExerciseId?: string;
-  exerciseId?: string;
-  routineExerciseId?: string;
-  reps?: number;
-  weightKg?: number;
-  durationSeconds?: number;
-  distanceMeters?: number;
-  isWarmup?: boolean;
-};
+function parseOptionalString(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function parseOptionalNumber(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function parseOptionalInteger(value: unknown) {
+  return typeof value === 'number' && Number.isInteger(value) ? value : undefined;
+}
+
+function parseWorkoutSetInput(
+  value: unknown,
+  fallbackOrder: number,
+): WorkoutSetInput | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  return {
+    order: parseOptionalInteger(value.order) ?? fallbackOrder,
+    reps: parseOptionalInteger(value.reps),
+    weightKg: parseOptionalNumber(value.weightKg),
+    durationSeconds: parseOptionalInteger(value.durationSeconds),
+    distanceMeters: parseOptionalNumber(value.distanceMeters),
+    isWarmup: typeof value.isWarmup === 'boolean' ? value.isWarmup : undefined,
+  };
+}
+
+function parseWorkoutExerciseInput(
+  value: unknown,
+  fallbackOrder: number,
+): WorkoutExerciseInput | null {
+  if (
+    !isRecord(value) ||
+    typeof value.exerciseId !== 'string' ||
+    !value.exerciseId.trim()
+  ) {
+    return null;
+  }
+
+  const setsInput = Array.isArray(value.sets) ? value.sets : [];
+  const sets = setsInput
+    .map((set, index) => parseWorkoutSetInput(set, index + 1))
+    .filter((set): set is WorkoutSetInput => set !== null);
+
+  if (sets.length !== setsInput.length) {
+    return null;
+  }
+
+  return {
+    exerciseId: value.exerciseId.trim(),
+    routineExerciseId: parseOptionalString(value.routineExerciseId),
+    order: parseOptionalInteger(value.order) ?? fallbackOrder,
+    notes: parseOptionalString(value.notes),
+    sets,
+  };
+}
+
+function parseCreateWorkoutSessionInput(
+  body: unknown,
+): CreateWorkoutSessionInput | null {
+  if (
+    !isRecord(body) ||
+    typeof body.startedAt !== 'string' ||
+    !body.startedAt.trim()
+  ) {
+    return null;
+  }
+
+  const exercisesInput = Array.isArray(body.exercises) ? body.exercises : [];
+  const exercises = exercisesInput
+    .map((exercise, index) => parseWorkoutExerciseInput(exercise, index + 1))
+    .filter((exercise): exercise is WorkoutExerciseInput => exercise !== null);
+
+  if (exercises.length !== exercisesInput.length || exercises.length === 0) {
+    return null;
+  }
+
+  return {
+    routineId: parseOptionalString(body.routineId),
+    startedAt: body.startedAt,
+    completedAt: parseOptionalString(body.completedAt),
+    notes: parseOptionalString(body.notes),
+    exercises,
+  };
+}
 
 export async function registerWorkoutRoutes(app: FastifyInstance) {
-  app.post<{ Body: StartWorkoutBody }>('/workouts/start', async (request, reply) => {
-    const workoutSession = startMockWorkoutSession(request.body ?? {});
-
-    return reply.code(201).send(workoutSession);
-  });
-
-  app.post<{ Params: { id: string }; Body: AddWorkoutSetBody }>(
-    '/workouts/:id/sets',
-    async (request, reply) => {
-      const result = addMockWorkoutSet(request.params.id, request.body ?? {});
-
-      if (!result) {
-        return reply.code(404).send({
-          message: 'Workout session not found',
-        });
-      }
-
-      if ('error' in result) {
-        return reply.code(400).send({
-          message: result.error,
-        });
-      }
-
-      return reply.code(201).send(result);
-    },
-  );
-
-  app.post<{ Params: { id: string } }>('/workouts/:id/finish', async (request, reply) => {
-    const workoutSession = finishMockWorkoutSession(request.params.id);
-
-    if (!workoutSession) {
-      return reply.code(404).send({
-        message: 'Workout session not found',
-      });
-    }
-
-    return workoutSession;
-  });
-
   app.get('/workouts', async () => {
-    return listMockWorkoutSessions();
+    return listWorkoutSessions();
   });
 
   app.get<{ Params: { id: string } }>('/workouts/:id', async (request, reply) => {
-    const workoutSession = findMockWorkoutSessionById(request.params.id);
+    const session = await findWorkoutSessionById(request.params.id);
 
-    if (!workoutSession) {
-      return reply.code(404).send({
-        message: 'Workout session not found',
-      });
+    if (!session) {
+      return reply.code(404).send({ message: 'Workout session not found' });
     }
 
-    return workoutSession;
+    return session;
+  });
+
+  app.post<{ Body: unknown }>('/workouts', async (request, reply) => {
+    const parsedInput = parseCreateWorkoutSessionInput(request.body);
+
+    if (!parsedInput) {
+      return reply.code(400).send({ message: 'Invalid workout payload' });
+    }
+
+    try {
+      const session = await createWorkoutSession(parsedInput);
+
+      return reply.code(201).send(session);
+    } catch (error) {
+      // Prisma throws P2025 when a connected exercise/routine publicId is unknown.
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        return reply.code(400).send({
+          message: 'Workout references unknown exercise or routine',
+        });
+      }
+
+      throw error;
+    }
   });
 }
-
