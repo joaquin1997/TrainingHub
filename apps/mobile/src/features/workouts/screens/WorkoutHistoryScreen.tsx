@@ -11,7 +11,11 @@ import {
 
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
-import { formatDate } from '@/lib/format';
+import {
+  durationSecondsBetween,
+  formatDate,
+  formatDuration,
+} from '@/lib/format';
 import { useRefresh } from '@/lib/useRefresh';
 import type { WorkoutSession } from '@workout/domain';
 
@@ -114,6 +118,14 @@ export function WorkoutHistoryScreen() {
                 <Text style={styles.cardMeta}>
                   {session.status} · {session.exercises.length} exercises ·{' '}
                   {countSets(session)} sets
+                  {session.completedAt
+                    ? ` · ${formatDuration(
+                        durationSecondsBetween(
+                          session.startedAt,
+                          session.completedAt,
+                        ),
+                      )}`
+                    : ''}
                 </Text>
               </Pressable>
             </Link>
