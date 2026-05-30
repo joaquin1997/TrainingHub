@@ -16,6 +16,7 @@ import {
 import { CustomExerciseModal } from '@/features/routines/components/CustomExerciseModal';
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
+import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
 import type {
   Exercise,
   Routine,
@@ -161,6 +162,7 @@ export function RoutineFormScreen({
   >(null);
   const [activeCustomExerciseDraft, setActiveCustomExerciseDraft] =
     useState<ActiveCustomExerciseDraft | null>(null);
+  const activeWorkout = useActiveWorkout();
 
   useEffect(() => {
     let isMounted = true;
@@ -459,6 +461,21 @@ export function RoutineFormScreen({
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  if (isEditMode && activeWorkout?.routineId === routineId) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Edit Routine</Text>
+        <Text style={styles.body}>
+          This routine has a workout in progress. Finish or discard it before
+          editing.
+        </Text>
+        <Link href={`/routines/${routineId}`} style={styles.link}>
+          Back to routine
+        </Link>
+      </View>
+    );
   }
 
   if (isLoading) {
