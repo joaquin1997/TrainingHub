@@ -165,6 +165,7 @@ model WorkoutSet {
   publicId          String          @unique @default(cuid())
   workoutExerciseId BigInt
   order             Int
+  type              String          @default("normal")
   reps              Int?
   weightKg          Float?
   durationSeconds   Int?

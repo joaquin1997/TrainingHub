@@ -1,5 +1,9 @@
 import { Prisma } from '@prisma/client';
-import type { CreateWorkoutSessionInput, WorkoutSession } from '@workout/domain';
+import type {
+  CreateWorkoutSessionInput,
+  WorkoutSession,
+  WorkoutSetType,
+} from '@workout/domain';
 
 import { prisma } from '../../infrastructure/prisma.js';
 import {
@@ -62,6 +66,7 @@ function mapWorkoutSession(record: WorkoutSessionRecord): WorkoutSession {
             id: set.publicId,
             workoutExerciseId: exercise.publicId,
             order: set.order,
+            type: set.type as WorkoutSetType,
             reps: set.reps ?? undefined,
             weightKg: set.weightKg ?? undefined,
             durationSeconds: set.durationSeconds ?? undefined,
@@ -92,6 +97,7 @@ function toWorkoutExerciseCreateInput(
     sets: {
       create: exercise.sets.map((set) => ({
         order: set.order,
+        type: set.type ?? 'normal',
         reps: set.reps,
         weightKg: set.weightKg,
         durationSeconds: set.durationSeconds,

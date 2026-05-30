@@ -9,7 +9,7 @@ previous performance, set types, and persist completion.
 - [x] Add / remove exercises during a workout
 - [x] Reorder exercises and sets (up/down)
 - [ ] Show "last time" per set (e.g. 60 kg × 8 from the previous workout)
-- [ ] Set types (warmup / drop / failure) — UI + persistence
+- [x] Set types (warmup / drop / failure) — UI + persistence
 
 ## Design notes
 - Source of truth for the live session is the mobile `workoutDraftStore`

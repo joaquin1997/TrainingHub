@@ -16,7 +16,7 @@ import { ExercisePickerModal } from '@/features/exercises/components/ExercisePic
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { formatDuration } from '@/lib/format';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
-import type { Exercise } from '@workout/domain';
+import type { Exercise, WorkoutSetType } from '@workout/domain';
 import {
   notifyAppleWorkoutFinished,
   notifyAppleWorkoutStarted,
@@ -27,6 +27,7 @@ import {
   addSetToWorkoutExercise,
   clearActiveWorkout,
   countWorkoutSets,
+  cycleWorkoutSetType,
   moveWorkoutExercise,
   moveWorkoutSet,
   removeExerciseFromWorkout,
@@ -40,6 +41,19 @@ import {
   updateWorkoutSetDraft,
   type WorkoutSessionDraft,
 } from '@/features/workouts/state/workoutDraftStore';
+
+function setTypeLabel(type: WorkoutSetType) {
+  switch (type) {
+    case 'warmup':
+      return 'Warmup';
+    case 'drop':
+      return 'Drop';
+    case 'failure':
+      return 'Failure';
+    default:
+      return 'Normal';
+  }
+}
 
 export function ActiveWorkoutScreen() {
   const { routineId } = useLocalSearchParams<{ routineId?: string }>();
@@ -249,6 +263,19 @@ export function ActiveWorkoutScreen() {
     );
   };
 
+  const handleCycleSetType = (
+    workoutExerciseId: string,
+    workoutSetId: string,
+  ) => {
+    if (!workoutDraft) {
+      return;
+    }
+
+    applyDraft(
+      cycleWorkoutSetType(workoutDraft, workoutExerciseId, workoutSetId),
+    );
+  };
+
   const handleRemoveSet = (
     workoutExerciseId: string,
     workoutSetId: string,
@@ -333,7 +360,22 @@ export function ActiveWorkoutScreen() {
             {exercise.entries.map((set) => (
               <View key={set.id} style={styles.setCard}>
                 <View style={styles.setHeader}>
-                  <Text style={styles.setTitle}>Set {set.order}</Text>
+                  <View style={styles.setHeaderLeft}>
+                    <Text style={styles.setTitle}>Set {set.order}</Text>
+                    <Pressable
+                      onPress={() => handleCycleSetType(exercise.id, set.id)}
+                      hitSlop={6}
+                    >
+                      <Text
+                        style={[
+                          styles.typeBadge,
+                          set.type !== 'normal' ? styles.typeBadgeActive : null,
+                        ]}
+                      >
+                        {setTypeLabel(set.type)}
+                      </Text>
+                    </Pressable>
+                  </View>
                   <View style={styles.reorderRow}>
                     <Pressable
                       onPress={() => handleMoveSet(exercise.id, set.id, 'up')}
@@ -538,6 +580,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  setHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  typeBadge: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#4b5563',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    overflow: 'hidden',
+  },
+  typeBadgeActive: {
+    color: '#92400e',
+    borderColor: '#f59e0b',
+    backgroundColor: '#fef3c7',
   },
   setTitle: {
     fontSize: 15,

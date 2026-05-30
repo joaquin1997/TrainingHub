@@ -4,7 +4,22 @@ import type {
   CreateWorkoutSessionInput,
   WorkoutExerciseInput,
   WorkoutSetInput,
+  WorkoutSetType,
 } from '@workout/domain';
+
+const WORKOUT_SET_TYPES: WorkoutSetType[] = [
+  'normal',
+  'warmup',
+  'drop',
+  'failure',
+];
+
+function parseWorkoutSetType(value: unknown): WorkoutSetType | undefined {
+  return typeof value === 'string' &&
+    (WORKOUT_SET_TYPES as string[]).includes(value)
+    ? (value as WorkoutSetType)
+    : undefined;
+}
 
 import {
   createWorkoutSession,
@@ -38,6 +53,7 @@ function parseWorkoutSetInput(
 
   return {
     order: parseOptionalInteger(value.order) ?? fallbackOrder,
+    type: parseWorkoutSetType(value.type),
     reps: parseOptionalInteger(value.reps),
     weightKg: parseOptionalNumber(value.weightKg),
     durationSeconds: parseOptionalInteger(value.durationSeconds),

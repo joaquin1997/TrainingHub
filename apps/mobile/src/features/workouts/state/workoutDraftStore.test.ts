@@ -5,6 +5,7 @@ import {
   addExerciseToWorkout,
   addSetToWorkoutExercise,
   buildWorkoutSessionDraft,
+  cycleWorkoutSetType,
   removeExerciseFromWorkout,
   clearActiveWorkout,
   countWorkoutSets,
@@ -105,8 +106,8 @@ describe('toCreateWorkoutSessionInput', () => {
           routineExerciseId: 're-bench',
           order: 1,
           entries: [
-            { id: 's1', order: 1, reps: '8', weightKg: '60', done: false },
-            { id: 's2', order: 2, reps: '', weightKg: '', done: false },
+            { id: 's1', order: 1, reps: '8', weightKg: '60', done: false, type: 'normal' },
+            { id: 's2', order: 2, reps: '', weightKg: '', done: false, type: 'normal' },
           ],
         },
       ],
@@ -118,8 +119,8 @@ describe('toCreateWorkoutSessionInput', () => {
     expect(input.startedAt).toBe('2026-05-30T09:00:00.000Z');
     expect(typeof input.completedAt).toBe('string');
     expect(input.exercises[0]?.sets).toEqual([
-      { order: 1, reps: 8, weightKg: 60 },
-      { order: 2, reps: undefined, weightKg: undefined },
+      { order: 1, reps: 8, weightKg: 60, type: 'normal' },
+      { order: 2, reps: undefined, weightKg: undefined, type: 'normal' },
     ]);
   });
 
@@ -136,8 +137,8 @@ describe('toCreateWorkoutSessionInput', () => {
           exerciseName: 'Bench',
           order: 1,
           entries: [
-            { id: 's1', order: 1, reps: '8', weightKg: '60', done: true },
-            { id: 's2', order: 2, reps: '6', weightKg: '65', done: false },
+            { id: 's1', order: 1, reps: '8', weightKg: '60', done: true, type: 'normal' },
+            { id: 's2', order: 2, reps: '6', weightKg: '65', done: false, type: 'normal' },
           ],
         },
       ],
@@ -306,5 +307,21 @@ describe('add / remove exercises', () => {
 
     expect(next.exercises).toHaveLength(1);
     expect(next.exercises[0]!.order).toBe(1);
+  });
+});
+
+describe('set type', () => {
+  it('builds sets as normal and cycles type', () => {
+    const draft = buildWorkoutSessionDraft(routine);
+    const exercise = draft.exercises[0]!;
+    const setId = exercise.entries[0]!.id;
+
+    expect(exercise.entries[0]!.type).toBe('normal');
+
+    const warmup = cycleWorkoutSetType(draft, exercise.id, setId);
+    expect(warmup.exercises[0]!.entries[0]!.type).toBe('warmup');
+
+    const drop = cycleWorkoutSetType(warmup, exercise.id, setId);
+    expect(drop.exercises[0]!.entries[0]!.type).toBe('drop');
   });
 });

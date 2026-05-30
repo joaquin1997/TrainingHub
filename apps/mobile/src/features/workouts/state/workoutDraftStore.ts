@@ -2,7 +2,15 @@ import type {
   CreateWorkoutSessionInput,
   Routine,
   WorkoutSession,
+  WorkoutSetType,
 } from '@workout/domain';
+
+export const WORKOUT_SET_TYPES: WorkoutSetType[] = [
+  'normal',
+  'warmup',
+  'drop',
+  'failure',
+];
 
 export type WorkoutSetDraft = {
   id: string;
@@ -10,6 +18,7 @@ export type WorkoutSetDraft = {
   reps: string;
   weightKg: string;
   done: boolean;
+  type: WorkoutSetType;
   minReps?: number;
   maxReps?: number;
   targetWeight?: number;
@@ -74,6 +83,7 @@ function buildExerciseDrafts(routine: Routine): WorkoutExerciseDraft[] {
           weightKg:
             set.targetWeight !== undefined ? String(set.targetWeight) : '',
           done: false,
+          type: 'normal',
           minReps: set.minReps,
           maxReps: set.maxReps,
           targetWeight: set.targetWeight,
@@ -133,6 +143,7 @@ export function addExerciseToWorkout(
         reps: '',
         weightKg: '',
         done: false,
+        type: 'normal',
       },
     ],
   };
@@ -172,6 +183,7 @@ export function addSetToWorkoutExercise(
         reps: '',
         weightKg: previousSet?.weightKg ?? '',
         done: false,
+        type: 'normal',
       };
 
       return { ...exercise, entries: [...exercise.entries, newSet] };
@@ -263,6 +275,34 @@ export function moveWorkoutSet(
   };
 }
 
+export function cycleWorkoutSetType(
+  workoutDraft: WorkoutSessionDraft,
+  workoutExerciseId: string,
+  workoutSetId: string,
+): WorkoutSessionDraft {
+  return {
+    ...workoutDraft,
+    exercises: workoutDraft.exercises.map((exercise) => {
+      if (exercise.id !== workoutExerciseId) {
+        return exercise;
+      }
+
+      return {
+        ...exercise,
+        entries: exercise.entries.map((set) => {
+          if (set.id !== workoutSetId) {
+            return set;
+          }
+
+          const nextIndex =
+            (WORKOUT_SET_TYPES.indexOf(set.type) + 1) % WORKOUT_SET_TYPES.length;
+          return { ...set, type: WORKOUT_SET_TYPES[nextIndex]! };
+        }),
+      };
+    }),
+  };
+}
+
 export function toggleWorkoutSetDone(
   workoutDraft: WorkoutSessionDraft,
   workoutExerciseId: string,
@@ -316,6 +356,8 @@ export function toCreateWorkoutSessionInput(
       order: exercise.order,
       sets: exercise.entries.map((set) => ({
         order: set.order,
+        type: set.type,
+        isWarmup: set.type === 'warmup' || undefined,
         reps: Number(set.reps) || undefined,
         weightKg: Number(set.weightKg) || undefined,
         completedAt: set.done ? completedAt : undefined,
@@ -393,6 +435,7 @@ export function toWorkoutSessionSkeleton(
         id: set.id,
         workoutExerciseId: exercise.id,
         order: set.order,
+        type: set.type,
         reps: Number(set.reps) || undefined,
         weightKg: Number(set.weightKg) || undefined,
         completedAt,

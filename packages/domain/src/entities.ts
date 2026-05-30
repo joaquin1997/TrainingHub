@@ -159,10 +159,13 @@ export interface WorkoutExercise {
 /**
  * Represents the actual logged data for a performed set.
  */
+export type WorkoutSetType = 'normal' | 'warmup' | 'drop' | 'failure';
+
 export interface WorkoutSet {
   id: EntityId;
   workoutExerciseId: EntityId;
   order: number;
+  type: WorkoutSetType;
   reps?: number;
   weightKg?: number;
   durationSeconds?: number;
@@ -178,6 +181,7 @@ export interface WorkoutSet {
  */
 export interface WorkoutSetInput {
   order: number;
+  type?: WorkoutSetType;
   reps?: number;
   weightKg?: number;
   durationSeconds?: number;
