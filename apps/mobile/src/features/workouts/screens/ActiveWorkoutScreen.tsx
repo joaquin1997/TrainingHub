@@ -22,10 +22,12 @@ import {
 } from '@/features/health/integrations/appleWorkoutIntegration';
 import {
   clearActiveWorkout,
+  countWorkoutSets,
   saveCompletedWorkout,
   setActiveWorkout,
   startActiveWorkout,
   toCreateWorkoutSessionInput,
+  toggleWorkoutSetDone,
   toWorkoutSessionSkeleton,
   updateWorkoutSetDraft,
   type WorkoutSessionDraft,
@@ -162,10 +164,27 @@ export function ActiveWorkoutScreen() {
     setActiveWorkout(nextDraft);
   };
 
+  const handleToggleDone = (workoutExerciseId: string, workoutSetId: string) => {
+    if (!workoutDraft) {
+      return;
+    }
+
+    const nextDraft = toggleWorkoutSetDone(
+      workoutDraft,
+      workoutExerciseId,
+      workoutSetId,
+    );
+
+    setWorkoutDraft(nextDraft);
+    setActiveWorkout(nextDraft);
+  };
+
   const handleDiscard = () => {
     clearActiveWorkout();
     router.replace('/routines');
   };
+
+  const setProgress = countWorkoutSets(workoutDraft);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -175,8 +194,8 @@ export function ActiveWorkoutScreen() {
       </Text>
       <Text style={styles.timer}>{formatDuration(elapsedSeconds)}</Text>
       <Text style={styles.meta}>
-        Started from your routine. Logged values are kept while in progress, so
-        you can leave and resume this workout.
+        {setProgress.done}/{setProgress.total} sets done · logged values are kept
+        while in progress, so you can leave and resume this workout.
       </Text>
       {workoutDraft.exercises.map((exercise) => (
         <View key={exercise.id} style={styles.card}>
@@ -222,6 +241,22 @@ export function ActiveWorkoutScreen() {
                     />
                   </View>
                 </View>
+                <Pressable
+                  onPress={() => handleToggleDone(exercise.id, set.id)}
+                  style={[
+                    styles.doneToggle,
+                    set.done ? styles.doneToggleActive : null,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.doneToggleText,
+                      set.done ? styles.doneToggleTextActive : null,
+                    ]}
+                  >
+                    {set.done ? '✓ Done' : 'Mark done'}
+                  </Text>
+                </Pressable>
               </View>
             ))}
           </View>
@@ -358,6 +393,26 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  doneToggle: {
+    alignSelf: 'flex-start',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  doneToggleActive: {
+    backgroundColor: '#dcfce7',
+    borderColor: '#16a34a',
+  },
+  doneToggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4b5563',
+  },
+  doneToggleTextActive: {
+    color: '#15803d',
   },
   discardButton: {
     alignSelf: 'flex-start',
