@@ -4,14 +4,11 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { progressClient } from '@/features/progress/api/progressClient';
+import { formatDate } from '@/lib/format';
 import type { ExerciseProgressDetail } from '@workout/domain';
 
 function formatValue(value?: number) {
   return value === undefined ? '—' : String(value);
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString();
 }
 
 export function ExerciseProgressDetailScreen() {

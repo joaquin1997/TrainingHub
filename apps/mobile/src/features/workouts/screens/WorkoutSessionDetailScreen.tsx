@@ -4,11 +4,8 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
+import { formatDateTime } from '@/lib/format';
 import type { WorkoutSession } from '@workout/domain';
-
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString();
-}
 
 export function WorkoutSessionDetailScreen() {
   const { workoutId } = useLocalSearchParams<{ workoutId?: string }>();

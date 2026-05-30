@@ -4,15 +4,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
+import { formatDate } from '@/lib/format';
 import type { WorkoutSession } from '@workout/domain';
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
 
 function countSets(session: WorkoutSession) {
   return session.exercises.reduce(
