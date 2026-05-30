@@ -23,6 +23,14 @@ export default function RootLayout() {
         name="workouts/summary"
         options={{ title: 'Workout Summary' }}
       />
+      <Stack.Screen
+        name="workouts/history"
+        options={{ title: 'Workout History' }}
+      />
+      <Stack.Screen
+        name="workouts/[workoutId]"
+        options={{ title: 'Workout Detail' }}
+      />
       <Stack.Screen name="progress/index" options={{ title: 'Progress' }} />
       <Stack.Screen
         name="progress/exercises/[exerciseId]"
