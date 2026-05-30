@@ -14,15 +14,13 @@ import {
   exercisesClient,
 } from '@/features/routines/api/exercisesClient';
 import { CustomExerciseModal } from '@/features/routines/components/CustomExerciseModal';
-import {
-  routinesClient,
-  type RoutineExerciseWriteInput,
-} from '@/features/routines/api/routinesClient';
+import { routinesClient } from '@/features/routines/api/routinesClient';
 import { getRoutineExerciseSummary } from '@/features/routines/mocks/mockRoutines';
 import type {
   Exercise,
   Routine,
   RoutineExercise,
+  RoutineExerciseInput,
   RoutineExerciseSet,
 } from '@workout/domain';
 
@@ -385,7 +383,7 @@ export function RoutineFormScreen({
       setIsSubmitting(true);
       setErrorMessage(undefined);
 
-      const routineExercises: RoutineExerciseWriteInput[] = [];
+      const routineExercises: RoutineExerciseInput[] = [];
 
       for (const [exerciseIndex, exercise] of exercises.entries()) {
         if (!exercise.exerciseId) {
@@ -393,7 +391,7 @@ export function RoutineFormScreen({
           return;
         }
 
-        const sets: RoutineExerciseWriteInput['sets'] = [];
+        const sets: RoutineExerciseInput['sets'] = [];
 
         for (const [setIndex, set] of exercise.sets.entries()) {
           const minReps = parseOptionalInteger(set.minReps);

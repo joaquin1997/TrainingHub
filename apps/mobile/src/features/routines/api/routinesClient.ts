@@ -1,23 +1,10 @@
-import type { Routine } from '@workout/domain';
+import type {
+  CreateRoutineInput,
+  Routine,
+  UpdateRoutineInput,
+} from '@workout/domain';
 
 import { API_BASE_URL } from '@/config/api';
-
-export type RoutineExerciseWriteInput = {
-  exerciseId: string;
-  orderIndex: number;
-  sets: Array<{
-    setNumber: number;
-    minReps?: number;
-    maxReps?: number;
-    targetWeight?: number;
-  }>;
-};
-
-type RoutineWriteInput = {
-  name: string;
-  description?: string;
-  exercises: RoutineExerciseWriteInput[];
-};
 
 type ErrorResponse = {
   message?: string;
@@ -95,13 +82,13 @@ export const routinesClient = {
   getById(routineId: string) {
     return request<Routine>(`/routines/${routineId}`);
   },
-  create(input: RoutineWriteInput) {
+  create(input: CreateRoutineInput) {
     return request<Routine>('/routines', {
       method: 'POST',
       body: JSON.stringify(input),
     });
   },
-  update(routineId: string, input: RoutineWriteInput) {
+  update(routineId: string, input: UpdateRoutineInput) {
     return request<Routine>(`/routines/${routineId}`, {
       method: 'PUT',
       body: JSON.stringify(input),

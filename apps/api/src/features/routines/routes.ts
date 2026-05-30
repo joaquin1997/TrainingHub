@@ -1,4 +1,9 @@
 import type { FastifyInstance } from 'fastify';
+import type {
+  CreateRoutineInput,
+  RoutineExerciseInput,
+  RoutineSetInput,
+} from '@workout/domain';
 
 import { findExerciseById } from '../exercises/repository.js';
 import {
@@ -7,36 +12,8 @@ import {
   findRoutineById,
   listRoutines,
   updateRoutine,
+  type RoutineWriteInput,
 } from './repository.js';
-
-type RoutineExerciseSetInput = {
-  setNumber: number;
-  minReps?: number;
-  maxReps?: number;
-  targetWeight?: number;
-};
-
-type ParsedRoutineExerciseInput = {
-  exerciseId: string;
-  orderIndex: number;
-  sets: RoutineExerciseSetInput[];
-};
-
-type RoutineExerciseInput = ParsedRoutineExerciseInput & {
-  exerciseName: string;
-};
-
-type ParsedRoutineWriteInput = {
-  name: string;
-  description?: string;
-  exercises: ParsedRoutineExerciseInput[];
-};
-
-type RoutineWriteInput = {
-  name: string;
-  description?: string;
-  exercises: RoutineExerciseInput[];
-};
 
 function normalizeRoutineBody(body: unknown) {
   if (typeof body !== 'string') {
@@ -69,7 +46,7 @@ function parseOptionalInteger(value: unknown) {
 function parseRoutineExerciseSetInput(
   value: unknown,
   fallbackSetNumber: number,
-): RoutineExerciseSetInput | null {
+): RoutineSetInput | null {
   if (!isRecord(value)) {
     return null;
   }
@@ -90,7 +67,7 @@ function parseRoutineExerciseSetInput(
 function parseRoutineExerciseInput(
   value: unknown,
   fallbackOrderIndex: number,
-): ParsedRoutineExerciseInput | null {
+): RoutineExerciseInput | null {
   if (
     !isRecord(value) ||
     typeof value.exerciseId !== 'string' ||
@@ -107,7 +84,7 @@ function parseRoutineExerciseInput(
   const setsInput = Array.isArray(value.sets) ? value.sets : [];
   const sets = setsInput
     .map((set, index) => parseRoutineExerciseSetInput(set, index + 1))
-    .filter((set): set is RoutineExerciseSetInput => set !== null);
+    .filter((set): set is RoutineSetInput => set !== null);
 
   if (sets.length !== setsInput.length) {
     return null;
@@ -120,7 +97,7 @@ function parseRoutineExerciseInput(
   };
 }
 
-function parseRoutineWriteInput(body: unknown): ParsedRoutineWriteInput | null {
+function parseRoutineWriteInput(body: unknown): CreateRoutineInput | null {
   const normalizedBody = normalizeRoutineBody(body);
 
   if (
@@ -137,7 +114,7 @@ function parseRoutineWriteInput(body: unknown): ParsedRoutineWriteInput | null {
   const exercises = exercisesInput
     .map((exercise, index) => parseRoutineExerciseInput(exercise, index + 1))
     .filter(
-      (exercise): exercise is ParsedRoutineExerciseInput => exercise !== null,
+      (exercise): exercise is RoutineExerciseInput => exercise !== null,
     );
 
   if (exercises.length !== exercisesInput.length) {
@@ -152,7 +129,7 @@ function parseRoutineWriteInput(body: unknown): ParsedRoutineWriteInput | null {
 }
 
 async function hydrateRoutineWriteInput(
-  input: ParsedRoutineWriteInput,
+  input: CreateRoutineInput,
 ): Promise<RoutineWriteInput | null> {
   const exercises = await Promise.all(
     input.exercises.map(async (exercise) => {
@@ -179,7 +156,8 @@ async function hydrateRoutineWriteInput(
     name: input.name,
     description: input.description,
     exercises: exercises.filter(
-      (exercise): exercise is RoutineExerciseInput => exercise !== null,
+      (exercise): exercise is RoutineWriteInput['exercises'][number] =>
+        exercise !== null,
     ),
   };
 }

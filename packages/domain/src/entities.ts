@@ -90,6 +90,41 @@ export interface RoutineExerciseSet {
 }
 
 /**
+ * Write contract for one target set when creating or updating a routine.
+ * This is the HTTP payload shape shared by the mobile client and the API.
+ */
+export interface RoutineSetInput {
+  setNumber: number;
+  minReps?: number;
+  maxReps?: number;
+  targetWeight?: number;
+}
+
+/**
+ * Write contract for one exercise when creating or updating a routine.
+ * References the exercise by id only; the API resolves the exercise name.
+ */
+export interface RoutineExerciseInput {
+  exerciseId: EntityId;
+  orderIndex: number;
+  sets: RoutineSetInput[];
+}
+
+/**
+ * Write contract for creating a routine.
+ */
+export interface CreateRoutineInput {
+  name: string;
+  description?: string;
+  exercises: RoutineExerciseInput[];
+}
+
+/**
+ * Write contract for updating a routine. Same shape as create for now.
+ */
+export type UpdateRoutineInput = CreateRoutineInput;
+
+/**
  * Represents a real workout session performed by a user.
  */
 export interface WorkoutSession {

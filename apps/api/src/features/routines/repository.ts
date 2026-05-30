@@ -1,24 +1,16 @@
 import { Prisma } from '@prisma/client';
-import type { Routine } from '@workout/domain';
+import type { CreateRoutineInput, RoutineExerciseInput, Routine } from '@workout/domain';
 
 import { prisma } from '../../infrastructure/prisma.js';
 
 const DEVELOPMENT_USER_PUBLIC_ID = 'user-development';
 
-type RoutineWriteInput = {
-  name: string;
-  description?: string;
-  exercises: Array<{
-    exerciseId: string;
-    exerciseName: string;
-    orderIndex: number;
-    sets: Array<{
-      setNumber: number;
-      minReps?: number;
-      maxReps?: number;
-      targetWeight?: number;
-    }>;
-  }>;
+/**
+ * Hydrated write input the repository persists: the shared write contract plus
+ * the resolved exercise name (denormalized on RoutineExercise).
+ */
+export type RoutineWriteInput = Omit<CreateRoutineInput, 'exercises'> & {
+  exercises: Array<RoutineExerciseInput & { exerciseName: string }>;
 };
 
 type RoutineRecord = Prisma.RoutineGetPayload<{
