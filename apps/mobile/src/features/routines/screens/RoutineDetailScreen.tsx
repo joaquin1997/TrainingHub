@@ -210,9 +210,15 @@ export function RoutineDetailScreen() {
             Start workout
           </Link>
         )}
-        <Link href={`/routines/edit/${routine.id}`} style={styles.link}>
-          Edit routine
-        </Link>
+        {activeWorkout && activeWorkout.routineId === routine.id ? (
+          <Text style={styles.meta}>
+            Editing is locked while this workout is in progress
+          </Text>
+        ) : (
+          <Link href={`/routines/edit/${routine.id}`} style={styles.link}>
+            Edit routine
+          </Link>
+        )}
         <Link href="/routines" style={styles.link}>
           Back to routines
         </Link>
