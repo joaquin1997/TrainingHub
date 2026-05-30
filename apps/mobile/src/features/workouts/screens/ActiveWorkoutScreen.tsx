@@ -16,6 +16,9 @@ import { ExercisePickerModal } from '@/features/exercises/components/ExercisePic
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { formatDuration } from '@/lib/format';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
+import { useRestTimer } from '@/lib/useRestTimer';
+
+const REST_PRESETS = [60, 90, 120];
 import type {
   Exercise,
   ExerciseLastPerformance,
@@ -91,6 +94,8 @@ export function ActiveWorkoutScreen() {
   const [lastByExercise, setLastByExercise] = useState<
     Record<string, ExerciseLastPerformance | null>
   >({});
+  const [restDuration, setRestDuration] = useState(90);
+  const restTimer = useRestTimer();
 
   useEffect(() => {
     if (!routineId) {
@@ -249,6 +254,13 @@ export function ActiveWorkoutScreen() {
       return;
     }
 
+    const exercise = workoutDraft.exercises.find(
+      (item) => item.id === workoutExerciseId,
+    );
+    const becomingDone = !exercise?.entries.find(
+      (set) => set.id === workoutSetId,
+    )?.done;
+
     const nextDraft = toggleWorkoutSetDone(
       workoutDraft,
       workoutExerciseId,
@@ -257,6 +269,10 @@ export function ActiveWorkoutScreen() {
 
     setWorkoutDraft(nextDraft);
     setActiveWorkout(nextDraft);
+
+    if (becomingDone) {
+      restTimer.start(restDuration);
+    }
   };
 
   const applyDraft = (nextDraft: WorkoutSessionDraft) => {
@@ -385,6 +401,41 @@ export function ActiveWorkoutScreen() {
         style={styles.notesInput}
         multiline
       />
+      <View style={styles.restBar}>
+        {restTimer.isRunning ? (
+          <>
+            <Text style={styles.restTime}>
+              Rest {formatDuration(restTimer.remaining)}
+            </Text>
+            <Pressable onPress={restTimer.skip} hitSlop={8}>
+              <Text style={styles.addSetText}>Skip</Text>
+            </Pressable>
+          </>
+        ) : (
+          <>
+            <Text style={styles.meta}>Rest</Text>
+            {REST_PRESETS.map((seconds) => (
+              <Pressable
+                key={seconds}
+                onPress={() => setRestDuration(seconds)}
+                hitSlop={6}
+              >
+                <Text
+                  style={[
+                    styles.restPreset,
+                    restDuration === seconds ? styles.restPresetActive : null,
+                  ]}
+                >
+                  {seconds}s
+                </Text>
+              </Pressable>
+            ))}
+            <Pressable onPress={() => restTimer.start(restDuration)} hitSlop={8}>
+              <Text style={styles.addSetText}>Start</Text>
+            </Pressable>
+          </>
+        )}
+      </View>
       {workoutDraft.exercises.map((exercise) => (
         <View key={exercise.id} style={styles.card}>
           <View style={styles.cardHeader}>
@@ -747,6 +798,30 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 15,
     minHeight: 60,
+  },
+  restBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  restTime: {
+    fontSize: 18,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  restPreset: {
+    fontSize: 15,
+    color: '#4b5563',
+    fontWeight: '600',
+  },
+  restPresetActive: {
+    color: '#2563eb',
+    textDecorationLine: 'underline',
   },
   doneToggle: {
     alignSelf: 'flex-start',

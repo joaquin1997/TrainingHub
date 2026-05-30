@@ -3,8 +3,8 @@
 A configurable countdown timer between sets, like Hevy.
 
 ## Checklist
-- [ ] Countdown timer with configurable duration
-- [ ] Auto-start when a set is marked done
+- [x] Countdown timer with configurable duration
+- [x] Auto-start when a set is marked done
 - [ ] Notification / vibration when it finishes
 
 ## Design notes
