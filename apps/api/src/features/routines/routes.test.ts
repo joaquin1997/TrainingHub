@@ -1,0 +1,144 @@
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
+
+// The route module talks to the database through these repositories. We mock
+// them so the tests exercise routing, validation and status codes only — no DB.
+vi.mock('./repository.js', () => ({
+  listRoutines: vi.fn(),
+  findRoutineById: vi.fn(),
+  createRoutine: vi.fn(),
+  updateRoutine: vi.fn(),
+  deleteRoutine: vi.fn(),
+}));
+vi.mock('../exercises/repository.js', () => ({
+  findExerciseById: vi.fn(),
+}));
+
+import { createApp } from '../../app.js';
+import { findExerciseById } from '../exercises/repository.js';
+import {
+  createRoutine,
+  deleteRoutine,
+  findRoutineById,
+  listRoutines,
+  updateRoutine,
+} from './repository.js';
+
+const app = createApp({ logger: false });
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
+afterAll(async () => {
+  await app.close();
+});
+
+describe('GET /routines', () => {
+  it('returns the list from the repository', async () => {
+    vi.mocked(listRoutines).mockResolvedValue([{ id: 'r1', name: 'Push Day' }] as never);
+
+    const response = await app.inject({ method: 'GET', url: '/routines' });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual([{ id: 'r1', name: 'Push Day' }]);
+    expect(listRoutines).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('GET /routines/:id', () => {
+  it('returns 404 when the routine does not exist', async () => {
+    vi.mocked(findRoutineById).mockResolvedValue(null as never);
+
+    const response = await app.inject({ method: 'GET', url: '/routines/missing' });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toEqual({ message: 'Routine not found' });
+  });
+
+  it('returns the routine when it exists', async () => {
+    vi.mocked(findRoutineById).mockResolvedValue({ id: 'r1', name: 'Push Day' } as never);
+
+    const response = await app.inject({ method: 'GET', url: '/routines/r1' });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({ id: 'r1' });
+    expect(findRoutineById).toHaveBeenCalledWith('r1');
+  });
+});
+
+describe('POST /routines', () => {
+  it('returns 400 when the payload is invalid (missing name)', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/routines',
+      payload: { description: 'no name' },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({ message: 'Invalid routine payload' });
+    expect(createRoutine).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when an exercise reference is unknown', async () => {
+    vi.mocked(findExerciseById).mockResolvedValue(null as never);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/routines',
+      payload: {
+        name: 'Push Day',
+        exercises: [{ exerciseId: 'nope', orderIndex: 0, sets: [] }],
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({ message: 'Routine references unknown exercises' });
+    expect(createRoutine).not.toHaveBeenCalled();
+  });
+
+  it('creates the routine and hydrates the exercise name (201)', async () => {
+    vi.mocked(findExerciseById).mockResolvedValue({ id: 'ex1', name: 'Bench Press' } as never);
+    vi.mocked(createRoutine).mockResolvedValue({ id: 'r1', name: 'Push Day' } as never);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/routines',
+      payload: {
+        name: 'Push Day',
+        exercises: [
+          { exerciseId: 'ex1', orderIndex: 0, sets: [{ setNumber: 1, minReps: 8, maxReps: 12 }] },
+        ],
+      },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toMatchObject({ id: 'r1' });
+    expect(createRoutine).toHaveBeenCalledTimes(1);
+    expect(createRoutine).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Push Day',
+        exercises: [expect.objectContaining({ exerciseId: 'ex1', exerciseName: 'Bench Press' })],
+      }),
+    );
+  });
+});
+
+describe('DELETE /routines/:id', () => {
+  it('returns 204 when the routine was deleted', async () => {
+    vi.mocked(deleteRoutine).mockResolvedValue(true as never);
+
+    const response = await app.inject({ method: 'DELETE', url: '/routines/r1' });
+
+    expect(response.statusCode).toBe(204);
+    expect(deleteRoutine).toHaveBeenCalledWith('r1');
+  });
+
+  it('returns 404 when the routine did not exist', async () => {
+    vi.mocked(deleteRoutine).mockResolvedValue(false as never);
+
+    const response = await app.inject({ method: 'DELETE', url: '/routines/missing' });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toEqual({ message: 'Routine not found' });
+  });
+});
