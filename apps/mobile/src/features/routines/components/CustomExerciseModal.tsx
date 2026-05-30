@@ -11,7 +11,7 @@ import {
 
 import type { Exercise, MuscleGroup } from '@workout/domain';
 
-import { exercisesClient } from '@/features/routines/api/exercisesClient';
+import { exercisesClient } from '@/features/exercises/api/exercisesClient';
 
 type CustomExerciseModalProps = {
   visible: boolean;

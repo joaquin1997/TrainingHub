@@ -12,7 +12,7 @@ import {
 
 import {
   exercisesClient,
-} from '@/features/routines/api/exercisesClient';
+} from '@/features/exercises/api/exercisesClient';
 import { CustomExerciseModal } from '@/features/routines/components/CustomExerciseModal';
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
