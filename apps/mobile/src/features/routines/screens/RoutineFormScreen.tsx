@@ -345,6 +345,20 @@ export function RoutineFormScreen({
     });
   }
 
+  function moveExerciseRow(index: number, direction: 'up' | 'down') {
+    setExercises((currentExercises) => {
+      const target = direction === 'up' ? index - 1 : index + 1;
+      if (target < 0 || target >= currentExercises.length) {
+        return currentExercises;
+      }
+      const next = currentExercises.slice();
+      const moved = next[index]!;
+      next[index] = next[target]!;
+      next[target] = moved;
+      return next;
+    });
+  }
+
   function addSetRow(exerciseId: string) {
     setExercises((currentExercises) =>
       currentExercises.map((exercise) =>
@@ -569,7 +583,25 @@ export function RoutineFormScreen({
           <View style={styles.exerciseList}>
             {exercises.map((exercise, index) => (
               <View key={exercise.id} style={styles.exerciseCard}>
-                <Text style={styles.exerciseCardTitle}>Exercise {index + 1}</Text>
+                <View style={styles.exerciseCardHeader}>
+                  <Text style={styles.exerciseCardTitle}>
+                    Exercise {index + 1}
+                  </Text>
+                  <View style={styles.exerciseReorder}>
+                    <Pressable
+                      onPress={() => moveExerciseRow(index, 'up')}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.reorderArrow}>↑</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => moveExerciseRow(index, 'down')}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.reorderArrow}>↓</Text>
+                    </Pressable>
+                  </View>
+                </View>
                 <TextInput
                   value={exercise.exerciseQuery}
                   onChangeText={(value) => updateExerciseQuery(exercise.id, value)}
@@ -823,6 +855,21 @@ const styles = StyleSheet.create({
     borderColor: '#d1d5db',
     borderRadius: 10,
     padding: 12,
+  },
+  exerciseCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  exerciseReorder: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  reorderArrow: {
+    fontSize: 18,
+    color: '#2563eb',
+    fontWeight: '700',
   },
   exerciseCardTitle: {
     fontSize: 14,
