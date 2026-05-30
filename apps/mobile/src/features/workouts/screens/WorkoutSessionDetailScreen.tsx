@@ -108,6 +108,9 @@ export function WorkoutSessionDetailScreen() {
             )}`
           : ''}
       </Text>
+      {session.notes ? (
+        <Text style={styles.meta}>{session.notes}</Text>
+      ) : null}
       {session.exercises.map((exercise) => (
         <View key={exercise.id} style={styles.card}>
           <Text style={styles.cardTitle}>

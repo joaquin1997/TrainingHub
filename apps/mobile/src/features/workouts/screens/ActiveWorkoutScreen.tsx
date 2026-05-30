@@ -179,6 +179,16 @@ export function ActiveWorkoutScreen() {
     setActiveWorkout(nextDraft);
   };
 
+  const handleNotesChange = (value: string) => {
+    if (!workoutDraft) {
+      return;
+    }
+
+    const nextDraft = { ...workoutDraft, notes: value };
+    setWorkoutDraft(nextDraft);
+    setActiveWorkout(nextDraft);
+  };
+
   const handleDiscard = () => {
     clearActiveWorkout();
     router.replace('/routines');
@@ -197,6 +207,13 @@ export function ActiveWorkoutScreen() {
         {setProgress.done}/{setProgress.total} sets done · logged values are kept
         while in progress, so you can leave and resume this workout.
       </Text>
+      <TextInput
+        value={workoutDraft.notes ?? ''}
+        onChangeText={handleNotesChange}
+        placeholder="Workout notes (optional)"
+        style={styles.notesInput}
+        multiline
+      />
       {workoutDraft.exercises.map((exercise) => (
         <View key={exercise.id} style={styles.card}>
           <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
@@ -393,6 +410,15 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  notesInput: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    minHeight: 60,
   },
   doneToggle: {
     alignSelf: 'flex-start',

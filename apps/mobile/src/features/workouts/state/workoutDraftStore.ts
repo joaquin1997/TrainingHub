@@ -30,6 +30,7 @@ export type WorkoutSessionDraft = {
   routineId: string;
   routineName: string;
   startedAt: string;
+  notes?: string;
   exercises: WorkoutExerciseDraft[];
 };
 
@@ -144,6 +145,7 @@ export function toCreateWorkoutSessionInput(
     routineId: workoutDraft.routineId,
     startedAt: workoutDraft.startedAt,
     completedAt: new Date().toISOString(),
+    notes: workoutDraft.notes?.trim() ? workoutDraft.notes.trim() : undefined,
     exercises: workoutDraft.exercises.map((exercise) => ({
       exerciseId: exercise.exerciseId,
       routineExerciseId: exercise.routineExerciseId,
