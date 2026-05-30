@@ -6,7 +6,7 @@ previous performance, set types, and persist completion.
 ## Checklist
 - [x] Persist per-set completion (`completedAt`) + `isWarmup` in the API
 - [x] Add / remove sets during a workout
-- [ ] Add / remove exercises during a workout
+- [x] Add / remove exercises during a workout
 - [x] Reorder exercises and sets (up/down)
 - [ ] Show "last time" per set (e.g. 60 kg × 8 from the previous workout)
 - [ ] Set types (warmup / drop / failure) — UI + persistence

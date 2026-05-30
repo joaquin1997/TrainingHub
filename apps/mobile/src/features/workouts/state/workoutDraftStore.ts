@@ -117,6 +117,43 @@ export function updateWorkoutSetDraft(
   };
 }
 
+export function addExerciseToWorkout(
+  workoutDraft: WorkoutSessionDraft,
+  exercise: { id: string; name: string },
+): WorkoutSessionDraft {
+  const newExercise: WorkoutExerciseDraft = {
+    id: nextDraftId('we'),
+    exerciseId: exercise.id,
+    exerciseName: exercise.name,
+    order: workoutDraft.exercises.length + 1,
+    entries: [
+      {
+        id: nextDraftId('we-set'),
+        order: 1,
+        reps: '',
+        weightKg: '',
+        done: false,
+      },
+    ],
+  };
+
+  return { ...workoutDraft, exercises: [...workoutDraft.exercises, newExercise] };
+}
+
+export function removeExerciseFromWorkout(
+  workoutDraft: WorkoutSessionDraft,
+  workoutExerciseId: string,
+): WorkoutSessionDraft {
+  return {
+    ...workoutDraft,
+    exercises: renumberExercises(
+      workoutDraft.exercises.filter(
+        (exercise) => exercise.id !== workoutExerciseId,
+      ),
+    ),
+  };
+}
+
 export function addSetToWorkoutExercise(
   workoutDraft: WorkoutSessionDraft,
   workoutExerciseId: string,

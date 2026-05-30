@@ -2,8 +2,10 @@ import type { Routine } from '@workout/domain';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  addExerciseToWorkout,
   addSetToWorkoutExercise,
   buildWorkoutSessionDraft,
+  removeExerciseFromWorkout,
   clearActiveWorkout,
   countWorkoutSets,
   moveWorkoutExercise,
@@ -278,5 +280,31 @@ describe('reorder', () => {
 
     expect(entries[0]!.id).toBe(secondSetId);
     expect(entries.map((s) => s.order)).toEqual([1, 2]);
+  });
+});
+
+describe('add / remove exercises', () => {
+  it('appends an exercise with one empty set and order at the end', () => {
+    const draft = buildWorkoutSessionDraft(routine); // 2 exercises
+
+    const next = addExerciseToWorkout(draft, { id: 'ex-squat', name: 'Squat' });
+
+    expect(next.exercises).toHaveLength(3);
+    const added = next.exercises[2]!;
+    expect(added.exerciseName).toBe('Squat');
+    expect(added.exerciseId).toBe('ex-squat');
+    expect(added.order).toBe(3);
+    expect(added.entries).toHaveLength(1);
+    expect(added.entries[0]!.reps).toBe('');
+  });
+
+  it('removes an exercise and renumbers order', () => {
+    const draft = buildWorkoutSessionDraft(routine);
+    const firstId = draft.exercises[0]!.id;
+
+    const next = removeExerciseFromWorkout(draft, firstId);
+
+    expect(next.exercises).toHaveLength(1);
+    expect(next.exercises[0]!.order).toBe(1);
   });
 });

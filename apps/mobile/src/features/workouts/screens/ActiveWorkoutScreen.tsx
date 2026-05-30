@@ -12,20 +12,24 @@ import {
 
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
+import { ExercisePickerModal } from '@/features/exercises/components/ExercisePickerModal';
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { formatDuration } from '@/lib/format';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
+import type { Exercise } from '@workout/domain';
 import {
   notifyAppleWorkoutFinished,
   notifyAppleWorkoutStarted,
   syncWorkoutCompletionToAppleHealth,
 } from '@/features/health/integrations/appleWorkoutIntegration';
 import {
+  addExerciseToWorkout,
   addSetToWorkoutExercise,
   clearActiveWorkout,
   countWorkoutSets,
   moveWorkoutExercise,
   moveWorkoutSet,
+  removeExerciseFromWorkout,
   removeSetFromWorkoutExercise,
   saveCompletedWorkout,
   setActiveWorkout,
@@ -48,6 +52,7 @@ export function ActiveWorkoutScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
   const [finishError, setFinishError] = useState<string | null>(null);
+  const [isPickerVisible, setIsPickerVisible] = useState(false);
 
   useEffect(() => {
     if (!routineId) {
@@ -194,6 +199,27 @@ export function ActiveWorkoutScreen() {
     }
 
     applyDraft(addSetToWorkoutExercise(workoutDraft, workoutExerciseId));
+  };
+
+  const handleAddExercise = (exercise: Exercise) => {
+    if (!workoutDraft) {
+      return;
+    }
+
+    applyDraft(
+      addExerciseToWorkout(workoutDraft, {
+        id: exercise.id,
+        name: exercise.name,
+      }),
+    );
+  };
+
+  const handleRemoveExercise = (workoutExerciseId: string) => {
+    if (!workoutDraft) {
+      return;
+    }
+
+    applyDraft(removeExerciseFromWorkout(workoutDraft, workoutExerciseId));
   };
 
   const handleMoveExercise = (
@@ -376,14 +402,33 @@ export function ActiveWorkoutScreen() {
               </View>
             ))}
           </View>
-          <Pressable
-            onPress={() => handleAddSet(exercise.id)}
-            style={styles.addSetButton}
-          >
-            <Text style={styles.addSetText}>+ Add set</Text>
-          </Pressable>
+          <View style={styles.cardActions}>
+            <Pressable
+              onPress={() => handleAddSet(exercise.id)}
+              style={styles.addSetButton}
+            >
+              <Text style={styles.addSetText}>+ Add set</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => handleRemoveExercise(exercise.id)}
+              hitSlop={8}
+            >
+              <Text style={styles.removeText}>Remove exercise</Text>
+            </Pressable>
+          </View>
         </View>
       ))}
+      <Pressable
+        onPress={() => setIsPickerVisible(true)}
+        style={styles.addExerciseButton}
+      >
+        <Text style={styles.addExerciseText}>+ Add exercise</Text>
+      </Pressable>
+      <ExercisePickerModal
+        visible={isPickerVisible}
+        onClose={() => setIsPickerVisible(false)}
+        onSelect={handleAddExercise}
+      />
       {finishError ? <Text style={styles.errorText}>{finishError}</Text> : null}
       <Pressable
         onPress={() => void finishWorkout()}
@@ -503,11 +548,29 @@ const styles = StyleSheet.create({
     color: '#b91c1c',
     fontWeight: '600',
   },
+  cardActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   addSetButton: {
     alignSelf: 'flex-start',
     paddingVertical: 6,
   },
   addSetText: {
+    fontSize: 15,
+    color: '#2563eb',
+    fontWeight: '600',
+  },
+  addExerciseButton: {
+    alignSelf: 'flex-start',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#2563eb',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  addExerciseText: {
     fontSize: 15,
     color: '#2563eb',
     fontWeight: '600',
