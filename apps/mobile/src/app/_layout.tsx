@@ -7,6 +7,10 @@ export default function RootLayout() {
       <Stack.Screen name="auth/index" options={{ title: 'Auth' }} />
       <Stack.Screen name="routines/index" options={{ title: 'Routines' }} />
       <Stack.Screen name="exercises/index" options={{ title: 'Exercises' }} />
+      <Stack.Screen
+        name="exercises/[exerciseId]"
+        options={{ title: 'Exercise Detail' }}
+      />
       <Stack.Screen name="routines/create" options={{ title: 'Create Routine' }} />
       <Stack.Screen
         name="routines/[routineId]"
