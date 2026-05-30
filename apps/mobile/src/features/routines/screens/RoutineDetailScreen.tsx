@@ -29,6 +29,7 @@ export function RoutineDetailScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
   const activeWorkout = useActiveWorkout();
 
   const loadRoutine = useCallback(
@@ -99,6 +100,46 @@ export function RoutineDetailScreen() {
       );
     } finally {
       setIsDeleting(false);
+    }
+  }
+
+  async function handleDuplicate() {
+    if (!routine) {
+      return;
+    }
+
+    try {
+      setIsDuplicating(true);
+      setErrorMessage(undefined);
+
+      const created = await routinesClient.create({
+        name: `${routine.name} (copy)`,
+        description: routine.description,
+        exercises: routine.exercises
+          .slice()
+          .sort((left, right) => left.orderIndex - right.orderIndex)
+          .map((exercise) => ({
+            exerciseId: exercise.exerciseId,
+            orderIndex: exercise.orderIndex,
+            sets: exercise.sets
+              .slice()
+              .sort((left, right) => left.setNumber - right.setNumber)
+              .map((set) => ({
+                setNumber: set.setNumber,
+                minReps: set.minReps,
+                maxReps: set.maxReps,
+                targetWeight: set.targetWeight,
+              })),
+          })),
+      });
+
+      router.replace(`/routines/${created.id}`);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Unable to duplicate routine.',
+      );
+    } finally {
+      setIsDuplicating(false);
     }
   }
 
@@ -222,6 +263,11 @@ export function RoutineDetailScreen() {
         <Link href="/routines" style={styles.link}>
           Back to routines
         </Link>
+        <Pressable onPress={() => void handleDuplicate()} disabled={isDuplicating}>
+          <Text style={styles.link}>
+            {isDuplicating ? 'Duplicating...' : 'Duplicate'}
+          </Text>
+        </Pressable>
       </View>
       <Pressable
         accessibilityRole="button"
