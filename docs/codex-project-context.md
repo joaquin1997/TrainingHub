@@ -18,11 +18,14 @@ Product strategy:
 ---
 
 ## Current priority
-The current development priority is to advance by vertical slices, starting with:
+Development advances by vertical slices. Status so far:
 
-- **Routines end-to-end**
+- **Routines** — done end-to-end (Prisma persistence, mobile create/edit/list/detail)
+- **Workouts** — done: start from a routine, log sets, save the completed session, history + detail
+- **Progress** — done: per-exercise summaries and per-session points aggregated from saved workouts
+- **Exercises** — catalog browsing + search + detail (seeded from wger), used by the routine builder
 
-Do not work on `auth`, `health` or secondary features until the routines flow is closed cleanly.
+Next candidates: `auth` (Apple first) and `health` remain deferred until a product reason arises. Keep closing UX gaps and tests on the slices above before starting them.
 
 ---
 
