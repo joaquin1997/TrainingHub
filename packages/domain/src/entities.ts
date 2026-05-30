@@ -210,6 +210,37 @@ export interface CreateWorkoutSessionInput {
 }
 
 /**
+ * One progress data point for an exercise, aggregated from a single session.
+ */
+export interface ExerciseProgressPoint {
+  date: ISODateString;
+  bestWeightKg?: number;
+  bestReps?: number;
+  totalVolume: number;
+}
+
+/**
+ * Progress summary for one exercise, used by the progress overview list.
+ */
+export interface ExerciseProgressSummary {
+  exerciseId: EntityId;
+  exerciseName: string;
+  sessionCount: number;
+  lastPerformedAt?: ISODateString;
+  latestWeightKg?: number;
+  latestReps?: number;
+  personalBestWeightKg?: number;
+  personalBestReps?: number;
+}
+
+/**
+ * Full progress detail for one exercise: the summary plus per-session points.
+ */
+export interface ExerciseProgressDetail extends ExerciseProgressSummary {
+  points: ExerciseProgressPoint[];
+}
+
+/**
  * Stores health integration sync metadata only, never the workout data itself.
  */
 export interface HealthSyncRecord {
