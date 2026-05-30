@@ -7,6 +7,7 @@ type RouteKey =
   | 'routine-detail'
   | 'active-workout'
   | 'workout-summary'
+  | 'workout-history'
   | 'progress';
 
 type RouteLinksProps = {
@@ -17,20 +18,15 @@ const ROUTES: Array<{
   href:
     | '/auth'
     | '/routines'
-    | '/routines/routine-upper-a'
     | '/workouts/active'
     | '/workouts/summary'
+    | '/workouts/history'
     | '/progress';
   key: RouteKey;
   label: string;
 }> = [
   { href: '/auth', key: 'auth', label: 'Auth landing' },
   { href: '/routines', key: 'routines', label: 'Routines list' },
-  {
-    href: '/routines/routine-upper-a',
-    key: 'routine-detail',
-    label: 'Routine detail',
-  },
   {
     href: '/workouts/active',
     key: 'active-workout',
@@ -40,6 +36,11 @@ const ROUTES: Array<{
     href: '/workouts/summary',
     key: 'workout-summary',
     label: 'Workout summary',
+  },
+  {
+    href: '/workouts/history',
+    key: 'workout-history',
+    label: 'Workout history',
   },
   { href: '/progress', key: 'progress', label: 'Progress overview' },
 ];
