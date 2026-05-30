@@ -2,8 +2,10 @@ import { Prisma } from '@prisma/client';
 import type { CreateRoutineInput, RoutineExerciseInput, Routine } from '@workout/domain';
 
 import { prisma } from '../../infrastructure/prisma.js';
-
-const DEVELOPMENT_USER_PUBLIC_ID = 'user-development';
+import {
+  DEVELOPMENT_USER_PUBLIC_ID,
+  ensureDevelopmentUser,
+} from '../../infrastructure/developmentUser.js';
 
 /**
  * Hydrated write input the repository persists: the shared write contract plus
@@ -27,18 +29,6 @@ type RoutineRecord = Prisma.RoutineGetPayload<{
     };
   };
 }>;
-
-async function ensureDevelopmentUser() {
-  await prisma.user.upsert({
-    where: { publicId: DEVELOPMENT_USER_PUBLIC_ID },
-    update: {},
-    create: {
-      publicId: DEVELOPMENT_USER_PUBLIC_ID,
-      displayName: 'Development User',
-      email: 'dev-user@example.com',
-    },
-  });
-}
 
 function logRepository(action: string, payload?: Record<string, unknown>) {
   console.info('[routinesRepository]', action, payload ?? {});

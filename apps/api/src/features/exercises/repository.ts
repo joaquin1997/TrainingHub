@@ -2,8 +2,10 @@ import { Prisma } from '@prisma/client';
 import type { Exercise, MuscleGroup } from '@workout/domain';
 
 import { prisma } from '../../infrastructure/prisma.js';
-
-const DEVELOPMENT_USER_PUBLIC_ID = 'user-development';
+import {
+  DEVELOPMENT_USER_PUBLIC_ID,
+  ensureDevelopmentUser,
+} from '../../infrastructure/developmentUser.js';
 
 const exerciseInclude = {
   createdByUser: {
@@ -44,18 +46,6 @@ export class InvalidMuscleGroupSelectionError extends Error {
     super(message);
     this.name = 'InvalidMuscleGroupSelectionError';
   }
-}
-
-async function ensureDevelopmentUser() {
-  await prisma.user.upsert({
-    where: { publicId: DEVELOPMENT_USER_PUBLIC_ID },
-    update: {},
-    create: {
-      publicId: DEVELOPMENT_USER_PUBLIC_ID,
-      displayName: 'Development User',
-      email: 'dev-user@example.com',
-    },
-  });
 }
 
 function mapExercise(record: ExerciseRecord): Exercise {
