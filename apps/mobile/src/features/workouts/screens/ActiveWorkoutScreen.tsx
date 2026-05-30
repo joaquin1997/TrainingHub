@@ -1,6 +1,7 @@
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -9,6 +10,7 @@ import {
   View,
 } from 'react-native';
 
+import { routinesClient } from '@/features/routines/api/routinesClient';
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import {
   notifyAppleWorkoutFinished,
@@ -16,25 +18,82 @@ import {
   syncWorkoutCompletionToAppleHealth,
 } from '@/features/health/integrations/appleWorkoutIntegration';
 import {
-  createWorkoutSessionDraft,
+  buildWorkoutSessionDraft,
   saveCompletedWorkout,
   toWorkoutSessionSkeleton,
   updateWorkoutSetDraft,
+  type WorkoutSessionDraft,
 } from '@/features/workouts/state/workoutDraftStore';
 
 export function ActiveWorkoutScreen() {
   const { routineId } = useLocalSearchParams<{ routineId?: string }>();
-  const [workoutDraft, setWorkoutDraft] = useState(() =>
-    createWorkoutSessionDraft(routineId),
+  const [workoutDraft, setWorkoutDraft] = useState<WorkoutSessionDraft | null>(
+    null,
   );
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
+    'loading',
+  );
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  if (!workoutDraft) {
+  useEffect(() => {
+    if (!routineId) {
+      setStatus('error');
+      setErrorMessage(null);
+      return;
+    }
+
+    let active = true;
+    setStatus('loading');
+
+    routinesClient
+      .getById(routineId)
+      .then((routine) => {
+        if (!active) {
+          return;
+        }
+
+        setWorkoutDraft(buildWorkoutSessionDraft(routine));
+        setStatus('ready');
+      })
+      .catch((error: unknown) => {
+        if (!active) {
+          return;
+        }
+
+        setErrorMessage(
+          error instanceof Error ? error.message : 'Could not load routine',
+        );
+        setStatus('error');
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [routineId]);
+
+  useEffect(() => {
+    if (workoutDraft) {
+      void notifyAppleWorkoutStarted(workoutDraft);
+    }
+  }, [workoutDraft]);
+
+  if (status === 'loading') {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Active Workout</Text>
-        <Text style={styles.body}>
-          Start this flow from a routine so the workout session can be created
-          from a routine template.
+        <ActivityIndicator />
+        <Text style={styles.meta}>Loading routine…</Text>
+      </View>
+    );
+  }
+
+  if (status === 'error' || !workoutDraft) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Active Workout</Text>
+        <Text style={styles.meta}>
+          {errorMessage ??
+            'Start this flow from a routine so the workout session can be created from a routine template.'}
         </Text>
         <Link href="/routines" style={styles.link}>
           Back to routines
@@ -43,10 +102,6 @@ export function ActiveWorkoutScreen() {
       </View>
     );
   }
-
-  useEffect(() => {
-    void notifyAppleWorkoutStarted(workoutDraft);
-  }, [workoutDraft]);
 
   const finishWorkout = () => {
     const workoutSession = toWorkoutSessionSkeleton(workoutDraft);

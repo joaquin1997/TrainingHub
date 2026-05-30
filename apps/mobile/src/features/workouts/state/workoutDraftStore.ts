@@ -1,7 +1,5 @@
 import type { Routine, WorkoutSession } from '@workout/domain';
 
-import { findMockRoutineById } from '@/features/routines/mocks/mockRoutines';
-
 export type WorkoutSetDraft = {
   id: string;
   order: number;
@@ -59,15 +57,9 @@ function buildExerciseDrafts(routine: Routine): WorkoutExerciseDraft[] {
     }));
 }
 
-export function createWorkoutSessionDraft(
-  routineId?: string,
-): WorkoutSessionDraft | null {
-  const routine = findMockRoutineById(routineId);
-
-  if (!routine) {
-    return null;
-  }
-
+export function buildWorkoutSessionDraft(
+  routine: Routine,
+): WorkoutSessionDraft {
   return {
     id: `workout-session-${routine.id}`,
     routineId: routine.id,
