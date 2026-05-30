@@ -1,10 +1,18 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { formatDate } from '@/lib/format';
+import { useRefresh } from '@/lib/useRefresh';
 import type { WorkoutSession } from '@workout/domain';
 
 function countSets(session: WorkoutSession) {
@@ -57,16 +65,24 @@ export function WorkoutHistoryScreen() {
     }, [loadSessions]),
   );
 
+  const { isRefreshing, onRefresh } = useRefresh(loadSessions);
+  const showLoading = isLoading && sessions.length === 0;
   const hasEmptyState = !isLoading && !errorMessage && sessions.length === 0;
-  const hasListState = !isLoading && !errorMessage && sessions.length > 0;
+  const hasListState = !errorMessage && sessions.length > 0;
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
+      }
+    >
       <Text style={styles.title}>Workout History</Text>
       <Text style={styles.body}>
         Your saved workout sessions, loaded from the backend.
       </Text>
-      {isLoading ? (
+      {showLoading ? (
         <View style={styles.stateCard}>
           <Text style={styles.meta}>Loading workouts...</Text>
         </View>

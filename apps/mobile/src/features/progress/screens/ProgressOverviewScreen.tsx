@@ -1,9 +1,17 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { progressClient } from '@/features/progress/api/progressClient';
+import { useRefresh } from '@/lib/useRefresh';
 import type { ExerciseProgressSummary } from '@workout/domain';
 
 function formatValue(value?: number) {
@@ -53,16 +61,24 @@ export function ProgressOverviewScreen() {
     }, [loadProgress]),
   );
 
+  const { isRefreshing, onRefresh } = useRefresh(loadProgress);
+  const showLoading = isLoading && progress.length === 0;
   const hasEmptyState = !isLoading && !errorMessage && progress.length === 0;
-  const hasListState = !isLoading && !errorMessage && progress.length > 0;
+  const hasListState = !errorMessage && progress.length > 0;
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
+      }
+    >
       <Text style={styles.title}>Progress Overview</Text>
       <Text style={styles.body}>
         Per-exercise progress aggregated from your saved workouts.
       </Text>
-      {isLoading ? (
+      {showLoading ? (
         <View style={styles.card}>
           <Text style={styles.meta}>Loading progress...</Text>
         </View>

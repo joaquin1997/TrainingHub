@@ -1,10 +1,18 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
+import { useRefresh } from '@/lib/useRefresh';
 import type { Routine } from '@workout/domain';
 
 export function RoutinesListScreen() {
@@ -50,11 +58,19 @@ export function RoutinesListScreen() {
     }, [loadRoutines]),
   );
 
+  const { isRefreshing, onRefresh } = useRefresh(loadRoutines);
+  const showLoading = isLoading && routines.length === 0;
   const hasEmptyState = !isLoading && !errorMessage && routines.length === 0;
-  const hasListState = !isLoading && !errorMessage && routines.length > 0;
+  const hasListState = !errorMessage && routines.length > 0;
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
+      }
+    >
       <Text style={styles.title}>Routines List</Text>
       <Text style={styles.body}>
         Routines are loaded from the backend. Template data stays separate from
@@ -74,7 +90,7 @@ export function RoutinesListScreen() {
           History
         </Link>
       </View>
-      {isLoading ? (
+      {showLoading ? (
         <View style={styles.stateCard}>
           <Text style={styles.meta}>Loading routines...</Text>
         </View>

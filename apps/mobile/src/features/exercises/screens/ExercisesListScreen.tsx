@@ -2,6 +2,7 @@ import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,6 +12,7 @@ import {
 
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
+import { useRefresh } from '@/lib/useRefresh';
 import type { Exercise } from '@workout/domain';
 
 const MAX_VISIBLE = 50;
@@ -77,9 +79,17 @@ export function ExercisesListScreen() {
 
   const visible = filtered.slice(0, MAX_VISIBLE);
   const hiddenCount = filtered.length - visible.length;
+  const { isRefreshing, onRefresh } = useRefresh(loadExercises);
+  const showLoading = isLoading && exercises.length === 0;
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
+      }
+    >
       <Text style={styles.title}>Exercises</Text>
       <TextInput
         value={query}
@@ -88,7 +98,9 @@ export function ExercisesListScreen() {
         style={styles.input}
         autoCorrect={false}
       />
-      {isLoading ? <Text style={styles.meta}>Loading exercises...</Text> : null}
+      {showLoading ? (
+        <Text style={styles.meta}>Loading exercises...</Text>
+      ) : null}
       {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
       {!isLoading && !errorMessage ? (
         <Text style={styles.meta}>
