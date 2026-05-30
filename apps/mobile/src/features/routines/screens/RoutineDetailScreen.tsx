@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
+import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
 import type { RoutineExerciseSet, Routine } from '@workout/domain';
 
 function formatSetTarget(set: RoutineExerciseSet) {
@@ -28,6 +29,7 @@ export function RoutineDetailScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
   const [isDeleting, setIsDeleting] = useState(false);
+  const activeWorkout = useActiveWorkout();
 
   const loadRoutine = useCallback(
     async (shouldUpdate: () => boolean = () => true) => {
@@ -177,15 +179,37 @@ export function RoutineDetailScreen() {
         </View>
       )}
       <View style={styles.links}>
-        <Link
-          href={{
-            pathname: '/workouts/active',
-            params: { routineId: routine.id },
-          }}
-          style={styles.link}
-        >
-          Start workout
-        </Link>
+        {activeWorkout && activeWorkout.routineId === routine.id ? (
+          <Link
+            href={{
+              pathname: '/workouts/active',
+              params: { routineId: routine.id },
+            }}
+            style={styles.link}
+          >
+            Continue workout
+          </Link>
+        ) : activeWorkout ? (
+          <Link
+            href={{
+              pathname: '/workouts/active',
+              params: { routineId: activeWorkout.routineId },
+            }}
+            style={styles.link}
+          >
+            Resume active workout
+          </Link>
+        ) : (
+          <Link
+            href={{
+              pathname: '/workouts/active',
+              params: { routineId: routine.id },
+            }}
+            style={styles.link}
+          >
+            Start workout
+          </Link>
+        )}
         <Link href={`/routines/edit/${routine.id}`} style={styles.link}>
           Edit routine
         </Link>
