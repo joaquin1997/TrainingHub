@@ -33,6 +33,7 @@ export type WorkoutSessionDraft = {
 };
 
 let latestCompletedWorkout: WorkoutSessionDraft | null = null;
+let activeWorkout: WorkoutSessionDraft | null = null;
 
 function buildExerciseDrafts(routine: Routine): WorkoutExerciseDraft[] {
   return routine.exercises
@@ -132,6 +133,40 @@ export function getLatestCompletedWorkout() {
 
 export function clearLatestCompletedWorkout() {
   latestCompletedWorkout = null;
+}
+
+/**
+ * Active (in-progress) workout. Kept in memory so a started routine can be
+ * resumed when navigating away and back without losing logged sets. Only one
+ * workout can be active at a time.
+ */
+export function startActiveWorkout(routine: Routine): WorkoutSessionDraft {
+  if (activeWorkout && activeWorkout.routineId === routine.id) {
+    return activeWorkout;
+  }
+
+  activeWorkout = buildWorkoutSessionDraft(routine);
+  return activeWorkout;
+}
+
+export function getActiveWorkout() {
+  return activeWorkout;
+}
+
+export function setActiveWorkout(workoutDraft: WorkoutSessionDraft) {
+  activeWorkout = workoutDraft;
+}
+
+export function clearActiveWorkout() {
+  activeWorkout = null;
+}
+
+export function hasActiveWorkout() {
+  return activeWorkout !== null;
+}
+
+export function isActiveWorkoutForRoutine(routineId?: string) {
+  return activeWorkout !== null && activeWorkout.routineId === routineId;
 }
 
 export function toWorkoutSessionSkeleton(
