@@ -8,7 +8,7 @@ previous performance, set types, and persist completion.
 - [x] Add / remove sets during a workout
 - [x] Add / remove exercises during a workout
 - [x] Reorder exercises and sets (up/down)
-- [ ] Show "last time" per set (e.g. 60 kg × 8 from the previous workout)
+- [x] Show "last time" per set (e.g. 60 kg × 8 from the previous workout)
 - [x] Set types (warmup / drop / failure) — UI + persistence
 
 ## Design notes
@@ -23,4 +23,6 @@ previous performance, set types, and persist completion.
 - Reorder: up/down buttons (drag&drop is deferred — heavier, needs a gesture lib).
 
 ## Progress log
-(append commit hashes + notes as sub-points land)
+- All sub-points landed (2026-05-30). Persisted completion + set types via an
+  additive migration; live add/remove/reorder of sets & exercises; "last time"
+  per set via GET /workouts/exercises/:id/last. **Point 1 complete.**

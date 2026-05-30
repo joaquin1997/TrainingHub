@@ -246,6 +246,23 @@ export interface ExerciseProgressDetail extends ExerciseProgressSummary {
 }
 
 /**
+ * One previously-logged set for an exercise (for the "last time" hint).
+ */
+export interface ExerciseLastSet {
+  order: number;
+  reps?: number;
+  weightKg?: number;
+}
+
+/**
+ * The most recent logged performance of an exercise.
+ */
+export interface ExerciseLastPerformance {
+  performedAt: ISODateString;
+  sets: ExerciseLastSet[];
+}
+
+/**
  * Stores health integration sync metadata only, never the workout data itself.
  */
 export interface HealthSyncRecord {

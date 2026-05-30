@@ -1,4 +1,8 @@
-import type { CreateWorkoutSessionInput, WorkoutSession } from '@workout/domain';
+import type {
+  CreateWorkoutSessionInput,
+  ExerciseLastPerformance,
+  WorkoutSession,
+} from '@workout/domain';
 
 import { apiRequest } from '@/lib/http';
 
@@ -15,5 +19,10 @@ export const workoutsClient = {
       method: 'POST',
       body: JSON.stringify(input),
     });
+  },
+  getLastPerformance(exerciseId: string) {
+    return apiRequest<ExerciseLastPerformance>(
+      `/workouts/exercises/${exerciseId}/last`,
+    );
   },
 };

@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import type {
   CreateWorkoutSessionInput,
+  ExerciseLastPerformance,
   WorkoutSession,
   WorkoutSetType,
 } from '@workout/domain';
@@ -140,6 +141,43 @@ export async function findWorkoutSessionById(id: string) {
   logRepository('findById:success', { id, found: mapped !== null });
 
   return mapped;
+}
+
+export async function getExerciseLastPerformance(
+  exerciseId: string,
+): Promise<ExerciseLastPerformance | null> {
+  await ensureDevelopmentUser();
+
+  const workoutExercise = await prisma.workoutExercise.findFirst({
+    where: {
+      exercise: { publicId: exerciseId },
+      workoutSession: { user: { publicId: DEVELOPMENT_USER_PUBLIC_ID } },
+    },
+    orderBy: { workoutSession: { startedAt: 'desc' } },
+    include: {
+      sets: true,
+      workoutSession: { select: { startedAt: true, completedAt: true } },
+    },
+  });
+
+  if (!workoutExercise) {
+    return null;
+  }
+
+  return {
+    performedAt: (
+      workoutExercise.workoutSession.completedAt ??
+      workoutExercise.workoutSession.startedAt
+    ).toISOString(),
+    sets: workoutExercise.sets
+      .slice()
+      .sort((left, right) => left.order - right.order)
+      .map((set) => ({
+        order: set.order,
+        reps: set.reps ?? undefined,
+        weightKg: set.weightKg ?? undefined,
+      })),
+  };
 }
 
 export async function createWorkoutSession(input: CreateWorkoutSessionInput) {

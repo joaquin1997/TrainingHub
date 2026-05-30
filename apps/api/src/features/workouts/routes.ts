@@ -24,6 +24,7 @@ function parseWorkoutSetType(value: unknown): WorkoutSetType | undefined {
 import {
   createWorkoutSession,
   findWorkoutSessionById,
+  getExerciseLastPerformance,
   listWorkoutSessions,
 } from './repository.js';
 
@@ -126,6 +127,21 @@ export async function registerWorkoutRoutes(app: FastifyInstance) {
   app.get('/workouts', async () => {
     return listWorkoutSessions();
   });
+
+  app.get<{ Params: { exerciseId: string } }>(
+    '/workouts/exercises/:exerciseId/last',
+    async (request, reply) => {
+      const performance = await getExerciseLastPerformance(
+        request.params.exerciseId,
+      );
+
+      if (!performance) {
+        return reply.code(404).send({ message: 'No previous performance' });
+      }
+
+      return performance;
+    },
+  );
 
   app.get<{ Params: { id: string } }>('/workouts/:id', async (request, reply) => {
     const session = await findWorkoutSessionById(request.params.id);

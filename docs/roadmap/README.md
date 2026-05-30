@@ -7,8 +7,8 @@ Legend: ✅ done · �doing · ⬜ todo
 
 | # | Area | File | Status |
 |---|------|------|--------|
-| 1 | Live workout logging | [01-live-workout-logging.md](01-live-workout-logging.md) | 🔁 in progress |
-| 2 | Rest timer | [02-rest-timer.md](02-rest-timer.md) | ⬜ |
+| 1 | Live workout logging | [01-live-workout-logging.md](01-live-workout-logging.md) | ✅ done |
+| 2 | Rest timer | [02-rest-timer.md](02-rest-timer.md) | 🔁 in progress |
 | 3 | Auth & users | [03-auth-and-users.md](03-auth-and-users.md) | ⬜ |
 | 4 | Progress, PRs & charts | [04-progress-and-prs.md](04-progress-and-prs.md) | ⬜ |
 | 5 | Routines (advanced) | [05-routines-advanced.md](05-routines-advanced.md) | ⬜ |

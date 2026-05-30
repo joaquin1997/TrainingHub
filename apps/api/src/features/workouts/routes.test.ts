@@ -5,12 +5,14 @@ vi.mock('./repository.js', () => ({
   listWorkoutSessions: vi.fn(),
   findWorkoutSessionById: vi.fn(),
   createWorkoutSession: vi.fn(),
+  getExerciseLastPerformance: vi.fn(),
 }));
 
 import { createApp } from '../../app.js';
 import {
   createWorkoutSession,
   findWorkoutSessionById,
+  getExerciseLastPerformance,
   listWorkoutSessions,
 } from './repository.js';
 
@@ -132,5 +134,35 @@ describe('POST /workouts', () => {
     expect(response.json()).toEqual({
       message: 'Workout references unknown exercise or routine',
     });
+  });
+});
+
+describe('GET /workouts/exercises/:exerciseId/last', () => {
+  it('returns the last performance when present', async () => {
+    vi.mocked(getExerciseLastPerformance).mockResolvedValue({
+      performedAt: '2026-05-20T09:00:00.000Z',
+      sets: [{ order: 1, reps: 8, weightKg: 60 }],
+    } as never);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/workouts/exercises/ex1/last',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({ sets: [{ order: 1, weightKg: 60 }] });
+    expect(getExerciseLastPerformance).toHaveBeenCalledWith('ex1');
+  });
+
+  it('returns 404 when there is no previous performance', async () => {
+    vi.mocked(getExerciseLastPerformance).mockResolvedValue(null as never);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/workouts/exercises/ex1/last',
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toEqual({ message: 'No previous performance' });
   });
 });

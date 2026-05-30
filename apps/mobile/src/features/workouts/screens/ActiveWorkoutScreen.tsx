@@ -16,7 +16,11 @@ import { ExercisePickerModal } from '@/features/exercises/components/ExercisePic
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { formatDuration } from '@/lib/format';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
-import type { Exercise, WorkoutSetType } from '@workout/domain';
+import type {
+  Exercise,
+  ExerciseLastPerformance,
+  WorkoutSetType,
+} from '@workout/domain';
 import {
   notifyAppleWorkoutFinished,
   notifyAppleWorkoutStarted,
@@ -41,6 +45,23 @@ import {
   updateWorkoutSetDraft,
   type WorkoutSessionDraft,
 } from '@/features/workouts/state/workoutDraftStore';
+
+function renderLastSet(
+  performance: ExerciseLastPerformance | null | undefined,
+  order: number,
+) {
+  const last = performance?.sets.find((set) => set.order === order);
+
+  if (!last) {
+    return null;
+  }
+
+  return (
+    <Text style={styles.lastText}>
+      Last: {last.weightKg ?? '—'} kg × {last.reps ?? '—'}
+    </Text>
+  );
+}
 
 function setTypeLabel(type: WorkoutSetType) {
   switch (type) {
@@ -67,6 +88,9 @@ export function ActiveWorkoutScreen() {
   const [isFinishing, setIsFinishing] = useState(false);
   const [finishError, setFinishError] = useState<string | null>(null);
   const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const [lastByExercise, setLastByExercise] = useState<
+    Record<string, ExerciseLastPerformance | null>
+  >({});
 
   useEffect(() => {
     if (!routineId) {
@@ -111,6 +135,39 @@ export function ActiveWorkoutScreen() {
   }, [workoutDraft]);
 
   const elapsedSeconds = useElapsedSeconds(workoutDraft?.startedAt);
+
+  const exerciseIdsKey = workoutDraft
+    ? [...new Set(workoutDraft.exercises.map((exercise) => exercise.exerciseId))].join(
+        ',',
+      )
+    : '';
+
+  useEffect(() => {
+    if (!exerciseIdsKey) {
+      return;
+    }
+
+    const ids = exerciseIdsKey.split(',');
+    let active = true;
+
+    void Promise.all(
+      ids.map(async (id) => {
+        try {
+          return [id, await workoutsClient.getLastPerformance(id)] as const;
+        } catch {
+          return [id, null] as const;
+        }
+      }),
+    ).then((entries) => {
+      if (active) {
+        setLastByExercise(Object.fromEntries(entries));
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [exerciseIdsKey]);
 
   if (status === 'loading') {
     return (
@@ -401,6 +458,7 @@ export function ActiveWorkoutScreen() {
                   Target: {set.minReps ?? '?'}-{set.maxReps ?? '?'} reps
                   {set.targetWeight !== undefined ? `, ${set.targetWeight} kg` : ''}
                 </Text>
+                {renderLastSet(lastByExercise[exercise.exerciseId], set.order)}
                 <View style={styles.inputsRow}>
                   <View style={styles.inputGroup}>
                     <Text style={styles.inputLabel}>Actual reps</Text>
@@ -641,6 +699,10 @@ const styles = StyleSheet.create({
   setTarget: {
     fontSize: 13,
     color: '#4b5563',
+  },
+  lastText: {
+    fontSize: 13,
+    color: '#2563eb',
   },
   inputsRow: {
     flexDirection: 'row',
