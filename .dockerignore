@@ -1,0 +1,18 @@
+# Keep the build context small (important when building over an SSH context).
+**/node_modules
+**/dist
+**/.expo
+**/.turbo
+.git
+.gitignore
+**/*.log
+
+# Never ship local secrets into the image (DATABASE_URL is injected at runtime).
+**/.env
+**/.env.*
+!**/.env.example
+
+# The API image does not need the mobile source, only its manifest (for the
+# pnpm frozen-lockfile check during install).
+apps/mobile/*
+!apps/mobile/package.json
