@@ -10,6 +10,8 @@ previous performance, set types, and persist completion.
 - [x] Reorder exercises and sets (up/down)
 - [x] Show "last time" per set (e.g. 60 kg × 8 from the previous workout)
 - [x] Set types (warmup / drop / failure) — UI + persistence
+- [x] Ghosted previous/target values as input placeholders (Hevy-style): unedited
+  sets still log their default; edited values switch to normal text
 
 ## Design notes
 - Source of truth for the live session is the mobile `workoutDraftStore`
@@ -26,3 +28,9 @@ previous performance, set types, and persist completion.
 - All sub-points landed (2026-05-30). Persisted completion + set types via an
   additive migration; live add/remove/reorder of sets & exercises; "last time"
   per set via GET /workouts/exercises/:id/last. **Point 1 complete.**
+- (2026-05-31) Hevy-style placeholders: each set ghosts its previous/target
+  values (`repsPlaceholder`/`weightPlaceholder`) as translucent input
+  placeholders. Empty fields fall back to the placeholder on save
+  (`effectiveSetValue`), so an unedited set logs its default; typing switches the
+  field to normal text. New `applyLastPerformance` seeds placeholders from the
+  last-performance fetch.

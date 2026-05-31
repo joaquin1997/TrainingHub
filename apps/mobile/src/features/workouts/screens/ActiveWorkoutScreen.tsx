@@ -34,9 +34,11 @@ import {
 import {
   addExerciseToWorkout,
   addSetToWorkoutExercise,
+  applyLastPerformance,
   clearActiveWorkout,
   countWorkoutSets,
   cycleWorkoutSetType,
+  getActiveWorkout,
   moveWorkoutExercise,
   moveWorkoutSet,
   removeExerciseFromWorkout,
@@ -166,8 +168,29 @@ export function ActiveWorkoutScreen() {
         }
       }),
     ).then((entries) => {
-      if (active) {
-        setLastByExercise(Object.fromEntries(entries));
+      if (!active) {
+        return;
+      }
+
+      setLastByExercise(Object.fromEntries(entries));
+
+      // Seed each set's ghosted placeholder from its last performance so an
+      // unedited set still logs what you did last time.
+      const current = getActiveWorkout();
+      if (!current) {
+        return;
+      }
+
+      let next = current;
+      for (const [id, performance] of entries) {
+        if (performance) {
+          next = applyLastPerformance(next, id, performance);
+        }
+      }
+
+      if (next !== current) {
+        setActiveWorkout(next);
+        setWorkoutDraft(next);
       }
     });
 
@@ -519,6 +542,8 @@ export function ActiveWorkoutScreen() {
                     <TextInput
                       keyboardType="number-pad"
                       value={set.reps}
+                      placeholder={set.repsPlaceholder ?? ''}
+                      placeholderTextColor={colors.textSubtle}
                       onChangeText={(value) =>
                         handleSetChange(exercise.id, set.id, 'reps', value)
                       }
@@ -530,6 +555,8 @@ export function ActiveWorkoutScreen() {
                     <TextInput
                       keyboardType="decimal-pad"
                       value={set.weightKg}
+                      placeholder={set.weightPlaceholder ?? ''}
+                      placeholderTextColor={colors.textSubtle}
                       onChangeText={(value) =>
                         handleSetChange(exercise.id, set.id, 'weightKg', value)
                       }
