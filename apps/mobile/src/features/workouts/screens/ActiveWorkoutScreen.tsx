@@ -14,6 +14,7 @@ import {
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { ExercisePickerModal } from '@/features/exercises/components/ExercisePickerModal';
+import { ProgressRing } from '@/features/workouts/components/ProgressRing';
 import { formatDuration } from '@/lib/format';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { useRestTimer } from '@/lib/useRestTimer';
@@ -424,44 +425,41 @@ export function ActiveWorkoutScreen() {
       />
       <View style={styles.restBar}>
         {restTimer.isRunning ? (
-          <View style={styles.restColumn}>
-            <View style={styles.restRow}>
-              <Text style={styles.restTime}>
+          <View style={styles.restRingRow}>
+            <ProgressRing
+              size={116}
+              strokeWidth={9}
+              progress={
+                restTimer.total > 0 ? restTimer.remaining / restTimer.total : 0
+              }
+            >
+              <Text style={styles.ringTime}>
                 {formatDuration(restTimer.remaining)}
               </Text>
-              <View style={styles.restControls}>
-                <Pressable
-                  onPress={() => restTimer.adjust(-15)}
-                  hitSlop={6}
-                  style={styles.stepButton}
-                >
-                  <Text style={styles.stepText}>−15</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => restTimer.adjust(15)}
-                  hitSlop={6}
-                  style={styles.stepButton}
-                >
-                  <Text style={styles.stepText}>+15</Text>
-                </Pressable>
-                <Pressable onPress={restTimer.skip} hitSlop={8}>
-                  <Text style={styles.addSetText}>Skip</Text>
-                </Pressable>
-              </View>
-            </View>
-            <View style={styles.progressTrack}>
-              <View
-                style={[
-                  styles.progressFill,
-                  {
-                    width: `${
-                      restTimer.total > 0
-                        ? (restTimer.remaining / restTimer.total) * 100
-                        : 0
-                    }%`,
-                  },
-                ]}
-              />
+              <Text style={styles.ringLabel}>rest</Text>
+            </ProgressRing>
+            <View style={styles.ringControls}>
+              <Pressable
+                onPress={() => restTimer.adjust(15)}
+                hitSlop={6}
+                style={styles.stepButton}
+              >
+                <Text style={styles.stepText}>+15</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => restTimer.adjust(-15)}
+                hitSlop={6}
+                style={styles.stepButton}
+              >
+                <Text style={styles.stepText}>−15</Text>
+              </Pressable>
+              <Pressable
+                onPress={restTimer.skip}
+                hitSlop={8}
+                style={styles.skipButton}
+              >
+                <Text style={styles.skipText}>Skip</Text>
+              </Pressable>
             </View>
           </View>
         ) : (
@@ -888,16 +886,39 @@ const styles = StyleSheet.create({
   restColumn: {
     gap: spacing.sm,
   },
-  progressTrack: {
-    height: 6,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surfaceMuted,
-    overflow: 'hidden',
+  restRingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.lg,
   },
-  progressFill: {
-    height: '100%',
+  ringTime: {
+    color: colors.text,
+    fontSize: 24,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+  },
+  ringLabel: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  ringControls: {
+    flex: 1,
+    gap: spacing.sm,
+  },
+  skipButton: {
+    minHeight: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: radii.sm,
     backgroundColor: colors.primary,
+    paddingHorizontal: spacing.md,
+  },
+  skipText: {
+    color: colors.onPrimary,
+    fontSize: 14,
+    fontWeight: '800',
   },
   restRow: {
     flexDirection: 'row',
@@ -959,12 +980,6 @@ const styles = StyleSheet.create({
   presetChipActive: {
     borderColor: colors.primary,
     backgroundColor: colors.surface,
-  },
-  restTime: {
-    color: colors.primary,
-    fontSize: 22,
-    fontWeight: '900',
-    fontVariant: ['tabular-nums'],
   },
   restPreset: {
     color: colors.textMuted,
