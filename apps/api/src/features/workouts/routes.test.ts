@@ -26,7 +26,14 @@ const validPayload = {
     {
       exerciseId: 'ex1',
       order: 1,
-      sets: [{ order: 1, reps: 8, weightKg: 60 }],
+      sets: [
+        {
+          order: 1,
+          reps: 8,
+          weightKg: 60,
+          completedAt: '2026-05-30T09:10:00.000Z',
+        },
+      ],
     },
   ],
 };
@@ -91,6 +98,29 @@ describe('POST /workouts', () => {
     });
 
     expect(response.statusCode).toBe(400);
+    expect(createWorkoutSession).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when no set is completed', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/workouts',
+      payload: {
+        ...validPayload,
+        exercises: [
+          {
+            exerciseId: 'ex1',
+            order: 1,
+            sets: [{ order: 1, reps: 8, weightKg: 60 }],
+          },
+        ],
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      message: 'A workout must have at least one completed set',
+    });
     expect(createWorkoutSession).not.toHaveBeenCalled();
   });
 

@@ -161,6 +161,16 @@ export async function registerWorkoutRoutes(app: FastifyInstance) {
       return reply.code(400).send({ message: 'Invalid workout payload' });
     }
 
+    const hasCompletedSet = parsedInput.exercises.some((exercise) =>
+      exercise.sets.some((set) => Boolean(set.completedAt)),
+    );
+
+    if (!hasCompletedSet) {
+      return reply.code(400).send({
+        message: 'A workout must have at least one completed set',
+      });
+    }
+
     try {
       const session = await createWorkoutSession(parsedInput);
 
