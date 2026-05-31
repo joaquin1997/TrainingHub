@@ -95,3 +95,22 @@ export interface AuthServerProvider {
   authenticate(credential: AuthProviderCredential): Promise<AuthSession | null>;
 }
 
+/** Email/password registration request. */
+export interface EmailRegisterInput {
+  email: string;
+  password: string;
+  displayName?: string;
+}
+
+/** Email/password login request. */
+export interface EmailLoginInput {
+  email: string;
+  password: string;
+}
+
+/** Response for register/login: a bearer token plus the user. */
+export interface AuthTokenResponse {
+  token: string;
+  user: User;
+}
+

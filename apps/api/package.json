@@ -18,6 +18,7 @@
     "import:wger:db": "IMPORT_TO_DB=true npm run import:wger"
   },
   "dependencies": {
+    "@fastify/jwt": "^10.1.0",
     "@prisma/client": "6.7.0",
     "@workout/domain": "workspace:*",
     "fastify": "5.5.0"
