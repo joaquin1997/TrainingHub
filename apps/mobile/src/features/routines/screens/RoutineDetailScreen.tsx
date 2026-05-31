@@ -5,11 +5,13 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
 import { buildRoutineCopyInput } from '@/features/routines/utils/duplicateRoutine';
+import { useSettings } from '@/features/settings/SettingsContext';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
+import { formatWeight } from '@/lib/weight';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
-import type { RoutineExerciseSet, Routine } from '@workout/domain';
+import type { RoutineExerciseSet, Routine, WeightUnit } from '@workout/domain';
 
-function formatSetTarget(set: RoutineExerciseSet) {
+function formatSetTarget(set: RoutineExerciseSet, unit: WeightUnit) {
   const reps =
     set.minReps !== undefined && set.maxReps !== undefined
       ? `${set.minReps}-${set.maxReps} reps`
@@ -18,7 +20,10 @@ function formatSetTarget(set: RoutineExerciseSet) {
         : set.maxReps !== undefined
           ? `up to ${set.maxReps} reps`
           : '- reps';
-  const weight = set.targetWeight !== undefined ? ` - ${set.targetWeight} kg` : '';
+  const weight =
+    set.targetWeight !== undefined
+      ? ` - ${formatWeight(set.targetWeight, unit)}`
+      : '';
 
   return `${reps}${weight}`;
 }
@@ -32,6 +37,7 @@ export function RoutineDetailScreen() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
   const activeWorkout = useActiveWorkout();
+  const { settings } = useSettings();
 
   const loadRoutine = useCallback(
     async (shouldUpdate: () => boolean = () => true) => {
@@ -195,7 +201,7 @@ export function RoutineDetailScreen() {
                     .sort((left, right) => left.setNumber - right.setNumber)
                     .map((set) => (
                       <Text key={set.id} style={styles.exerciseItem}>
-                        Set {set.setNumber}: {formatSetTarget(set)}
+                        Set {set.setNumber}: {formatSetTarget(set, settings.unit)}
                       </Text>
                     ))
                 )}

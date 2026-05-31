@@ -36,7 +36,8 @@ export function WorkoutSummaryScreen() {
           <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
           {exercise.entries.map((set) => (
             <Text key={set.id} style={styles.setText}>
-              Set {set.order}: {set.reps || '-'} reps, {set.weightKg || '-'} kg
+              Set {set.order}: {set.reps || '-'} reps, {set.weightKg || '-'}{' '}
+              {workoutDraft.unit ?? 'kg'}
             </Text>
           ))}
         </View>

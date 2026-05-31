@@ -2,12 +2,14 @@ import { Link, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { useSettings } from '@/features/settings/SettingsContext';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import {
   durationSecondsBetween,
   formatDateTime,
   formatDuration,
 } from '@/lib/format';
+import { formatWeightValue, fromKg, roundWeight } from '@/lib/weight';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type { WorkoutSession, WorkoutSet } from '@workout/domain';
 
@@ -60,6 +62,8 @@ export function WorkoutSessionDetailScreen() {
   const [session, setSession] = useState<WorkoutSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
+  const { settings } = useSettings();
+  const unit = settings.unit;
 
   const loadSession = useCallback(
     async (shouldUpdate: () => boolean = () => true) => {
@@ -164,8 +168,10 @@ export function WorkoutSessionDetailScreen() {
           <Text style={styles.summaryLabel}>Sets done</Text>
         </View>
         <View style={styles.summaryTile}>
-          <Text style={styles.summaryValue}>{totals.volume}</Text>
-          <Text style={styles.summaryLabel}>Volume kg</Text>
+          <Text style={styles.summaryValue}>
+            {roundWeight(fromKg(totals.volume, unit))}
+          </Text>
+          <Text style={styles.summaryLabel}>Volume {unit}</Text>
         </View>
         <View style={styles.summaryTile}>
           <Text style={styles.summaryValue}>
@@ -181,7 +187,9 @@ export function WorkoutSessionDetailScreen() {
             <Text style={styles.cardTitle}>
               {exercise.order}. {exercise.exerciseName}
             </Text>
-            <Text style={styles.exerciseVolume}>{exerciseVolume(exercise)} kg</Text>
+            <Text style={styles.exerciseVolume}>
+              {roundWeight(fromKg(exerciseVolume(exercise), unit))} {unit}
+            </Text>
           </View>
           {exercise.sets.map((set) => {
             const type = setTypeLabel(set.type);
@@ -194,7 +202,7 @@ export function WorkoutSessionDetailScreen() {
                 <Text style={styles.setNum}>{set.order}</Text>
                 {type ? <Text style={styles.typeTag}>{type}</Text> : null}
                 <Text style={styles.setValue}>
-                  {set.weightKg ?? '–'} kg × {set.reps ?? '–'}
+                  {formatWeightValue(set.weightKg, unit)} {unit} × {set.reps ?? '–'}
                 </Text>
                 {set.restSeconds ? (
                   <Text style={styles.setRest}>

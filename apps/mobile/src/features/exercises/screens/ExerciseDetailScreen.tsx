@@ -4,7 +4,9 @@ import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
 import { progressClient } from '@/features/progress/api/progressClient';
+import { useSettings } from '@/features/settings/SettingsContext';
 import { formatDate } from '@/lib/format';
+import { formatWeightValue } from '@/lib/weight';
 import { colors, commonStyles, spacing } from '@/ui/theme';
 import type { Exercise, ExerciseProgressPoint } from '@workout/domain';
 
@@ -20,6 +22,8 @@ export function ExerciseDetailScreen() {
   const [history, setHistory] = useState<ExerciseProgressPoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
+  const { settings } = useSettings();
+  const unit = settings.unit;
 
   const loadExercise = useCallback(
     async (shouldUpdate: () => boolean = () => true) => {
@@ -153,7 +157,7 @@ export function ExerciseDetailScreen() {
               <View key={`${point.date}-${index}`} style={styles.historyRow}>
                 <Text style={styles.historyDate}>{formatDate(point.date)}</Text>
                 <Text style={styles.historyValue}>
-                  {formatHistoryValue(point.bestWeightKg)} kg x{' '}
+                  {formatWeightValue(point.bestWeightKg, unit)} {unit} x{' '}
                   {formatHistoryValue(point.bestReps)}
                 </Text>
               </View>

@@ -9,12 +9,14 @@ import {
   View,
 } from 'react-native';
 
+import { useSettings } from '@/features/settings/SettingsContext';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import {
   durationSecondsBetween,
   formatDate,
   formatDuration,
 } from '@/lib/format';
+import { fromKg, roundWeight } from '@/lib/weight';
 import { useRefresh } from '@/lib/useRefresh';
 import { EmptyState } from '@/ui/EmptyState';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
@@ -60,6 +62,8 @@ export function WorkoutHistoryScreen() {
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
+  const { settings } = useSettings();
+  const unit = settings.unit;
 
   const loadSessions = useCallback(
     async (shouldUpdate: () => boolean = () => true) => {
@@ -152,7 +156,7 @@ export function WorkoutHistoryScreen() {
                   <Text style={styles.stat}>{countSets(session)} sets</Text>
                   {sessionVolume(session) > 0 ? (
                     <Text style={[styles.stat, styles.statStrong]}>
-                      {sessionVolume(session)} kg
+                      {roundWeight(fromKg(sessionVolume(session), unit))} {unit}
                     </Text>
                   ) : null}
                   {session.completedAt ? (

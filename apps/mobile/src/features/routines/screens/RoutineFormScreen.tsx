@@ -20,7 +20,9 @@ import {
   effectiveRoutineSetValue,
   setFieldPlaceholder,
 } from '@/features/routines/utils/routineSetInheritance';
+import { useSettings } from '@/features/settings/SettingsContext';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
+import { kgToInputString, roundWeight, toKg } from '@/lib/weight';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type {
   Exercise,
@@ -28,6 +30,7 @@ import type {
   RoutineExercise,
   RoutineExerciseInput,
   RoutineExerciseSet,
+  WeightUnit,
 } from '@workout/domain';
 
 type RoutineFormScreenProps = {
@@ -80,18 +83,24 @@ function createEmptyExerciseRow(): EditableRoutineExercise {
   };
 }
 
-function toEditableSet(routineSet: RoutineExerciseSet): EditableRoutineSet {
+function toEditableSet(
+  routineSet: RoutineExerciseSet,
+  unit: WeightUnit,
+): EditableRoutineSet {
   return {
     id: routineSet.id,
     minReps: routineSet.minReps !== undefined ? String(routineSet.minReps) : '',
     maxReps: routineSet.maxReps !== undefined ? String(routineSet.maxReps) : '',
     targetWeight:
-      routineSet.targetWeight !== undefined ? String(routineSet.targetWeight) : '',
+      routineSet.targetWeight !== undefined
+        ? kgToInputString(routineSet.targetWeight, unit)
+        : '',
   };
 }
 
 function toEditableExercise(
   routineExercise: RoutineExercise,
+  unit: WeightUnit,
 ): EditableRoutineExercise {
   return {
     id: routineExercise.id,
@@ -110,7 +119,7 @@ function toEditableExercise(
         ? routineExercise.sets
             .slice()
             .sort((left, right) => left.setNumber - right.setNumber)
-            .map(toEditableSet)
+            .map((set) => toEditableSet(set, unit))
         : [createEmptySetRow()],
   };
 }
@@ -162,6 +171,8 @@ export function RoutineFormScreen({
 }: RoutineFormScreenProps) {
   const router = useRouter();
   const isEditMode = mode === 'edit';
+  const { settings } = useSettings();
+  const unit = settings.unit;
   const [routine, setRoutine] = useState<Routine | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -243,7 +254,7 @@ export function RoutineFormScreen({
               ? nextRoutine.exercises
                   .slice()
                   .sort((left, right) => left.orderIndex - right.orderIndex)
-                  .map(toEditableExercise)
+                  .map((exercise) => toEditableExercise(exercise, unit))
               : [createEmptyExerciseRow()],
           );
         }
@@ -487,7 +498,11 @@ export function RoutineFormScreen({
             setNumber: setIndex + 1,
             minReps,
             maxReps,
-            targetWeight,
+            // Stored canonically in kg; the input is in the user's unit.
+            targetWeight:
+              targetWeight !== undefined
+                ? roundWeight(toKg(targetWeight, unit))
+                : undefined,
           });
         }
 
@@ -518,7 +533,7 @@ export function RoutineFormScreen({
           updatedRoutine.exercises
             .slice()
             .sort((left, right) => left.orderIndex - right.orderIndex)
-            .map(toEditableExercise),
+            .map((exercise) => toEditableExercise(exercise, unit)),
         );
         router.replace(`/routines/${updatedRoutine.id}`);
         return;
@@ -769,6 +784,13 @@ export function RoutineFormScreen({
                   {exercise.sets.map((set, setIndex) => (
                     <View key={set.id} style={styles.setCard}>
                       <Text style={styles.setCardTitle}>Set {setIndex + 1}</Text>
+                      <View style={styles.numericRow}>
+                        <Text style={styles.numericLabel}>Min reps</Text>
+                        <Text style={styles.numericLabel}>Max reps</Text>
+                        <Text style={styles.numericLabel}>
+                          Weight ({unit})
+                        </Text>
+                      </View>
                       <View style={styles.numericRow}>
                         <TextInput
                           value={set.minReps}
@@ -1026,6 +1048,13 @@ const styles = StyleSheet.create({
   },
   numericInput: {
     flex: 1,
+  },
+  numericLabel: {
+    flex: 1,
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
   },
   actionRow: {
     flexDirection: 'row',

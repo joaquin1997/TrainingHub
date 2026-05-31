@@ -15,8 +15,10 @@ import { ProgressChart } from '@/features/progress/components/ProgressChart';
 import { progressClient } from '@/features/progress/api/progressClient';
 import { buildWeeklyVolumeSeries } from '@/features/progress/utils/chartData';
 import { summarizeTrainingFrequency } from '@/features/progress/utils/trainingFrequency';
+import { useSettings } from '@/features/settings/SettingsContext';
 import { EmptyState } from '@/ui/EmptyState';
 import { formatShortDate } from '@/lib/format';
+import { formatWeightValue, fromKg, roundWeight } from '@/lib/weight';
 import { useRefresh } from '@/lib/useRefresh';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type {
@@ -35,6 +37,8 @@ export function ProgressOverviewScreen() {
   const [muscleVolume, setMuscleVolume] = useState<MuscleGroupVolumePoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
+  const { settings } = useSettings();
+  const unit = settings.unit;
 
   const loadProgress = useCallback(
     async (shouldUpdate: () => boolean = () => true) => {
@@ -82,7 +86,12 @@ export function ProgressOverviewScreen() {
   );
 
   const { isRefreshing, onRefresh } = useRefresh(loadProgress);
-  const weeklyVolumeSeries = buildWeeklyVolumeSeries(weeklyVolume);
+  const weeklyVolumeSeries = buildWeeklyVolumeSeries(
+    weeklyVolume.map((point) => ({
+      ...point,
+      totalVolume: roundWeight(fromKg(point.totalVolume, unit)),
+    })),
+  );
   const frequency = summarizeTrainingFrequency(weeklyVolume);
   const showLoading = isLoading && progress.length === 0;
   const hasEmptyState = !isLoading && !errorMessage && progress.length === 0;
@@ -103,7 +112,7 @@ export function ProgressOverviewScreen() {
       {weeklyVolumeSeries.bars.length > 0 ? (
         <ProgressChart
           title="Weekly volume"
-          unit="kg"
+          unit={unit}
           series={weeklyVolumeSeries}
           formatLabel={formatShortDate}
         />
@@ -147,16 +156,17 @@ export function ProgressOverviewScreen() {
                   ) : null}
                 </View>
                 <Text style={styles.meta}>
-                  Latest: {formatValue(exercise.latestWeightKg)} kg x{' '}
-                  {formatValue(exercise.latestReps)}
+                  Latest: {formatWeightValue(exercise.latestWeightKg, unit)} {unit}{' '}
+                  x {formatValue(exercise.latestReps)}
                 </Text>
                 <Text style={styles.meta}>
-                  Best: {formatValue(exercise.personalBestWeightKg)} kg x{' '}
-                  {formatValue(exercise.personalBestReps)}
+                  Best: {formatWeightValue(exercise.personalBestWeightKg, unit)}{' '}
+                  {unit} x {formatValue(exercise.personalBestReps)}
                 </Text>
                 <Text style={styles.meta}>
-                  Est. 1RM: {formatValue(exercise.bestEstimatedOneRepMax)} kg -{' '}
-                  {exercise.sessionCount} sessions
+                  Est. 1RM:{' '}
+                  {formatWeightValue(exercise.bestEstimatedOneRepMax, unit)} {unit}{' '}
+                  - {exercise.sessionCount} sessions
                 </Text>
               </Pressable>
             </Link>

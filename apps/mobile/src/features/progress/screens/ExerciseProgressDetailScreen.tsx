@@ -6,12 +6,19 @@ import { ProgressChart } from '@/features/progress/components/ProgressChart';
 import { progressClient } from '@/features/progress/api/progressClient';
 import { buildProgressSeries } from '@/features/progress/utils/chartData';
 import { extractPersonalRecords } from '@/features/progress/utils/personalRecords';
+import { useSettings } from '@/features/settings/SettingsContext';
 import { formatDate, formatShortDate } from '@/lib/format';
+import { formatWeightValue, fromKg, roundWeight } from '@/lib/weight';
 import { colors, commonStyles, spacing } from '@/ui/theme';
-import type { ExerciseProgressDetail } from '@workout/domain';
+import type { ExerciseProgressDetail, WeightUnit } from '@workout/domain';
 
 function formatValue(value?: number) {
   return value === undefined ? '-' : String(value);
+}
+
+/** kg → rounded display-unit number (used for charted/volume values). */
+function toDisplay(kg: number, unit: WeightUnit) {
+  return roundWeight(fromKg(kg, unit));
 }
 
 export function ExerciseProgressDetailScreen() {
@@ -19,6 +26,8 @@ export function ExerciseProgressDetailScreen() {
   const [progress, setProgress] = useState<ExerciseProgressDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
+  const { settings } = useSettings();
+  const unit = settings.unit;
 
   const loadProgress = useCallback(
     async (shouldUpdate: () => boolean = () => true) => {
@@ -90,40 +99,58 @@ export function ExerciseProgressDetailScreen() {
     );
   }
 
+  // Convert the kg-scaled metrics into the user's display unit up front so the
+  // charts, records and per-session list all read in the same unit.
+  const displayPoints = progress.points.map((point) => ({
+    ...point,
+    bestWeightKg:
+      point.bestWeightKg !== undefined
+        ? toDisplay(point.bestWeightKg, unit)
+        : point.bestWeightKg,
+    totalVolume:
+      point.totalVolume !== undefined
+        ? toDisplay(point.totalVolume, unit)
+        : point.totalVolume,
+    estimatedOneRepMax:
+      point.estimatedOneRepMax !== undefined
+        ? toDisplay(point.estimatedOneRepMax, unit)
+        : point.estimatedOneRepMax,
+  }));
+
   const oneRepMaxSeries = buildProgressSeries(
-    progress.points,
+    displayPoints,
     'estimatedOneRepMax',
   );
-  const volumeSeries = buildProgressSeries(progress.points, 'totalVolume');
+  const volumeSeries = buildProgressSeries(displayPoints, 'totalVolume');
   const personalRecords = extractPersonalRecords(progress.points);
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
       <Text style={styles.body}>{progress.exerciseName}</Text>
       <Text style={styles.meta}>
-        Latest: {formatValue(progress.latestWeightKg)} kg x{' '}
+        Latest: {formatWeightValue(progress.latestWeightKg, unit)} {unit} x{' '}
         {formatValue(progress.latestReps)}
       </Text>
       <Text style={styles.meta}>
-        Personal best: {formatValue(progress.personalBestWeightKg)} kg x{' '}
-        {formatValue(progress.personalBestReps)}
+        Personal best: {formatWeightValue(progress.personalBestWeightKg, unit)}{' '}
+        {unit} x {formatValue(progress.personalBestReps)}
       </Text>
       <Text style={styles.meta}>
-        Est. 1RM: {formatValue(progress.bestEstimatedOneRepMax)} kg -{' '}
-        {progress.sessionCount} sessions
+        Est. 1RM: {formatWeightValue(progress.bestEstimatedOneRepMax, unit)} {unit}{' '}
+        - {progress.sessionCount} sessions
         {progress.isRecordSession ? ' - recent PR' : ''}
       </Text>
       {oneRepMaxSeries.bars.length > 0 ? (
         <ProgressChart
           title="Estimated 1RM"
-          unit="kg"
+          unit={unit}
           series={oneRepMaxSeries}
           formatLabel={formatShortDate}
         />
       ) : volumeSeries.bars.length > 0 ? (
         <ProgressChart
           title="Volume per session"
-          unit="kg"
+          unit={unit}
           series={volumeSeries}
           formatLabel={formatShortDate}
         />
@@ -138,7 +165,7 @@ export function ExerciseProgressDetailScreen() {
               <View key={`${record.date}-${index}`} style={styles.recordRow}>
                 <Text style={styles.recordBadge}>🏆</Text>
                 <Text style={styles.recordText}>
-                  {record.weightKg} kg
+                  {formatWeightValue(record.weightKg, unit)} {unit}
                   {record.reps !== undefined ? ` x ${record.reps}` : ''} -{' '}
                   {formatDate(record.date)}
                 </Text>
@@ -147,15 +174,16 @@ export function ExerciseProgressDetailScreen() {
         </View>
       ) : null}
       <View style={styles.list}>
-        {progress.points
+        {displayPoints
           .slice()
           .reverse()
           .map((point, index) => (
             <View key={`${point.date}-${index}`} style={styles.card}>
               <Text style={styles.cardTitle}>{formatDate(point.date)}</Text>
               <Text style={styles.meta}>
-                Best: {formatValue(point.bestWeightKg)} kg x{' '}
-                {formatValue(point.bestReps)} - Volume {point.totalVolume} - 1RM{' '}
+                Best: {formatValue(point.bestWeightKg)} {unit} x{' '}
+                {formatValue(point.bestReps)} - Volume{' '}
+                {formatValue(point.totalVolume)} {unit} - 1RM{' '}
                 {formatValue(point.estimatedOneRepMax)}
               </Text>
             </View>

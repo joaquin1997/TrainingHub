@@ -2,9 +2,12 @@ import type {
   CreateWorkoutSessionInput,
   ExerciseLastPerformance,
   Routine,
+  WeightUnit,
   WorkoutSession,
   WorkoutSetType,
 } from '@workout/domain';
+
+import { kgToInputString, roundWeight, toKg } from '@/lib/weight';
 
 export const WORKOUT_SET_TYPES: WorkoutSetType[] = [
   'normal',
@@ -17,11 +20,17 @@ export type WorkoutSetDraft = {
   id: string;
   order: number;
   reps: string;
+  /**
+   * Weight the user typed, in the session's display unit (see
+   * {@link WorkoutSessionDraft.unit}). Converted to canonical kg only when the
+   * session is persisted. The `Kg` suffix is historical — treat it as "weight".
+   */
   weightKg: string;
   /**
    * Ghosted "previous" values shown as input placeholders (last performance or
    * routine target). When the actual field is left empty these are what gets
    * logged, so an unedited set still records its default — mirroring Hevy.
+   * The weight placeholder is in the session's display unit.
    */
   repsPlaceholder?: string;
   weightPlaceholder?: string;
@@ -57,8 +66,19 @@ export type WorkoutSessionDraft = {
   routineName: string;
   startedAt: string;
   notes?: string;
+  /**
+   * Display unit captured when the workout started. All weight strings in the
+   * draft are in this unit; conversion to canonical kg happens on persist.
+   * Optional for backwards-compat — absent means kg.
+   */
+  unit?: WeightUnit;
   exercises: WorkoutExerciseDraft[];
 };
+
+/** The session's display unit, defaulting to kg when unset. */
+function draftUnit(workoutDraft: WorkoutSessionDraft): WeightUnit {
+  return workoutDraft.unit ?? 'kg';
+}
 
 let latestCompletedWorkout: WorkoutSessionDraft | null = null;
 let activeWorkout: WorkoutSessionDraft | null = null;
@@ -79,7 +99,10 @@ function renumberExercises(
   return exercises.map((exercise, index) => ({ ...exercise, order: index + 1 }));
 }
 
-function buildExerciseDrafts(routine: Routine): WorkoutExerciseDraft[] {
+function buildExerciseDrafts(
+  routine: Routine,
+  unit: WeightUnit,
+): WorkoutExerciseDraft[] {
   return routine.exercises
     .slice()
     .sort((left, right) => left.orderIndex - right.orderIndex)
@@ -107,7 +130,9 @@ function buildExerciseDrafts(routine: Routine): WorkoutExerciseDraft[] {
                 ? String(set.minReps)
                 : undefined,
           weightPlaceholder:
-            set.targetWeight !== undefined ? String(set.targetWeight) : undefined,
+            set.targetWeight !== undefined
+              ? kgToInputString(set.targetWeight, unit)
+              : undefined,
           done: false,
           type: 'normal',
           minReps: set.minReps,
@@ -119,13 +144,15 @@ function buildExerciseDrafts(routine: Routine): WorkoutExerciseDraft[] {
 
 export function buildWorkoutSessionDraft(
   routine: Routine,
+  unit: WeightUnit = 'kg',
 ): WorkoutSessionDraft {
   return {
     id: `workout-session-${routine.id}`,
     routineId: routine.id,
     routineName: routine.name,
     startedAt: new Date().toISOString(),
-    exercises: buildExerciseDrafts(routine),
+    unit,
+    exercises: buildExerciseDrafts(routine, unit),
   };
 }
 
@@ -237,6 +264,7 @@ export function applyLastPerformance(
   performance: ExerciseLastPerformance,
 ): WorkoutSessionDraft {
   let changed = false;
+  const unit = draftUnit(workoutDraft);
 
   const exercises = workoutDraft.exercises.map((exercise) => {
     if (exercise.exerciseId !== exerciseId) {
@@ -256,7 +284,7 @@ export function applyLastPerformance(
           : set.repsPlaceholder;
       const weightPlaceholder =
         last.weightKg !== undefined && last.weightKg !== null
-          ? String(last.weightKg)
+          ? kgToInputString(last.weightKg, unit)
           : set.weightPlaceholder;
 
       if (
@@ -436,6 +464,7 @@ export function toCreateWorkoutSessionInput(
   workoutDraft: WorkoutSessionDraft,
 ): CreateWorkoutSessionInput {
   const completedAt = new Date().toISOString();
+  const unit = draftUnit(workoutDraft);
 
   return {
     routineId: workoutDraft.routineId,
@@ -451,14 +480,27 @@ export function toCreateWorkoutSessionInput(
         type: set.type,
         isWarmup: set.type === 'warmup' || undefined,
         reps: Number(effectiveSetValue(set.reps, set.repsPlaceholder)) || undefined,
-        weightKg:
-          Number(effectiveSetValue(set.weightKg, set.weightPlaceholder)) ||
-          undefined,
+        weightKg: effectiveWeightKg(set, unit),
         restSeconds: set.done ? set.restSeconds : undefined,
         completedAt: set.done ? completedAt : undefined,
       })),
     })),
   };
+}
+
+/**
+ * The set's effective weight in canonical kg, converting from the session's
+ * display unit. Empty (no value, no placeholder) yields undefined.
+ */
+function effectiveWeightKg(
+  set: WorkoutSetDraft,
+  unit: WeightUnit,
+): number | undefined {
+  const value = Number(effectiveSetValue(set.weightKg, set.weightPlaceholder));
+  if (!value) {
+    return undefined;
+  }
+  return roundWeight(toKg(value, unit));
 }
 
 export function saveCompletedWorkout(workoutDraft: WorkoutSessionDraft) {
@@ -478,12 +520,15 @@ export function clearLatestCompletedWorkout() {
  * resumed when navigating away and back without losing logged sets. Only one
  * workout can be active at a time.
  */
-export function startActiveWorkout(routine: Routine): WorkoutSessionDraft {
+export function startActiveWorkout(
+  routine: Routine,
+  unit: WeightUnit = 'kg',
+): WorkoutSessionDraft {
   if (activeWorkout && activeWorkout.routineId === routine.id) {
     return activeWorkout;
   }
 
-  activeWorkout = buildWorkoutSessionDraft(routine);
+  activeWorkout = buildWorkoutSessionDraft(routine, unit);
   return activeWorkout;
 }
 
@@ -511,6 +556,7 @@ export function toWorkoutSessionSkeleton(
   workoutDraft: WorkoutSessionDraft,
 ): WorkoutSession {
   const completedAt = new Date().toISOString();
+  const unit = draftUnit(workoutDraft);
 
   return {
     id: workoutDraft.id,
@@ -532,9 +578,7 @@ export function toWorkoutSessionSkeleton(
         order: set.order,
         type: set.type,
         reps: Number(effectiveSetValue(set.reps, set.repsPlaceholder)) || undefined,
-        weightKg:
-          Number(effectiveSetValue(set.weightKg, set.weightPlaceholder)) ||
-          undefined,
+        weightKg: effectiveWeightKg(set, unit),
         restSeconds: set.restSeconds,
         completedAt,
         createdAt: completedAt,

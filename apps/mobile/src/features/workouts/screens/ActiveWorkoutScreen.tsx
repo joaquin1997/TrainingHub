@@ -19,6 +19,7 @@ import { WheelPicker } from '@/features/workouts/components/WheelPicker';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { Button } from '@/ui/Button';
 import { formatDuration } from '@/lib/format';
+import { fromKg, roundWeight } from '@/lib/weight';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { useRestTimer } from '@/lib/useRestTimer';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
@@ -29,6 +30,7 @@ const pad2 = (value: number) => String(value).padStart(2, '0');
 import type {
   Exercise,
   ExerciseLastPerformance,
+  WeightUnit,
   WorkoutSetType,
 } from '@workout/domain';
 import {
@@ -61,6 +63,7 @@ import {
 function prevSetLabel(
   performance: ExerciseLastPerformance | null | undefined,
   order: number,
+  unit: WeightUnit,
 ) {
   const last = performance?.sets.find((set) => set.order === order);
 
@@ -68,7 +71,9 @@ function prevSetLabel(
     return '–';
   }
 
-  return `${last.weightKg ?? '–'}×${last.reps ?? '–'}`;
+  const weight =
+    last.weightKg != null ? roundWeight(fromKg(last.weightKg, unit)) : '–';
+  return `${weight}×${last.reps ?? '–'}`;
 }
 
 function setTypeLabel(type: WorkoutSetType) {
@@ -120,7 +125,7 @@ export function ActiveWorkoutScreen() {
           return;
         }
 
-        setWorkoutDraft(startActiveWorkout(routine));
+        setWorkoutDraft(startActiveWorkout(routine, settings.unit));
         setStatus('ready');
       })
       .catch((error: unknown) => {
@@ -531,7 +536,9 @@ export function ActiveWorkoutScreen() {
             <View style={styles.setHeaderRow}>
               <Text style={[styles.colSet, styles.colLabel]}>SET</Text>
               <Text style={[styles.colPrev, styles.colLabel]}>PREV</Text>
-              <Text style={[styles.colInput, styles.colLabel]}>KG</Text>
+              <Text style={[styles.colInput, styles.colLabel]}>
+                {(workoutDraft.unit ?? 'kg').toUpperCase()}
+              </Text>
               <Text style={[styles.colInput, styles.colLabel]}>REPS</Text>
               <View style={styles.colCheck} />
             </View>
@@ -553,7 +560,11 @@ export function ActiveWorkoutScreen() {
                   ) : null}
                 </Pressable>
                 <Text numberOfLines={1} style={[styles.colPrev, styles.prevText]}>
-                  {prevSetLabel(lastByExercise[exercise.exerciseId], set.order)}
+                  {prevSetLabel(
+                    lastByExercise[exercise.exerciseId],
+                    set.order,
+                    workoutDraft.unit ?? 'kg',
+                  )}
                 </Text>
                 <TextInput
                   keyboardType="decimal-pad"
