@@ -107,17 +107,6 @@ export function RoutinesListScreen() {
           <Text style={styles.primaryButtonText}>Create routine</Text>
         </Pressable>
       </Link>
-      <View style={styles.links}>
-        <Link href="/exercises" style={styles.link}>
-          Exercises
-        </Link>
-        <Link href="/progress" style={styles.link}>
-          Progress
-        </Link>
-        <Link href="/history" style={styles.link}>
-          History
-        </Link>
-      </View>
       {showLoading ? (
         <View style={styles.stateCard}>
           <Text style={styles.meta}>Loading routines...</Text>
