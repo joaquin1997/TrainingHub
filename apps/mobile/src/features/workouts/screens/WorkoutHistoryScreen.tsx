@@ -82,7 +82,6 @@ export function WorkoutHistoryScreen() {
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
-      <Text style={styles.title}>Workout History</Text>
       <Text style={styles.body}>
         Scan previous sessions and open the details behind each lift.
       </Text>

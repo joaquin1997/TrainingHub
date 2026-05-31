@@ -72,7 +72,6 @@ export function WorkoutSessionDetailScreen() {
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Workout</Text>
         <Text style={styles.meta}>Loading workout...</Text>
       </View>
     );
@@ -81,7 +80,6 @@ export function WorkoutSessionDetailScreen() {
   if (!session) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Workout</Text>
         <Text style={styles.error}>
           {errorMessage ?? 'Workout not found.'}
         </Text>
@@ -94,7 +92,6 @@ export function WorkoutSessionDetailScreen() {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Workout</Text>
       <Text style={styles.body}>
         {formatDateTime(session.completedAt ?? session.startedAt)}
       </Text>

@@ -201,7 +201,6 @@ export function ActiveWorkoutScreen() {
   if (status === 'loading') {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Active Workout</Text>
         <ActivityIndicator color={colors.primary} />
         <Text style={styles.meta}>Loading routine...</Text>
       </View>
@@ -211,7 +210,6 @@ export function ActiveWorkoutScreen() {
   if (status === 'error' || !workoutDraft) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Active Workout</Text>
         <Text style={styles.meta}>
           {errorMessage ??
             'Start this flow from a routine so the workout session can be created from a routine template.'}
@@ -409,7 +407,6 @@ export function ActiveWorkoutScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Active Workout</Text>
       <Text style={styles.body}>
         {workoutDraft.routineName}
       </Text>

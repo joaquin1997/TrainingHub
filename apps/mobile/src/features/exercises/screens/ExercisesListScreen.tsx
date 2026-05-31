@@ -142,7 +142,6 @@ export function ExercisesListScreen() {
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
-      <Text style={styles.title}>Exercises</Text>
       <TextInput
         value={query}
         onChangeText={setQuery}

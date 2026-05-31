@@ -79,7 +79,6 @@ export function RoutinesListScreen() {
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
-      <Text style={styles.title}>Routines</Text>
       <Text style={styles.body}>
         Pick a plan, start lifting, or build a new routine from the exercise
         catalog.

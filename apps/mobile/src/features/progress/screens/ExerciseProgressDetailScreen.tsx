@@ -72,7 +72,6 @@ export function ExerciseProgressDetailScreen() {
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Exercise Progress</Text>
         <Text style={styles.meta}>Loading progress...</Text>
       </View>
     );
@@ -81,7 +80,6 @@ export function ExerciseProgressDetailScreen() {
   if (!progress) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Exercise Progress</Text>
         <Text style={styles.body}>
           {errorMessage ?? 'Progress data is not available for this exercise yet.'}
         </Text>
@@ -101,7 +99,6 @@ export function ExerciseProgressDetailScreen() {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Exercise Progress</Text>
       <Text style={styles.body}>{progress.exerciseName}</Text>
       <Text style={styles.meta}>
         Latest: {formatValue(progress.latestWeightKg)} kg x{' '}

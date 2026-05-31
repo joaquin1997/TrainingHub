@@ -149,7 +149,6 @@ export function RoutineDetailScreen() {
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Routine Detail</Text>
         <Text style={styles.body}>Loading routine...</Text>
       </View>
     );
@@ -158,7 +157,6 @@ export function RoutineDetailScreen() {
   if (!routine) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Routine Detail</Text>
         <Text style={styles.body}>Routine unavailable</Text>
         <Text style={styles.error}>
           {errorMessage ?? 'Routine not found in the API response.'}
@@ -182,7 +180,6 @@ export function RoutineDetailScreen() {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Routine Detail</Text>
       <Text style={styles.body}>{routine.name}</Text>
       {routine.description ? (
         <Text style={styles.description}>{routine.description}</Text>

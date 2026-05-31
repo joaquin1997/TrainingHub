@@ -95,7 +95,6 @@ export function ProgressOverviewScreen() {
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
-      <Text style={styles.title}>Progress Overview</Text>
       <Text style={styles.body}>
         Review your strongest recent lifts and see which exercises are moving.
       </Text>

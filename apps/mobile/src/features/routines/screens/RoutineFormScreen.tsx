@@ -544,7 +544,6 @@ export function RoutineFormScreen({
   if (isEditMode && activeWorkout?.routineId === routineId) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Edit Routine</Text>
         <Text style={styles.body}>
           This routine has a workout in progress. Finish or discard it before
           editing.
@@ -559,9 +558,6 @@ export function RoutineFormScreen({
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>
-          {isEditMode ? 'Edit Routine' : 'Create Routine'}
-        </Text>
         <Text style={styles.body}>Loading routine...</Text>
       </View>
     );
@@ -575,9 +571,6 @@ export function RoutineFormScreen({
         keyboardShouldPersistTaps="handled"
         contentInsetAdjustmentBehavior="automatic"
       >
-        <Text style={styles.title}>
-          {isEditMode ? 'Edit Routine' : 'Create Routine'}
-        </Text>
         <Text style={styles.body}>
           {isEditMode
             ? 'Tune the exercise order, targets and weights before your next session.'

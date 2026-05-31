@@ -14,7 +14,6 @@ export function WorkoutSummaryScreen() {
   if (!workoutDraft) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Workout Summary</Text>
         <Text style={styles.body}>
           No completed workout is stored in the local mock flow yet.
         </Text>
@@ -29,7 +28,6 @@ export function WorkoutSummaryScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Workout Summary</Text>
       <Text style={styles.body}>{workoutDraft.routineName}</Text>
       <Text style={styles.meta}>Saved to history.</Text>
       <Text style={styles.meta}>Session ID: {workoutSession.id}</Text>

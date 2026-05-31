@@ -97,7 +97,6 @@ export function ExerciseDetailScreen() {
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Exercise</Text>
         <Text style={styles.meta}>Loading exercise...</Text>
       </View>
     );
@@ -106,7 +105,6 @@ export function ExerciseDetailScreen() {
   if (!exercise) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Exercise</Text>
         <Text style={styles.error}>{errorMessage ?? 'Exercise not found.'}</Text>
         <Link href="/exercises" style={styles.link}>
           Back to exercises
