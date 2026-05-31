@@ -1,5 +1,5 @@
 import { Link, useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Pressable,
   RefreshControl,
@@ -20,13 +20,14 @@ import { useRefresh } from '@/lib/useRefresh';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type { Exercise } from '@workout/domain';
 
-const MAX_VISIBLE = 50;
+const PAGE_SIZE = 50;
 
 export function ExercisesListScreen() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<string>();
   const [equipment, setEquipment] = useState<string>();
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
 
@@ -79,13 +80,18 @@ export function ExercisesListScreen() {
     [exercises, query, category, equipment],
   );
 
+  // Reset paging whenever the filters narrow/expand the result set.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [query, category, equipment]);
+
   const toggle = (
     current: string | undefined,
     value: string,
     set: (next: string | undefined) => void,
   ) => set(current === value ? undefined : value);
 
-  const visible = filtered.slice(0, MAX_VISIBLE);
+  const visible = filtered.slice(0, visibleCount);
   const hiddenCount = filtered.length - visible.length;
   const { isRefreshing, onRefresh } = useRefresh(loadExercises);
   const showLoading = isLoading && exercises.length === 0;
@@ -162,7 +168,7 @@ export function ExercisesListScreen() {
       {!isLoading && !errorMessage ? (
         <Text style={styles.meta}>
           {filtered.length} exercises
-          {hiddenCount > 0 ? ` - showing first ${MAX_VISIBLE}` : ''}
+          {hiddenCount > 0 ? ` - showing ${visible.length}` : ''}
         </Text>
       ) : null}
       <View style={styles.list}>
@@ -190,9 +196,17 @@ export function ExercisesListScreen() {
         ))}
       </View>
       {hiddenCount > 0 ? (
-        <Text style={styles.meta}>
-          Refine your search to see the other {hiddenCount}.
-        </Text>
+        <Pressable
+          onPress={() => setVisibleCount((count) => count + PAGE_SIZE)}
+          style={({ pressed }) => [
+            styles.loadMore,
+            pressed ? styles.cardPressed : null,
+          ]}
+        >
+          <Text style={styles.loadMoreText}>
+            Load more ({hiddenCount} left)
+          </Text>
+        </Pressable>
       ) : null}
       <RouteLinks currentRoute="exercises" />
     </ScrollView>
@@ -244,6 +258,13 @@ const styles = StyleSheet.create({
   },
   cardPressed: {
     ...commonStyles.pressed,
+  },
+  loadMore: {
+    ...commonStyles.secondaryButton,
+    alignSelf: 'center',
+  },
+  loadMoreText: {
+    ...commonStyles.secondaryButtonText,
   },
   cardTitle: {
     color: colors.text,
