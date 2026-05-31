@@ -15,12 +15,16 @@ import { routinesClient } from '@/features/routines/api/routinesClient';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { ExercisePickerModal } from '@/features/exercises/components/ExercisePickerModal';
 import { ProgressRing } from '@/features/workouts/components/ProgressRing';
+import { WheelPicker } from '@/features/workouts/components/WheelPicker';
 import { formatDuration } from '@/lib/format';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { useRestTimer } from '@/lib/useRestTimer';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 
 const REST_PRESETS = [60, 90, 120];
+const REST_MINUTES = Array.from({ length: 11 }, (_, i) => i); // 0–10 min
+const REST_SECONDS = Array.from({ length: 12 }, (_, i) => i * 5); // 0,5,…,55
+const pad2 = (value: number) => String(value).padStart(2, '0');
 import type {
   Exercise,
   ExerciseLastPerformance,
@@ -464,34 +468,36 @@ export function ActiveWorkoutScreen() {
           </View>
         ) : (
           <View style={styles.restColumn}>
-            <View style={styles.restRow}>
-              <Text style={styles.meta}>Rest timer</Text>
-              <View style={styles.restControls}>
-                <Pressable
-                  onPress={() => setRestDuration((d) => Math.max(15, d - 15))}
-                  hitSlop={6}
-                  style={styles.stepButton}
-                >
-                  <Text style={styles.stepText}>−</Text>
-                </Pressable>
-                <Text style={styles.restValue}>
-                  {formatDuration(restDuration)}
-                </Text>
-                <Pressable
-                  onPress={() => setRestDuration((d) => d + 15)}
-                  hitSlop={6}
-                  style={styles.stepButton}
-                >
-                  <Text style={styles.stepText}>+</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => restTimer.start(restDuration)}
-                  hitSlop={8}
-                  style={styles.startButton}
-                >
-                  <Text style={styles.startText}>Start</Text>
-                </Pressable>
+            <Text style={styles.meta}>Rest timer</Text>
+            <View style={styles.wheelRow}>
+              <View style={styles.wheelGroup}>
+                <WheelPicker
+                  values={REST_MINUTES}
+                  value={Math.floor(restDuration / 60)}
+                  onChange={(m) => setRestDuration(m * 60 + (restDuration % 60))}
+                  formatItem={pad2}
+                />
+                <Text style={styles.wheelUnit}>min</Text>
               </View>
+              <Text style={styles.wheelColon}>:</Text>
+              <View style={styles.wheelGroup}>
+                <WheelPicker
+                  values={REST_SECONDS}
+                  value={restDuration % 60}
+                  onChange={(s) =>
+                    setRestDuration(Math.floor(restDuration / 60) * 60 + s)
+                  }
+                  formatItem={pad2}
+                />
+                <Text style={styles.wheelUnit}>sec</Text>
+              </View>
+              <Pressable
+                onPress={() => restTimer.start(restDuration)}
+                hitSlop={8}
+                style={styles.startButton}
+              >
+                <Text style={styles.startText}>Start</Text>
+              </Pressable>
             </View>
             <View style={styles.presetRow}>
               {REST_PRESETS.map((seconds) => (
@@ -886,6 +892,27 @@ const styles = StyleSheet.create({
   restColumn: {
     gap: spacing.sm,
   },
+  wheelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  wheelGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  wheelUnit: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  wheelColon: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: '900',
+  },
   restRingRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -927,11 +954,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.md,
   },
-  restControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
   stepButton: {
     minWidth: 38,
     minHeight: 32,
@@ -946,14 +968,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 15,
     fontWeight: '800',
-  },
-  restValue: {
-    minWidth: 56,
-    textAlign: 'center',
-    color: colors.primary,
-    fontSize: 17,
-    fontWeight: '900',
-    fontVariant: ['tabular-nums'],
   },
   startButton: {
     borderRadius: radii.sm,
