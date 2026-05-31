@@ -1,6 +1,7 @@
 import type {
   ExerciseProgressDetail,
   ExerciseProgressSummary,
+  WeeklyVolumePoint,
 } from '@workout/domain';
 
 import { apiRequest } from '@/lib/http';
@@ -14,5 +15,8 @@ export const progressClient = {
     return apiRequest<ExerciseProgressDetail>(
       `/progress/exercises/${exerciseId}`,
     );
+  },
+  weeklyVolume() {
+    return apiRequest<WeeklyVolumePoint[]>('/progress/weekly-volume');
   },
 };

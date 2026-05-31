@@ -3,11 +3,16 @@ import type { FastifyInstance } from 'fastify';
 import {
   getExerciseProgress,
   listExerciseProgress,
+  listWeeklyVolume,
 } from './repository.js';
 
 export async function registerProgressRoutes(app: FastifyInstance) {
   app.get('/progress/exercises', async () => {
     return listExerciseProgress();
+  });
+
+  app.get('/progress/weekly-volume', async () => {
+    return listWeeklyVolume();
   });
 
   app.get<{ Params: { exerciseId: string } }>(

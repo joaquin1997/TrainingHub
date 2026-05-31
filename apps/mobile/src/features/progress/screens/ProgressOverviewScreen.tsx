@@ -9,11 +9,17 @@ import {
   View,
 } from 'react-native';
 
+import { ProgressChart } from '@/features/progress/components/ProgressChart';
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { progressClient } from '@/features/progress/api/progressClient';
+import { buildWeeklyVolumeSeries } from '@/features/progress/utils/chartData';
+import { formatShortDate } from '@/lib/format';
 import { useRefresh } from '@/lib/useRefresh';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
-import type { ExerciseProgressSummary } from '@workout/domain';
+import type {
+  ExerciseProgressSummary,
+  WeeklyVolumePoint,
+} from '@workout/domain';
 
 function formatValue(value?: number) {
   return value === undefined ? '-' : String(value);
@@ -21,6 +27,7 @@ function formatValue(value?: number) {
 
 export function ProgressOverviewScreen() {
   const [progress, setProgress] = useState<ExerciseProgressSummary[]>([]);
+  const [weeklyVolume, setWeeklyVolume] = useState<WeeklyVolumePoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
 
@@ -30,10 +37,14 @@ export function ProgressOverviewScreen() {
       setErrorMessage(undefined);
 
       try {
-        const nextProgress = await progressClient.list();
+        const [nextProgress, nextWeeklyVolume] = await Promise.all([
+          progressClient.list(),
+          progressClient.weeklyVolume(),
+        ]);
 
         if (shouldUpdate()) {
           setProgress(nextProgress);
+          setWeeklyVolume(nextWeeklyVolume);
         }
       } catch (error) {
         if (shouldUpdate()) {
@@ -63,6 +74,7 @@ export function ProgressOverviewScreen() {
   );
 
   const { isRefreshing, onRefresh } = useRefresh(loadProgress);
+  const weeklyVolumeSeries = buildWeeklyVolumeSeries(weeklyVolume);
   const showLoading = isLoading && progress.length === 0;
   const hasEmptyState = !isLoading && !errorMessage && progress.length === 0;
   const hasListState = !errorMessage && progress.length > 0;
@@ -79,6 +91,14 @@ export function ProgressOverviewScreen() {
       <Text style={styles.body}>
         Review your strongest recent lifts and see which exercises are moving.
       </Text>
+      {weeklyVolumeSeries.bars.length > 0 ? (
+        <ProgressChart
+          title="Weekly volume"
+          unit="kg"
+          series={weeklyVolumeSeries}
+          formatLabel={formatShortDate}
+        />
+      ) : null}
       {showLoading ? (
         <View style={styles.card}>
           <Text style={styles.meta}>Loading progress...</Text>

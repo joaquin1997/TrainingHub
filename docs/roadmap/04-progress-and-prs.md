@@ -8,7 +8,9 @@
   - [x] Per-session bar chart (est. 1RM with volume fallback) on the exercise
     detail screen — dependency-free, pure-view bars
   - [ ] Smooth line charts / multi-metric toggle
-- [ ] Weekly volume, muscle-group distribution
+- [~] Weekly volume, muscle-group distribution
+  - [x] Weekly training-volume chart on the progress overview
+  - [ ] Muscle-group distribution
 - [ ] Workout calendar view
 
 ## Progress log
@@ -19,6 +21,10 @@
   unit-tested helper (`buildProgressSeries`); the chart itself (`ProgressChart`)
   is built from plain views so it needs no native chart dependency and renders
   the same on iOS/Android/web. Shows est. 1RM, falling back to volume.
+- Weekly training-volume chart on the progress overview. New
+  `GET /progress/weekly-volume` endpoint buckets all sessions into Monday-start
+  weeks (pure `buildWeeklyVolume`, unit + route tested) and the overview renders
+  it through the same `ProgressChart` (`buildWeeklyVolumeSeries`).
 
 ## Notes
 - Progress aggregation already exists (`apps/api/src/features/progress`). PRs can

@@ -6,6 +6,7 @@ import {
 import {
   buildExerciseProgressDetail,
   buildExerciseProgressSummaries,
+  buildWeeklyVolume,
   type ProgressSessionInput,
 } from './aggregate.js';
 
@@ -44,4 +45,8 @@ export async function listExerciseProgress() {
 
 export async function getExerciseProgress(exerciseId: string) {
   return buildExerciseProgressDetail(await loadSessionInputs(), exerciseId);
+}
+
+export async function listWeeklyVolume() {
+  return buildWeeklyVolume(await loadSessionInputs());
 }

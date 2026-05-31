@@ -250,6 +250,16 @@ export interface ExerciseProgressDetail extends ExerciseProgressSummary {
 }
 
 /**
+ * Total training volume for one calendar week, across all exercises.
+ */
+export interface WeeklyVolumePoint {
+  /** ISO date (YYYY-MM-DD) of the Monday that starts the week. */
+  weekStart: ISODateString;
+  totalVolume: number;
+  workoutCount: number;
+}
+
+/**
  * One previously-logged set for an exercise (for the "last time" hint).
  */
 export interface ExerciseLastSet {

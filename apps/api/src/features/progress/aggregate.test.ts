@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildExerciseProgressDetail,
   buildExerciseProgressSummaries,
+  buildWeeklyVolume,
   type ProgressSessionInput,
 } from './aggregate.js';
 
@@ -102,6 +103,54 @@ describe('buildExerciseProgressDetail', () => {
 
   it('returns null for an unknown exercise', () => {
     expect(buildExerciseProgressDetail(sessions, 'squat')).toBeNull();
+  });
+});
+
+describe('buildWeeklyVolume', () => {
+  it('buckets sessions into Monday-start weeks and sums volume', () => {
+    const weekly = buildWeeklyVolume(sessions);
+
+    expect(weekly).toEqual([
+      { weekStart: '2026-04-27', totalVolume: 1120, workoutCount: 1 },
+      { weekStart: '2026-05-04', totalVolume: 420, workoutCount: 1 },
+    ]);
+  });
+
+  it('combines multiple workouts in the same week', () => {
+    const sameWeek: ProgressSessionInput[] = [
+      {
+        date: '2026-05-04T09:00:00.000Z', // Monday
+        exercises: [
+          { exerciseId: 'bench', exerciseName: 'Bench', sets: [{ reps: 5, weightKg: 100 }] },
+        ],
+      },
+      {
+        date: '2026-05-07T09:00:00.000Z', // Thursday, same week
+        exercises: [
+          { exerciseId: 'bench', exerciseName: 'Bench', sets: [{ reps: 5, weightKg: 80 }] },
+        ],
+      },
+    ];
+
+    expect(buildWeeklyVolume(sameWeek)).toEqual([
+      { weekStart: '2026-05-04', totalVolume: 900, workoutCount: 2 },
+    ]);
+  });
+
+  it('keeps only the most recent weeks, oldest-first', () => {
+    const many: ProgressSessionInput[] = Array.from({ length: 10 }, (_, index) => ({
+      // One session per week starting 2026-01-05 (a Monday).
+      date: new Date(Date.UTC(2026, 0, 5 + index * 7)).toISOString(),
+      exercises: [
+        { exerciseId: 'bench', exerciseName: 'Bench', sets: [{ reps: 1, weightKg: index + 1 }] },
+      ],
+    }));
+
+    const weekly = buildWeeklyVolume(many, 8);
+
+    expect(weekly).toHaveLength(8);
+    expect(weekly[0].totalVolume).toBe(3); // index 2 -> weight 3
+    expect(weekly[7].totalVolume).toBe(10); // index 9 -> weight 10
   });
 });
 

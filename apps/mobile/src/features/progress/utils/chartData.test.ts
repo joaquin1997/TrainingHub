@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildProgressSeries } from './chartData';
+import { buildProgressSeries, buildWeeklyVolumeSeries } from './chartData';
 import type { ExerciseProgressPoint } from '@workout/domain';
 
 function point(
@@ -70,5 +70,24 @@ describe('buildProgressSeries', () => {
     const series = buildProgressSeries(points, 'totalVolume', 3);
 
     expect(series.bars.map((bar) => bar.value)).toEqual([3, 4, 5]);
+  });
+});
+
+describe('buildWeeklyVolumeSeries', () => {
+  it('maps weekly volume points to dated bars', () => {
+    const series = buildWeeklyVolumeSeries([
+      { weekStart: '2026-04-27', totalVolume: 1120, workoutCount: 1 },
+      { weekStart: '2026-05-04', totalVolume: 420, workoutCount: 1 },
+    ]);
+
+    expect(series.bars.map((bar) => ({ date: bar.date, value: bar.value }))).toEqual([
+      { date: '2026-04-27', value: 1120 },
+      { date: '2026-05-04', value: 420 },
+    ]);
+    expect(series.max).toBe(1120);
+  });
+
+  it('returns an empty series when there is no volume data', () => {
+    expect(buildWeeklyVolumeSeries([]).bars).toHaveLength(0);
   });
 });

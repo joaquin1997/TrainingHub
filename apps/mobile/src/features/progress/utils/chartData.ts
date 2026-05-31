@@ -1,4 +1,4 @@
-import type { ExerciseProgressPoint } from '@workout/domain';
+import type { ExerciseProgressPoint, WeeklyVolumePoint } from '@workout/domain';
 
 /** Numeric metrics on a progress point that can be charted over time. */
 export type ProgressMetric = 'estimatedOneRepMax' | 'totalVolume' | 'bestWeightKg';
@@ -21,25 +21,17 @@ export interface ChartSeries {
 const MIN_BAR_RATIO = 0.08;
 
 /**
- * Turn per-session progress points into a normalized bar series for one metric.
+ * Scale a list of dated values into a normalized bar series.
  *
- * Points are expected oldest-first; the most recent `maxPoints` are kept so the
- * chart shows the latest trend. Points missing the metric are skipped. Heights
- * are scaled across the visible range so differences are easy to read.
+ * Entries are expected oldest-first; the most recent `maxPoints` are kept so the
+ * chart shows the latest trend. Heights are scaled across the visible range so
+ * differences are easy to read.
  */
-export function buildProgressSeries(
-  points: ExerciseProgressPoint[],
-  metric: ProgressMetric,
-  maxPoints = 12,
+function scaleSeries(
+  entries: Array<{ date: string; value: number }>,
+  maxPoints: number,
 ): ChartSeries {
-  const withValue = points
-    .map((point) => ({ date: point.date, value: point[metric] }))
-    .filter(
-      (entry): entry is { date: string; value: number } =>
-        typeof entry.value === 'number' && Number.isFinite(entry.value),
-    );
-
-  const recent = withValue.slice(-maxPoints);
+  const recent = entries.slice(-maxPoints);
 
   if (recent.length === 0) {
     return { bars: [], min: 0, max: 0 };
@@ -60,4 +52,36 @@ export function buildProgressSeries(
   }));
 
   return { bars, min, max };
+}
+
+/**
+ * Turn per-session progress points into a normalized bar series for one metric.
+ * Points missing the metric are skipped.
+ */
+export function buildProgressSeries(
+  points: ExerciseProgressPoint[],
+  metric: ProgressMetric,
+  maxPoints = 12,
+): ChartSeries {
+  const entries = points
+    .map((point) => ({ date: point.date, value: point[metric] }))
+    .filter(
+      (entry): entry is { date: string; value: number } =>
+        typeof entry.value === 'number' && Number.isFinite(entry.value),
+    );
+
+  return scaleSeries(entries, maxPoints);
+}
+
+/**
+ * Turn weekly volume points into a normalized bar series keyed by week start.
+ */
+export function buildWeeklyVolumeSeries(
+  points: WeeklyVolumePoint[],
+  maxPoints = 8,
+): ChartSeries {
+  return scaleSeries(
+    points.map((point) => ({ date: point.weekStart, value: point.totalVolume })),
+    maxPoints,
+  );
 }
