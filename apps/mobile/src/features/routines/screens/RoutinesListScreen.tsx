@@ -1,6 +1,8 @@
-import { Link, useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
+  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -9,11 +11,14 @@ import {
   View,
 } from 'react-native';
 
-import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { routinesClient } from '@/features/routines/api/routinesClient';
+import { buildRoutineCopyInput } from '@/features/routines/utils/duplicateRoutine';
 import { groupRoutinesByFolder } from '@/features/routines/utils/groupRoutinesByFolder';
 import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
+import { ActionSheet } from '@/ui/ActionSheet';
+import { Button } from '@/ui/Button';
+import { EmptyState } from '@/ui/EmptyState';
 import { formatDuration } from '@/lib/format';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { useRefresh } from '@/lib/useRefresh';
@@ -24,6 +29,7 @@ export function RoutinesListScreen() {
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
+  const [menuRoutine, setMenuRoutine] = useState<Routine | null>(null);
 
   const loadRoutines = useCallback(
     async (shouldUpdate: () => boolean = () => true) => {
@@ -63,6 +69,7 @@ export function RoutinesListScreen() {
     }, [loadRoutines]),
   );
 
+  const router = useRouter();
   const activeWorkout = useActiveWorkout();
   const elapsedSeconds = useElapsedSeconds(activeWorkout?.startedAt);
   const { isRefreshing, onRefresh } = useRefresh(loadRoutines);
@@ -72,7 +79,55 @@ export function RoutinesListScreen() {
   const folderGroups = groupRoutinesByFolder(routines);
   const showFolderHeaders = folderGroups.some((group) => group.folder);
 
+  const handleDuplicate = async (routine: Routine) => {
+    try {
+      await routinesClient.create(buildRoutineCopyInput(routine));
+      await loadRoutines();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Unable to duplicate routine.',
+      );
+    }
+  };
+
+  const handleDelete = (routine: Routine) => {
+    Alert.alert('Delete routine', `Delete "${routine.name}"? This can't be undone.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          void (async () => {
+            try {
+              await routinesClient.remove(routine.id);
+              await loadRoutines();
+            } catch (error) {
+              setErrorMessage(
+                error instanceof Error
+                  ? error.message
+                  : 'Unable to delete routine.',
+              );
+            }
+          })();
+        },
+      },
+    ]);
+  };
+
+  const startTarget = (routine: Routine) =>
+    activeWorkout && activeWorkout.routineId !== routine.id
+      ? activeWorkout.routineId
+      : routine.id;
+
+  const startLabel = (routine: Routine) => {
+    if (activeWorkout?.routineId === routine.id) {
+      return 'Continue workout';
+    }
+    return activeWorkout ? 'Resume active workout' : 'Start workout';
+  };
+
   return (
+    <>
     <ScrollView
       style={styles.screen}
       contentContainerStyle={styles.container}
@@ -80,7 +135,6 @@ export function RoutinesListScreen() {
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
-      <Text style={styles.title}>Routines</Text>
       <Text style={styles.body}>
         Pick a plan, start lifting, or build a new routine from the exercise
         catalog.
@@ -103,22 +157,11 @@ export function RoutinesListScreen() {
           </Pressable>
         </Link>
       ) : null}
-      <Link href="/routines/create" asChild>
-        <Pressable style={styles.primaryButton}>
-          <Text style={styles.primaryButtonText}>Create routine</Text>
-        </Pressable>
-      </Link>
-      <View style={styles.links}>
-        <Link href="/exercises" style={styles.link}>
-          Exercises
-        </Link>
-        <Link href="/progress" style={styles.link}>
-          Progress
-        </Link>
-        <Link href="/workouts/history" style={styles.link}>
-          History
-        </Link>
-      </View>
+      <Button
+        label="Create routine"
+        onPress={() => router.push('/routines/create')}
+        fullWidth
+      />
       {showLoading ? (
         <View style={styles.stateCard}>
           <Text style={styles.meta}>Loading routines...</Text>
@@ -140,10 +183,13 @@ export function RoutinesListScreen() {
         </View>
       ) : null}
       {hasEmptyState ? (
-        <View style={styles.stateCard}>
-          <Text style={styles.meta}>No routines yet.</Text>
-          <Text style={styles.meta}>Create your first plan to start logging.</Text>
-        </View>
+        <EmptyState
+          icon="barbell-outline"
+          title="No routines yet"
+          subtitle="Create your first plan to start logging your workouts."
+          actionLabel="Create routine"
+          onAction={() => router.push('/routines/create')}
+        />
       ) : null}
       {hasListState ? (
         <View style={styles.list}>
@@ -158,33 +204,76 @@ export function RoutinesListScreen() {
                 </Text>
               ) : null}
               {group.routines.map((routine) => (
-                <View key={routine.id} style={styles.card}>
-                  <Text style={styles.cardTitle}>{routine.name}</Text>
-                  {routine.description ? (
-                    <Text style={styles.cardBody}>{routine.description}</Text>
-                  ) : null}
-                  <Text style={styles.cardMeta}>
-                    Exercises: {getRoutineExerciseSummary(routine)}
-                  </Text>
-                  <View style={styles.links}>
-                    <Link href={`/routines/${routine.id}`} style={styles.link}>
-                      Open detail
-                    </Link>
-                    <Link
-                      href={`/routines/edit/${routine.id}`}
-                      style={styles.link}
+                <Pressable
+                  key={routine.id}
+                  onPress={() => router.push(`/routines/${routine.id}`)}
+                  style={({ pressed }) => [
+                    styles.card,
+                    pressed ? styles.cardPressed : null,
+                  ]}
+                >
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.cardTitle} numberOfLines={1}>
+                      {routine.name}
+                    </Text>
+                    <Pressable
+                      onPress={() => setMenuRoutine(routine)}
+                      hitSlop={10}
+                      accessibilityRole="button"
+                      style={styles.menuButton}
                     >
-                      Edit routine
-                    </Link>
+                      <Ionicons
+                        name="ellipsis-horizontal"
+                        size={20}
+                        color={colors.textMuted}
+                      />
+                    </Pressable>
                   </View>
-                </View>
+                  <Text style={styles.cardMeta} numberOfLines={1}>
+                    {getRoutineExerciseSummary(routine)}
+                  </Text>
+                  <Button
+                    label={startLabel(routine)}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/workouts/active',
+                        params: { routineId: startTarget(routine) },
+                      })
+                    }
+                    fullWidth
+                  />
+                </Pressable>
               ))}
             </View>
           ))}
         </View>
       ) : null}
-      <RouteLinks currentRoute="routines" />
     </ScrollView>
+    <ActionSheet
+      visible={menuRoutine !== null}
+      title={menuRoutine?.name}
+      onClose={() => setMenuRoutine(null)}
+      actions={
+        menuRoutine
+          ? [
+              {
+                label: 'Edit',
+                onPress: () => router.push(`/routines/edit/${menuRoutine.id}`),
+              },
+              {
+                label: 'Duplicate',
+                onPress: () => void handleDuplicate(menuRoutine),
+              },
+              {
+                label: 'Delete',
+                destructive: true,
+                onPress: () => handleDelete(menuRoutine),
+              },
+            ]
+          : []
+      }
+    />
+    </>
   );
 }
 
@@ -200,12 +289,6 @@ const styles = StyleSheet.create({
   },
   body: {
     ...commonStyles.body,
-  },
-  primaryButton: {
-    ...commonStyles.primaryButton,
-  },
-  primaryButtonText: {
-    ...commonStyles.primaryButtonText,
   },
   banner: {
     borderRadius: radii.md,
@@ -241,15 +324,23 @@ const styles = StyleSheet.create({
   card: {
     ...commonStyles.card,
   },
+  cardPressed: {
+    ...commonStyles.pressed,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   cardTitle: {
     color: colors.text,
     fontSize: 20,
     fontWeight: '700',
+    flexShrink: 1,
   },
-  cardBody: {
-    color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 20,
+  menuButton: {
+    padding: spacing.xs,
   },
   cardMeta: {
     ...commonStyles.meta,
@@ -268,13 +359,5 @@ const styles = StyleSheet.create({
   },
   buttonPressed: {
     ...commonStyles.pressed,
-  },
-  links: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.lg,
-  },
-  link: {
-    ...commonStyles.link,
   },
 });

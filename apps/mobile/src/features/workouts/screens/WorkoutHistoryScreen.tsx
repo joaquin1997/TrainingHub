@@ -9,7 +9,6 @@ import {
   View,
 } from 'react-native';
 
-import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import {
   durationSecondsBetween,
@@ -17,13 +16,43 @@ import {
   formatDuration,
 } from '@/lib/format';
 import { useRefresh } from '@/lib/useRefresh';
-import { colors, commonStyles, spacing } from '@/ui/theme';
+import { EmptyState } from '@/ui/EmptyState';
+import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type { WorkoutSession } from '@workout/domain';
 
 function countSets(session: WorkoutSession) {
   return session.exercises.reduce(
     (total, exercise) => total + exercise.sets.length,
     0,
+  );
+}
+
+function exerciseSummary(session: WorkoutSession) {
+  const names = session.exercises
+    .slice()
+    .sort((left, right) => left.order - right.order)
+    .map((exercise) => exercise.exerciseName);
+
+  if (names.length === 0) {
+    return 'No exercises';
+  }
+
+  const shown = names.slice(0, 3).join(', ');
+  return names.length > 3 ? `${shown} +${names.length - 3}` : shown;
+}
+
+function sessionVolume(session: WorkoutSession) {
+  return Math.round(
+    session.exercises.reduce(
+      (total, exercise) =>
+        total +
+        exercise.sets.reduce(
+          (sum, set) =>
+            sum + (set.completedAt ? (set.reps ?? 0) * (set.weightKg ?? 0) : 0),
+          0,
+        ),
+      0,
+    ),
   );
 }
 
@@ -83,7 +112,6 @@ export function WorkoutHistoryScreen() {
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
-      <Text style={styles.title}>Workout History</Text>
       <Text style={styles.body}>
         Scan previous sessions and open the details behind each lift.
       </Text>
@@ -98,10 +126,11 @@ export function WorkoutHistoryScreen() {
         </View>
       ) : null}
       {hasEmptyState ? (
-        <View style={styles.stateCard}>
-          <Text style={styles.meta}>No workouts yet.</Text>
-          <Text style={styles.meta}>Finish a workout to see it here.</Text>
-        </View>
+        <EmptyState
+          icon="time-outline"
+          title="No workouts yet"
+          subtitle="Finish a workout and it will show up here."
+        />
       ) : null}
       {hasListState ? (
         <View style={styles.list}>
@@ -116,24 +145,32 @@ export function WorkoutHistoryScreen() {
                 <Text style={styles.cardTitle}>
                   {formatDate(session.completedAt ?? session.startedAt)}
                 </Text>
-                <Text style={styles.cardMeta}>
-                  {session.status} - {session.exercises.length} exercises -{' '}
-                  {countSets(session)} sets
-                  {session.completedAt
-                    ? ` - ${formatDuration(
+                <Text style={styles.cardSummary} numberOfLines={1}>
+                  {exerciseSummary(session)}
+                </Text>
+                <View style={styles.statsRow}>
+                  <Text style={styles.stat}>{countSets(session)} sets</Text>
+                  {sessionVolume(session) > 0 ? (
+                    <Text style={[styles.stat, styles.statStrong]}>
+                      {sessionVolume(session)} kg
+                    </Text>
+                  ) : null}
+                  {session.completedAt ? (
+                    <Text style={styles.stat}>
+                      {formatDuration(
                         durationSecondsBetween(
                           session.startedAt,
                           session.completedAt,
                         ),
-                      )}`
-                    : ''}
-                </Text>
+                      )}
+                    </Text>
+                  ) : null}
+                </View>
               </Pressable>
             </Link>
           ))}
         </View>
       ) : null}
-      <RouteLinks currentRoute="workout-history" />
     </ScrollView>
   );
 }
@@ -166,10 +203,31 @@ const styles = StyleSheet.create({
   cardTitle: {
     color: colors.text,
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
   },
-  cardMeta: {
-    ...commonStyles.meta,
+  cardSummary: {
+    color: colors.textMuted,
+    fontSize: 14,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: 2,
+  },
+  stat: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '700',
+    borderRadius: radii.sm,
+    backgroundColor: colors.surfaceMuted,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    overflow: 'hidden',
+  },
+  statStrong: {
+    color: colors.onPrimary,
+    backgroundColor: colors.primary,
   },
   meta: {
     ...commonStyles.meta,

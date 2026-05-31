@@ -1,7 +1,6 @@
 import { Link } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import {
   clearLatestCompletedWorkout,
   getLatestCompletedWorkout,
@@ -15,14 +14,12 @@ export function WorkoutSummaryScreen() {
   if (!workoutDraft) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Workout Summary</Text>
         <Text style={styles.body}>
           No completed workout is stored in the local mock flow yet.
         </Text>
         <Link href="/routines" style={styles.link}>
           Back to routines
         </Link>
-        <RouteLinks currentRoute="workout-summary" />
       </View>
     );
   }
@@ -31,7 +28,6 @@ export function WorkoutSummaryScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Workout Summary</Text>
       <Text style={styles.body}>{workoutDraft.routineName}</Text>
       <Text style={styles.meta}>Saved to history.</Text>
       <Text style={styles.meta}>Session ID: {workoutSession.id}</Text>
@@ -56,7 +52,7 @@ export function WorkoutSummaryScreen() {
           Back to routines
         </Link>
         <Link
-          href="/workouts/history"
+          href="/history"
           style={styles.link}
           onPress={() => {
             clearLatestCompletedWorkout();
@@ -77,7 +73,6 @@ export function WorkoutSummaryScreen() {
           Start again
         </Link>
       </View>
-      <RouteLinks currentRoute="workout-summary" />
     </ScrollView>
   );
 }

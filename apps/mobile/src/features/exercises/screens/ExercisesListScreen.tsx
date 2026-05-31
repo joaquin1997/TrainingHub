@@ -10,13 +10,13 @@ import {
   View,
 } from 'react-native';
 
-import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
 import {
   buildExerciseFacets,
   filterExercises,
 } from '@/features/exercises/utils/exerciseFilters';
 import { useRefresh } from '@/lib/useRefresh';
+import { EmptyState } from '@/ui/EmptyState';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type { Exercise } from '@workout/domain';
 
@@ -143,7 +143,6 @@ export function ExercisesListScreen() {
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
-      <Text style={styles.title}>Exercises</Text>
       <TextInput
         value={query}
         onChangeText={setQuery}
@@ -214,11 +213,22 @@ export function ExercisesListScreen() {
         <Text style={styles.meta}>Loading exercises...</Text>
       ) : null}
       {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
-      {!isLoading && !errorMessage ? (
+      {!isLoading && !errorMessage && filtered.length > 0 ? (
         <Text style={styles.meta}>
           {filtered.length} exercises
           {hiddenCount > 0 ? ` - showing ${visible.length}` : ''}
         </Text>
+      ) : null}
+      {!isLoading && !errorMessage && filtered.length === 0 ? (
+        <EmptyState
+          icon={favoritesOnly ? 'star-outline' : 'search-outline'}
+          title={favoritesOnly ? 'No favorites yet' : 'No matches'}
+          subtitle={
+            favoritesOnly
+              ? 'Tap the star on an exercise to save it here.'
+              : 'Try a different search or clear the filters.'
+          }
+        />
       ) : null}
       <View style={styles.list}>
         {visible.map((exercise) => (
@@ -266,7 +276,6 @@ export function ExercisesListScreen() {
           </Text>
         </Pressable>
       ) : null}
-      <RouteLinks currentRoute="exercises" />
     </ScrollView>
   );
 }
@@ -309,15 +318,20 @@ const styles = StyleSheet.create({
     color: colors.onPrimary,
   },
   list: {
-    gap: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   card: {
-    ...commonStyles.card,
+    flex: 1,
+    paddingVertical: spacing.sm,
+    gap: 2,
   },
   cardRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderStrong,
   },
   cardFlex: {
     flex: 1,
@@ -327,7 +341,7 @@ const styles = StyleSheet.create({
   },
   starButton: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
   },
   star: {
     color: colors.primary,

@@ -188,6 +188,7 @@ model WorkoutSet {
   weightKg          Float?
   durationSeconds   Int?
   distanceMeters    Float?
+  restSeconds       Int?
   isWarmup          Boolean         @default(false)
   completedAt       DateTime?
   createdAt         DateTime        @default(now())

@@ -2,7 +2,6 @@ import { Link, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
 import { progressClient } from '@/features/progress/api/progressClient';
 import { formatDate } from '@/lib/format';
@@ -98,9 +97,7 @@ export function ExerciseDetailScreen() {
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Exercise</Text>
         <Text style={styles.meta}>Loading exercise...</Text>
-        <RouteLinks currentRoute="exercises" />
       </View>
     );
   }
@@ -108,12 +105,10 @@ export function ExerciseDetailScreen() {
   if (!exercise) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Exercise</Text>
         <Text style={styles.error}>{errorMessage ?? 'Exercise not found.'}</Text>
         <Link href="/exercises" style={styles.link}>
           Back to exercises
         </Link>
-        <RouteLinks currentRoute="exercises" />
       </View>
     );
   }
@@ -171,7 +166,6 @@ export function ExerciseDetailScreen() {
       <Link href="/exercises" style={styles.link}>
         Back to exercises
       </Link>
-      <RouteLinks currentRoute="exercises" />
     </ScrollView>
   );
 }

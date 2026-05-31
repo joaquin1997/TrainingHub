@@ -14,13 +14,17 @@ import {
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { ExercisePickerModal } from '@/features/exercises/components/ExercisePickerModal';
-import { RouteLinks } from '@/features/navigation/components/RouteLinks';
+import { ProgressRing } from '@/features/workouts/components/ProgressRing';
+import { WheelPicker } from '@/features/workouts/components/WheelPicker';
+import { Button } from '@/ui/Button';
 import { formatDuration } from '@/lib/format';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { useRestTimer } from '@/lib/useRestTimer';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 
-const REST_PRESETS = [60, 90, 120];
+const REST_MINUTES = Array.from({ length: 11 }, (_, i) => i); // 0–10 min
+const REST_SECONDS = Array.from({ length: 12 }, (_, i) => i * 5); // 0,5,…,55
+const pad2 = (value: number) => String(value).padStart(2, '0');
 import type {
   Exercise,
   ExerciseLastPerformance,
@@ -40,7 +44,6 @@ import {
   cycleWorkoutSetType,
   getActiveWorkout,
   moveWorkoutExercise,
-  moveWorkoutSet,
   removeExerciseFromWorkout,
   removeSetFromWorkoutExercise,
   saveCompletedWorkout,
@@ -53,21 +56,18 @@ import {
   type WorkoutSessionDraft,
 } from '@/features/workouts/state/workoutDraftStore';
 
-function renderLastSet(
+/** Compact "previous performance" label for a set (weight×reps), or "–". */
+function prevSetLabel(
   performance: ExerciseLastPerformance | null | undefined,
   order: number,
 ) {
   const last = performance?.sets.find((set) => set.order === order);
 
-  if (!last) {
-    return null;
+  if (!last || (last.weightKg == null && last.reps == null)) {
+    return '–';
   }
 
-  return (
-    <Text style={styles.lastText}>
-      Last: {last.weightKg ?? '-'} kg x {last.reps ?? '-'}
-    </Text>
-  );
+  return `${last.weightKg ?? '–'}×${last.reps ?? '–'}`;
 }
 
 function setTypeLabel(type: WorkoutSetType) {
@@ -202,7 +202,6 @@ export function ActiveWorkoutScreen() {
   if (status === 'loading') {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Active Workout</Text>
         <ActivityIndicator color={colors.primary} />
         <Text style={styles.meta}>Loading routine...</Text>
       </View>
@@ -212,7 +211,6 @@ export function ActiveWorkoutScreen() {
   if (status === 'error' || !workoutDraft) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Active Workout</Text>
         <Text style={styles.meta}>
           {errorMessage ??
             'Start this flow from a routine so the workout session can be created from a routine template.'}
@@ -220,12 +218,18 @@ export function ActiveWorkoutScreen() {
         <Link href="/routines" style={styles.link}>
           Back to routines
         </Link>
-        <RouteLinks currentRoute="active-workout" />
       </View>
     );
   }
 
   const finishWorkout = async () => {
+    if (countWorkoutSets(workoutDraft).done === 0) {
+      setFinishError(
+        'Mark at least one set as done before finishing the workout.',
+      );
+      return;
+    }
+
     try {
       setIsFinishing(true);
       setFinishError(null);
@@ -286,18 +290,21 @@ export function ActiveWorkoutScreen() {
       (set) => set.id === workoutSetId,
     )?.done;
 
+    // Prefer the routine's per-exercise rest, falling back to the picker value.
+    const rest = exercise?.restSeconds ?? restDuration;
+
     const nextDraft = toggleWorkoutSetDone(
       workoutDraft,
       workoutExerciseId,
       workoutSetId,
+      becomingDone ? rest : undefined,
     );
 
     setWorkoutDraft(nextDraft);
     setActiveWorkout(nextDraft);
 
     if (becomingDone) {
-      // Prefer the routine's per-exercise rest, falling back to the picker value.
-      restTimer.start(exercise?.restSeconds ?? restDuration);
+      restTimer.start(rest);
     }
   };
 
@@ -345,20 +352,6 @@ export function ActiveWorkoutScreen() {
 
     applyDraft(
       moveWorkoutExercise(workoutDraft, workoutExerciseId, direction),
-    );
-  };
-
-  const handleMoveSet = (
-    workoutExerciseId: string,
-    workoutSetId: string,
-    direction: 'up' | 'down',
-  ) => {
-    if (!workoutDraft) {
-      return;
-    }
-
-    applyDraft(
-      moveWorkoutSet(workoutDraft, workoutExerciseId, workoutSetId, direction),
     );
   };
 
@@ -411,14 +404,12 @@ export function ActiveWorkoutScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Active Workout</Text>
       <Text style={styles.body}>
         {workoutDraft.routineName}
       </Text>
       <Text style={styles.timer}>{formatDuration(elapsedSeconds)}</Text>
       <Text style={styles.meta}>
-        {setProgress.done}/{setProgress.total} sets done - logged values are kept
-        while in progress, so you can leave and resume this workout.
+        {setProgress.done}/{setProgress.total} sets done · auto-saved, resume anytime
       </Text>
       <TextInput
         value={workoutDraft.notes ?? ''}
@@ -430,37 +421,77 @@ export function ActiveWorkoutScreen() {
       />
       <View style={styles.restBar}>
         {restTimer.isRunning ? (
-          <>
-            <Text style={styles.restTime}>
-              Rest {formatDuration(restTimer.remaining)}
-            </Text>
-            <Pressable onPress={restTimer.skip} hitSlop={8}>
-              <Text style={styles.addSetText}>Skip</Text>
-            </Pressable>
-          </>
-        ) : (
-          <>
-            <Text style={styles.meta}>Rest</Text>
-            {REST_PRESETS.map((seconds) => (
+          <View style={styles.restRingRow}>
+            <ProgressRing
+              size={116}
+              strokeWidth={9}
+              progress={
+                restTimer.total > 0 ? restTimer.remaining / restTimer.total : 0
+              }
+            >
+              <Text style={styles.ringTime}>
+                {formatDuration(restTimer.remaining)}
+              </Text>
+              <Text style={styles.ringLabel}>rest</Text>
+            </ProgressRing>
+            <View style={styles.ringControls}>
               <Pressable
-                key={seconds}
-                onPress={() => setRestDuration(seconds)}
+                onPress={() => restTimer.adjust(15)}
                 hitSlop={6}
+                style={styles.stepButton}
               >
-                <Text
-                  style={[
-                    styles.restPreset,
-                    restDuration === seconds ? styles.restPresetActive : null,
-                  ]}
-                >
-                  {seconds}s
-                </Text>
+                <Text style={styles.stepText}>+15</Text>
               </Pressable>
-            ))}
-            <Pressable onPress={() => restTimer.start(restDuration)} hitSlop={8}>
-              <Text style={styles.addSetText}>Start</Text>
-            </Pressable>
-          </>
+              <Pressable
+                onPress={() => restTimer.adjust(-15)}
+                hitSlop={6}
+                style={styles.stepButton}
+              >
+                <Text style={styles.stepText}>−15</Text>
+              </Pressable>
+              <Pressable
+                onPress={restTimer.skip}
+                hitSlop={8}
+                style={styles.skipButton}
+              >
+                <Text style={styles.skipText}>Skip</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.restColumn}>
+            <Text style={styles.meta}>Rest timer</Text>
+            <View style={styles.wheelRow}>
+              <View style={styles.wheelGroup}>
+                <WheelPicker
+                  values={REST_MINUTES}
+                  value={Math.floor(restDuration / 60)}
+                  onChange={(m) => setRestDuration(m * 60 + (restDuration % 60))}
+                  formatItem={pad2}
+                />
+                <Text style={styles.wheelUnit}>min</Text>
+              </View>
+              <Text style={styles.wheelColon}>:</Text>
+              <View style={styles.wheelGroup}>
+                <WheelPicker
+                  values={REST_SECONDS}
+                  value={restDuration % 60}
+                  onChange={(s) =>
+                    setRestDuration(Math.floor(restDuration / 60) * 60 + s)
+                  }
+                  formatItem={pad2}
+                />
+                <Text style={styles.wheelUnit}>sec</Text>
+              </View>
+              <Pressable
+                onPress={() => restTimer.start(restDuration)}
+                hitSlop={8}
+                style={styles.startButton}
+              >
+                <Text style={styles.startText}>Start</Text>
+              </Pressable>
+            </View>
+          </View>
         )}
       </View>
       {workoutDraft.exercises.map((exercise) => (
@@ -494,99 +525,74 @@ export function ActiveWorkoutScreen() {
               {exercise.imagePlaceholderText ?? 'Image placeholder'}
             </Text>
           </View>
-          <Text style={styles.target}>
-            Targets: {exercise.entries.length} sets with per-set reps and weight
-            goals.
-          </Text>
           <View style={styles.setList}>
+            <View style={styles.setHeaderRow}>
+              <Text style={[styles.colSet, styles.colLabel]}>SET</Text>
+              <Text style={[styles.colPrev, styles.colLabel]}>PREV</Text>
+              <Text style={[styles.colInput, styles.colLabel]}>KG</Text>
+              <Text style={[styles.colInput, styles.colLabel]}>REPS</Text>
+              <View style={styles.colCheck} />
+            </View>
             {exercise.entries.map((set) => (
-              <View key={set.id} style={styles.setCard}>
-                <View style={styles.setHeader}>
-                  <View style={styles.setHeaderLeft}>
-                    <Text style={styles.setTitle}>Set {set.order}</Text>
-                    <Pressable
-                      onPress={() => handleCycleSetType(exercise.id, set.id)}
-                      hitSlop={6}
-                    >
-                      <Text
-                        style={[
-                          styles.typeBadge,
-                          set.type !== 'normal' ? styles.typeBadgeActive : null,
-                        ]}
-                      >
-                        {setTypeLabel(set.type)}
-                      </Text>
-                    </Pressable>
-                  </View>
-                  <View style={styles.reorderRow}>
-                    <Pressable
-                      onPress={() => handleMoveSet(exercise.id, set.id, 'up')}
-                      hitSlop={8}
-                    >
-                      <Text style={styles.reorderText}>↑</Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => handleMoveSet(exercise.id, set.id, 'down')}
-                      hitSlop={8}
-                    >
-                      <Text style={styles.reorderText}>↓</Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => handleRemoveSet(exercise.id, set.id)}
-                      hitSlop={8}
-                    >
-                      <Text style={styles.removeText}>Remove</Text>
-                    </Pressable>
-                  </View>
-                </View>
-                <Text style={styles.setTarget}>
-                  Target: {set.minReps ?? '?'}-{set.maxReps ?? '?'} reps
-                  {set.targetWeight !== undefined ? `, ${set.targetWeight} kg` : ''}
+              <View
+                key={set.id}
+                style={[styles.setRow, set.done ? styles.setRowDone : null]}
+              >
+                <Pressable
+                  onPress={() => handleCycleSetType(exercise.id, set.id)}
+                  hitSlop={6}
+                  style={styles.colSet}
+                >
+                  <Text style={styles.setNum}>{set.order}</Text>
+                  {set.type !== 'normal' ? (
+                    <Text style={styles.setTypeTag}>
+                      {setTypeLabel(set.type)[0]}
+                    </Text>
+                  ) : null}
+                </Pressable>
+                <Text numberOfLines={1} style={[styles.colPrev, styles.prevText]}>
+                  {prevSetLabel(lastByExercise[exercise.exerciseId], set.order)}
                 </Text>
-                {renderLastSet(lastByExercise[exercise.exerciseId], set.order)}
-                <View style={styles.inputsRow}>
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Actual reps</Text>
-                    <TextInput
-                      keyboardType="number-pad"
-                      value={set.reps}
-                      placeholder={set.repsPlaceholder ?? ''}
-                      placeholderTextColor={colors.textSubtle}
-                      onChangeText={(value) =>
-                        handleSetChange(exercise.id, set.id, 'reps', value)
-                      }
-                      style={styles.input}
-                    />
-                  </View>
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Actual kg</Text>
-                    <TextInput
-                      keyboardType="decimal-pad"
-                      value={set.weightKg}
-                      placeholder={set.weightPlaceholder ?? ''}
-                      placeholderTextColor={colors.textSubtle}
-                      onChangeText={(value) =>
-                        handleSetChange(exercise.id, set.id, 'weightKg', value)
-                      }
-                      style={styles.input}
-                    />
-                  </View>
-                </View>
+                <TextInput
+                  keyboardType="decimal-pad"
+                  value={set.weightKg}
+                  placeholder={set.weightPlaceholder ?? '–'}
+                  placeholderTextColor={colors.textSubtle}
+                  onChangeText={(value) =>
+                    handleSetChange(exercise.id, set.id, 'weightKg', value)
+                  }
+                  style={[styles.cellInput, styles.colInput]}
+                />
+                <TextInput
+                  keyboardType="number-pad"
+                  value={set.reps}
+                  placeholder={set.repsPlaceholder ?? '–'}
+                  placeholderTextColor={colors.textSubtle}
+                  onChangeText={(value) =>
+                    handleSetChange(exercise.id, set.id, 'reps', value)
+                  }
+                  style={[styles.cellInput, styles.colInput]}
+                />
                 <Pressable
                   onPress={() => handleToggleDone(exercise.id, set.id)}
-                  style={[
-                    styles.doneToggle,
-                    set.done ? styles.doneToggleActive : null,
-                  ]}
+                  hitSlop={6}
+                  style={[styles.checkBox, set.done ? styles.checkBoxDone : null]}
                 >
                   <Text
                     style={[
-                      styles.doneToggleText,
-                      set.done ? styles.doneToggleTextActive : null,
+                      styles.checkMark,
+                      set.done ? styles.checkMarkDone : null,
                     ]}
                   >
-                    {set.done ? '✓ Done' : 'Mark done'}
+                    ✓
                   </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => handleRemoveSet(exercise.id, set.id)}
+                  hitSlop={6}
+                  style={styles.removeSet}
+                >
+                  <Text style={styles.removeSetText}>✕</Text>
                 </Pressable>
               </View>
             ))}
@@ -619,23 +625,19 @@ export function ActiveWorkoutScreen() {
         onSelect={handleAddExercise}
       />
       {finishError ? <Text style={styles.errorText}>{finishError}</Text> : null}
-      <Pressable
+      <Button
+        label={isFinishing ? 'Saving workout...' : 'Finish workout'}
         onPress={() => void finishWorkout()}
         disabled={isFinishing}
-        style={[styles.button, isFinishing ? styles.buttonDisabled : null]}
-      >
-        <Text style={styles.buttonText}>
-          {isFinishing ? 'Saving workout...' : 'Finish workout'}
-        </Text>
-      </Pressable>
-      <Pressable
+        fullWidth
+      />
+      <Button
+        label="Discard workout"
+        variant="danger"
         onPress={handleDiscard}
         disabled={isFinishing}
-        style={styles.discardButton}
-      >
-        <Text style={styles.discardButtonText}>Discard workout</Text>
-      </Pressable>
-      <RouteLinks currentRoute="active-workout" />
+        fullWidth
+      />
     </ScrollView>
   );
 }
@@ -722,41 +724,99 @@ const styles = StyleSheet.create({
   setList: {
     gap: spacing.sm,
   },
-  setCard: {
+  setHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: 10,
+    paddingBottom: 2,
   },
-  setHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  setHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  typeBadge: {
-    color: colors.textMuted,
-    fontSize: 12,
+  colLabel: {
+    color: colors.textSubtle,
+    fontSize: 11,
     fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  setRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderRadius: radii.sm,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+  },
+  setRowDone: {
+    backgroundColor: colors.successSoft,
+  },
+  colSet: {
+    width: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  colPrev: {
+    width: 64,
+  },
+  colInput: {
+    flex: 1,
+  },
+  colCheck: {
+    width: 36,
+  },
+  setNum: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  setTypeTag: {
+    color: colors.accent,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  prevText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontVariant: ['tabular-nums'],
+  },
+  cellInput: {
+    minHeight: 40,
     borderWidth: 1,
     borderColor: colors.borderStrong,
     borderRadius: radii.sm,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    overflow: 'hidden',
-  },
-  typeBadgeActive: {
-    color: colors.accent,
-    borderColor: colors.accent,
-    backgroundColor: colors.accentSoft,
-  },
-  setTitle: {
+    backgroundColor: colors.surfaceMuted,
     color: colors.text,
-    fontSize: 15,
+    textAlign: 'center',
+    fontSize: 16,
+    paddingVertical: 6,
+  },
+  checkBox: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+  },
+  checkBoxDone: {
+    backgroundColor: colors.success,
+    borderColor: colors.success,
+  },
+  checkMark: {
+    color: colors.borderStrong,
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  checkMarkDone: {
+    color: colors.onPrimary,
+  },
+  removeSet: {
+    width: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeSetText: {
+    color: colors.textSubtle,
+    fontSize: 14,
     fontWeight: '700',
   },
   removeText: {
@@ -787,38 +847,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
   },
-  setTarget: {
-    color: colors.textMuted,
-    fontSize: 13,
-  },
-  lastText: {
-    color: colors.primary,
-    fontSize: 13,
-  },
-  inputsRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  inputGroup: {
-    flex: 1,
-    gap: spacing.sm,
-  },
-  inputLabel: {
-    color: colors.textMuted,
-    fontSize: 13,
-  },
-  input: {
-    ...commonStyles.input,
-  },
-  button: {
-    ...commonStyles.primaryButton,
-  },
-  buttonText: {
-    ...commonStyles.primaryButtonText,
-  },
-  buttonDisabled: {
-    ...commonStyles.disabled,
-  },
   notesInput: {
     ...commonStyles.input,
     fontSize: 15,
@@ -826,10 +854,6 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   restBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radii.md,
@@ -837,50 +861,95 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
   },
-  restTime: {
-    color: colors.primary,
-    fontSize: 18,
+  restColumn: {
+    gap: spacing.sm,
+  },
+  wheelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  wheelGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  wheelUnit: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  wheelColon: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: '900',
+  },
+  restRingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.lg,
+  },
+  ringTime: {
+    color: colors.text,
+    fontSize: 24,
     fontWeight: '900',
     fontVariant: ['tabular-nums'],
   },
-  restPreset: {
+  ringLabel: {
     color: colors.textMuted,
-    fontSize: 15,
+    fontSize: 12,
     fontWeight: '700',
   },
-  restPresetActive: {
-    color: colors.primary,
+  ringControls: {
+    flex: 1,
+    gap: spacing.sm,
   },
-  doneToggle: {
-    alignSelf: 'flex-start',
-    minHeight: 44,
+  skipButton: {
+    minHeight: 36,
+    alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radii.md,
+    borderRadius: radii.sm,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.md,
+  },
+  skipText: {
+    color: colors.onPrimary,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  restRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  stepButton: {
+    minWidth: 38,
+    minHeight: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.sm,
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
+  },
+  stepText: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  startButton: {
+    borderRadius: radii.sm,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.md,
     paddingVertical: 8,
   },
-  doneToggleActive: {
-    backgroundColor: colors.successSoft,
-    borderColor: colors.success,
-  },
-  doneToggleText: {
-    color: colors.textMuted,
+  startText: {
+    color: colors.onPrimary,
     fontSize: 14,
-    fontWeight: '700',
-  },
-  doneToggleTextActive: {
-    color: colors.success,
-  },
-  discardButton: {
-    ...commonStyles.secondaryButton,
-    borderColor: colors.danger,
-    backgroundColor: colors.dangerSoft,
-  },
-  discardButtonText: {
-    color: colors.danger,
-    fontSize: 15,
     fontWeight: '800',
   },
   errorText: {

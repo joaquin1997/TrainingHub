@@ -12,10 +12,10 @@ import {
 import { FrequencySummary } from '@/features/progress/components/FrequencySummary';
 import { MuscleDistribution } from '@/features/progress/components/MuscleDistribution';
 import { ProgressChart } from '@/features/progress/components/ProgressChart';
-import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { progressClient } from '@/features/progress/api/progressClient';
 import { buildWeeklyVolumeSeries } from '@/features/progress/utils/chartData';
 import { summarizeTrainingFrequency } from '@/features/progress/utils/trainingFrequency';
+import { EmptyState } from '@/ui/EmptyState';
 import { formatShortDate } from '@/lib/format';
 import { useRefresh } from '@/lib/useRefresh';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
@@ -96,7 +96,6 @@ export function ProgressOverviewScreen() {
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
-      <Text style={styles.title}>Progress Overview</Text>
       <Text style={styles.body}>
         Review your strongest recent lifts and see which exercises are moving.
       </Text>
@@ -121,10 +120,11 @@ export function ProgressOverviewScreen() {
         </View>
       ) : null}
       {hasEmptyState ? (
-        <View style={styles.card}>
-          <Text style={styles.meta}>No progress yet.</Text>
-          <Text style={styles.meta}>Finish a workout to start tracking.</Text>
-        </View>
+        <EmptyState
+          icon="stats-chart-outline"
+          title="No progress yet"
+          subtitle="Finish a workout to start tracking your lifts."
+        />
       ) : null}
       {hasListState ? (
         <View style={styles.list}>
@@ -163,7 +163,6 @@ export function ProgressOverviewScreen() {
           ))}
         </View>
       ) : null}
-      <RouteLinks currentRoute="progress" />
     </ScrollView>
   );
 }
