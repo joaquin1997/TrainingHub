@@ -9,6 +9,8 @@ import {
   View,
 } from 'react-native';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
 import { colors, commonStyles, spacing } from '@/ui/theme';
 import type { Exercise } from '@workout/domain';
@@ -31,6 +33,7 @@ export function ExercisePickerModal({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>();
   const [hasLoaded, setHasLoaded] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const loadExercises = useCallback(async () => {
     setIsLoading(true);
@@ -68,11 +71,23 @@ export function ExercisePickerModal({
   }, [exercises, query]);
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.container}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <View
+        style={[styles.container, { paddingTop: Math.max(insets.top, spacing.md) }]}
+      >
         <View style={styles.header}>
           <Text style={styles.title}>Add exercise</Text>
-          <Pressable onPress={onClose} hitSlop={8}>
+          <Pressable
+            onPress={onClose}
+            hitSlop={12}
+            accessibilityRole="button"
+            style={styles.closeButton}
+          >
             <Text style={styles.close}>Close</Text>
           </Pressable>
         </View>
@@ -135,6 +150,10 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 24,
     fontWeight: '800',
+  },
+  closeButton: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
   },
   close: {
     color: colors.primary,
