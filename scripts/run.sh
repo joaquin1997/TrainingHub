@@ -11,21 +11,13 @@
 #   EXPO_PUBLIC_API_URL=http://localhost:3000 ./scripts/run.sh frontend
 #   DEVICE=1 ./scripts/run.sh frontend                  # build onto a connected iPhone (expo run:ios --device)
 #
-# IMPORTANT (iOS over Tailscale): the app must reach the API via the HTTPS
-# MagicDNS URL (Tailscale Serve), NOT the raw Tailscale IP over http. React
-# Native's fetch fails (TypeError: Network request failed) against a raw 100.x
-# IP / plain http even though the server answers 200. The HTTPS MagicDNS name is
-# the only config that works on device. See the project connectivity notes.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # --- config (override via environment) ---------------------------------------
-DOCKER_CONTEXT="${DOCKER_CONTEXT:-docker-lan}"   # docker-lan (LAN, faster) | docker-ts (Tailscale)
-# What the app + health check talk to: HTTPS MagicDNS via Tailscale Serve (:8443).
-API_URL="${EXPO_PUBLIC_API_URL:-https://joaquinserver.tail644a1a.ts.net:8443}"
-# Metro host the device connects to (this Mac's MagicDNS name; falls back to its Tailscale IP).
-PACKAGER_HOST="${REACT_NATIVE_PACKAGER_HOSTNAME:-macbook-pro-de-joaquin.tail644a1a.ts.net}"
+DOCKER_CONTEXT="${DOCKER_CONTEXT:-docker-lan}"                  # docker-lan (LAN, faster) | docker-ts (Tailscale)
+API_URL="${EXPO_PUBLIC_API_URL:-http://100.124.208.26:3000}"   # what the app and health check talk to
 IMAGE="traininghub-api:latest"
 CONTAINER="traininghub-api"
 ENV_FILE="$ROOT/apps/api/.env"
@@ -76,15 +68,11 @@ run_frontend() {
   export EXPO_PUBLIC_API_URL="$API_URL"
 
   if [ "${DEVICE:-0}" = "1" ]; then
-    # A physical iPhone over Tailscale needs Metro reachable at the Mac's MagicDNS
-    # name (falls back to its Tailscale IP if MagicDNS can't be resolved/overridden).
-    local host="$PACKAGER_HOST"
-    if [ -z "$host" ]; then
-      host="$(tailscale ip -4 2>/dev/null | head -1 || true)"
-    fi
-    echo "==> [frontend] expo run:ios --device  (API=$API_URL, packager host=${host:-auto})"
-    if [ -n "$host" ]; then
-      REACT_NATIVE_PACKAGER_HOSTNAME="$host" npx expo run:ios --device
+    # A physical iPhone over Tailscale needs Metro reachable at the Mac's tailnet IP.
+    local host_ip="${REACT_NATIVE_PACKAGER_HOSTNAME:-$(tailscale ip -4 2>/dev/null | head -1 || true)}"
+    echo "==> [frontend] expo run:ios --device  (API=$API_URL, packager host=${host_ip:-auto})"
+    if [ -n "$host_ip" ]; then
+      REACT_NATIVE_PACKAGER_HOSTNAME="$host_ip" npx expo run:ios --device
     else
       npx expo run:ios --device
     fi
