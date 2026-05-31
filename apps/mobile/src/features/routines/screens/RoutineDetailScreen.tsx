@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
+import { buildRoutineCopyInput } from '@/features/routines/utils/duplicateRoutine';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type { RoutineExerciseSet, Routine } from '@workout/domain';
@@ -112,29 +113,7 @@ export function RoutineDetailScreen() {
       setIsDuplicating(true);
       setErrorMessage(undefined);
 
-      const created = await routinesClient.create({
-        name: `${routine.name} (copy)`,
-        description: routine.description,
-        folder: routine.folder,
-        exercises: routine.exercises
-          .slice()
-          .sort((left, right) => left.orderIndex - right.orderIndex)
-          .map((exercise) => ({
-            exerciseId: exercise.exerciseId,
-            orderIndex: exercise.orderIndex,
-            restSeconds: exercise.restSeconds,
-            supersetGroup: exercise.supersetGroup,
-            sets: exercise.sets
-              .slice()
-              .sort((left, right) => left.setNumber - right.setNumber)
-              .map((set) => ({
-                setNumber: set.setNumber,
-                minReps: set.minReps,
-                maxReps: set.maxReps,
-                targetWeight: set.targetWeight,
-              })),
-          })),
-      });
+      const created = await routinesClient.create(buildRoutineCopyInput(routine));
 
       router.replace(`/routines/${created.id}`);
     } catch (error) {
