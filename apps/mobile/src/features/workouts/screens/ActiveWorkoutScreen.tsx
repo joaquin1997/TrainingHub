@@ -412,8 +412,7 @@ export function ActiveWorkoutScreen() {
       </Text>
       <Text style={styles.timer}>{formatDuration(elapsedSeconds)}</Text>
       <Text style={styles.meta}>
-        {setProgress.done}/{setProgress.total} sets done - logged values are kept
-        while in progress, so you can leave and resume this workout.
+        {setProgress.done}/{setProgress.total} sets done · auto-saved, resume anytime
       </Text>
       <TextInput
         value={workoutDraft.notes ?? ''}
@@ -489,10 +488,6 @@ export function ActiveWorkoutScreen() {
               {exercise.imagePlaceholderText ?? 'Image placeholder'}
             </Text>
           </View>
-          <Text style={styles.target}>
-            Targets: {exercise.entries.length} sets with per-set reps and weight
-            goals.
-          </Text>
           <View style={styles.setList}>
             {exercise.entries.map((set) => (
               <View key={set.id} style={styles.setCard}>

@@ -10,6 +10,7 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           contentStyle: { backgroundColor: colors.background },
+          headerBackButtonDisplayMode: 'minimal',
           ...screenHeader,
         }}
       >
