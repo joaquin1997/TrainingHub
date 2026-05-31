@@ -17,7 +17,7 @@ import {
 } from '@/lib/format';
 import { useRefresh } from '@/lib/useRefresh';
 import { EmptyState } from '@/ui/EmptyState';
-import { colors, commonStyles, spacing } from '@/ui/theme';
+import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type { WorkoutSession } from '@workout/domain';
 
 function countSets(session: WorkoutSession) {
@@ -25,6 +25,20 @@ function countSets(session: WorkoutSession) {
     (total, exercise) => total + exercise.sets.length,
     0,
   );
+}
+
+function exerciseSummary(session: WorkoutSession) {
+  const names = session.exercises
+    .slice()
+    .sort((left, right) => left.order - right.order)
+    .map((exercise) => exercise.exerciseName);
+
+  if (names.length === 0) {
+    return 'No exercises';
+  }
+
+  const shown = names.slice(0, 3).join(', ');
+  return names.length > 3 ? `${shown} +${names.length - 3}` : shown;
 }
 
 function sessionVolume(session: WorkoutSession) {
@@ -131,20 +145,27 @@ export function WorkoutHistoryScreen() {
                 <Text style={styles.cardTitle}>
                   {formatDate(session.completedAt ?? session.startedAt)}
                 </Text>
-                <Text style={styles.cardMeta}>
-                  {session.exercises.length} exercises · {countSets(session)} sets
-                  {sessionVolume(session) > 0
-                    ? ` · ${sessionVolume(session)} kg`
-                    : ''}
-                  {session.completedAt
-                    ? ` · ${formatDuration(
+                <Text style={styles.cardSummary} numberOfLines={1}>
+                  {exerciseSummary(session)}
+                </Text>
+                <View style={styles.statsRow}>
+                  <Text style={styles.stat}>{countSets(session)} sets</Text>
+                  {sessionVolume(session) > 0 ? (
+                    <Text style={[styles.stat, styles.statStrong]}>
+                      {sessionVolume(session)} kg
+                    </Text>
+                  ) : null}
+                  {session.completedAt ? (
+                    <Text style={styles.stat}>
+                      {formatDuration(
                         durationSecondsBetween(
                           session.startedAt,
                           session.completedAt,
                         ),
-                      )}`
-                    : ''}
-                </Text>
+                      )}
+                    </Text>
+                  ) : null}
+                </View>
               </Pressable>
             </Link>
           ))}
@@ -182,10 +203,31 @@ const styles = StyleSheet.create({
   cardTitle: {
     color: colors.text,
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
   },
-  cardMeta: {
-    ...commonStyles.meta,
+  cardSummary: {
+    color: colors.textMuted,
+    fontSize: 14,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: 2,
+  },
+  stat: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '700',
+    borderRadius: radii.sm,
+    backgroundColor: colors.surfaceMuted,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    overflow: 'hidden',
+  },
+  statStrong: {
+    color: colors.onPrimary,
+    backgroundColor: colors.primary,
   },
   meta: {
     ...commonStyles.meta,
