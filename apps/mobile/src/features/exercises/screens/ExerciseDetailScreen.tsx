@@ -4,12 +4,21 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
-import { commonStyles } from '@/ui/theme';
-import type { Exercise } from '@workout/domain';
+import { progressClient } from '@/features/progress/api/progressClient';
+import { formatDate } from '@/lib/format';
+import { colors, commonStyles, spacing } from '@/ui/theme';
+import type { Exercise, ExerciseProgressPoint } from '@workout/domain';
+
+const MAX_HISTORY = 8;
+
+function formatHistoryValue(value?: number) {
+  return value === undefined ? '-' : String(value);
+}
 
 export function ExerciseDetailScreen() {
   const { exerciseId } = useLocalSearchParams<{ exerciseId?: string }>();
   const [exercise, setExercise] = useState<Exercise | null>(null);
+  const [history, setHistory] = useState<ExerciseProgressPoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
 
@@ -60,6 +69,32 @@ export function ExerciseDetailScreen() {
     };
   }, [loadExercise]);
 
+  useEffect(() => {
+    if (!exerciseId) {
+      return;
+    }
+
+    let isActive = true;
+
+    // Best-effort: a 404 (no logged sessions yet) just leaves history empty.
+    progressClient
+      .getByExerciseId(exerciseId)
+      .then((detail) => {
+        if (isActive) {
+          setHistory(detail.points);
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setHistory([]);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [exerciseId]);
+
   if (isLoading) {
     return (
       <View style={styles.container}>
@@ -104,6 +139,27 @@ export function ExerciseDetailScreen() {
           Equipment: {equipment.length > 0 ? equipment.join(', ') : '-'}
         </Text>
       </View>
+      {history.length > 0 ? (
+        <View style={styles.history}>
+          <Text style={styles.sectionTitle}>Recent sessions</Text>
+          {history
+            .slice()
+            .reverse()
+            .slice(0, MAX_HISTORY)
+            .map((point, index) => (
+              <View key={`${point.date}-${index}`} style={styles.historyRow}>
+                <Text style={styles.historyDate}>{formatDate(point.date)}</Text>
+                <Text style={styles.historyValue}>
+                  {formatHistoryValue(point.bestWeightKg)} kg x{' '}
+                  {formatHistoryValue(point.bestReps)}
+                </Text>
+              </View>
+            ))}
+          <Link href={`/progress/exercises/${exercise.id}`} style={styles.link}>
+            View full progress
+          </Link>
+        </View>
+      ) : null}
       <Link href="/exercises" style={styles.link}>
         Back to exercises
       </Link>
@@ -127,6 +183,29 @@ const styles = StyleSheet.create({
   },
   card: {
     ...commonStyles.card,
+  },
+  history: {
+    ...commonStyles.card,
+    gap: spacing.sm,
+  },
+  sectionTitle: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  historyRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  historyDate: {
+    color: colors.textMuted,
+    fontSize: 14,
+  },
+  historyValue: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '700',
   },
   meta: {
     ...commonStyles.meta,
