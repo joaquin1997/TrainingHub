@@ -1,11 +1,12 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
+import { SettingsProvider } from '@/features/settings/SettingsContext';
 import { colors, screenHeader } from '@/ui/theme';
 
 export default function RootLayout() {
   return (
-    <>
+    <SettingsProvider>
       <StatusBar style="light" />
       <Stack
         screenOptions={{
@@ -27,6 +28,6 @@ export default function RootLayout() {
         />
         <Stack.Screen name="workouts/[workoutId]" options={{ title: 'Workout' }} />
       </Stack>
-    </>
+    </SettingsProvider>
   );
 }

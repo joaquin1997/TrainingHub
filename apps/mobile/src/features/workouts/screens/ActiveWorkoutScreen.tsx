@@ -16,6 +16,7 @@ import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { ExercisePickerModal } from '@/features/exercises/components/ExercisePickerModal';
 import { ProgressRing } from '@/features/workouts/components/ProgressRing';
 import { WheelPicker } from '@/features/workouts/components/WheelPicker';
+import { useSettings } from '@/features/settings/SettingsContext';
 import { Button } from '@/ui/Button';
 import { formatDuration } from '@/lib/format';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
@@ -98,7 +99,8 @@ export function ActiveWorkoutScreen() {
   const [lastByExercise, setLastByExercise] = useState<
     Record<string, ExerciseLastPerformance | null>
   >({});
-  const [restDuration, setRestDuration] = useState(90);
+  const { settings } = useSettings();
+  const [restDuration, setRestDuration] = useState(settings.defaultRestSeconds);
   const restTimer = useRestTimer(() => Vibration.vibrate([0, 400, 200, 400]));
 
   useEffect(() => {

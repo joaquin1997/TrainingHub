@@ -56,6 +56,15 @@ export default function TabsLayout() {
           ...screenHeader,
         }}
       />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          headerShown: true,
+          tabBarIcon: tabIcon('settings', 'settings-outline'),
+          ...screenHeader,
+        }}
+      />
     </Tabs>
   );
 }
