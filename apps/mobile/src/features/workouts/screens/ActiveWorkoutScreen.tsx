@@ -43,7 +43,6 @@ import {
   cycleWorkoutSetType,
   getActiveWorkout,
   moveWorkoutExercise,
-  moveWorkoutSet,
   removeExerciseFromWorkout,
   removeSetFromWorkoutExercise,
   saveCompletedWorkout,
@@ -56,21 +55,18 @@ import {
   type WorkoutSessionDraft,
 } from '@/features/workouts/state/workoutDraftStore';
 
-function renderLastSet(
+/** Compact "previous performance" label for a set (weight×reps), or "–". */
+function prevSetLabel(
   performance: ExerciseLastPerformance | null | undefined,
   order: number,
 ) {
   const last = performance?.sets.find((set) => set.order === order);
 
-  if (!last) {
-    return null;
+  if (!last || (last.weightKg == null && last.reps == null)) {
+    return '–';
   }
 
-  return (
-    <Text style={styles.lastText}>
-      Last: {last.weightKg ?? '-'} kg x {last.reps ?? '-'}
-    </Text>
-  );
+  return `${last.weightKg ?? '–'}×${last.reps ?? '–'}`;
 }
 
 function setTypeLabel(type: WorkoutSetType) {
@@ -348,20 +344,6 @@ export function ActiveWorkoutScreen() {
     );
   };
 
-  const handleMoveSet = (
-    workoutExerciseId: string,
-    workoutSetId: string,
-    direction: 'up' | 'down',
-  ) => {
-    if (!workoutDraft) {
-      return;
-    }
-
-    applyDraft(
-      moveWorkoutSet(workoutDraft, workoutExerciseId, workoutSetId, direction),
-    );
-  };
-
   const handleCycleSetType = (
     workoutExerciseId: string,
     workoutSetId: string,
@@ -533,94 +515,73 @@ export function ActiveWorkoutScreen() {
             </Text>
           </View>
           <View style={styles.setList}>
+            <View style={styles.setHeaderRow}>
+              <Text style={[styles.colSet, styles.colLabel]}>SET</Text>
+              <Text style={[styles.colPrev, styles.colLabel]}>PREV</Text>
+              <Text style={[styles.colInput, styles.colLabel]}>KG</Text>
+              <Text style={[styles.colInput, styles.colLabel]}>REPS</Text>
+              <View style={styles.colCheck} />
+            </View>
             {exercise.entries.map((set) => (
-              <View key={set.id} style={styles.setCard}>
-                <View style={styles.setHeader}>
-                  <View style={styles.setHeaderLeft}>
-                    <Text style={styles.setTitle}>Set {set.order}</Text>
-                    <Pressable
-                      onPress={() => handleCycleSetType(exercise.id, set.id)}
-                      hitSlop={6}
-                    >
-                      <Text
-                        style={[
-                          styles.typeBadge,
-                          set.type !== 'normal' ? styles.typeBadgeActive : null,
-                        ]}
-                      >
-                        {setTypeLabel(set.type)}
-                      </Text>
-                    </Pressable>
-                  </View>
-                  <View style={styles.reorderRow}>
-                    <Pressable
-                      onPress={() => handleMoveSet(exercise.id, set.id, 'up')}
-                      hitSlop={8}
-                    >
-                      <Text style={styles.reorderText}>↑</Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => handleMoveSet(exercise.id, set.id, 'down')}
-                      hitSlop={8}
-                    >
-                      <Text style={styles.reorderText}>↓</Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => handleRemoveSet(exercise.id, set.id)}
-                      hitSlop={8}
-                    >
-                      <Text style={styles.removeText}>Remove</Text>
-                    </Pressable>
-                  </View>
-                </View>
-                <Text style={styles.setTarget}>
-                  Target: {set.minReps ?? '?'}-{set.maxReps ?? '?'} reps
-                  {set.targetWeight !== undefined ? `, ${set.targetWeight} kg` : ''}
+              <View
+                key={set.id}
+                style={[styles.setRow, set.done ? styles.setRowDone : null]}
+              >
+                <Pressable
+                  onPress={() => handleCycleSetType(exercise.id, set.id)}
+                  hitSlop={6}
+                  style={styles.colSet}
+                >
+                  <Text style={styles.setNum}>{set.order}</Text>
+                  {set.type !== 'normal' ? (
+                    <Text style={styles.setTypeTag}>
+                      {setTypeLabel(set.type)[0]}
+                    </Text>
+                  ) : null}
+                </Pressable>
+                <Text numberOfLines={1} style={[styles.colPrev, styles.prevText]}>
+                  {prevSetLabel(lastByExercise[exercise.exerciseId], set.order)}
                 </Text>
-                {renderLastSet(lastByExercise[exercise.exerciseId], set.order)}
-                <View style={styles.inputsRow}>
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Actual reps</Text>
-                    <TextInput
-                      keyboardType="number-pad"
-                      value={set.reps}
-                      placeholder={set.repsPlaceholder ?? ''}
-                      placeholderTextColor={colors.textSubtle}
-                      onChangeText={(value) =>
-                        handleSetChange(exercise.id, set.id, 'reps', value)
-                      }
-                      style={styles.input}
-                    />
-                  </View>
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Actual kg</Text>
-                    <TextInput
-                      keyboardType="decimal-pad"
-                      value={set.weightKg}
-                      placeholder={set.weightPlaceholder ?? ''}
-                      placeholderTextColor={colors.textSubtle}
-                      onChangeText={(value) =>
-                        handleSetChange(exercise.id, set.id, 'weightKg', value)
-                      }
-                      style={styles.input}
-                    />
-                  </View>
-                </View>
+                <TextInput
+                  keyboardType="decimal-pad"
+                  value={set.weightKg}
+                  placeholder={set.weightPlaceholder ?? '–'}
+                  placeholderTextColor={colors.textSubtle}
+                  onChangeText={(value) =>
+                    handleSetChange(exercise.id, set.id, 'weightKg', value)
+                  }
+                  style={[styles.cellInput, styles.colInput]}
+                />
+                <TextInput
+                  keyboardType="number-pad"
+                  value={set.reps}
+                  placeholder={set.repsPlaceholder ?? '–'}
+                  placeholderTextColor={colors.textSubtle}
+                  onChangeText={(value) =>
+                    handleSetChange(exercise.id, set.id, 'reps', value)
+                  }
+                  style={[styles.cellInput, styles.colInput]}
+                />
                 <Pressable
                   onPress={() => handleToggleDone(exercise.id, set.id)}
-                  style={[
-                    styles.doneToggle,
-                    set.done ? styles.doneToggleActive : null,
-                  ]}
+                  hitSlop={6}
+                  style={[styles.checkBox, set.done ? styles.checkBoxDone : null]}
                 >
                   <Text
                     style={[
-                      styles.doneToggleText,
-                      set.done ? styles.doneToggleTextActive : null,
+                      styles.checkMark,
+                      set.done ? styles.checkMarkDone : null,
                     ]}
                   >
-                    {set.done ? '✓ Done' : 'Mark done'}
+                    ✓
                   </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => handleRemoveSet(exercise.id, set.id)}
+                  hitSlop={6}
+                  style={styles.removeSet}
+                >
+                  <Text style={styles.removeSetText}>✕</Text>
                 </Pressable>
               </View>
             ))}
@@ -755,41 +716,99 @@ const styles = StyleSheet.create({
   setList: {
     gap: spacing.sm,
   },
-  setCard: {
+  setHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: 10,
+    paddingBottom: 2,
   },
-  setHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  setHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  typeBadge: {
-    color: colors.textMuted,
-    fontSize: 12,
+  colLabel: {
+    color: colors.textSubtle,
+    fontSize: 11,
     fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  setRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderRadius: radii.sm,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+  },
+  setRowDone: {
+    backgroundColor: colors.successSoft,
+  },
+  colSet: {
+    width: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  colPrev: {
+    width: 64,
+  },
+  colInput: {
+    flex: 1,
+  },
+  colCheck: {
+    width: 36,
+  },
+  setNum: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  setTypeTag: {
+    color: colors.accent,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  prevText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontVariant: ['tabular-nums'],
+  },
+  cellInput: {
+    minHeight: 40,
     borderWidth: 1,
     borderColor: colors.borderStrong,
     borderRadius: radii.sm,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    overflow: 'hidden',
-  },
-  typeBadgeActive: {
-    color: colors.accent,
-    borderColor: colors.accent,
-    backgroundColor: colors.accentSoft,
-  },
-  setTitle: {
+    backgroundColor: colors.surfaceMuted,
     color: colors.text,
-    fontSize: 15,
+    textAlign: 'center',
+    fontSize: 16,
+    paddingVertical: 6,
+  },
+  checkBox: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+  },
+  checkBoxDone: {
+    backgroundColor: colors.success,
+    borderColor: colors.success,
+  },
+  checkMark: {
+    color: colors.borderStrong,
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  checkMarkDone: {
+    color: colors.onPrimary,
+  },
+  removeSet: {
+    width: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeSetText: {
+    color: colors.textSubtle,
+    fontSize: 14,
     fontWeight: '700',
   },
   removeText: {
@@ -819,29 +838,6 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 15,
     fontWeight: '800',
-  },
-  setTarget: {
-    color: colors.textMuted,
-    fontSize: 13,
-  },
-  lastText: {
-    color: colors.primary,
-    fontSize: 13,
-  },
-  inputsRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  inputGroup: {
-    flex: 1,
-    gap: spacing.sm,
-  },
-  inputLabel: {
-    color: colors.textMuted,
-    fontSize: 13,
-  },
-  input: {
-    ...commonStyles.input,
   },
   button: {
     ...commonStyles.primaryButton,
@@ -956,28 +952,6 @@ const styles = StyleSheet.create({
     color: colors.onPrimary,
     fontSize: 14,
     fontWeight: '800',
-  },
-  doneToggle: {
-    alignSelf: 'flex-start',
-    minHeight: 44,
-    justifyContent: 'center',
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  doneToggleActive: {
-    backgroundColor: colors.successSoft,
-    borderColor: colors.success,
-  },
-  doneToggleText: {
-    color: colors.textMuted,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  doneToggleTextActive: {
-    color: colors.success,
   },
   discardButton: {
     ...commonStyles.secondaryButton,
