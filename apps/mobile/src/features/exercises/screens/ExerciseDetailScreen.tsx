@@ -1,5 +1,6 @@
 import { Link, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
@@ -17,6 +18,7 @@ function formatHistoryValue(value?: number) {
 }
 
 export function ExerciseDetailScreen() {
+  const { t } = useTranslation();
   const { exerciseId } = useLocalSearchParams<{ exerciseId?: string }>();
   const [exercise, setExercise] = useState<Exercise | null>(null);
   const [history, setHistory] = useState<ExerciseProgressPoint[]>([]);
@@ -35,7 +37,7 @@ export function ExerciseDetailScreen() {
 
       if (!exerciseId) {
         if (shouldUpdate()) {
-          setErrorMessage('Missing exercise id.');
+          setErrorMessage(t('exercises.missingId'));
           setIsLoading(false);
         }
         return;
@@ -50,7 +52,7 @@ export function ExerciseDetailScreen() {
       } catch (error) {
         if (shouldUpdate()) {
           setErrorMessage(
-            error instanceof Error ? error.message : 'Unable to load exercise.',
+            error instanceof Error ? error.message : t('exercises.detailLoadError'),
           );
         }
       } finally {
@@ -59,7 +61,7 @@ export function ExerciseDetailScreen() {
         }
       }
     },
-    [exerciseId],
+    [exerciseId, t],
   );
 
   useEffect(() => {
@@ -101,7 +103,7 @@ export function ExerciseDetailScreen() {
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.meta}>Loading exercise...</Text>
+        <Text style={styles.meta}>{t('exercises.loadingExercise')}</Text>
       </View>
     );
   }
@@ -109,9 +111,9 @@ export function ExerciseDetailScreen() {
   if (!exercise) {
     return (
       <View style={styles.container}>
-        <Text style={styles.error}>{errorMessage ?? 'Exercise not found.'}</Text>
+        <Text style={styles.error}>{errorMessage ?? t('exercises.notFound')}</Text>
         <Link href="/exercises" style={styles.link}>
-          Back to exercises
+          {t('exercises.backToExercises')}
         </Link>
       </View>
     );
@@ -129,7 +131,7 @@ export function ExerciseDetailScreen() {
           source={{ uri: exercise.imageUrl }}
           style={styles.image}
           resizeMode="contain"
-          accessibilityLabel={`${exercise.name} illustration`}
+          accessibilityLabel={t('exercises.illustration', { name: exercise.name })}
         />
       ) : null}
       {exercise.description ? (
@@ -137,18 +139,24 @@ export function ExerciseDetailScreen() {
       ) : null}
       <View style={styles.card}>
         <Text style={styles.meta}>
-          Primary muscles: {primary.length > 0 ? primary.join(', ') : '-'}
+          {t('exercises.primaryMuscles', {
+            value: primary.length > 0 ? primary.join(', ') : '-',
+          })}
         </Text>
         <Text style={styles.meta}>
-          Secondary muscles: {secondary.length > 0 ? secondary.join(', ') : '-'}
+          {t('exercises.secondaryMuscles', {
+            value: secondary.length > 0 ? secondary.join(', ') : '-',
+          })}
         </Text>
         <Text style={styles.meta}>
-          Equipment: {equipment.length > 0 ? equipment.join(', ') : '-'}
+          {t('exercises.equipment', {
+            value: equipment.length > 0 ? equipment.join(', ') : '-',
+          })}
         </Text>
       </View>
       {history.length > 0 ? (
         <View style={styles.history}>
-          <Text style={styles.sectionTitle}>Recent sessions</Text>
+          <Text style={styles.sectionTitle}>{t('exercises.recentSessions')}</Text>
           {history
             .slice()
             .reverse()
@@ -163,12 +171,12 @@ export function ExerciseDetailScreen() {
               </View>
             ))}
           <Link href={`/progress/exercises/${exercise.id}`} style={styles.link}>
-            View full progress
+            {t('exercises.viewFullProgress')}
           </Link>
         </View>
       ) : null}
       <Link href="/exercises" style={styles.link}>
-        Back to exercises
+        {t('exercises.backToExercises')}
       </Link>
     </ScrollView>
   );

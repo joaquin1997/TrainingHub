@@ -1,4 +1,5 @@
 import { Link } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import {
@@ -9,16 +10,15 @@ import {
 import { colors, commonStyles, spacing } from '@/ui/theme';
 
 export function WorkoutSummaryScreen() {
+  const { t } = useTranslation();
   const workoutDraft = getLatestCompletedWorkout();
 
   if (!workoutDraft) {
     return (
       <View style={styles.container}>
-        <Text style={styles.body}>
-          No completed workout is stored in the local mock flow yet.
-        </Text>
+        <Text style={styles.body}>{t('workouts.noCompleted')}</Text>
         <Link href="/routines" style={styles.link}>
-          Back to routines
+          {t('routineDetail.backToRoutines')}
         </Link>
       </View>
     );
@@ -29,15 +29,21 @@ export function WorkoutSummaryScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.body}>{workoutDraft.routineName}</Text>
-      <Text style={styles.meta}>Saved to history.</Text>
-      <Text style={styles.meta}>Session ID: {workoutSession.id}</Text>
+      <Text style={styles.meta}>{t('workouts.savedToHistory')}</Text>
+      <Text style={styles.meta}>
+        {t('workouts.sessionId', { id: workoutSession.id })}
+      </Text>
       {workoutDraft.exercises.map((exercise) => (
         <View key={exercise.id} style={styles.card}>
           <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
           {exercise.entries.map((set) => (
             <Text key={set.id} style={styles.setText}>
-              Set {set.order}: {set.reps || '-'} reps, {set.weightKg || '-'}{' '}
-              {workoutDraft.unit ?? 'kg'}
+              {t('workouts.setSummary', {
+                order: set.order,
+                reps: set.reps || '-',
+                weight: set.weightKg || '-',
+                unit: workoutDraft.unit ?? 'kg',
+              })}
             </Text>
           ))}
         </View>
@@ -50,7 +56,7 @@ export function WorkoutSummaryScreen() {
             clearLatestCompletedWorkout();
           }}
         >
-          Back to routines
+          {t('routineDetail.backToRoutines')}
         </Link>
         <Link
           href="/history"
@@ -59,7 +65,7 @@ export function WorkoutSummaryScreen() {
             clearLatestCompletedWorkout();
           }}
         >
-          View history
+          {t('workouts.viewHistory')}
         </Link>
         <Link
           href={{
@@ -71,7 +77,7 @@ export function WorkoutSummaryScreen() {
             clearLatestCompletedWorkout();
           }}
         >
-          Start again
+          {t('workouts.startAgain')}
         </Link>
       </View>
     </ScrollView>

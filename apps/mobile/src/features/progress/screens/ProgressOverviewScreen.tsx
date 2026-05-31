@@ -1,5 +1,6 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Pressable,
   RefreshControl,
@@ -32,6 +33,7 @@ function formatValue(value?: number) {
 }
 
 export function ProgressOverviewScreen() {
+  const { t } = useTranslation();
   const [progress, setProgress] = useState<ExerciseProgressSummary[]>([]);
   const [weeklyVolume, setWeeklyVolume] = useState<WeeklyVolumePoint[]>([]);
   const [muscleVolume, setMuscleVolume] = useState<MuscleGroupVolumePoint[]>([]);
@@ -61,7 +63,7 @@ export function ProgressOverviewScreen() {
       } catch (error) {
         if (shouldUpdate()) {
           setErrorMessage(
-            error instanceof Error ? error.message : 'Unable to load progress.',
+            error instanceof Error ? error.message : t('progress.loadError'),
           );
         }
       } finally {
@@ -70,7 +72,7 @@ export function ProgressOverviewScreen() {
         }
       }
     },
-    [],
+    [t],
   );
 
   useFocusEffect(
@@ -105,13 +107,11 @@ export function ProgressOverviewScreen() {
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
-      <Text style={styles.body}>
-        Review your strongest recent lifts and see which exercises are moving.
-      </Text>
+      <Text style={styles.body}>{t('progress.intro')}</Text>
       <FrequencySummary summary={frequency} />
       {weeklyVolumeSeries.bars.length > 0 ? (
         <ProgressChart
-          title="Weekly volume"
+          title={t('progress.weeklyVolume')}
           unit={unit}
           series={weeklyVolumeSeries}
           formatLabel={formatShortDate}
@@ -120,7 +120,7 @@ export function ProgressOverviewScreen() {
       <MuscleDistribution points={muscleVolume} />
       {showLoading ? (
         <View style={styles.card}>
-          <Text style={styles.meta}>Loading progress...</Text>
+          <Text style={styles.meta}>{t('progress.loading')}</Text>
         </View>
       ) : null}
       {errorMessage ? (
@@ -131,8 +131,8 @@ export function ProgressOverviewScreen() {
       {hasEmptyState ? (
         <EmptyState
           icon="stats-chart-outline"
-          title="No progress yet"
-          subtitle="Finish a workout to start tracking your lifts."
+          title={t('progress.emptyTitle')}
+          subtitle={t('progress.emptySubtitle')}
         />
       ) : null}
       {hasListState ? (
@@ -152,21 +152,29 @@ export function ProgressOverviewScreen() {
                 <View style={styles.cardTitleRow}>
                   <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
                   {exercise.isRecordSession ? (
-                    <Text style={styles.prBadge}>PR</Text>
+                    <Text style={styles.prBadge}>{t('progress.pr')}</Text>
                   ) : null}
                 </View>
                 <Text style={styles.meta}>
-                  Latest: {formatWeightValue(exercise.latestWeightKg, unit)} {unit}{' '}
-                  x {formatValue(exercise.latestReps)}
+                  {t('progress.latest', {
+                    weight: formatWeightValue(exercise.latestWeightKg, unit),
+                    unit,
+                    reps: formatValue(exercise.latestReps),
+                  })}
                 </Text>
                 <Text style={styles.meta}>
-                  Best: {formatWeightValue(exercise.personalBestWeightKg, unit)}{' '}
-                  {unit} x {formatValue(exercise.personalBestReps)}
+                  {t('progress.best', {
+                    weight: formatWeightValue(exercise.personalBestWeightKg, unit),
+                    unit,
+                    reps: formatValue(exercise.personalBestReps),
+                  })}
                 </Text>
                 <Text style={styles.meta}>
-                  Est. 1RM:{' '}
-                  {formatWeightValue(exercise.bestEstimatedOneRepMax, unit)} {unit}{' '}
-                  - {exercise.sessionCount} sessions
+                  {t('progress.est1rm', {
+                    weight: formatWeightValue(exercise.bestEstimatedOneRepMax, unit),
+                    unit,
+                    count: exercise.sessionCount,
+                  })}
                 </Text>
               </Pressable>
             </Link>

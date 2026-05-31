@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Modal,
   Pressable,
@@ -28,6 +29,7 @@ export function ExercisePickerModal({
   onClose,
   onSelect,
 }: ExercisePickerModalProps) {
+  const { t } = useTranslation();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -47,12 +49,12 @@ export function ExercisePickerModal({
       setHasLoaded(true);
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : 'Unable to load exercises.',
+        error instanceof Error ? error.message : t('exercises.loadError'),
       );
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (visible && !hasLoaded && !isLoading) {
@@ -81,25 +83,25 @@ export function ExercisePickerModal({
         style={[styles.container, { paddingTop: Math.max(insets.top, spacing.md) }]}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Add exercise</Text>
+          <Text style={styles.title}>{t('exercises.addExercise')}</Text>
           <Pressable
             onPress={onClose}
             hitSlop={12}
             accessibilityRole="button"
             style={styles.closeButton}
           >
-            <Text style={styles.close}>Close</Text>
+            <Text style={styles.close}>{t('common.close')}</Text>
           </Pressable>
         </View>
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Search exercises"
+          placeholder={t('exercises.searchPlaceholder')}
           placeholderTextColor={colors.textSubtle}
           style={styles.input}
           autoCorrect={false}
         />
-        {isLoading ? <Text style={styles.meta}>Loading exercises...</Text> : null}
+        {isLoading ? <Text style={styles.meta}>{t('exercises.loading')}</Text> : null}
         {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
         <ScrollView contentContainerStyle={styles.list}>
           {filtered.slice(0, MAX_VISIBLE).map((exercise) => (
@@ -125,7 +127,7 @@ export function ExercisePickerModal({
           ))}
           {filtered.length > MAX_VISIBLE ? (
             <Text style={styles.meta}>
-              Refine your search to see the other {filtered.length - MAX_VISIBLE}.
+              {t('exercises.refineSearch', { count: filtered.length - MAX_VISIBLE })}
             </Text>
           ) : null}
         </ScrollView>

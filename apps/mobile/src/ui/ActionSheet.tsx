@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -23,6 +24,7 @@ export function ActionSheet({
   actions,
   onClose,
 }: ActionSheetProps) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
   return (
@@ -67,7 +69,7 @@ export function ActionSheet({
               pressed ? styles.actionPressed : null,
             ]}
           >
-            <Text style={styles.cancelText}>Cancel</Text>
+            <Text style={styles.cancelText}>{t('common.cancel')}</Text>
           </Pressable>
         </Pressable>
       </Pressable>

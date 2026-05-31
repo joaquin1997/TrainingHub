@@ -14,7 +14,7 @@ Legend: ✅ done · �doing · ⬜ todo
 | 5 | Routines (advanced) | [05-routines-advanced.md](05-routines-advanced.md) | 🔁 dup+reorder+set-inheritance done |
 | 6 | Exercises (advanced) | [06-exercises-advanced.md](06-exercises-advanced.md) | 🔁 category/equipment filter done |
 | 7 | Social | [07-social.md](07-social.md) | ⬜ post-MVP (out of scope) |
-| 8 | Integrations & platform | [08-integrations-and-platform.md](08-integrations-and-platform.md) | ⬜ |
+| 8 | Integrations & platform | [08-integrations-and-platform.md](08-integrations-and-platform.md) | 🔁 i18n ES/EN done; rest todo |
 | 9 | Production readiness | [09-production-readiness.md](09-production-readiness.md) | ⬜ |
 
 ## Already built (baseline)

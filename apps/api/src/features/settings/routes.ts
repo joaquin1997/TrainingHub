@@ -27,10 +27,17 @@ export async function registerSettingsRoutes(app: FastifyInstance) {
       body.defaultRestSeconds > 0
         ? body.defaultRestSeconds
         : undefined;
+    // `null` clears the override (follow device); 'en'/'es' set it; anything
+    // else (incl. absent) leaves it unchanged.
+    const language =
+      body.language === 'en' || body.language === 'es' || body.language === null
+        ? body.language
+        : undefined;
 
     return updateUserSettings(await resolveUserPublicId(request), {
       unit,
       defaultRestSeconds,
+      language,
     });
   });
 }

@@ -11,7 +11,11 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { settingsClient } from '@/features/settings/api/settingsClient';
 import type { UpdateUserSettingsInput, UserSettings } from '@workout/domain';
 
-const DEFAULT_SETTINGS: UserSettings = { unit: 'kg', defaultRestSeconds: 90 };
+const DEFAULT_SETTINGS: UserSettings = {
+  unit: 'kg',
+  defaultRestSeconds: 90,
+  language: null,
+};
 
 interface SettingsContextValue {
   settings: UserSettings;

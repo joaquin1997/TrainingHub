@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/AuthContext';
@@ -5,11 +6,14 @@ import { useSettings } from '@/features/settings/SettingsContext';
 import { formatDuration } from '@/lib/format';
 import { Button } from '@/ui/Button';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
-import type { WeightUnit } from '@workout/domain';
+import type { AppLanguage, WeightUnit } from '@workout/domain';
 
 const UNITS: WeightUnit[] = ['kg', 'lb'];
 
+type LanguageOption = { value: AppLanguage | null; label: string };
+
 export function SettingsScreen() {
+  const { t } = useTranslation();
   const { settings, update } = useSettings();
   const { user, signOut } = useAuth();
 
@@ -18,10 +22,42 @@ export function SettingsScreen() {
       defaultRestSeconds: Math.max(15, settings.defaultRestSeconds + delta),
     });
 
+  const languageOptions: LanguageOption[] = [
+    { value: null, label: t('settings.languageSystem') },
+    { value: 'en', label: 'English' },
+    { value: 'es', label: 'Español' },
+  ];
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Weight unit</Text>
+        <Text style={styles.sectionTitle}>{t('settings.language')}</Text>
+        <View style={styles.segment}>
+          {languageOptions.map((option) => {
+            const active = settings.language === option.value;
+            return (
+              <Pressable
+                key={option.label}
+                onPress={() => update({ language: option.value })}
+                style={[styles.segmentItem, active ? styles.segmentItemActive : null]}
+              >
+                <Text
+                  style={[
+                    styles.segmentText,
+                    active ? styles.segmentTextActive : null,
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <Text style={styles.hint}>{t('settings.languageHint')}</Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t('settings.weightUnit')}</Text>
         <View style={styles.segment}>
           {UNITS.map((unit) => {
             const active = settings.unit === unit;
@@ -43,11 +79,11 @@ export function SettingsScreen() {
             );
           })}
         </View>
-        <Text style={styles.hint}>Used across logging, history and progress.</Text>
+        <Text style={styles.hint}>{t('settings.unitHint')}</Text>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Default rest timer</Text>
+        <Text style={styles.sectionTitle}>{t('settings.defaultRestTimer')}</Text>
         <View style={styles.stepperRow}>
           <Pressable
             onPress={() => changeRest(-15)}
@@ -67,16 +103,14 @@ export function SettingsScreen() {
             <Text style={styles.stepText}>+</Text>
           </Pressable>
         </View>
-        <Text style={styles.hint}>
-          Pre-fills the rest timer when you start a workout.
-        </Text>
+        <Text style={styles.hint}>{t('settings.restHint')}</Text>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Account</Text>
+        <Text style={styles.sectionTitle}>{t('settings.account')}</Text>
         {user?.email ? <Text style={styles.hint}>{user.email}</Text> : null}
         <Button
-          label="Log out"
+          label={t('settings.logOut')}
           variant="danger"
           onPress={() => void signOut()}
           fullWidth

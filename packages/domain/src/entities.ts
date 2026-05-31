@@ -21,15 +21,20 @@ export interface User {
  */
 export type WeightUnit = 'kg' | 'lb';
 
+/** Supported UI languages. `null`/absent means "follow the device locale". */
+export type AppLanguage = 'en' | 'es';
+
 /** Per-user client preferences. */
 export interface UserSettings {
   unit: WeightUnit;
   defaultRestSeconds: number;
+  language: AppLanguage | null;
 }
 
 export interface UpdateUserSettingsInput {
   unit?: WeightUnit;
   defaultRestSeconds?: number;
+  language?: AppLanguage | null;
 }
 
 export interface Exercise {

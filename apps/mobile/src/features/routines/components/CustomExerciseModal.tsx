@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Modal,
   Pressable,
@@ -27,6 +28,7 @@ export function CustomExerciseModal({
   onClose,
   onCreated,
 }: CustomExerciseModalProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState(initialName);
   const [muscleGroups, setMuscleGroups] = useState<MuscleGroup[]>([]);
   const [primaryMuscleGroupIds, setPrimaryMuscleGroupIds] = useState<string[]>([]);
@@ -66,7 +68,7 @@ export function CustomExerciseModal({
         setErrorMessage(
           error instanceof Error
             ? error.message
-            : 'Unable to load muscle groups.',
+            : t('customExercise.loadError'),
         );
       })
       .finally(() => {
@@ -108,7 +110,7 @@ export function CustomExerciseModal({
     const trimmedName = name.trim();
 
     if (!trimmedName || primaryMuscleGroupIds.length === 0) {
-      setErrorMessage('Name and at least one primary muscle group are required.');
+      setErrorMessage(t('customExercise.validation'));
       return;
     }
 
@@ -124,7 +126,7 @@ export function CustomExerciseModal({
       onClose();
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : 'Unable to create exercise.',
+        error instanceof Error ? error.message : t('customExercise.createError'),
       );
     } finally {
       setIsSubmitting(false);
@@ -144,19 +146,21 @@ export function CustomExerciseModal({
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.title}>Create Custom Exercise</Text>
+            <Text style={styles.title}>{t('customExercise.title')}</Text>
             <TextInput
               value={name}
               onChangeText={setName}
-              placeholder="Exercise name"
+              placeholder={t('customExercise.namePlaceholder')}
               placeholderTextColor={colors.textSubtle}
               style={styles.input}
             />
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Primary muscle groups</Text>
-              <Text style={styles.sectionHint}>Select one or more.</Text>
+              <Text style={styles.sectionTitle}>{t('customExercise.primaryTitle')}</Text>
+              <Text style={styles.sectionHint}>{t('customExercise.selectOneOrMore')}</Text>
               {isLoadingMuscleGroups ? (
-                <Text style={styles.helperText}>Loading muscle groups...</Text>
+                <Text style={styles.helperText}>
+                  {t('customExercise.loadingMuscleGroups')}
+                </Text>
               ) : (
                 <View style={styles.optionList}>
                   {muscleGroups.map((muscleGroup) => {
@@ -190,10 +194,12 @@ export function CustomExerciseModal({
               )}
             </View>
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Secondary muscle groups</Text>
-              <Text style={styles.sectionHint}>Optional.</Text>
+              <Text style={styles.sectionTitle}>{t('customExercise.secondaryTitle')}</Text>
+              <Text style={styles.sectionHint}>{t('customExercise.optional')}</Text>
               {isLoadingMuscleGroups ? (
-                <Text style={styles.helperText}>Loading muscle groups...</Text>
+                <Text style={styles.helperText}>
+                  {t('customExercise.loadingMuscleGroups')}
+                </Text>
               ) : (
                 <View style={styles.optionList}>
                   {muscleGroups.map((muscleGroup) => {
@@ -238,7 +244,7 @@ export function CustomExerciseModal({
                   isSubmitting ? styles.buttonDisabled : null,
                 ]}
               >
-                <Text style={styles.secondaryButtonText}>Cancel</Text>
+                <Text style={styles.secondaryButtonText}>{t('common.cancel')}</Text>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
@@ -251,7 +257,7 @@ export function CustomExerciseModal({
                 ]}
               >
                 <Text style={styles.buttonText}>
-                  {isSubmitting ? 'Saving...' : 'Save exercise'}
+                  {isSubmitting ? t('routineForm.saving') : t('customExercise.saveExercise')}
                 </Text>
               </Pressable>
             </View>

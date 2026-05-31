@@ -1,5 +1,7 @@
 import { Link, useFocusEffect } from 'expo-router';
+import type { TFunction } from 'i18next';
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Pressable,
   RefreshControl,
@@ -29,14 +31,14 @@ function countSets(session: WorkoutSession) {
   );
 }
 
-function exerciseSummary(session: WorkoutSession) {
+function exerciseSummary(session: WorkoutSession, t: TFunction) {
   const names = session.exercises
     .slice()
     .sort((left, right) => left.order - right.order)
     .map((exercise) => exercise.exerciseName);
 
   if (names.length === 0) {
-    return 'No exercises';
+    return t('workouts.noExercises');
   }
 
   const shown = names.slice(0, 3).join(', ');
@@ -59,6 +61,7 @@ function sessionVolume(session: WorkoutSession) {
 }
 
 export function WorkoutHistoryScreen() {
+  const { t } = useTranslation();
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
@@ -79,7 +82,7 @@ export function WorkoutHistoryScreen() {
       } catch (error) {
         if (shouldUpdate()) {
           setErrorMessage(
-            error instanceof Error ? error.message : 'Unable to load workouts.',
+            error instanceof Error ? error.message : t('workouts.loadError'),
           );
         }
       } finally {
@@ -88,7 +91,7 @@ export function WorkoutHistoryScreen() {
         }
       }
     },
-    [],
+    [t],
   );
 
   useFocusEffect(
@@ -116,12 +119,10 @@ export function WorkoutHistoryScreen() {
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
-      <Text style={styles.body}>
-        Scan previous sessions and open the details behind each lift.
-      </Text>
+      <Text style={styles.body}>{t('workouts.historyIntro')}</Text>
       {showLoading ? (
         <View style={styles.stateCard}>
-          <Text style={styles.meta}>Loading workouts...</Text>
+          <Text style={styles.meta}>{t('workouts.loadingWorkouts')}</Text>
         </View>
       ) : null}
       {errorMessage ? (
@@ -132,8 +133,8 @@ export function WorkoutHistoryScreen() {
       {hasEmptyState ? (
         <EmptyState
           icon="time-outline"
-          title="No workouts yet"
-          subtitle="Finish a workout and it will show up here."
+          title={t('workouts.emptyTitle')}
+          subtitle={t('workouts.emptySubtitle')}
         />
       ) : null}
       {hasListState ? (
@@ -150,10 +151,12 @@ export function WorkoutHistoryScreen() {
                   {formatDate(session.completedAt ?? session.startedAt)}
                 </Text>
                 <Text style={styles.cardSummary} numberOfLines={1}>
-                  {exerciseSummary(session)}
+                  {exerciseSummary(session, t)}
                 </Text>
                 <View style={styles.statsRow}>
-                  <Text style={styles.stat}>{countSets(session)} sets</Text>
+                  <Text style={styles.stat}>
+                    {t('workouts.setsCount', { count: countSets(session) })}
+                  </Text>
                   {sessionVolume(session) > 0 ? (
                     <Text style={[styles.stat, styles.statStrong]}>
                       {roundWeight(fromKg(sessionVolume(session), unit))} {unit}

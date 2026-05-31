@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { TrainingFrequencySummary } from '@/features/progress/utils/trainingFrequency';
@@ -9,15 +10,17 @@ interface FrequencySummaryProps {
 
 /** Compact stat tiles for training frequency (streak, totals, best week). */
 export function FrequencySummary({ summary }: FrequencySummaryProps) {
+  const { t } = useTranslation();
+
   if (summary.totalWorkouts === 0) {
     return null;
   }
 
   const tiles = [
-    { label: 'Week streak', value: summary.currentStreak },
-    { label: 'Workouts', value: summary.totalWorkouts },
-    { label: 'Active weeks', value: summary.activeWeeks },
-    { label: 'Best week', value: summary.bestWeek },
+    { label: t('progress.freqWeekStreak'), value: summary.currentStreak },
+    { label: t('progress.freqWorkouts'), value: summary.totalWorkouts },
+    { label: t('progress.freqActiveWeeks'), value: summary.activeWeeks },
+    { label: t('progress.freqBestWeek'), value: summary.bestWeek },
   ];
 
   return (

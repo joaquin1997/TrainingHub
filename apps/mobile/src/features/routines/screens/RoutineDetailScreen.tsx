@@ -1,5 +1,7 @@
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
+import type { TFunction } from 'i18next';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { routinesClient } from '@/features/routines/api/routinesClient';
@@ -11,15 +13,15 @@ import { formatWeight } from '@/lib/weight';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type { RoutineExerciseSet, Routine, WeightUnit } from '@workout/domain';
 
-function formatSetTarget(set: RoutineExerciseSet, unit: WeightUnit) {
+function formatSetTarget(set: RoutineExerciseSet, unit: WeightUnit, t: TFunction) {
   const reps =
     set.minReps !== undefined && set.maxReps !== undefined
-      ? `${set.minReps}-${set.maxReps} reps`
+      ? t('routineDetail.repsRange', { min: set.minReps, max: set.maxReps })
       : set.minReps !== undefined
-        ? `${set.minReps}+ reps`
+        ? t('routineDetail.repsMin', { min: set.minReps })
         : set.maxReps !== undefined
-          ? `up to ${set.maxReps} reps`
-          : '- reps';
+          ? t('routineDetail.repsUpTo', { max: set.maxReps })
+          : t('routineDetail.repsNone');
   const weight =
     set.targetWeight !== undefined
       ? ` - ${formatWeight(set.targetWeight, unit)}`
@@ -29,6 +31,7 @@ function formatSetTarget(set: RoutineExerciseSet, unit: WeightUnit) {
 }
 
 export function RoutineDetailScreen() {
+  const { t } = useTranslation();
   const { routineId } = useLocalSearchParams<{ routineId?: string }>();
   const router = useRouter();
   const [routine, setRoutine] = useState<Routine | null>(null);
@@ -49,7 +52,7 @@ export function RoutineDetailScreen() {
 
       if (!routineId) {
         if (shouldUpdate()) {
-          setErrorMessage('Missing routine id.');
+          setErrorMessage(t('routineDetail.missingId'));
           setIsLoading(false);
         }
         return;
@@ -60,7 +63,7 @@ export function RoutineDetailScreen() {
 
         if (shouldUpdate()) {
           if (!nextRoutine) {
-            setErrorMessage('Routine not found.');
+            setErrorMessage(t('routineDetail.notFound'));
             return;
           }
 
@@ -69,7 +72,7 @@ export function RoutineDetailScreen() {
       } catch (error) {
         if (shouldUpdate()) {
           setErrorMessage(
-            error instanceof Error ? error.message : 'Unable to load routine.',
+            error instanceof Error ? error.message : t('routineDetail.loadError'),
           );
         }
       } finally {
@@ -78,7 +81,7 @@ export function RoutineDetailScreen() {
         }
       }
     },
-    [routineId],
+    [routineId, t],
   );
 
   useEffect(() => {
@@ -103,7 +106,7 @@ export function RoutineDetailScreen() {
       router.replace('/routines');
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : 'Unable to delete routine.',
+        error instanceof Error ? error.message : t('routines.deleteError'),
       );
     } finally {
       setIsDeleting(false);
@@ -124,7 +127,7 @@ export function RoutineDetailScreen() {
       router.replace(`/routines/${created.id}`);
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : 'Unable to duplicate routine.',
+        error instanceof Error ? error.message : t('routines.duplicateError'),
       );
     } finally {
       setIsDuplicating(false);
@@ -134,7 +137,7 @@ export function RoutineDetailScreen() {
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.body}>Loading routine...</Text>
+        <Text style={styles.body}>{t('routineDetail.loading')}</Text>
       </View>
     );
   }
@@ -142,9 +145,9 @@ export function RoutineDetailScreen() {
   if (!routine) {
     return (
       <View style={styles.container}>
-        <Text style={styles.body}>Routine unavailable</Text>
+        <Text style={styles.body}>{t('routineDetail.unavailable')}</Text>
         <Text style={styles.error}>
-          {errorMessage ?? 'Routine not found in the API response.'}
+          {errorMessage ?? t('routineDetail.notFoundResponse')}
         </Text>
         <Pressable
           accessibilityRole="button"
@@ -154,10 +157,10 @@ export function RoutineDetailScreen() {
             pressed ? styles.buttonPressed : null,
           ]}
         >
-          <Text style={styles.secondaryButtonText}>Retry</Text>
+          <Text style={styles.secondaryButtonText}>{t('common.retry')}</Text>
         </Pressable>
         <Link href="/routines" style={styles.link}>
-          Back to routines
+          {t('routineDetail.backToRoutines')}
         </Link>
       </View>
     );
@@ -171,10 +174,12 @@ export function RoutineDetailScreen() {
       ) : null}
       {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
       <Text style={styles.meta}>
-        Exercise summary: {getRoutineExerciseSummary(routine, 3)}
+        {t('routineDetail.exerciseSummary', {
+          summary: getRoutineExerciseSummary(routine, 3),
+        })}
       </Text>
       {routine.exercises.length === 0 ? (
-        <Text style={styles.meta}>No exercises in this routine yet.</Text>
+        <Text style={styles.meta}>{t('routineDetail.noExercises')}</Text>
       ) : (
         <View style={styles.exerciseList}>
           {routine.exercises
@@ -186,22 +191,27 @@ export function RoutineDetailScreen() {
                   {exercise.orderIndex}. {exercise.exerciseName}
                 </Text>
                 {exercise.restSeconds !== undefined ? (
-                  <Text style={styles.meta}>Rest: {exercise.restSeconds}s</Text>
+                  <Text style={styles.meta}>
+                    {t('routineDetail.rest', { seconds: exercise.restSeconds })}
+                  </Text>
                 ) : null}
                 {exercise.supersetGroup !== undefined ? (
                   <Text style={styles.supersetBadge}>
-                    Superset {exercise.supersetGroup}
+                    {t('routineDetail.superset', { group: exercise.supersetGroup })}
                   </Text>
                 ) : null}
                 {exercise.sets.length === 0 ? (
-                  <Text style={styles.meta}>No target sets</Text>
+                  <Text style={styles.meta}>{t('routineDetail.noTargetSets')}</Text>
                 ) : (
                   exercise.sets
                     .slice()
                     .sort((left, right) => left.setNumber - right.setNumber)
                     .map((set) => (
                       <Text key={set.id} style={styles.exerciseItem}>
-                        Set {set.setNumber}: {formatSetTarget(set, settings.unit)}
+                        {t('routineDetail.setLine', {
+                          number: set.setNumber,
+                          target: formatSetTarget(set, settings.unit, t),
+                        })}
                       </Text>
                     ))
                 )}
@@ -229,16 +239,14 @@ export function RoutineDetailScreen() {
         >
           <Text style={styles.primaryButtonText}>
             {activeWorkout && activeWorkout.routineId === routine.id
-              ? 'Continue workout'
+              ? t('routines.continueWorkout')
               : activeWorkout
-                ? 'Resume active workout'
-                : 'Start workout'}
+                ? t('routines.resumeWorkout')
+                : t('routines.startWorkout')}
           </Text>
         </Pressable>
         {activeWorkout && activeWorkout.routineId === routine.id ? (
-          <Text style={styles.meta}>
-            Editing is locked while this workout is in progress
-          </Text>
+          <Text style={styles.meta}>{t('routineDetail.editLocked')}</Text>
         ) : (
           <View style={styles.actionRow}>
             <Pressable
@@ -248,7 +256,7 @@ export function RoutineDetailScreen() {
                 pressed ? styles.buttonPressed : null,
               ]}
             >
-              <Text style={styles.secondaryButtonText}>Edit</Text>
+              <Text style={styles.secondaryButtonText}>{t('common.edit')}</Text>
             </Pressable>
             <Pressable
               onPress={() => void handleDuplicate()}
@@ -259,7 +267,9 @@ export function RoutineDetailScreen() {
               ]}
             >
               <Text style={styles.secondaryButtonText}>
-                {isDuplicating ? 'Duplicating...' : 'Duplicate'}
+                {isDuplicating
+                  ? t('routineDetail.duplicating')
+                  : t('routines.duplicate')}
               </Text>
             </Pressable>
           </View>
@@ -276,7 +286,7 @@ export function RoutineDetailScreen() {
             ]}
       >
         <Text style={styles.deleteButtonText}>
-          {isDeleting ? 'Deleting...' : 'Delete routine'}
+          {isDeleting ? t('routineDetail.deleting') : t('routines.deleteTitle')}
         </Text>
       </Pressable>
     </ScrollView>

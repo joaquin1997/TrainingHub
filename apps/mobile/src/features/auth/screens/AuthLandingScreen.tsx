@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -13,6 +14,7 @@ import { Button } from '@/ui/Button';
 import { colors, commonStyles, spacing } from '@/ui/theme';
 
 export function AuthLandingScreen() {
+  const { t } = useTranslation();
   const { signIn, register } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
@@ -33,7 +35,7 @@ export function AuthLandingScreen() {
         await signIn(email.trim(), password);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong.');
+      setError(e instanceof Error ? e.message : t('common.somethingWentWrong'));
     } finally {
       setIsSubmitting(false);
     }
@@ -48,15 +50,15 @@ export function AuthLandingScreen() {
         <Text style={styles.brand}>TrainingHub</Text>
         <Text style={styles.subtitle}>
           {isRegister
-            ? 'Create an account to start tracking.'
-            : 'Sign in to your workouts.'}
+            ? t('auth.subtitleRegister')
+            : t('auth.subtitleLogin')}
         </Text>
 
         {isRegister ? (
           <TextInput
             value={displayName}
             onChangeText={setDisplayName}
-            placeholder="Name (optional)"
+            placeholder={t('auth.namePlaceholder')}
             placeholderTextColor={colors.textSubtle}
             style={styles.input}
             autoCapitalize="words"
@@ -65,7 +67,7 @@ export function AuthLandingScreen() {
         <TextInput
           value={email}
           onChangeText={setEmail}
-          placeholder="Email"
+          placeholder={t('auth.emailPlaceholder')}
           placeholderTextColor={colors.textSubtle}
           style={styles.input}
           autoCapitalize="none"
@@ -76,7 +78,7 @@ export function AuthLandingScreen() {
         <TextInput
           value={password}
           onChangeText={setPassword}
-          placeholder="Password (min 6)"
+          placeholder={t('auth.passwordPlaceholder')}
           placeholderTextColor={colors.textSubtle}
           style={styles.input}
           secureTextEntry
@@ -87,10 +89,10 @@ export function AuthLandingScreen() {
         <Button
           label={
             isSubmitting
-              ? 'Please wait…'
+              ? t('common.pleaseWait')
               : isRegister
-                ? 'Create account'
-                : 'Sign in'
+                ? t('auth.createAccount')
+                : t('auth.signIn')
           }
           onPress={() => void submit()}
           disabled={isSubmitting}
@@ -98,7 +100,7 @@ export function AuthLandingScreen() {
         />
         <Button
           label={
-            isRegister ? 'I already have an account' : "I don't have an account"
+            isRegister ? t('auth.haveAccount') : t('auth.noAccount')
           }
           variant="secondary"
           onPress={() => {
