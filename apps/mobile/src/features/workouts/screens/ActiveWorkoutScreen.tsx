@@ -21,7 +21,6 @@ import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { useRestTimer } from '@/lib/useRestTimer';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 
-const REST_PRESETS = [60, 90, 120];
 const REST_MINUTES = Array.from({ length: 11 }, (_, i) => i); // 0–10 min
 const REST_SECONDS = Array.from({ length: 12 }, (_, i) => i * 5); // 0,5,…,55
 const pad2 = (value: number) => String(value).padStart(2, '0');
@@ -499,28 +498,6 @@ export function ActiveWorkoutScreen() {
                 <Text style={styles.startText}>Start</Text>
               </Pressable>
             </View>
-            <View style={styles.presetRow}>
-              {REST_PRESETS.map((seconds) => (
-                <Pressable
-                  key={seconds}
-                  onPress={() => setRestDuration(seconds)}
-                  hitSlop={6}
-                  style={[
-                    styles.presetChip,
-                    restDuration === seconds ? styles.presetChipActive : null,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.restPreset,
-                      restDuration === seconds ? styles.restPresetActive : null,
-                    ]}
-                  >
-                    {seconds}s
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
           </View>
         )}
       </View>
@@ -979,29 +956,6 @@ const styles = StyleSheet.create({
     color: colors.onPrimary,
     fontSize: 14,
     fontWeight: '800',
-  },
-  presetRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  presetChip: {
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 4,
-  },
-  presetChipActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.surface,
-  },
-  restPreset: {
-    color: colors.textMuted,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  restPresetActive: {
-    color: colors.primary,
   },
   doneToggle: {
     alignSelf: 'flex-start',
