@@ -17,7 +17,9 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # --- config (override via environment) ---------------------------------------
 DOCKER_CONTEXT="${DOCKER_CONTEXT:-docker-lan}"                  # docker-lan (LAN, faster) | docker-ts (Tailscale)
-API_URL="${EXPO_PUBLIC_API_URL:-http://100.124.208.26:3000}"   # what the app and health check talk to
+# The app reaches the API via the HTTPS MagicDNS URL (Tailscale Serve :8443);
+# RN's fetch fails against the raw 100.x IP over plain http on iOS.
+API_URL="${EXPO_PUBLIC_API_URL:-https://joaquinserver.tail644a1a.ts.net:8443}"
 IMAGE="traininghub-api:latest"
 CONTAINER="traininghub-api"
 ENV_FILE="$ROOT/apps/api/.env"
