@@ -57,6 +57,7 @@ function mapExercise(record: ExerciseRecord): Exercise {
     language: record.language ?? undefined,
     source: record.source,
     sourceId: record.sourceId,
+    imageUrl: record.imageUrl ?? undefined,
     primaryMuscleGroups: record.primaryMuscleGroupLinks.map(
       (link) => link.muscleGroup.name,
     ),

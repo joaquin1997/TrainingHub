@@ -1,6 +1,6 @@
 import { Link, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
@@ -125,6 +125,14 @@ export function ExerciseDetailScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
       <Text style={styles.title}>{exercise.name}</Text>
+      {exercise.imageUrl ? (
+        <Image
+          source={{ uri: exercise.imageUrl }}
+          style={styles.image}
+          resizeMode="contain"
+          accessibilityLabel={`${exercise.name} illustration`}
+        />
+      ) : null}
       {exercise.description ? (
         <Text style={styles.body}>{exercise.description}</Text>
       ) : null}
@@ -180,6 +188,12 @@ const styles = StyleSheet.create({
   },
   body: {
     ...commonStyles.body,
+  },
+  image: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceMuted,
   },
   card: {
     ...commonStyles.card,

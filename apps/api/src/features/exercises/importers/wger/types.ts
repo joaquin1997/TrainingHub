@@ -35,6 +35,11 @@ export type WgerExerciseInfo = {
     name?: string;
   }>;
   license_author?: string;
+  images?: Array<{
+    id?: number;
+    image?: string;
+    is_main?: boolean;
+  }>;
   translations?: Array<{
     id: number;
     name?: string;
@@ -51,6 +56,7 @@ export type ImportedExerciseRecord = {
   description?: string;
   language?: string;
   category?: string;
+  imageUrl?: string;
   primaryMuscles: string[];
   secondaryMuscles: string[];
   equipment: string[];

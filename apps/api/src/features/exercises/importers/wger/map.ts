@@ -138,6 +138,12 @@ export function mapWgerExerciseToImportedRecord(
     return null;
   }
 
+  const images = exercise.images ?? [];
+  const imageUrl =
+    images.find((image) => image.is_main)?.image?.trim() ||
+    images.find((image) => image.image?.trim())?.image?.trim() ||
+    undefined;
+
   return {
     source: 'wger',
     sourceId: String(exercise.id),
@@ -145,6 +151,7 @@ export function mapWgerExerciseToImportedRecord(
     description: stripHtml(translation?.description),
     language,
     category: exercise.category?.name?.trim() || undefined,
+    imageUrl,
     primaryMuscles: dedupe(
       (exercise.muscles ?? []).map((muscle) => muscle.name_en || muscle.name),
     ),

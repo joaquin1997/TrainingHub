@@ -27,6 +27,8 @@ export interface Exercise {
   language?: string;
   source?: string;
   sourceId?: string;
+  /** Illustration/GIF URL from the source catalog, if any. */
+  imageUrl?: string;
   primaryMuscleGroups?: string[];
   secondaryMuscleGroups?: string[];
   equipment?: string[];

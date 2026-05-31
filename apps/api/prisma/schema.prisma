@@ -30,6 +30,7 @@ model Exercise {
   description               String?
   category                  String?
   language                  String?
+  imageUrl                  String?
   equipment                 String[]
   licenseAuthor             String?
   lastSourceUpdate          DateTime?
