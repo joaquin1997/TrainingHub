@@ -7,7 +7,8 @@
 - [~] Charts for weight/volume over time
   - [x] Per-session bar chart (est. 1RM with volume fallback) on the exercise
     detail screen — dependency-free, pure-view bars
-  - [ ] Smooth line charts / multi-metric toggle
+  - [ ] Smooth line charts / multi-metric toggle — deferred: needs the native
+    `react-native-svg` dep (full rebuild), and the dependency-free bars suffice for now
 - [~] Weekly volume, muscle-group distribution
   - [x] Weekly training-volume chart on the progress overview
   - [ ] Muscle-group distribution
