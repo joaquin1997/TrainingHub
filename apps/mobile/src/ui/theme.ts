@@ -92,7 +92,7 @@ export const commonStyles = StyleSheet.create({
   card: {
     gap: spacing.sm,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
     borderRadius: radii.lg,
     backgroundColor: colors.surfaceRaised,
     padding: spacing.lg,
