@@ -16,6 +16,10 @@ import {
 import { CustomExerciseModal } from '@/features/routines/components/CustomExerciseModal';
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
+import {
+  effectiveRoutineSetValue,
+  setFieldPlaceholder,
+} from '@/features/routines/utils/routineSetInheritance';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type {
@@ -410,10 +414,17 @@ export function RoutineFormScreen({
 
         const sets: RoutineExerciseInput['sets'] = [];
 
-        for (const [setIndex, set] of exercise.sets.entries()) {
-          const minReps = parseOptionalInteger(set.minReps);
-          const maxReps = parseOptionalInteger(set.maxReps);
-          const targetWeight = parseOptionalNumber(set.targetWeight);
+        for (const [setIndex] of exercise.sets.entries()) {
+          // Unedited fields inherit the previous set's value (the ghosted placeholder).
+          const minReps = parseOptionalInteger(
+            effectiveRoutineSetValue(exercise.sets, setIndex, 'minReps'),
+          );
+          const maxReps = parseOptionalInteger(
+            effectiveRoutineSetValue(exercise.sets, setIndex, 'maxReps'),
+          );
+          const targetWeight = parseOptionalNumber(
+            effectiveRoutineSetValue(exercise.sets, setIndex, 'targetWeight'),
+          );
 
           if (
             minReps === null ||
@@ -680,7 +691,11 @@ export function RoutineFormScreen({
                           onChangeText={(value) =>
                             updateSetField(exercise.id, set.id, 'minReps', value)
                           }
-                          placeholder="Min reps"
+                          placeholder={setFieldPlaceholder(
+                            exercise.sets,
+                            setIndex,
+                            'minReps',
+                          )}
                           placeholderTextColor={colors.textSubtle}
                           keyboardType="number-pad"
                           style={[styles.input, styles.numericInput]}
@@ -690,7 +705,11 @@ export function RoutineFormScreen({
                           onChangeText={(value) =>
                             updateSetField(exercise.id, set.id, 'maxReps', value)
                           }
-                          placeholder="Max reps"
+                          placeholder={setFieldPlaceholder(
+                            exercise.sets,
+                            setIndex,
+                            'maxReps',
+                          )}
                           placeholderTextColor={colors.textSubtle}
                           keyboardType="number-pad"
                           style={[styles.input, styles.numericInput]}
@@ -705,7 +724,11 @@ export function RoutineFormScreen({
                               value,
                             )
                           }
-                          placeholder="Kg"
+                          placeholder={setFieldPlaceholder(
+                            exercise.sets,
+                            setIndex,
+                            'targetWeight',
+                          )}
                           placeholderTextColor={colors.textSubtle}
                           keyboardType="decimal-pad"
                           style={[styles.input, styles.numericInput]}
