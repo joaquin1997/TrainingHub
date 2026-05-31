@@ -4,7 +4,7 @@
 - [ ] Per-user data scoping + authorization (depends on auth)
 - [~] Deploy: API hosting, production DB, mobile build + TestFlight
   - [x] API containerized (`Dockerfile` + `docker-compose.yml`) and deployed to the
-    home server over Tailscale (`http://100.124.208.26:3000`); see root README.
+    home server over Tailscale (`https://joaquinserver.tail644a1a.ts.net:8443`); see root README.
   - [x] iOS dev build installable on a physical device via `expo run:ios --device`
     (free Apple ID signing; expires after 7 days).
   - [ ] Hosted/production DB, public API hosting, TestFlight / release builds.

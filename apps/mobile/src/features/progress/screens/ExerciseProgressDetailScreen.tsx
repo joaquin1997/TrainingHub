@@ -6,6 +6,7 @@ import { ProgressChart } from '@/features/progress/components/ProgressChart';
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { progressClient } from '@/features/progress/api/progressClient';
 import { buildProgressSeries } from '@/features/progress/utils/chartData';
+import { extractPersonalRecords } from '@/features/progress/utils/personalRecords';
 import { formatDate, formatShortDate } from '@/lib/format';
 import { colors, commonStyles, spacing } from '@/ui/theme';
 import type { ExerciseProgressDetail } from '@workout/domain';
@@ -99,6 +100,7 @@ export function ExerciseProgressDetailScreen() {
     'estimatedOneRepMax',
   );
   const volumeSeries = buildProgressSeries(progress.points, 'totalVolume');
+  const personalRecords = extractPersonalRecords(progress.points);
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
@@ -131,6 +133,24 @@ export function ExerciseProgressDetailScreen() {
           series={volumeSeries}
           formatLabel={formatShortDate}
         />
+      ) : null}
+      {personalRecords.length > 0 ? (
+        <View style={styles.records}>
+          <Text style={styles.sectionTitle}>Personal records</Text>
+          {personalRecords
+            .slice()
+            .reverse()
+            .map((record, index) => (
+              <View key={`${record.date}-${index}`} style={styles.recordRow}>
+                <Text style={styles.recordBadge}>🏆</Text>
+                <Text style={styles.recordText}>
+                  {record.weightKg} kg
+                  {record.reps !== undefined ? ` x ${record.reps}` : ''} -{' '}
+                  {formatDate(record.date)}
+                </Text>
+              </View>
+            ))}
+        </View>
       ) : null}
       <View style={styles.list}>
         {progress.points
@@ -169,6 +189,27 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 24,
     fontWeight: '800',
+  },
+  records: {
+    gap: spacing.sm,
+  },
+  sectionTitle: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  recordRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  recordBadge: {
+    fontSize: 14,
+  },
+  recordText: {
+    color: colors.textMuted,
+    fontSize: 14,
+    flexShrink: 1,
   },
   list: {
     gap: spacing.md,

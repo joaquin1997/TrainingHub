@@ -77,7 +77,7 @@ When in doubt, prefer architecture readiness over full implementation.
 
 ### Deployment (Docker + Tailscale)
 - The API is containerized. `Dockerfile`, `.dockerignore` and `docker-compose.yml` live at the repo root; the build context is the repo root (monorepo + Prisma client generation). The Dockerfile installs only `@workout/api` (+ `@workout/domain`), runs `prisma migrate deploy` on startup, then serves.
-- It runs on the home server `joaquinserver` (LAN `192.168.1.98`, Tailscale `100.124.208.26`; managed through the SSH Docker contexts `docker-lan` / `docker-ts`) with `network_mode: host`, so it reaches Postgres and is itself reachable over Tailscale at `http://100.124.208.26:3000`.
+- It runs on the home server `joaquinserver` (LAN `192.168.1.98`, Tailscale `100.124.208.26`; managed through the SSH Docker contexts `docker-lan` / `docker-ts`) with `network_mode: host`, so it reaches Postgres and is itself reachable over Tailscale at `https://joaquinserver.tail644a1a.ts.net:8443`.
 - The Docker host and the Postgres node are separate Tailscale nodes. `DATABASE_URL` is injected from `apps/api/.env`, never baked into the image.
 
 ### Mobile distribution

@@ -8,7 +8,7 @@
 #
 # `network_mode: host` makes the container share the host network namespace so:
 #   - it reaches PostgreSQL over Tailscale (DATABASE_URL -> 100.109.119.75:5432)
-#   - it is reachable over Tailscale at http://100.124.208.26:3000
+#   - it is reachable over Tailscale at https://joaquinserver.tail644a1a.ts.net:8443
 #
 # DATABASE_URL is read from apps/api/.env (gitignored, never baked into the image).
 

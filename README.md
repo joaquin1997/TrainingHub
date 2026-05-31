@@ -66,7 +66,7 @@ cd apps/mobile
 
 # Dev build installed on a connected iPhone (first run also generates ios/ and
 # requires signing the target with your Apple ID once in Xcode).
-EXPO_PUBLIC_API_URL=http://100.124.208.26:3000 \
+EXPO_PUBLIC_API_URL=https://joaquinserver.tail644a1a.ts.net:8443 \
 REACT_NATIVE_PACKAGER_HOSTNAME=<mac-tailscale-ip> \
 npx expo run:ios --device
 ```
@@ -98,7 +98,7 @@ Topology:
 - Docker host `joaquinserver`: LAN `192.168.1.98`, Tailscale `100.124.208.26`
   (SSH docker contexts `docker-lan` and `docker-ts`).
 - PostgreSQL: separate Tailscale node `100.109.119.75:5432`.
-- API reachable at `http://100.124.208.26:3000` for any device on the tailnet.
+- API reachable at `https://joaquinserver.tail644a1a.ts.net:8443` for any device on the tailnet.
 
 ```bash
 # Target the server's Docker daemon over SSH
@@ -116,7 +116,7 @@ docker run -d --name traininghub-api --restart unless-stopped --network host \
   traininghub-api:latest
 
 # Verify
-curl http://100.124.208.26:3000/health     # {"status":"ok","db":"up"}
+curl https://joaquinserver.tail644a1a.ts.net:8443/health     # {"status":"ok","db":"up"}
 docker logs -f traininghub-api
 ```
 

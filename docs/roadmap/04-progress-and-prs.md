@@ -3,7 +3,7 @@
 ## Checklist
 - [x] Personal record (PR) detection (per exercise; recent-record flag + badge)
 - [x] Estimated 1RM (Epley, per session point + best)
-- [ ] PR history (list of past records over time)
+- [x] PR history (list of past records over time)
 - [~] Charts for weight/volume over time
   - [x] Per-session bar chart (est. 1RM with volume fallback) on the exercise
     detail screen — dependency-free, pure-view bars
@@ -25,6 +25,9 @@
   `GET /progress/weekly-volume` endpoint buckets all sessions into Monday-start
   weeks (pure `buildWeeklyVolume`, unit + route tested) and the overview renders
   it through the same `ProgressChart` (`buildWeeklyVolumeSeries`).
+- PR history on the exercise detail: `extractPersonalRecords` (pure, unit-tested)
+  walks the per-session points and lists every session that beat the max weight.
+  Mobile-only, reuses the existing detail `points`.
 
 ## Notes
 - Progress aggregation already exists (`apps/api/src/features/progress`). PRs can
