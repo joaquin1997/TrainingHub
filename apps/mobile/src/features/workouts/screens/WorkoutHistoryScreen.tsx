@@ -16,6 +16,7 @@ import {
   formatDuration,
 } from '@/lib/format';
 import { useRefresh } from '@/lib/useRefresh';
+import { EmptyState } from '@/ui/EmptyState';
 import { colors, commonStyles, spacing } from '@/ui/theme';
 import type { WorkoutSession } from '@workout/domain';
 
@@ -111,10 +112,11 @@ export function WorkoutHistoryScreen() {
         </View>
       ) : null}
       {hasEmptyState ? (
-        <View style={styles.stateCard}>
-          <Text style={styles.meta}>No workouts yet.</Text>
-          <Text style={styles.meta}>Finish a workout to see it here.</Text>
-        </View>
+        <EmptyState
+          icon="time-outline"
+          title="No workouts yet"
+          subtitle="Finish a workout and it will show up here."
+        />
       ) : null}
       {hasListState ? (
         <View style={styles.list}>

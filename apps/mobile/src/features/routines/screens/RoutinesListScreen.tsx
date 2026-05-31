@@ -14,6 +14,7 @@ import { groupRoutinesByFolder } from '@/features/routines/utils/groupRoutinesBy
 import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
 import { Button } from '@/ui/Button';
+import { EmptyState } from '@/ui/EmptyState';
 import { formatDuration } from '@/lib/format';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { useRefresh } from '@/lib/useRefresh';
@@ -129,10 +130,13 @@ export function RoutinesListScreen() {
         </View>
       ) : null}
       {hasEmptyState ? (
-        <View style={styles.stateCard}>
-          <Text style={styles.meta}>No routines yet.</Text>
-          <Text style={styles.meta}>Create your first plan to start logging.</Text>
-        </View>
+        <EmptyState
+          icon="barbell-outline"
+          title="No routines yet"
+          subtitle="Create your first plan to start logging your workouts."
+          actionLabel="Create routine"
+          onAction={() => router.push('/routines/create')}
+        />
       ) : null}
       {hasListState ? (
         <View style={styles.list}>

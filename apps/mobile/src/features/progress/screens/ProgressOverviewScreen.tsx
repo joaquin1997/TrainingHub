@@ -15,6 +15,7 @@ import { ProgressChart } from '@/features/progress/components/ProgressChart';
 import { progressClient } from '@/features/progress/api/progressClient';
 import { buildWeeklyVolumeSeries } from '@/features/progress/utils/chartData';
 import { summarizeTrainingFrequency } from '@/features/progress/utils/trainingFrequency';
+import { EmptyState } from '@/ui/EmptyState';
 import { formatShortDate } from '@/lib/format';
 import { useRefresh } from '@/lib/useRefresh';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
@@ -119,10 +120,11 @@ export function ProgressOverviewScreen() {
         </View>
       ) : null}
       {hasEmptyState ? (
-        <View style={styles.card}>
-          <Text style={styles.meta}>No progress yet.</Text>
-          <Text style={styles.meta}>Finish a workout to start tracking.</Text>
-        </View>
+        <EmptyState
+          icon="stats-chart-outline"
+          title="No progress yet"
+          subtitle="Finish a workout to start tracking your lifts."
+        />
       ) : null}
       {hasListState ? (
         <View style={styles.list}>

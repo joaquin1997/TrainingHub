@@ -16,6 +16,7 @@ import {
   filterExercises,
 } from '@/features/exercises/utils/exerciseFilters';
 import { useRefresh } from '@/lib/useRefresh';
+import { EmptyState } from '@/ui/EmptyState';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type { Exercise } from '@workout/domain';
 
@@ -212,11 +213,22 @@ export function ExercisesListScreen() {
         <Text style={styles.meta}>Loading exercises...</Text>
       ) : null}
       {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
-      {!isLoading && !errorMessage ? (
+      {!isLoading && !errorMessage && filtered.length > 0 ? (
         <Text style={styles.meta}>
           {filtered.length} exercises
           {hiddenCount > 0 ? ` - showing ${visible.length}` : ''}
         </Text>
+      ) : null}
+      {!isLoading && !errorMessage && filtered.length === 0 ? (
+        <EmptyState
+          icon={favoritesOnly ? 'star-outline' : 'search-outline'}
+          title={favoritesOnly ? 'No favorites yet' : 'No matches'}
+          subtitle={
+            favoritesOnly
+              ? 'Tap the star on an exercise to save it here.'
+              : 'Try a different search or clear the filters.'
+          }
+        />
       ) : null}
       <View style={styles.list}>
         {visible.map((exercise) => (
