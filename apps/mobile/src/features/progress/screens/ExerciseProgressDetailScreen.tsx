@@ -2,9 +2,11 @@ import { Link, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { ProgressChart } from '@/features/progress/components/ProgressChart';
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { progressClient } from '@/features/progress/api/progressClient';
-import { formatDate } from '@/lib/format';
+import { buildProgressSeries } from '@/features/progress/utils/chartData';
+import { formatDate, formatShortDate } from '@/lib/format';
 import { colors, commonStyles, spacing } from '@/ui/theme';
 import type { ExerciseProgressDetail } from '@workout/domain';
 
@@ -92,6 +94,12 @@ export function ExerciseProgressDetailScreen() {
     );
   }
 
+  const oneRepMaxSeries = buildProgressSeries(
+    progress.points,
+    'estimatedOneRepMax',
+  );
+  const volumeSeries = buildProgressSeries(progress.points, 'totalVolume');
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
       <Text style={styles.title}>Exercise Progress</Text>
@@ -109,6 +117,21 @@ export function ExerciseProgressDetailScreen() {
         {progress.sessionCount} sessions
         {progress.isRecordSession ? ' - recent PR' : ''}
       </Text>
+      {oneRepMaxSeries.bars.length > 0 ? (
+        <ProgressChart
+          title="Estimated 1RM"
+          unit="kg"
+          series={oneRepMaxSeries}
+          formatLabel={formatShortDate}
+        />
+      ) : volumeSeries.bars.length > 0 ? (
+        <ProgressChart
+          title="Volume per session"
+          unit="kg"
+          series={volumeSeries}
+          formatLabel={formatShortDate}
+        />
+      ) : null}
       <View style={styles.list}>
         {progress.points
           .slice()

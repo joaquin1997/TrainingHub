@@ -13,6 +13,16 @@ export function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString();
 }
 
+/**
+ * Compact day/month label for dense axes (e.g. chart ticks).
+ */
+export function formatShortDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: 'numeric',
+    day: 'numeric',
+  });
+}
+
 function pad(value: number) {
   return value.toString().padStart(2, '0');
 }
