@@ -129,6 +129,66 @@ export async function findExerciseById(id: string) {
   return exercise ? mapExercise(exercise) : null;
 }
 
+export async function listFavoriteExerciseIds(): Promise<string[]> {
+  await ensureDevelopmentUser();
+
+  const favorites = await prisma.exerciseFavorite.findMany({
+    where: { user: { publicId: DEVELOPMENT_USER_PUBLIC_ID } },
+    select: { exercise: { select: { publicId: true } } },
+  });
+
+  return favorites.map((favorite) => favorite.exercise.publicId);
+}
+
+async function resolveFavoriteIds(exercisePublicId: string) {
+  await ensureDevelopmentUser();
+
+  const [user, exercise] = await Promise.all([
+    prisma.user.findUnique({
+      where: { publicId: DEVELOPMENT_USER_PUBLIC_ID },
+      select: { id: true },
+    }),
+    prisma.exercise.findUnique({
+      where: { publicId: exercisePublicId },
+      select: { id: true },
+    }),
+  ]);
+
+  if (!user || !exercise) {
+    return null;
+  }
+
+  return { userId: user.id, exerciseId: exercise.id };
+}
+
+export async function addFavoriteExercise(exercisePublicId: string) {
+  const ids = await resolveFavoriteIds(exercisePublicId);
+
+  if (!ids) {
+    return false;
+  }
+
+  await prisma.exerciseFavorite.upsert({
+    where: { userId_exerciseId: ids },
+    update: {},
+    create: ids,
+  });
+
+  return true;
+}
+
+export async function removeFavoriteExercise(exercisePublicId: string) {
+  const ids = await resolveFavoriteIds(exercisePublicId);
+
+  if (!ids) {
+    return false;
+  }
+
+  await prisma.exerciseFavorite.deleteMany({ where: ids });
+
+  return true;
+}
+
 export async function createExercise(input: CreateExerciseInput) {
   await ensureDevelopmentUser();
 

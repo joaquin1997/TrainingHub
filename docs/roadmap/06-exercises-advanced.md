@@ -3,7 +3,7 @@
 ## Checklist
 - [x] Filter by category / equipment (chips)
 - [ ] Per-exercise history (past sets)
-- [ ] Favorite exercises
+- [x] Favorite exercises (API-backed, star toggle + favorites filter)
 - [ ] Exercise images / GIFs
 - [ ] Pagination of the catalog
 

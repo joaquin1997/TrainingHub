@@ -24,4 +24,17 @@ export const exercisesClient = {
       body: JSON.stringify(input),
     });
   },
+  listFavorites() {
+    return apiRequest<string[]>('/exercises/favorites');
+  },
+  addFavorite(exerciseId: string) {
+    return apiRequest<void>(`/exercises/${exerciseId}/favorite`, {
+      method: 'PUT',
+    });
+  },
+  removeFavorite(exerciseId: string) {
+    return apiRequest<void>(`/exercises/${exerciseId}/favorite`, {
+      method: 'DELETE',
+    });
+  },
 };

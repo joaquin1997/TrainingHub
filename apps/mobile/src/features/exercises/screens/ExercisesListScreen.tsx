@@ -24,6 +24,8 @@ const PAGE_SIZE = 50;
 
 export function ExercisesListScreen() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<string>();
   const [equipment, setEquipment] = useState<string>();
@@ -37,7 +39,10 @@ export function ExercisesListScreen() {
       setErrorMessage(undefined);
 
       try {
-        const nextExercises = await exercisesClient.list();
+        const [nextExercises, nextFavorites] = await Promise.all([
+          exercisesClient.list(),
+          exercisesClient.listFavorites().catch(() => [] as string[]),
+        ]);
 
         if (shouldUpdate()) {
           setExercises(
@@ -45,6 +50,7 @@ export function ExercisesListScreen() {
               .slice()
               .sort((left, right) => left.name.localeCompare(right.name)),
           );
+          setFavorites(new Set(nextFavorites));
         }
       } catch (error) {
         if (shouldUpdate()) {
@@ -75,21 +81,54 @@ export function ExercisesListScreen() {
 
   const facets = useMemo(() => buildExerciseFacets(exercises), [exercises]);
 
-  const filtered = useMemo(
-    () => filterExercises(exercises, { query, category, equipment }),
-    [exercises, query, category, equipment],
-  );
+  const filtered = useMemo(() => {
+    const base = filterExercises(exercises, { query, category, equipment });
+    return favoritesOnly
+      ? base.filter((exercise) => favorites.has(exercise.id))
+      : base;
+  }, [exercises, query, category, equipment, favoritesOnly, favorites]);
 
   // Reset paging whenever the filters narrow/expand the result set.
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [query, category, equipment]);
+  }, [query, category, equipment, favoritesOnly]);
 
   const toggle = (
     current: string | undefined,
     value: string,
     set: (next: string | undefined) => void,
   ) => set(current === value ? undefined : value);
+
+  const toggleFavorite = (exerciseId: string) => {
+    const isFavorite = favorites.has(exerciseId);
+
+    // Optimistic update; revert if the request fails.
+    setFavorites((current) => {
+      const next = new Set(current);
+      if (isFavorite) {
+        next.delete(exerciseId);
+      } else {
+        next.add(exerciseId);
+      }
+      return next;
+    });
+
+    const request = isFavorite
+      ? exercisesClient.removeFavorite(exerciseId)
+      : exercisesClient.addFavorite(exerciseId);
+
+    void request.catch(() => {
+      setFavorites((current) => {
+        const next = new Set(current);
+        if (isFavorite) {
+          next.add(exerciseId);
+        } else {
+          next.delete(exerciseId);
+        }
+        return next;
+      });
+    });
+  };
 
   const visible = filtered.slice(0, visibleCount);
   const hiddenCount = filtered.length - visible.length;
@@ -113,6 +152,16 @@ export function ExercisesListScreen() {
         style={styles.input}
         autoCorrect={false}
       />
+      <Pressable
+        onPress={() => setFavoritesOnly((value) => !value)}
+        style={[styles.chip, favoritesOnly ? styles.chipActive : null, styles.favChip]}
+      >
+        <Text
+          style={[styles.chipText, favoritesOnly ? styles.chipTextActive : null]}
+        >
+          {favoritesOnly ? '★ Favorites' : '☆ Favorites'}
+        </Text>
+      </Pressable>
       {facets.categories.length > 0 ? (
         <ScrollView
           horizontal
@@ -173,26 +222,35 @@ export function ExercisesListScreen() {
       ) : null}
       <View style={styles.list}>
         {visible.map((exercise) => (
-          <Link
-            key={exercise.id}
-            href={`/exercises/${exercise.id}`}
-            asChild
-          >
+          <View key={exercise.id} style={styles.cardRow}>
+            <Link href={`/exercises/${exercise.id}`} asChild>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.card,
+                  styles.cardFlex,
+                  pressed ? styles.cardPressed : null,
+                ]}
+              >
+                <Text style={styles.cardTitle}>{exercise.name}</Text>
+                {exercise.primaryMuscleGroups &&
+                exercise.primaryMuscleGroups.length > 0 ? (
+                  <Text style={styles.meta}>
+                    {exercise.primaryMuscleGroups.join(', ')}
+                  </Text>
+                ) : null}
+              </Pressable>
+            </Link>
             <Pressable
-              style={({ pressed }) => [
-                styles.card,
-                pressed ? styles.cardPressed : null,
-              ]}
+              onPress={() => toggleFavorite(exercise.id)}
+              hitSlop={8}
+              accessibilityRole="button"
+              style={styles.starButton}
             >
-              <Text style={styles.cardTitle}>{exercise.name}</Text>
-              {exercise.primaryMuscleGroups &&
-              exercise.primaryMuscleGroups.length > 0 ? (
-                <Text style={styles.meta}>
-                  {exercise.primaryMuscleGroups.join(', ')}
-                </Text>
-              ) : null}
+              <Text style={styles.star}>
+                {favorites.has(exercise.id) ? '★' : '☆'}
+              </Text>
             </Pressable>
-          </Link>
+          </View>
         ))}
       </View>
       {hiddenCount > 0 ? (
@@ -256,8 +314,27 @@ const styles = StyleSheet.create({
   card: {
     ...commonStyles.card,
   },
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  cardFlex: {
+    flex: 1,
+  },
   cardPressed: {
     ...commonStyles.pressed,
+  },
+  starButton: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  star: {
+    color: colors.primary,
+    fontSize: 24,
+  },
+  favChip: {
+    alignSelf: 'flex-start',
   },
   loadMore: {
     ...commonStyles.secondaryButton,
