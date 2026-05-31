@@ -18,6 +18,7 @@ import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { formatDuration } from '@/lib/format';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { useRestTimer } from '@/lib/useRestTimer';
+import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 
 const REST_PRESETS = [60, 90, 120];
 import type {
@@ -62,7 +63,7 @@ function renderLastSet(
 
   return (
     <Text style={styles.lastText}>
-      Last: {last.weightKg ?? '—'} kg × {last.reps ?? '—'}
+      Last: {last.weightKg ?? '-'} kg x {last.reps ?? '-'}
     </Text>
   );
 }
@@ -179,8 +180,8 @@ export function ActiveWorkoutScreen() {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Active Workout</Text>
-        <ActivityIndicator />
-        <Text style={styles.meta}>Loading routine…</Text>
+        <ActivityIndicator color={colors.primary} />
+        <Text style={styles.meta}>Loading routine...</Text>
       </View>
     );
   }
@@ -392,13 +393,14 @@ export function ActiveWorkoutScreen() {
       </Text>
       <Text style={styles.timer}>{formatDuration(elapsedSeconds)}</Text>
       <Text style={styles.meta}>
-        {setProgress.done}/{setProgress.total} sets done · logged values are kept
+        {setProgress.done}/{setProgress.total} sets done - logged values are kept
         while in progress, so you can leave and resume this workout.
       </Text>
       <TextInput
         value={workoutDraft.notes ?? ''}
         onChangeText={handleNotesChange}
         placeholder="Workout notes (optional)"
+        placeholderTextColor={colors.textSubtle}
         style={styles.notesInput}
         multiline
       />
@@ -598,14 +600,6 @@ export function ActiveWorkoutScreen() {
       >
         <Text style={styles.discardButtonText}>Discard workout</Text>
       </Pressable>
-      <Text style={styles.todo}>
-        TODO: Add timers, backend sync, and live workout persistence when the
-        execution flow is expanded.
-      </Text>
-      <Text style={styles.todo}>
-        TODO: Apple Health completion sync and Apple Watch live mirroring hook
-        into this screen through isolated Apple-specific integration stubs.
-      </Text>
       <RouteLinks currentRoute="active-workout" />
     </ScrollView>
   );
@@ -613,32 +607,28 @@ export function ActiveWorkoutScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 24,
-    gap: 12,
+    ...commonStyles.scrollContent,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '600',
+    ...commonStyles.title,
   },
   body: {
+    color: colors.text,
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: '800',
   },
   timer: {
+    color: colors.primary,
     fontSize: 40,
-    fontWeight: '700',
+    fontWeight: '900',
     fontVariant: ['tabular-nums'],
   },
   meta: {
-    fontSize: 14,
-    color: '#4b5563',
+    ...commonStyles.meta,
   },
   card: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    padding: 16,
-    gap: 10,
+    ...commonStyles.card,
+    gap: spacing.md,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -646,44 +636,46 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardTitle: {
+    color: colors.text,
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: '800',
     flexShrink: 1,
   },
   reorderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: spacing.lg,
   },
   reorderText: {
+    color: colors.primary,
     fontSize: 18,
-    color: '#2563eb',
-    fontWeight: '700',
+    fontWeight: '900',
   },
   imagePlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
     height: 84,
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    backgroundColor: '#f3f4f6',
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    backgroundColor: colors.surfaceMuted,
   },
   imagePlaceholderText: {
+    color: colors.textSubtle,
     fontSize: 14,
-    color: '#4b5563',
   },
   target: {
+    color: colors.textMuted,
     fontSize: 14,
     lineHeight: 22,
   },
   setList: {
-    gap: 8,
+    gap: spacing.sm,
   },
   setCard: {
-    gap: 8,
+    gap: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: colors.border,
     paddingTop: 10,
   },
   setHeader: {
@@ -697,29 +689,30 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   typeBadge: {
+    color: colors.textMuted,
     fontSize: 12,
-    fontWeight: '600',
-    color: '#4b5563',
+    fontWeight: '700',
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 6,
+    borderColor: colors.borderStrong,
+    borderRadius: radii.sm,
     paddingHorizontal: 8,
     paddingVertical: 2,
     overflow: 'hidden',
   },
   typeBadgeActive: {
-    color: '#92400e',
-    borderColor: '#f59e0b',
-    backgroundColor: '#fef3c7',
+    color: colors.accent,
+    borderColor: colors.accent,
+    backgroundColor: colors.accentSoft,
   },
   setTitle: {
+    color: colors.text,
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   removeText: {
+    color: colors.danger,
     fontSize: 13,
-    color: '#b91c1c',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   cardActions: {
     flexDirection: 'row',
@@ -731,142 +724,119 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   addSetText: {
+    color: colors.primary,
     fontSize: 15,
-    color: '#2563eb',
-    fontWeight: '600',
+    fontWeight: '800',
   },
   addExerciseButton: {
-    alignSelf: 'flex-start',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#2563eb',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    ...commonStyles.secondaryButton,
+    borderColor: colors.primary,
   },
   addExerciseText: {
+    color: colors.primary,
     fontSize: 15,
-    color: '#2563eb',
-    fontWeight: '600',
+    fontWeight: '800',
   },
   setTarget: {
+    color: colors.textMuted,
     fontSize: 13,
-    color: '#4b5563',
   },
   lastText: {
+    color: colors.primary,
     fontSize: 13,
-    color: '#2563eb',
   },
   inputsRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
   },
   inputGroup: {
     flex: 1,
-    gap: 6,
+    gap: spacing.sm,
   },
   inputLabel: {
+    color: colors.textMuted,
     fontSize: 13,
-    color: '#4b5563',
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
+    ...commonStyles.input,
   },
   button: {
-    alignSelf: 'flex-start',
-    borderRadius: 10,
-    backgroundColor: '#111827',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    ...commonStyles.primaryButton,
   },
   buttonText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '600',
+    ...commonStyles.primaryButtonText,
   },
   buttonDisabled: {
-    opacity: 0.6,
+    ...commonStyles.disabled,
   },
   notesInput: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    ...commonStyles.input,
     fontSize: 15,
     minHeight: 60,
+    textAlignVertical: 'top',
   },
   restBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    flexWrap: 'wrap',
+    gap: spacing.md,
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    paddingHorizontal: 12,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    backgroundColor: colors.surfaceRaised,
+    paddingHorizontal: spacing.md,
     paddingVertical: 10,
   },
   restTime: {
+    color: colors.primary,
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '900',
     fontVariant: ['tabular-nums'],
   },
   restPreset: {
+    color: colors.textMuted,
     fontSize: 15,
-    color: '#4b5563',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   restPresetActive: {
-    color: '#2563eb',
-    textDecorationLine: 'underline',
+    color: colors.primary,
   },
   doneToggle: {
     alignSelf: 'flex-start',
-    borderRadius: 8,
+    minHeight: 44,
+    justifyContent: 'center',
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: colors.borderStrong,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
   doneToggleActive: {
-    backgroundColor: '#dcfce7',
-    borderColor: '#16a34a',
+    backgroundColor: colors.successSoft,
+    borderColor: colors.success,
   },
   doneToggleText: {
+    color: colors.textMuted,
     fontSize: 14,
-    fontWeight: '600',
-    color: '#4b5563',
+    fontWeight: '700',
   },
   doneToggleTextActive: {
-    color: '#15803d',
+    color: colors.success,
   },
   discardButton: {
-    alignSelf: 'flex-start',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    ...commonStyles.secondaryButton,
+    borderColor: colors.danger,
+    backgroundColor: colors.dangerSoft,
   },
   discardButtonText: {
-    color: '#b91c1c',
+    color: colors.danger,
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '800',
   },
   errorText: {
-    fontSize: 14,
-    color: '#b91c1c',
-  },
-  todo: {
-    fontSize: 14,
-    color: '#4b5563',
+    ...commonStyles.error,
   },
   link: {
-    fontSize: 15,
-    color: '#2563eb',
+    ...commonStyles.link,
   },
 });

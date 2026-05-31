@@ -13,6 +13,7 @@ import {
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
 import { useRefresh } from '@/lib/useRefresh';
+import { colors, commonStyles, spacing } from '@/ui/theme';
 import type { Exercise } from '@workout/domain';
 
 const MAX_VISIBLE = 50;
@@ -95,6 +96,7 @@ export function ExercisesListScreen() {
         value={query}
         onChangeText={setQuery}
         placeholder="Search exercises"
+        placeholderTextColor={colors.textSubtle}
         style={styles.input}
         autoCorrect={false}
       />
@@ -105,7 +107,7 @@ export function ExercisesListScreen() {
       {!isLoading && !errorMessage ? (
         <Text style={styles.meta}>
           {filtered.length} exercises
-          {hiddenCount > 0 ? ` · showing first ${MAX_VISIBLE}` : ''}
+          {hiddenCount > 0 ? ` - showing first ${MAX_VISIBLE}` : ''}
         </Text>
       ) : null}
       <View style={styles.list}>
@@ -144,48 +146,35 @@ export function ExercisesListScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    flex: 1,
+    ...commonStyles.screen,
   },
   container: {
-    flexGrow: 1,
-    padding: 24,
-    gap: 12,
+    ...commonStyles.scrollContent,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '600',
+    ...commonStyles.title,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
+    ...commonStyles.input,
   },
   list: {
-    gap: 12,
+    gap: spacing.md,
   },
   card: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    padding: 16,
-    gap: 6,
+    ...commonStyles.card,
   },
   cardPressed: {
-    opacity: 0.7,
+    ...commonStyles.pressed,
   },
   cardTitle: {
+    color: colors.text,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   meta: {
-    fontSize: 14,
-    color: '#4b5563',
+    ...commonStyles.meta,
   },
   error: {
-    fontSize: 14,
-    color: '#b91c1c',
+    ...commonStyles.error,
   },
 });

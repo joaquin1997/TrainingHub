@@ -9,6 +9,7 @@ import {
   formatDateTime,
   formatDuration,
 } from '@/lib/format';
+import { colors, commonStyles, spacing } from '@/ui/theme';
 import type { WorkoutSession } from '@workout/domain';
 
 export function WorkoutSessionDetailScreen() {
@@ -101,9 +102,9 @@ export function WorkoutSessionDetailScreen() {
         {formatDateTime(session.completedAt ?? session.startedAt)}
       </Text>
       <Text style={styles.meta}>
-        {session.status} · {session.exercises.length} exercises
+        {session.status} - {session.exercises.length} exercises
         {session.completedAt
-          ? ` · ${formatDuration(
+          ? ` - ${formatDuration(
               durationSecondsBetween(session.startedAt, session.completedAt),
             )}`
           : ''}
@@ -118,7 +119,7 @@ export function WorkoutSessionDetailScreen() {
           </Text>
           {exercise.sets.map((set) => (
             <Text key={set.id} style={styles.setLine}>
-              Set {set.order}: {set.reps ?? '—'} reps × {set.weightKg ?? '—'} kg
+              Set {set.order}: {set.reps ?? '-'} reps x {set.weightKg ?? '-'} kg
             </Text>
           ))}
         </View>
@@ -133,46 +134,39 @@ export function WorkoutSessionDetailScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    flex: 1,
+    ...commonStyles.screen,
   },
   container: {
-    flexGrow: 1,
-    padding: 24,
-    gap: 12,
+    ...commonStyles.scrollContent,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '600',
+    ...commonStyles.title,
   },
   body: {
+    color: colors.text,
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   meta: {
-    fontSize: 14,
-    color: '#4b5563',
+    ...commonStyles.meta,
   },
   error: {
-    fontSize: 14,
-    color: '#b91c1c',
+    ...commonStyles.error,
   },
   card: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    padding: 16,
-    gap: 6,
+    ...commonStyles.card,
+    gap: spacing.sm,
   },
   cardTitle: {
+    color: colors.text,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   setLine: {
+    color: colors.textMuted,
     fontSize: 14,
-    color: '#374151',
   },
   link: {
-    fontSize: 15,
-    color: '#2563eb',
+    ...commonStyles.link,
   },
 });

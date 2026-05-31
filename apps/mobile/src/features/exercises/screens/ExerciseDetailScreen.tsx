@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
+import { commonStyles } from '@/ui/theme';
 import type { Exercise } from '@workout/domain';
 
 export function ExerciseDetailScreen() {
@@ -92,15 +93,17 @@ export function ExerciseDetailScreen() {
       {exercise.description ? (
         <Text style={styles.body}>{exercise.description}</Text>
       ) : null}
-      <Text style={styles.meta}>
-        Primary muscles: {primary.length > 0 ? primary.join(', ') : '—'}
-      </Text>
-      <Text style={styles.meta}>
-        Secondary muscles: {secondary.length > 0 ? secondary.join(', ') : '—'}
-      </Text>
-      <Text style={styles.meta}>
-        Equipment: {equipment.length > 0 ? equipment.join(', ') : '—'}
-      </Text>
+      <View style={styles.card}>
+        <Text style={styles.meta}>
+          Primary muscles: {primary.length > 0 ? primary.join(', ') : '-'}
+        </Text>
+        <Text style={styles.meta}>
+          Secondary muscles: {secondary.length > 0 ? secondary.join(', ') : '-'}
+        </Text>
+        <Text style={styles.meta}>
+          Equipment: {equipment.length > 0 ? equipment.join(', ') : '-'}
+        </Text>
+      </View>
       <Link href="/exercises" style={styles.link}>
         Back to exercises
       </Link>
@@ -111,31 +114,27 @@ export function ExerciseDetailScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    flex: 1,
+    ...commonStyles.screen,
   },
   container: {
-    flexGrow: 1,
-    padding: 24,
-    gap: 12,
+    ...commonStyles.scrollContent,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '600',
+    ...commonStyles.title,
   },
   body: {
-    fontSize: 16,
-    lineHeight: 22,
+    ...commonStyles.body,
+  },
+  card: {
+    ...commonStyles.card,
   },
   meta: {
-    fontSize: 14,
-    color: '#4b5563',
+    ...commonStyles.meta,
   },
   error: {
-    fontSize: 14,
-    color: '#b91c1c',
+    ...commonStyles.error,
   },
   link: {
-    fontSize: 15,
-    color: '#2563eb',
+    ...commonStyles.link,
   },
 });

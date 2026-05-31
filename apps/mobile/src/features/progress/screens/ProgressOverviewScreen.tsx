@@ -12,10 +12,11 @@ import {
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { progressClient } from '@/features/progress/api/progressClient';
 import { useRefresh } from '@/lib/useRefresh';
+import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type { ExerciseProgressSummary } from '@workout/domain';
 
 function formatValue(value?: number) {
-  return value === undefined ? '—' : String(value);
+  return value === undefined ? '-' : String(value);
 }
 
 export function ProgressOverviewScreen() {
@@ -76,7 +77,7 @@ export function ProgressOverviewScreen() {
     >
       <Text style={styles.title}>Progress Overview</Text>
       <Text style={styles.body}>
-        Per-exercise progress aggregated from your saved workouts.
+        Review your strongest recent lifts and see which exercises are moving.
       </Text>
       {showLoading ? (
         <View style={styles.card}>
@@ -111,7 +112,7 @@ export function ProgressOverviewScreen() {
                 <View style={styles.cardTitleRow}>
                   <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
                   {exercise.isRecordSession ? (
-                    <Text style={styles.prBadge}>🏆 PR</Text>
+                    <Text style={styles.prBadge}>PR</Text>
                   ) : null}
                 </View>
                 <Text style={styles.meta}>
@@ -123,7 +124,7 @@ export function ProgressOverviewScreen() {
                   {formatValue(exercise.personalBestReps)}
                 </Text>
                 <Text style={styles.meta}>
-                  Est. 1RM: {formatValue(exercise.bestEstimatedOneRepMax)} kg ·{' '}
+                  Est. 1RM: {formatValue(exercise.bestEstimatedOneRepMax)} kg -{' '}
                   {exercise.sessionCount} sessions
                 </Text>
               </Pressable>
@@ -138,33 +139,25 @@ export function ProgressOverviewScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    flex: 1,
+    ...commonStyles.screen,
   },
   container: {
-    flexGrow: 1,
-    padding: 24,
-    gap: 12,
+    ...commonStyles.scrollContent,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '600',
+    ...commonStyles.title,
   },
   body: {
-    fontSize: 16,
-    lineHeight: 22,
+    ...commonStyles.body,
   },
   list: {
-    gap: 12,
+    gap: spacing.md,
   },
   card: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    padding: 16,
-    gap: 8,
+    ...commonStyles.card,
   },
   cardPressed: {
-    opacity: 0.7,
+    ...commonStyles.pressed,
   },
   cardTitleRow: {
     flexDirection: 'row',
@@ -172,26 +165,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardTitle: {
+    color: colors.text,
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
     flexShrink: 1,
   },
   prBadge: {
+    color: colors.onPrimary,
+    backgroundColor: colors.primary,
     fontSize: 13,
-    fontWeight: '700',
-    color: '#92400e',
-    backgroundColor: '#fef3c7',
-    borderRadius: 6,
+    fontWeight: '900',
+    borderRadius: radii.sm,
     paddingHorizontal: 8,
     paddingVertical: 2,
     overflow: 'hidden',
   },
   meta: {
-    fontSize: 14,
-    color: '#4b5563',
+    ...commonStyles.meta,
   },
   error: {
-    fontSize: 14,
-    color: '#b91c1c',
+    ...commonStyles.error,
   },
 });

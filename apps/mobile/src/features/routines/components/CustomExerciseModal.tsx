@@ -12,6 +12,7 @@ import {
 import type { Exercise, MuscleGroup } from '@workout/domain';
 
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
+import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 
 type CustomExerciseModalProps = {
   visible: boolean;
@@ -148,6 +149,7 @@ export function CustomExerciseModal({
               value={name}
               onChangeText={setName}
               placeholder="Exercise name"
+              placeholderTextColor={colors.textSubtle}
               style={styles.input}
             />
             <View style={styles.section}>
@@ -263,108 +265,94 @@ export function CustomExerciseModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(17, 24, 39, 0.45)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
-    padding: 24,
+    padding: spacing.xl,
   },
   sheet: {
     maxHeight: '85%',
-    borderRadius: 16,
-    backgroundColor: '#ffffff',
-    paddingVertical: 20,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    paddingVertical: spacing.xl,
   },
   content: {
-    gap: 12,
-    paddingHorizontal: 20,
+    gap: spacing.md,
+    paddingHorizontal: spacing.xl,
   },
   title: {
+    color: colors.text,
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: '800',
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
+    ...commonStyles.input,
   },
   error: {
-    fontSize: 14,
-    color: '#b91c1c',
+    ...commonStyles.error,
   },
   section: {
-    gap: 8,
+    gap: spacing.sm,
   },
   sectionTitle: {
+    color: colors.text,
     fontSize: 15,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: '700',
   },
   sectionHint: {
+    color: colors.textMuted,
     fontSize: 13,
-    color: '#6b7280',
   },
   helperText: {
-    fontSize: 14,
-    color: '#4b5563',
+    ...commonStyles.meta,
   },
   optionList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: spacing.sm,
   },
   optionChip: {
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: colors.borderStrong,
     borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#ffffff',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.surfaceMuted,
   },
   optionChipSelected: {
-    borderColor: '#111827',
-    backgroundColor: '#111827',
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
   },
   optionText: {
+    color: colors.text,
     fontSize: 14,
-    color: '#111827',
   },
   optionTextSelected: {
-    color: '#ffffff',
-    fontWeight: '600',
+    color: colors.onPrimary,
+    fontWeight: '800',
   },
   actions: {
     flexDirection: 'row',
-    gap: 10,
+    flexWrap: 'wrap',
+    gap: spacing.sm,
   },
   button: {
-    borderRadius: 10,
-    backgroundColor: '#111827',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    ...commonStyles.primaryButton,
   },
   buttonText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '600',
+    ...commonStyles.primaryButtonText,
   },
   secondaryButton: {
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    ...commonStyles.secondaryButton,
   },
   secondaryButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
+    ...commonStyles.secondaryButtonText,
   },
   buttonPressed: {
-    opacity: 0.85,
+    ...commonStyles.pressed,
   },
   buttonDisabled: {
-    opacity: 0.6,
+    ...commonStyles.disabled,
   },
 });

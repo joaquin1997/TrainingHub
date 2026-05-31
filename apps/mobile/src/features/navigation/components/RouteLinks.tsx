@@ -1,5 +1,7 @@
 import { Link } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { colors, radii, spacing } from '@/ui/theme';
 
 type RouteKey =
   | 'auth'
@@ -17,65 +19,101 @@ type RouteLinksProps = {
 
 const ROUTES: Array<{
   href:
-    | '/auth'
     | '/routines'
     | '/exercises'
-    | '/workouts/summary'
     | '/workouts/history'
     | '/progress';
   key: RouteKey;
   label: string;
 }> = [
-  { href: '/auth', key: 'auth', label: 'Auth landing' },
-  { href: '/routines', key: 'routines', label: 'Routines list' },
-  { href: '/exercises', key: 'exercises', label: 'Exercises catalog' },
-  {
-    href: '/workouts/summary',
-    key: 'workout-summary',
-    label: 'Workout summary',
-  },
+  { href: '/routines', key: 'routines', label: 'Routines' },
+  { href: '/exercises', key: 'exercises', label: 'Exercises' },
+  { href: '/progress', key: 'progress', label: 'Progress' },
   {
     href: '/workouts/history',
     key: 'workout-history',
-    label: 'Workout history',
+    label: 'History',
   },
-  { href: '/progress', key: 'progress', label: 'Progress overview' },
 ];
+
+function isActive(routeKey: RouteKey, currentRoute: RouteKey) {
+  if (routeKey === currentRoute) {
+    return true;
+  }
+
+  if (routeKey === 'routines') {
+    return (
+      currentRoute === 'routine-detail' ||
+      currentRoute === 'active-workout' ||
+      currentRoute === 'workout-summary'
+    );
+  }
+
+  return false;
+}
 
 export function RouteLinks({ currentRoute }: RouteLinksProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Routes</Text>
-      {ROUTES.map((route) =>
-        route.key === currentRoute ? (
-          <Text key={route.key} style={styles.current}>
-            Current: {route.label}
-          </Text>
-        ) : (
-          <Link key={route.key} href={route.href} style={styles.link}>
-            Open {route.label}
+      {ROUTES.map((route) => {
+        const active = isActive(route.key, currentRoute);
+
+        return (
+          <Link key={route.key} href={route.href} asChild>
+            <Pressable
+              style={({ pressed }) => [
+                styles.link,
+                active ? styles.current : null,
+                pressed ? styles.pressed : null,
+              ]}
+            >
+              <Text
+                style={[styles.linkText, active ? styles.currentText : null]}
+              >
+                {route.label}
+              </Text>
+            </Pressable>
           </Link>
-        ),
-      )}
+        );
+      })}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    gap: 8,
-    marginTop: 12,
-  },
-  heading: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  current: {
-    fontSize: 15,
-    color: '#111827',
+    flexDirection: 'row',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    backgroundColor: colors.surfaceRaised,
+    padding: spacing.xs,
   },
   link: {
-    fontSize: 15,
-    color: '#2563eb',
+    flex: 1,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    textAlign: 'center',
+  },
+  current: {
+    backgroundColor: colors.primary,
+  },
+  pressed: {
+    opacity: 0.82,
+  },
+  linkText: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  currentText: {
+    color: colors.onPrimary,
   },
 });

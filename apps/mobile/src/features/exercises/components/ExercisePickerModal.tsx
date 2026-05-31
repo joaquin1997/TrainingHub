@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
+import { colors, commonStyles, spacing } from '@/ui/theme';
 import type { Exercise } from '@workout/domain';
 
 const MAX_VISIBLE = 50;
@@ -79,6 +80,7 @@ export function ExercisePickerModal({
           value={query}
           onChangeText={setQuery}
           placeholder="Search exercises"
+          placeholderTextColor={colors.textSubtle}
           style={styles.input}
           autoCorrect={false}
         />
@@ -120,8 +122,9 @@ export function ExercisePickerModal({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
-    gap: 12,
+    padding: spacing.xl,
+    gap: spacing.md,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -129,46 +132,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
+    color: colors.text,
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: '800',
   },
   close: {
+    color: colors.primary,
     fontSize: 16,
-    color: '#2563eb',
-    fontWeight: '600',
+    fontWeight: '800',
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
+    ...commonStyles.input,
   },
   list: {
-    gap: 10,
-    paddingBottom: 24,
+    gap: spacing.sm,
+    paddingBottom: spacing.xxl,
   },
   row: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
+    ...commonStyles.card,
     padding: 14,
-    gap: 4,
+    gap: spacing.xs,
   },
   rowPressed: {
-    opacity: 0.7,
+    ...commonStyles.pressed,
   },
   rowTitle: {
+    color: colors.text,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   meta: {
+    color: colors.textMuted,
     fontSize: 13,
-    color: '#4b5563',
   },
   error: {
-    fontSize: 14,
-    color: '#b91c1c',
+    ...commonStyles.error,
   },
 });

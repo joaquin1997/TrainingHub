@@ -5,10 +5,11 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { progressClient } from '@/features/progress/api/progressClient';
 import { formatDate } from '@/lib/format';
+import { colors, commonStyles, spacing } from '@/ui/theme';
 import type { ExerciseProgressDetail } from '@workout/domain';
 
 function formatValue(value?: number) {
-  return value === undefined ? '—' : String(value);
+  return value === undefined ? '-' : String(value);
 }
 
 export function ExerciseProgressDetailScreen() {
@@ -104,9 +105,9 @@ export function ExerciseProgressDetailScreen() {
         {formatValue(progress.personalBestReps)}
       </Text>
       <Text style={styles.meta}>
-        Est. 1RM: {formatValue(progress.bestEstimatedOneRepMax)} kg ·{' '}
+        Est. 1RM: {formatValue(progress.bestEstimatedOneRepMax)} kg -{' '}
         {progress.sessionCount} sessions
-        {progress.isRecordSession ? ' · 🏆 recent PR' : ''}
+        {progress.isRecordSession ? ' - recent PR' : ''}
       </Text>
       <View style={styles.list}>
         {progress.points
@@ -117,7 +118,7 @@ export function ExerciseProgressDetailScreen() {
               <Text style={styles.cardTitle}>{formatDate(point.date)}</Text>
               <Text style={styles.meta}>
                 Best: {formatValue(point.bestWeightKg)} kg x{' '}
-                {formatValue(point.bestReps)} · Volume {point.totalVolume} · 1RM{' '}
+                {formatValue(point.bestReps)} - Volume {point.totalVolume} - 1RM{' '}
                 {formatValue(point.estimatedOneRepMax)}
               </Text>
             </View>
@@ -133,41 +134,35 @@ export function ExerciseProgressDetailScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    flex: 1,
+    ...commonStyles.screen,
   },
   container: {
-    flexGrow: 1,
-    padding: 24,
-    gap: 12,
+    ...commonStyles.scrollContent,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '600',
+    ...commonStyles.title,
   },
   body: {
+    color: colors.text,
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: '800',
   },
   list: {
-    gap: 12,
+    gap: spacing.md,
   },
   card: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    padding: 16,
-    gap: 6,
+    ...commonStyles.card,
+    gap: spacing.sm,
   },
   cardTitle: {
+    color: colors.text,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   meta: {
-    fontSize: 14,
-    color: '#4b5563',
+    ...commonStyles.meta,
   },
   link: {
-    fontSize: 15,
-    color: '#2563eb',
+    ...commonStyles.link,
   },
 });

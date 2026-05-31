@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { findAuthProvider } from '@/features/auth/providers';
+import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 
 export function AuthLandingScreen() {
   const appleProvider = findAuthProvider('apple');
@@ -26,33 +27,37 @@ export function AuthLandingScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Auth Landing</Text>
-      <Text style={styles.body}>
-        Placeholder screen for the initial authentication flow.
-      </Text>
-      <Text style={styles.todo}>
-        TODO: Add Apple sign-in provider wiring behind an auth abstraction.
-      </Text>
+      <View style={styles.hero}>
+        <Text style={styles.kicker}>TrainingHub</Text>
+        <Text style={styles.title}>Track every lift with less friction.</Text>
+        <Text style={styles.body}>
+          Build routines, start a workout from your plan and keep your progress
+          visible while the auth layer stays isolated.
+        </Text>
+      </View>
       {appleProvider ? (
         <View style={styles.providerList}>
           <View style={styles.providerCard}>
             <Text style={styles.providerLabel}>{appleProvider.label}</Text>
             <Text style={styles.providerMeta}>
-              Provider ID: {appleProvider.id}
+              iOS-first sign-in path prepared behind the provider abstraction.
             </Text>
-            <Pressable onPress={handleAppleSignIn} style={styles.button}>
+            <Pressable
+              onPress={handleAppleSignIn}
+              style={({ pressed }) => [
+                styles.button,
+                pressed ? commonStyles.pressed : null,
+              ]}
+            >
               <Text style={styles.buttonText}>Sign in with Apple</Text>
             </Pressable>
             <Text style={styles.providerMeta}>
-              Placeholder only. No real provider integration yet.
+              This currently creates a mock credential only.
             </Text>
           </View>
         </View>
       ) : null}
       {statusMessage ? <Text style={styles.status}>{statusMessage}</Text> : null}
-      <Text style={styles.todo}>
-        TODO: Add server-issued session handling and token refresh after provider sign-in is connected.
-      </Text>
       <RouteLinks currentRoute="auth" />
     </View>
   );
@@ -60,55 +65,54 @@ export function AuthLandingScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    ...commonStyles.fixedContent,
     justifyContent: 'center',
-    padding: 24,
-    gap: 12,
+  },
+  hero: {
+    gap: spacing.md,
+  },
+  kicker: {
+    color: colors.primary,
+    fontSize: 15,
+    fontWeight: '800',
   },
   title: {
-    fontSize: 28,
-    fontWeight: '600',
+    ...commonStyles.title,
   },
   body: {
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  todo: {
-    fontSize: 14,
-    color: '#4b5563',
+    ...commonStyles.body,
   },
   providerList: {
-    gap: 10,
+    gap: spacing.md,
   },
   providerCard: {
+    ...commonStyles.card,
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    padding: 14,
-    gap: 4,
+    borderColor: colors.borderStrong,
   },
   providerLabel: {
+    color: colors.text,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   providerMeta: {
+    color: colors.textMuted,
     fontSize: 13,
-    color: '#4b5563',
+    lineHeight: 19,
   },
   button: {
+    ...commonStyles.primaryButton,
     alignSelf: 'flex-start',
-    borderRadius: 10,
-    backgroundColor: '#111827',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    marginTop: spacing.xs,
   },
   buttonText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '600',
+    ...commonStyles.primaryButtonText,
   },
   status: {
+    color: colors.primary,
     fontSize: 14,
-    color: '#4b5563',
+    borderRadius: radii.md,
+    backgroundColor: colors.surfaceRaised,
+    padding: spacing.md,
   },
 });

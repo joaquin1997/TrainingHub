@@ -17,6 +17,7 @@ import { CustomExerciseModal } from '@/features/routines/components/CustomExerci
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
+import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type {
   Exercise,
   Routine,
@@ -516,8 +517,8 @@ export function RoutineFormScreen({
         </Text>
         <Text style={styles.body}>
           {isEditMode
-            ? 'This form updates backend routines with nested exercise sets.'
-            : 'This form creates backend routines with nested exercise sets.'}
+            ? 'Tune the exercise order, targets and weights before your next session.'
+            : 'Choose exercises and set realistic targets for your next workout.'}
         </Text>
         {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
         <View style={styles.fieldGroup}>
@@ -526,6 +527,7 @@ export function RoutineFormScreen({
             value={name}
             onChangeText={setName}
             placeholder="Enter routine name"
+            placeholderTextColor={colors.textSubtle}
             style={styles.input}
           />
         </View>
@@ -535,6 +537,7 @@ export function RoutineFormScreen({
             value={description}
             onChangeText={setDescription}
             placeholder="Add a short description"
+            placeholderTextColor={colors.textSubtle}
             multiline
             style={[styles.input, styles.multilineInput]}
           />
@@ -611,6 +614,7 @@ export function RoutineFormScreen({
                     }
                   }}
                   placeholder="Search exercise"
+                  placeholderTextColor={colors.textSubtle}
                   style={styles.input}
                 />
                 {exercise.exerciseId ? (
@@ -677,6 +681,7 @@ export function RoutineFormScreen({
                             updateSetField(exercise.id, set.id, 'minReps', value)
                           }
                           placeholder="Min reps"
+                          placeholderTextColor={colors.textSubtle}
                           keyboardType="number-pad"
                           style={[styles.input, styles.numericInput]}
                         />
@@ -686,6 +691,7 @@ export function RoutineFormScreen({
                             updateSetField(exercise.id, set.id, 'maxReps', value)
                           }
                           placeholder="Max reps"
+                          placeholderTextColor={colors.textSubtle}
                           keyboardType="number-pad"
                           style={[styles.input, styles.numericInput]}
                         />
@@ -700,6 +706,7 @@ export function RoutineFormScreen({
                             )
                           }
                           placeholder="Kg"
+                          placeholderTextColor={colors.textSubtle}
                           keyboardType="decimal-pad"
                           style={[styles.input, styles.numericInput]}
                         />
@@ -806,55 +813,40 @@ export function RoutineFormScreen({
 
 const styles = StyleSheet.create({
   scrollView: {
-    flex: 1,
+    ...commonStyles.screen,
   },
   container: {
-    flex: 1,
-    padding: 24,
-    gap: 12,
+    ...commonStyles.fixedContent,
   },
   contentContainer: {
-    flexGrow: 1,
-    padding: 24,
-    paddingBottom: 64,
-    gap: 12,
+    ...commonStyles.scrollContent,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '600',
+    ...commonStyles.title,
   },
   body: {
-    fontSize: 16,
-    lineHeight: 22,
+    ...commonStyles.body,
   },
   fieldGroup: {
-    gap: 8,
+    gap: spacing.sm,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...commonStyles.label,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
+    ...commonStyles.input,
   },
   multilineInput: {
     minHeight: 96,
     textAlignVertical: 'top',
   },
   exerciseList: {
-    gap: 12,
+    gap: spacing.md,
   },
   exerciseCard: {
-    gap: 10,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    padding: 12,
+    ...commonStyles.card,
+    gap: spacing.md,
+    padding: spacing.md,
   },
   exerciseCardHeader: {
     flexDirection: 'row',
@@ -864,105 +856,94 @@ const styles = StyleSheet.create({
   exerciseReorder: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: spacing.lg,
   },
   reorderArrow: {
+    color: colors.primary,
     fontSize: 18,
-    color: '#2563eb',
-    fontWeight: '700',
+    fontWeight: '800',
   },
   exerciseCardTitle: {
+    color: colors.text,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '800',
   },
   setList: {
-    gap: 8,
+    gap: spacing.sm,
   },
   inlineState: {
-    gap: 8,
+    gap: spacing.sm,
   },
   searchResults: {
-    gap: 8,
+    gap: spacing.sm,
   },
   searchResultButton: {
+    backgroundColor: colors.surfaceRaised,
     gap: 4,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 10,
-    paddingHorizontal: 12,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
     paddingVertical: 10,
   },
   searchResultTitle: {
+    color: colors.text,
     fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: '700',
   },
   setCard: {
-    gap: 8,
+    gap: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: colors.border,
     paddingTop: 10,
   },
   setCardTitle: {
+    color: colors.text,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   numericRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.sm,
   },
   numericInput: {
     flex: 1,
   },
   actionRow: {
     flexDirection: 'row',
-    gap: 10,
+    flexWrap: 'wrap',
+    gap: spacing.sm,
   },
   meta: {
-    fontSize: 14,
-    color: '#4b5563',
+    ...commonStyles.meta,
   },
   error: {
-    fontSize: 14,
-    color: '#b91c1c',
+    ...commonStyles.error,
   },
   button: {
-    alignSelf: 'flex-start',
-    borderRadius: 10,
-    backgroundColor: '#111827',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    ...commonStyles.primaryButton,
   },
   buttonText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '600',
+    ...commonStyles.primaryButtonText,
   },
   buttonPressed: {
-    opacity: 0.85,
+    ...commonStyles.pressed,
   },
   buttonDisabled: {
-    opacity: 0.6,
+    ...commonStyles.disabled,
   },
   secondaryButton: {
-    alignSelf: 'flex-start',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    ...commonStyles.secondaryButton,
   },
   secondaryButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
+    ...commonStyles.secondaryButtonText,
   },
   links: {
     flexDirection: 'row',
-    gap: 16,
+    flexWrap: 'wrap',
+    gap: spacing.lg,
   },
   link: {
-    fontSize: 15,
-    color: '#2563eb',
+    ...commonStyles.link,
   },
 });
