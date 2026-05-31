@@ -6,6 +6,7 @@ import {
 import {
   buildExerciseProgressDetail,
   buildExerciseProgressSummaries,
+  buildMuscleGroupVolume,
   buildWeeklyVolume,
   type ProgressSessionInput,
 } from './aggregate.js';
@@ -19,7 +20,7 @@ async function loadSessionInputs(): Promise<ProgressSessionInput[]> {
     include: {
       exercises: {
         include: {
-          exercise: { select: { publicId: true, name: true } },
+          exercise: { select: { publicId: true, name: true, category: true } },
           sets: true,
         },
       },
@@ -31,6 +32,7 @@ async function loadSessionInputs(): Promise<ProgressSessionInput[]> {
     exercises: session.exercises.map((exercise) => ({
       exerciseId: exercise.exercise.publicId,
       exerciseName: exercise.exercise.name,
+      category: exercise.exercise.category,
       sets: exercise.sets.map((set) => ({
         reps: set.reps,
         weightKg: set.weightKg,
@@ -49,4 +51,8 @@ export async function getExerciseProgress(exerciseId: string) {
 
 export async function listWeeklyVolume() {
   return buildWeeklyVolume(await loadSessionInputs());
+}
+
+export async function listMuscleGroupVolume() {
+  return buildMuscleGroupVolume(await loadSessionInputs());
 }

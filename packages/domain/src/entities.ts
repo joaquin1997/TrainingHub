@@ -260,6 +260,14 @@ export interface WeeklyVolumePoint {
 }
 
 /**
+ * Training volume attributed to one muscle group / exercise category.
+ */
+export interface MuscleGroupVolumePoint {
+  group: string;
+  totalVolume: number;
+}
+
+/**
  * One previously-logged set for an exercise (for the "last time" hint).
  */
 export interface ExerciseLastSet {

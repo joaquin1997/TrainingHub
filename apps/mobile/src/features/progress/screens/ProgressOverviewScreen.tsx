@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 
+import { MuscleDistribution } from '@/features/progress/components/MuscleDistribution';
 import { ProgressChart } from '@/features/progress/components/ProgressChart';
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { progressClient } from '@/features/progress/api/progressClient';
@@ -18,6 +19,7 @@ import { useRefresh } from '@/lib/useRefresh';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type {
   ExerciseProgressSummary,
+  MuscleGroupVolumePoint,
   WeeklyVolumePoint,
 } from '@workout/domain';
 
@@ -28,6 +30,7 @@ function formatValue(value?: number) {
 export function ProgressOverviewScreen() {
   const [progress, setProgress] = useState<ExerciseProgressSummary[]>([]);
   const [weeklyVolume, setWeeklyVolume] = useState<WeeklyVolumePoint[]>([]);
+  const [muscleVolume, setMuscleVolume] = useState<MuscleGroupVolumePoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
 
@@ -37,14 +40,17 @@ export function ProgressOverviewScreen() {
       setErrorMessage(undefined);
 
       try {
-        const [nextProgress, nextWeeklyVolume] = await Promise.all([
-          progressClient.list(),
-          progressClient.weeklyVolume(),
-        ]);
+        const [nextProgress, nextWeeklyVolume, nextMuscleVolume] =
+          await Promise.all([
+            progressClient.list(),
+            progressClient.weeklyVolume(),
+            progressClient.muscleDistribution(),
+          ]);
 
         if (shouldUpdate()) {
           setProgress(nextProgress);
           setWeeklyVolume(nextWeeklyVolume);
+          setMuscleVolume(nextMuscleVolume);
         }
       } catch (error) {
         if (shouldUpdate()) {
@@ -99,6 +105,7 @@ export function ProgressOverviewScreen() {
           formatLabel={formatShortDate}
         />
       ) : null}
+      <MuscleDistribution points={muscleVolume} />
       {showLoading ? (
         <View style={styles.card}>
           <Text style={styles.meta}>Loading progress...</Text>

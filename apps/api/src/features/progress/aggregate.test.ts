@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildExerciseProgressDetail,
   buildExerciseProgressSummaries,
+  buildMuscleGroupVolume,
   buildWeeklyVolume,
   type ProgressSessionInput,
 } from './aggregate.js';
@@ -151,6 +152,65 @@ describe('buildWeeklyVolume', () => {
     expect(weekly).toHaveLength(8);
     expect(weekly[0].totalVolume).toBe(3); // index 2 -> weight 3
     expect(weekly[7].totalVolume).toBe(10); // index 9 -> weight 10
+  });
+});
+
+describe('buildMuscleGroupVolume', () => {
+  const byCategory: ProgressSessionInput[] = [
+    {
+      date: '2026-05-01T09:00:00.000Z',
+      exercises: [
+        {
+          exerciseId: 'bench',
+          exerciseName: 'Bench',
+          category: 'Chest',
+          sets: [{ reps: 10, weightKg: 60 }], // 600
+        },
+        {
+          exerciseId: 'squat',
+          exerciseName: 'Squat',
+          category: 'Legs',
+          sets: [{ reps: 5, weightKg: 100 }], // 500
+        },
+      ],
+    },
+    {
+      date: '2026-05-02T09:00:00.000Z',
+      exercises: [
+        {
+          exerciseId: 'pushup',
+          exerciseName: 'Push Up',
+          category: 'Chest',
+          sets: [{ reps: 20, weightKg: 20 }], // 400 -> Chest total 1000
+        },
+        {
+          exerciseId: 'mystery',
+          exerciseName: 'Mystery',
+          sets: [{ reps: 10, weightKg: 10 }], // 100 -> Other
+        },
+      ],
+    },
+  ];
+
+  it('sums volume per category, highest first, with an Other bucket', () => {
+    expect(buildMuscleGroupVolume(byCategory)).toEqual([
+      { group: 'Chest', totalVolume: 1000 },
+      { group: 'Legs', totalVolume: 500 },
+      { group: 'Other', totalVolume: 100 },
+    ]);
+  });
+
+  it('drops groups with zero volume', () => {
+    const result = buildMuscleGroupVolume([
+      {
+        date: '2026-05-01T09:00:00.000Z',
+        exercises: [
+          { exerciseId: 'a', exerciseName: 'A', category: 'Abs', sets: [{ reps: 20 }] },
+        ],
+      },
+    ]);
+
+    expect(result).toEqual([]);
   });
 });
 

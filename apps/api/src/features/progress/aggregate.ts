@@ -2,6 +2,7 @@ import type {
   ExerciseProgressDetail,
   ExerciseProgressPoint,
   ExerciseProgressSummary,
+  MuscleGroupVolumePoint,
   WeeklyVolumePoint,
 } from '@workout/domain';
 
@@ -14,6 +15,7 @@ export type ProgressSessionInput = {
   exercises: Array<{
     exerciseId: string;
     exerciseName: string;
+    category?: string | null;
     sets: Array<{ reps?: number | null; weightKg?: number | null }>;
   }>;
 };
@@ -186,4 +188,33 @@ export function buildWeeklyVolume(
     }))
     .sort((left, right) => left.weekStart.localeCompare(right.weekStart))
     .slice(-weeks);
+}
+
+/**
+ * Sums training volume by exercise category (the muscle-group proxy in the
+ * catalog), highest first. Exercises with no category fall under "Other";
+ * groups with zero volume are dropped.
+ */
+export function buildMuscleGroupVolume(
+  sessions: ProgressSessionInput[],
+): MuscleGroupVolumePoint[] {
+  const byGroup = new Map<string, number>();
+
+  for (const session of sessions) {
+    for (const exercise of session.exercises) {
+      const group = exercise.category?.trim() || 'Other';
+      const volume = exercise.sets.reduce(
+        (sum, set) => sum + (set.reps ?? 0) * (set.weightKg ?? 0),
+        0,
+      );
+
+      if (volume > 0) {
+        byGroup.set(group, (byGroup.get(group) ?? 0) + volume);
+      }
+    }
+  }
+
+  return [...byGroup.entries()]
+    .map(([group, totalVolume]) => ({ group, totalVolume: Math.round(totalVolume) }))
+    .sort((left, right) => right.totalVolume - left.totalVolume);
 }
