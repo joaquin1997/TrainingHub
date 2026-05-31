@@ -6,7 +6,7 @@ import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
-import { colors, commonStyles, spacing } from '@/ui/theme';
+import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type { RoutineExerciseSet, Routine } from '@workout/domain';
 
 function formatSetTarget(set: RoutineExerciseSet) {
@@ -124,6 +124,7 @@ export function RoutineDetailScreen() {
             exerciseId: exercise.exerciseId,
             orderIndex: exercise.orderIndex,
             restSeconds: exercise.restSeconds,
+            supersetGroup: exercise.supersetGroup,
             sets: exercise.sets
               .slice()
               .sort((left, right) => left.setNumber - right.setNumber)
@@ -207,6 +208,11 @@ export function RoutineDetailScreen() {
                 </Text>
                 {exercise.restSeconds !== undefined ? (
                   <Text style={styles.meta}>Rest: {exercise.restSeconds}s</Text>
+                ) : null}
+                {exercise.supersetGroup !== undefined ? (
+                  <Text style={styles.supersetBadge}>
+                    Superset {exercise.supersetGroup}
+                  </Text>
                 ) : null}
                 {exercise.sets.length === 0 ? (
                   <Text style={styles.meta}>No target sets</Text>
@@ -333,6 +339,17 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 14,
     lineHeight: 20,
+  },
+  supersetBadge: {
+    alignSelf: 'flex-start',
+    color: colors.accent,
+    backgroundColor: colors.accentSoft,
+    fontSize: 12,
+    fontWeight: '800',
+    borderRadius: radii.sm,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    overflow: 'hidden',
   },
   links: {
     flexDirection: 'row',

@@ -94,6 +94,7 @@ function parseRoutineExerciseInput(
     exerciseId: value.exerciseId.trim(),
     orderIndex,
     restSeconds: parseOptionalInteger(value.restSeconds),
+    supersetGroup: parseOptionalInteger(value.supersetGroup),
     sets,
   };
 }
@@ -149,6 +150,7 @@ async function hydrateRoutineWriteInput(
           exerciseName: existingExercise.name,
           orderIndex: exercise.orderIndex,
           restSeconds: exercise.restSeconds,
+          supersetGroup: exercise.supersetGroup,
           sets: exercise.sets,
         };
       },

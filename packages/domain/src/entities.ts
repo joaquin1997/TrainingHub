@@ -74,6 +74,8 @@ export interface RoutineExercise {
   orderIndex: number;
   /** Target rest between sets, in seconds (optional). */
   restSeconds?: number;
+  /** Exercises sharing a superset group number are performed together. */
+  supersetGroup?: number;
   sets: RoutineExerciseSet[];
   createdAt: ISODateString;
   updatedAt: ISODateString;
@@ -112,6 +114,7 @@ export interface RoutineExerciseInput {
   exerciseId: EntityId;
   orderIndex: number;
   restSeconds?: number;
+  supersetGroup?: number;
   sets: RoutineSetInput[];
 }
 

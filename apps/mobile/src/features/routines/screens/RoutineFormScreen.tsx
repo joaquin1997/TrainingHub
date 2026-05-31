@@ -47,6 +47,7 @@ type EditableRoutineExercise = {
   exerciseId?: string;
   exerciseQuery: string;
   restSeconds: string;
+  supersetGroup: string;
   sets: EditableRoutineSet[];
 };
 
@@ -74,6 +75,7 @@ function createEmptyExerciseRow(): EditableRoutineExercise {
     exerciseId: undefined,
     exerciseQuery: '',
     restSeconds: '',
+    supersetGroup: '',
     sets: [createEmptySetRow()],
   };
 }
@@ -98,6 +100,10 @@ function toEditableExercise(
     restSeconds:
       routineExercise.restSeconds !== undefined
         ? String(routineExercise.restSeconds)
+        : '',
+    supersetGroup:
+      routineExercise.supersetGroup !== undefined
+        ? String(routineExercise.supersetGroup)
         : '',
     sets:
       routineExercise.sets.length > 0
@@ -351,6 +357,16 @@ export function RoutineFormScreen({
     );
   }
 
+  function updateExerciseSuperset(exerciseId: string, value: string) {
+    setExercises((currentExercises) =>
+      currentExercises.map((exercise) =>
+        exercise.id === exerciseId
+          ? { ...exercise, supersetGroup: value }
+          : exercise,
+      ),
+    );
+  }
+
   function addExerciseRow() {
     setExercises((currentExercises) => [
       ...currentExercises,
@@ -437,6 +453,13 @@ export function RoutineFormScreen({
           return;
         }
 
+        const supersetGroup = parseOptionalInteger(exercise.supersetGroup);
+
+        if (supersetGroup === null) {
+          setErrorMessage('Superset group must be a whole number.');
+          return;
+        }
+
         const sets: RoutineExerciseInput['sets'] = [];
 
         for (const [setIndex] of exercise.sets.entries()) {
@@ -472,6 +495,7 @@ export function RoutineFormScreen({
           exerciseId: exercise.exerciseId,
           orderIndex: exerciseIndex + 1,
           restSeconds,
+          supersetGroup,
           sets,
         });
       }
@@ -720,18 +744,33 @@ export function RoutineFormScreen({
                     );
                   })()
                 ) : null}
-                <View style={styles.restRow}>
-                  <Text style={styles.meta}>Rest between sets (sec)</Text>
-                  <TextInput
-                    value={exercise.restSeconds}
-                    onChangeText={(value) =>
-                      updateExerciseRest(exercise.id, value)
-                    }
-                    placeholder="e.g. 90"
-                    placeholderTextColor={colors.textSubtle}
-                    keyboardType="number-pad"
-                    style={[styles.input, styles.restInput]}
-                  />
+                <View style={styles.metaInputsRow}>
+                  <View style={styles.restRow}>
+                    <Text style={styles.meta}>Rest between sets (sec)</Text>
+                    <TextInput
+                      value={exercise.restSeconds}
+                      onChangeText={(value) =>
+                        updateExerciseRest(exercise.id, value)
+                      }
+                      placeholder="e.g. 90"
+                      placeholderTextColor={colors.textSubtle}
+                      keyboardType="number-pad"
+                      style={[styles.input, styles.restInput]}
+                    />
+                  </View>
+                  <View style={styles.restRow}>
+                    <Text style={styles.meta}>Superset group</Text>
+                    <TextInput
+                      value={exercise.supersetGroup}
+                      onChangeText={(value) =>
+                        updateExerciseSuperset(exercise.id, value)
+                      }
+                      placeholder="e.g. 1"
+                      placeholderTextColor={colors.textSubtle}
+                      keyboardType="number-pad"
+                      style={[styles.input, styles.restInput]}
+                    />
+                  </View>
                 </View>
                 <View style={styles.setList}>
                   {exercise.sets.map((set, setIndex) => (
@@ -943,12 +982,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
   },
+  metaInputsRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
   restRow: {
+    flex: 1,
     gap: spacing.xs,
   },
   restInput: {
-    alignSelf: 'flex-start',
-    minWidth: 100,
+    alignSelf: 'stretch',
   },
   setList: {
     gap: spacing.sm,

@@ -3,7 +3,7 @@
 ## Checklist
 - [x] Reorder exercises in the routine builder (up/down, later drag&drop)
 - [x] Inherit previous set values as ghosted placeholders in the builder
-- [ ] Supersets (group exercises)
+- [x] Supersets (group exercises by number; badge in detail + active workout)
 - [x] Duplicate routine
 - [x] Folders / organization (folder label + grouped list)
 - [x] Per-exercise rest time config

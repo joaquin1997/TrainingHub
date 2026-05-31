@@ -466,7 +466,14 @@ export function ActiveWorkoutScreen() {
       {workoutDraft.exercises.map((exercise) => (
         <View key={exercise.id} style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
+            <View style={styles.cardTitleGroup}>
+              <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
+              {exercise.supersetGroup !== undefined ? (
+                <Text style={styles.supersetBadge}>
+                  Superset {exercise.supersetGroup}
+                </Text>
+              ) : null}
+            </View>
             <View style={styles.reorderRow}>
               <Pressable
                 onPress={() => handleMoveExercise(exercise.id, 'up')}
@@ -663,11 +670,26 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  cardTitleGroup: {
+    flexShrink: 1,
+    gap: 4,
+  },
   cardTitle: {
     color: colors.text,
     fontSize: 20,
     fontWeight: '800',
     flexShrink: 1,
+  },
+  supersetBadge: {
+    alignSelf: 'flex-start',
+    color: colors.accent,
+    backgroundColor: colors.accentSoft,
+    fontSize: 12,
+    fontWeight: '800',
+    borderRadius: radii.sm,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    overflow: 'hidden',
   },
   reorderRow: {
     flexDirection: 'row',
