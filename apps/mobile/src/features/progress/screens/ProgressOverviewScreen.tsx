@@ -9,11 +9,13 @@ import {
   View,
 } from 'react-native';
 
+import { FrequencySummary } from '@/features/progress/components/FrequencySummary';
 import { MuscleDistribution } from '@/features/progress/components/MuscleDistribution';
 import { ProgressChart } from '@/features/progress/components/ProgressChart';
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { progressClient } from '@/features/progress/api/progressClient';
 import { buildWeeklyVolumeSeries } from '@/features/progress/utils/chartData';
+import { summarizeTrainingFrequency } from '@/features/progress/utils/trainingFrequency';
 import { formatShortDate } from '@/lib/format';
 import { useRefresh } from '@/lib/useRefresh';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
@@ -81,6 +83,7 @@ export function ProgressOverviewScreen() {
 
   const { isRefreshing, onRefresh } = useRefresh(loadProgress);
   const weeklyVolumeSeries = buildWeeklyVolumeSeries(weeklyVolume);
+  const frequency = summarizeTrainingFrequency(weeklyVolume);
   const showLoading = isLoading && progress.length === 0;
   const hasEmptyState = !isLoading && !errorMessage && progress.length === 0;
   const hasListState = !errorMessage && progress.length > 0;
@@ -97,6 +100,7 @@ export function ProgressOverviewScreen() {
       <Text style={styles.body}>
         Review your strongest recent lifts and see which exercises are moving.
       </Text>
+      <FrequencySummary summary={frequency} />
       {weeklyVolumeSeries.bars.length > 0 ? (
         <ProgressChart
           title="Weekly volume"
