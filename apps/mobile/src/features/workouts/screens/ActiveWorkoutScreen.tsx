@@ -222,6 +222,13 @@ export function ActiveWorkoutScreen() {
   }
 
   const finishWorkout = async () => {
+    if (countWorkoutSets(workoutDraft).done === 0) {
+      setFinishError(
+        'Mark at least one set as done before finishing the workout.',
+      );
+      return;
+    }
+
     try {
       setIsFinishing(true);
       setFinishError(null);
