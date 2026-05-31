@@ -224,55 +224,61 @@ export function RoutineDetailScreen() {
             ))}
         </View>
       )}
-      <View style={styles.links}>
-        {activeWorkout && activeWorkout.routineId === routine.id ? (
-          <Link
-            href={{
+      <View style={styles.actions}>
+        <Pressable
+          onPress={() =>
+            router.push({
               pathname: '/workouts/active',
-              params: { routineId: routine.id },
-            }}
-            style={styles.link}
-          >
-            Continue workout
-          </Link>
-        ) : activeWorkout ? (
-          <Link
-            href={{
-              pathname: '/workouts/active',
-              params: { routineId: activeWorkout.routineId },
-            }}
-            style={styles.link}
-          >
-            Resume active workout
-          </Link>
-        ) : (
-          <Link
-            href={{
-              pathname: '/workouts/active',
-              params: { routineId: routine.id },
-            }}
-            style={styles.link}
-          >
-            Start workout
-          </Link>
-        )}
+              params: {
+                routineId:
+                  activeWorkout && activeWorkout.routineId !== routine.id
+                    ? activeWorkout.routineId
+                    : routine.id,
+              },
+            })
+          }
+          style={({ pressed }) => [
+            styles.primaryButton,
+            pressed ? styles.buttonPressed : null,
+          ]}
+        >
+          <Text style={styles.primaryButtonText}>
+            {activeWorkout && activeWorkout.routineId === routine.id
+              ? 'Continue workout'
+              : activeWorkout
+                ? 'Resume active workout'
+                : 'Start workout'}
+          </Text>
+        </Pressable>
         {activeWorkout && activeWorkout.routineId === routine.id ? (
           <Text style={styles.meta}>
             Editing is locked while this workout is in progress
           </Text>
         ) : (
-          <Link href={`/routines/edit/${routine.id}`} style={styles.link}>
-            Edit routine
-          </Link>
+          <View style={styles.actionRow}>
+            <Pressable
+              onPress={() => router.push(`/routines/edit/${routine.id}`)}
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                pressed ? styles.buttonPressed : null,
+              ]}
+            >
+              <Text style={styles.secondaryButtonText}>Edit</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => void handleDuplicate()}
+              disabled={isDuplicating}
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                pressed ? styles.buttonPressed : null,
+              ]}
+            >
+              <Text style={styles.secondaryButtonText}>
+                {isDuplicating ? 'Duplicating...' : 'Duplicate'}
+              </Text>
+            </Pressable>
+          </View>
         )}
-        <Link href="/routines" style={styles.link}>
-          Back to routines
-        </Link>
-        <Pressable onPress={() => void handleDuplicate()} disabled={isDuplicating}>
-          <Text style={styles.link}>
-            {isDuplicating ? 'Duplicating...' : 'Duplicate'}
-          </Text>
-        </Pressable>
       </View>
       <Pressable
         accessibilityRole="button"
@@ -344,22 +350,32 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     overflow: 'hidden',
   },
-  links: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.lg,
-  },
   link: {
     ...commonStyles.link,
   },
+  actions: {
+    gap: spacing.md,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  primaryButton: {
+    ...commonStyles.primaryButton,
+    alignSelf: 'stretch',
+  },
+  primaryButtonText: {
+    ...commonStyles.primaryButtonText,
+  },
   deleteButton: {
     ...commonStyles.secondaryButton,
-    alignSelf: 'flex-start',
+    alignSelf: 'stretch',
     borderColor: colors.danger,
     backgroundColor: colors.dangerSoft,
   },
   secondaryButton: {
     ...commonStyles.secondaryButton,
+    flex: 1,
   },
   secondaryButtonText: {
     ...commonStyles.secondaryButtonText,
