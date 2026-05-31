@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  */
 export function useRestTimer(onComplete?: () => void) {
   const [remaining, setRemaining] = useState(0);
+  const [total, setTotal] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const endRef = useRef<number | null>(null);
   const completeRef = useRef(onComplete);
@@ -38,6 +39,7 @@ export function useRestTimer(onComplete?: () => void) {
   const start = useCallback((seconds: number) => {
     endRef.current = Date.now() + seconds * 1000;
     setRemaining(seconds);
+    setTotal(seconds);
     setIsRunning(true);
   }, []);
 
@@ -45,6 +47,7 @@ export function useRestTimer(onComplete?: () => void) {
     setIsRunning(false);
     endRef.current = null;
     setRemaining(0);
+    setTotal(0);
   }, []);
 
   /** Add or subtract seconds from a running countdown (never below 0). */
@@ -54,8 +57,11 @@ export function useRestTimer(onComplete?: () => void) {
     }
 
     endRef.current = Math.max(Date.now(), endRef.current + deltaSeconds * 1000);
-    setRemaining(Math.max(0, Math.round((endRef.current - Date.now()) / 1000)));
+    const left = Math.max(0, Math.round((endRef.current - Date.now()) / 1000));
+    setRemaining(left);
+    // Keep the bar proportional: total grows with extra time, never below remaining.
+    setTotal((current) => Math.max(left, current + deltaSeconds));
   }, []);
 
-  return { remaining, isRunning, start, skip, adjust };
+  return { remaining, total, isRunning, start, skip, adjust };
 }

@@ -424,28 +424,44 @@ export function ActiveWorkoutScreen() {
       />
       <View style={styles.restBar}>
         {restTimer.isRunning ? (
-          <View style={styles.restRow}>
-            <Text style={styles.restTime}>
-              {formatDuration(restTimer.remaining)}
-            </Text>
-            <View style={styles.restControls}>
-              <Pressable
-                onPress={() => restTimer.adjust(-15)}
-                hitSlop={6}
-                style={styles.stepButton}
-              >
-                <Text style={styles.stepText}>−15</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => restTimer.adjust(15)}
-                hitSlop={6}
-                style={styles.stepButton}
-              >
-                <Text style={styles.stepText}>+15</Text>
-              </Pressable>
-              <Pressable onPress={restTimer.skip} hitSlop={8}>
-                <Text style={styles.addSetText}>Skip</Text>
-              </Pressable>
+          <View style={styles.restColumn}>
+            <View style={styles.restRow}>
+              <Text style={styles.restTime}>
+                {formatDuration(restTimer.remaining)}
+              </Text>
+              <View style={styles.restControls}>
+                <Pressable
+                  onPress={() => restTimer.adjust(-15)}
+                  hitSlop={6}
+                  style={styles.stepButton}
+                >
+                  <Text style={styles.stepText}>−15</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => restTimer.adjust(15)}
+                  hitSlop={6}
+                  style={styles.stepButton}
+                >
+                  <Text style={styles.stepText}>+15</Text>
+                </Pressable>
+                <Pressable onPress={restTimer.skip} hitSlop={8}>
+                  <Text style={styles.addSetText}>Skip</Text>
+                </Pressable>
+              </View>
+            </View>
+            <View style={styles.progressTrack}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${
+                      restTimer.total > 0
+                        ? (restTimer.remaining / restTimer.total) * 100
+                        : 0
+                    }%`,
+                  },
+                ]}
+              />
             </View>
           </View>
         ) : (
@@ -871,6 +887,17 @@ const styles = StyleSheet.create({
   },
   restColumn: {
     gap: spacing.sm,
+  },
+  progressTrack: {
+    height: 6,
+    borderRadius: radii.sm,
+    backgroundColor: colors.surfaceMuted,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: radii.sm,
+    backgroundColor: colors.primary,
   },
   restRow: {
     flexDirection: 'row',
