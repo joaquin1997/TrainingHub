@@ -19,6 +19,19 @@ export interface User {
 /**
  * Represents an exercise definition that can be system-provided now and user-defined later.
  */
+export type WeightUnit = 'kg' | 'lb';
+
+/** Per-user client preferences. */
+export interface UserSettings {
+  unit: WeightUnit;
+  defaultRestSeconds: number;
+}
+
+export interface UpdateUserSettingsInput {
+  unit?: WeightUnit;
+  defaultRestSeconds?: number;
+}
+
 export interface Exercise {
   id: EntityId;
   name: string;
