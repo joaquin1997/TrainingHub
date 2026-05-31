@@ -26,6 +26,8 @@ export type WorkoutSetDraft = {
   repsPlaceholder?: string;
   weightPlaceholder?: string;
   done: boolean;
+  /** Rest configured when this set was marked done, in seconds. */
+  restSeconds?: number;
   type: WorkoutSetType;
   minReps?: number;
   maxReps?: number;
@@ -390,6 +392,7 @@ export function toggleWorkoutSetDone(
   workoutDraft: WorkoutSessionDraft,
   workoutExerciseId: string,
   workoutSetId: string,
+  restSeconds?: number,
 ): WorkoutSessionDraft {
   return {
     ...workoutDraft,
@@ -400,9 +403,15 @@ export function toggleWorkoutSetDone(
 
       return {
         ...exercise,
-        entries: exercise.entries.map((set) =>
-          set.id === workoutSetId ? { ...set, done: !set.done } : set,
-        ),
+        entries: exercise.entries.map((set) => {
+          if (set.id !== workoutSetId) {
+            return set;
+          }
+
+          const done = !set.done;
+          // Record the rest used when marking done; clear it when un-marking.
+          return { ...set, done, restSeconds: done ? restSeconds : undefined };
+        }),
       };
     }),
   };
@@ -445,6 +454,7 @@ export function toCreateWorkoutSessionInput(
         weightKg:
           Number(effectiveSetValue(set.weightKg, set.weightPlaceholder)) ||
           undefined,
+        restSeconds: set.done ? set.restSeconds : undefined,
         completedAt: set.done ? completedAt : undefined,
       })),
     })),
@@ -525,6 +535,7 @@ export function toWorkoutSessionSkeleton(
         weightKg:
           Number(effectiveSetValue(set.weightKg, set.weightPlaceholder)) ||
           undefined,
+        restSeconds: set.restSeconds,
         completedAt,
         createdAt: completedAt,
         updatedAt: completedAt,

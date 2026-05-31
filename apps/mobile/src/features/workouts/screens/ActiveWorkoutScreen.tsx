@@ -282,18 +282,21 @@ export function ActiveWorkoutScreen() {
       (set) => set.id === workoutSetId,
     )?.done;
 
+    // Prefer the routine's per-exercise rest, falling back to the picker value.
+    const rest = exercise?.restSeconds ?? restDuration;
+
     const nextDraft = toggleWorkoutSetDone(
       workoutDraft,
       workoutExerciseId,
       workoutSetId,
+      becomingDone ? rest : undefined,
     );
 
     setWorkoutDraft(nextDraft);
     setActiveWorkout(nextDraft);
 
     if (becomingDone) {
-      // Prefer the routine's per-exercise rest, falling back to the picker value.
-      restTimer.start(exercise?.restSeconds ?? restDuration);
+      restTimer.start(rest);
     }
   };
 

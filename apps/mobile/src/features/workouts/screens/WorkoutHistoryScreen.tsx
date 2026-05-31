@@ -26,6 +26,21 @@ function countSets(session: WorkoutSession) {
   );
 }
 
+function sessionVolume(session: WorkoutSession) {
+  return Math.round(
+    session.exercises.reduce(
+      (total, exercise) =>
+        total +
+        exercise.sets.reduce(
+          (sum, set) =>
+            sum + (set.completedAt ? (set.reps ?? 0) * (set.weightKg ?? 0) : 0),
+          0,
+        ),
+      0,
+    ),
+  );
+}
+
 export function WorkoutHistoryScreen() {
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -115,10 +130,12 @@ export function WorkoutHistoryScreen() {
                   {formatDate(session.completedAt ?? session.startedAt)}
                 </Text>
                 <Text style={styles.cardMeta}>
-                  {session.status} - {session.exercises.length} exercises -{' '}
-                  {countSets(session)} sets
+                  {session.exercises.length} exercises · {countSets(session)} sets
+                  {sessionVolume(session) > 0
+                    ? ` · ${sessionVolume(session)} kg`
+                    : ''}
                   {session.completedAt
-                    ? ` - ${formatDuration(
+                    ? ` · ${formatDuration(
                         durationSecondsBetween(
                           session.startedAt,
                           session.completedAt,

@@ -181,6 +181,8 @@ export interface WorkoutSet {
   weightKg?: number;
   durationSeconds?: number;
   distanceMeters?: number;
+  /** Rest configured for this set when it was completed, in seconds. */
+  restSeconds?: number;
   isWarmup?: boolean;
   completedAt?: ISODateString;
   createdAt: ISODateString;
@@ -197,6 +199,7 @@ export interface WorkoutSetInput {
   weightKg?: number;
   durationSeconds?: number;
   distanceMeters?: number;
+  restSeconds?: number;
   isWarmup?: boolean;
   completedAt?: ISODateString;
 }

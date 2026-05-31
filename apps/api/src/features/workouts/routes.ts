@@ -59,6 +59,7 @@ function parseWorkoutSetInput(
     weightKg: parseOptionalNumber(value.weightKg),
     durationSeconds: parseOptionalInteger(value.durationSeconds),
     distanceMeters: parseOptionalNumber(value.distanceMeters),
+    restSeconds: parseOptionalInteger(value.restSeconds),
     isWarmup: typeof value.isWarmup === 'boolean' ? value.isWarmup : undefined,
     completedAt: parseOptionalString(value.completedAt),
   };
