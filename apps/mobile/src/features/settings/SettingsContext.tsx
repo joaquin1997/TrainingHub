@@ -7,6 +7,7 @@ import {
   useState,
 } from 'react';
 
+import { useAuth } from '@/features/auth/AuthContext';
 import { settingsClient } from '@/features/settings/api/settingsClient';
 import type { UpdateUserSettingsInput, UserSettings } from '@workout/domain';
 
@@ -25,11 +26,20 @@ const SettingsContext = createContext<SettingsContextValue>({
 });
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
+  const { isAuthenticated } = useAuth();
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
   const [isLoading, setIsLoading] = useState(true);
 
+  // (Re)load settings for the current user whenever auth state changes.
   useEffect(() => {
+    if (!isAuthenticated) {
+      setSettings(DEFAULT_SETTINGS);
+      setIsLoading(false);
+      return;
+    }
+
     let active = true;
+    setIsLoading(true);
     settingsClient
       .get()
       .then((next) => {
@@ -49,7 +59,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [isAuthenticated]);
 
   const update = useCallback(async (input: UpdateUserSettingsInput) => {
     // Optimistic; revert by reloading on failure.

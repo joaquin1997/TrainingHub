@@ -1,7 +1,9 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { useAuth } from '@/features/auth/AuthContext';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { formatDuration } from '@/lib/format';
+import { Button } from '@/ui/Button';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type { WeightUnit } from '@workout/domain';
 
@@ -9,6 +11,7 @@ const UNITS: WeightUnit[] = ['kg', 'lb'];
 
 export function SettingsScreen() {
   const { settings, update } = useSettings();
+  const { user, signOut } = useAuth();
 
   const changeRest = (delta: number) =>
     update({
@@ -67,6 +70,17 @@ export function SettingsScreen() {
         <Text style={styles.hint}>
           Pre-fills the rest timer when you start a workout.
         </Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Account</Text>
+        {user?.email ? <Text style={styles.hint}>{user.email}</Text> : null}
+        <Button
+          label="Log out"
+          variant="danger"
+          onPress={() => void signOut()}
+          fullWidth
+        />
       </View>
     </ScrollView>
   );
