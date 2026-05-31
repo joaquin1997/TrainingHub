@@ -1,11 +1,14 @@
 import type { FastifyInstance } from 'fastify';
 
 import {
+  addFavoriteExercise,
   createExercise,
   findExerciseById,
   InvalidMuscleGroupSelectionError,
   listExercises,
+  listFavoriteExerciseIds,
   listMuscleGroups,
+  removeFavoriteExercise,
 } from './repository.js';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -45,6 +48,31 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
   app.get('/muscle-groups', async () => {
     return listMuscleGroups();
   });
+
+  app.get('/exercises/favorites', async () => {
+    return listFavoriteExerciseIds();
+  });
+
+  app.put<{ Params: { id: string } }>(
+    '/exercises/:id/favorite',
+    async (request, reply) => {
+      const ok = await addFavoriteExercise(request.params.id);
+
+      if (!ok) {
+        return reply.code(404).send({ message: 'Exercise not found' });
+      }
+
+      return reply.code(204).send();
+    },
+  );
+
+  app.delete<{ Params: { id: string } }>(
+    '/exercises/:id/favorite',
+    async (request, reply) => {
+      await removeFavoriteExercise(request.params.id);
+      return reply.code(204).send();
+    },
+  );
 
   app.post<{ Body: unknown }>('/exercises', async (request, reply) => {
     const input = parseCreateExerciseInput(request.body);

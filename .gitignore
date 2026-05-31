@@ -4,6 +4,10 @@ dist
 .expo-shared
 .DS_Store
 
+# Expo continuous native generation output (regenerated via `expo prebuild`)
+/apps/mobile/ios
+/apps/mobile/android
+
 # Local env files (never commit secrets)
 .env
 .env.local

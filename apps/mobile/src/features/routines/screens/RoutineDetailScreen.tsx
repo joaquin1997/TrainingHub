@@ -6,6 +6,7 @@ import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
+import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type { RoutineExerciseSet, Routine } from '@workout/domain';
 
 function formatSetTarget(set: RoutineExerciseSet) {
@@ -16,8 +17,8 @@ function formatSetTarget(set: RoutineExerciseSet) {
         ? `${set.minReps}+ reps`
         : set.maxReps !== undefined
           ? `up to ${set.maxReps} reps`
-          : '— reps';
-  const weight = set.targetWeight !== undefined ? ` · ${set.targetWeight} kg` : '';
+          : '- reps';
+  const weight = set.targetWeight !== undefined ? ` - ${set.targetWeight} kg` : '';
 
   return `${reps}${weight}`;
 }
@@ -115,12 +116,15 @@ export function RoutineDetailScreen() {
       const created = await routinesClient.create({
         name: `${routine.name} (copy)`,
         description: routine.description,
+        folder: routine.folder,
         exercises: routine.exercises
           .slice()
           .sort((left, right) => left.orderIndex - right.orderIndex)
           .map((exercise) => ({
             exerciseId: exercise.exerciseId,
             orderIndex: exercise.orderIndex,
+            restSeconds: exercise.restSeconds,
+            supersetGroup: exercise.supersetGroup,
             sets: exercise.sets
               .slice()
               .sort((left, right) => left.setNumber - right.setNumber)
@@ -187,7 +191,6 @@ export function RoutineDetailScreen() {
         <Text style={styles.description}>{routine.description}</Text>
       ) : null}
       {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
-      <Text style={styles.meta}>Routine ID: {routine.id}</Text>
       <Text style={styles.meta}>
         Exercise summary: {getRoutineExerciseSummary(routine, 3)}
       </Text>
@@ -203,6 +206,14 @@ export function RoutineDetailScreen() {
                 <Text style={styles.exerciseTitle}>
                   {exercise.orderIndex}. {exercise.exerciseName}
                 </Text>
+                {exercise.restSeconds !== undefined ? (
+                  <Text style={styles.meta}>Rest: {exercise.restSeconds}s</Text>
+                ) : null}
+                {exercise.supersetGroup !== undefined ? (
+                  <Text style={styles.supersetBadge}>
+                    Superset {exercise.supersetGroup}
+                  </Text>
+                ) : null}
                 {exercise.sets.length === 0 ? (
                   <Text style={styles.meta}>No target sets</Text>
                 ) : (
@@ -273,11 +284,11 @@ export function RoutineDetailScreen() {
         accessibilityRole="button"
         onPress={() => void handleDelete()}
         disabled={isDeleting}
-        style={({ pressed }) => [
-          styles.deleteButton,
-          pressed ? styles.deleteButtonPressed : null,
-          isDeleting ? styles.buttonDisabled : null,
-        ]}
+            style={({ pressed }) => [
+              styles.deleteButton,
+              pressed ? styles.buttonPressed : null,
+              isDeleting ? styles.buttonDisabled : null,
+            ]}
       >
         <Text style={styles.deleteButtonText}>
           {isDeleting ? 'Deleting...' : 'Delete routine'}
@@ -290,91 +301,85 @@ export function RoutineDetailScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    flex: 1,
+    ...commonStyles.screen,
   },
   container: {
-    flexGrow: 1,
-    padding: 24,
-    gap: 12,
+    ...commonStyles.scrollContent,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '600',
+    ...commonStyles.title,
   },
   body: {
+    color: colors.text,
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: '800',
   },
   description: {
-    fontSize: 16,
-    lineHeight: 22,
+    ...commonStyles.body,
   },
   meta: {
-    fontSize: 14,
-    color: '#4b5563',
+    ...commonStyles.meta,
   },
   error: {
-    fontSize: 14,
-    color: '#b91c1c',
+    ...commonStyles.error,
   },
   exerciseList: {
-    gap: 12,
+    gap: spacing.md,
   },
   exerciseCard: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    padding: 16,
-    gap: 6,
+    ...commonStyles.card,
+    gap: spacing.sm,
   },
   exerciseTitle: {
+    color: colors.text,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   exerciseItem: {
+    color: colors.textMuted,
     fontSize: 14,
     lineHeight: 20,
   },
+  supersetBadge: {
+    alignSelf: 'flex-start',
+    color: colors.accent,
+    backgroundColor: colors.accentSoft,
+    fontSize: 12,
+    fontWeight: '800',
+    borderRadius: radii.sm,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    overflow: 'hidden',
+  },
   links: {
     flexDirection: 'row',
-    gap: 16,
+    flexWrap: 'wrap',
+    gap: spacing.lg,
   },
   link: {
-    fontSize: 15,
-    color: '#2563eb',
+    ...commonStyles.link,
   },
   deleteButton: {
+    ...commonStyles.secondaryButton,
     alignSelf: 'flex-start',
-    borderRadius: 10,
-    backgroundColor: '#b91c1c',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    borderColor: colors.danger,
+    backgroundColor: colors.dangerSoft,
   },
   secondaryButton: {
-    alignSelf: 'flex-start',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  deleteButtonPressed: {
-    opacity: 0.85,
+    ...commonStyles.secondaryButton,
   },
   secondaryButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
+    ...commonStyles.secondaryButtonText,
   },
   deleteButtonText: {
-    color: '#ffffff',
+    color: colors.danger,
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '800',
   },
   buttonDisabled: {
-    opacity: 0.6,
+    ...commonStyles.disabled,
   },
   buttonPressed: {
-    opacity: 0.85,
+    ...commonStyles.pressed,
   },
 });

@@ -1,5 +1,5 @@
 import { Link, useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Pressable,
   RefreshControl,
@@ -12,14 +12,24 @@ import {
 
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
+import {
+  buildExerciseFacets,
+  filterExercises,
+} from '@/features/exercises/utils/exerciseFilters';
 import { useRefresh } from '@/lib/useRefresh';
+import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type { Exercise } from '@workout/domain';
 
-const MAX_VISIBLE = 50;
+const PAGE_SIZE = 50;
 
 export function ExercisesListScreen() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [query, setQuery] = useState('');
+  const [category, setCategory] = useState<string>();
+  const [equipment, setEquipment] = useState<string>();
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
 
@@ -29,7 +39,10 @@ export function ExercisesListScreen() {
       setErrorMessage(undefined);
 
       try {
-        const nextExercises = await exercisesClient.list();
+        const [nextExercises, nextFavorites] = await Promise.all([
+          exercisesClient.list(),
+          exercisesClient.listFavorites().catch(() => [] as string[]),
+        ]);
 
         if (shouldUpdate()) {
           setExercises(
@@ -37,6 +50,7 @@ export function ExercisesListScreen() {
               .slice()
               .sort((left, right) => left.name.localeCompare(right.name)),
           );
+          setFavorites(new Set(nextFavorites));
         }
       } catch (error) {
         if (shouldUpdate()) {
@@ -65,19 +79,58 @@ export function ExercisesListScreen() {
     }, [loadExercises]),
   );
 
+  const facets = useMemo(() => buildExerciseFacets(exercises), [exercises]);
+
   const filtered = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+    const base = filterExercises(exercises, { query, category, equipment });
+    return favoritesOnly
+      ? base.filter((exercise) => favorites.has(exercise.id))
+      : base;
+  }, [exercises, query, category, equipment, favoritesOnly, favorites]);
 
-    if (!normalizedQuery) {
-      return exercises;
-    }
+  // Reset paging whenever the filters narrow/expand the result set.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [query, category, equipment, favoritesOnly]);
 
-    return exercises.filter((exercise) =>
-      exercise.name.toLowerCase().includes(normalizedQuery),
-    );
-  }, [exercises, query]);
+  const toggle = (
+    current: string | undefined,
+    value: string,
+    set: (next: string | undefined) => void,
+  ) => set(current === value ? undefined : value);
 
-  const visible = filtered.slice(0, MAX_VISIBLE);
+  const toggleFavorite = (exerciseId: string) => {
+    const isFavorite = favorites.has(exerciseId);
+
+    // Optimistic update; revert if the request fails.
+    setFavorites((current) => {
+      const next = new Set(current);
+      if (isFavorite) {
+        next.delete(exerciseId);
+      } else {
+        next.add(exerciseId);
+      }
+      return next;
+    });
+
+    const request = isFavorite
+      ? exercisesClient.removeFavorite(exerciseId)
+      : exercisesClient.addFavorite(exerciseId);
+
+    void request.catch(() => {
+      setFavorites((current) => {
+        const next = new Set(current);
+        if (isFavorite) {
+          next.add(exerciseId);
+        } else {
+          next.delete(exerciseId);
+        }
+        return next;
+      });
+    });
+  };
+
+  const visible = filtered.slice(0, visibleCount);
   const hiddenCount = filtered.length - visible.length;
   const { isRefreshing, onRefresh } = useRefresh(loadExercises);
   const showLoading = isLoading && exercises.length === 0;
@@ -95,9 +148,68 @@ export function ExercisesListScreen() {
         value={query}
         onChangeText={setQuery}
         placeholder="Search exercises"
+        placeholderTextColor={colors.textSubtle}
         style={styles.input}
         autoCorrect={false}
       />
+      <Pressable
+        onPress={() => setFavoritesOnly((value) => !value)}
+        style={[styles.chip, favoritesOnly ? styles.chipActive : null, styles.favChip]}
+      >
+        <Text
+          style={[styles.chipText, favoritesOnly ? styles.chipTextActive : null]}
+        >
+          {favoritesOnly ? '★ Favorites' : '☆ Favorites'}
+        </Text>
+      </Pressable>
+      {facets.categories.length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipRow}
+        >
+          {facets.categories.map((value) => (
+            <Pressable
+              key={value}
+              onPress={() => toggle(category, value, setCategory)}
+              style={[styles.chip, category === value ? styles.chipActive : null]}
+            >
+              <Text
+                style={[
+                  styles.chipText,
+                  category === value ? styles.chipTextActive : null,
+                ]}
+              >
+                {value}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : null}
+      {facets.equipment.length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipRow}
+        >
+          {facets.equipment.map((value) => (
+            <Pressable
+              key={value}
+              onPress={() => toggle(equipment, value, setEquipment)}
+              style={[styles.chip, equipment === value ? styles.chipActive : null]}
+            >
+              <Text
+                style={[
+                  styles.chipText,
+                  equipment === value ? styles.chipTextActive : null,
+                ]}
+              >
+                {value}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : null}
       {showLoading ? (
         <Text style={styles.meta}>Loading exercises...</Text>
       ) : null}
@@ -105,37 +217,54 @@ export function ExercisesListScreen() {
       {!isLoading && !errorMessage ? (
         <Text style={styles.meta}>
           {filtered.length} exercises
-          {hiddenCount > 0 ? ` · showing first ${MAX_VISIBLE}` : ''}
+          {hiddenCount > 0 ? ` - showing ${visible.length}` : ''}
         </Text>
       ) : null}
       <View style={styles.list}>
         {visible.map((exercise) => (
-          <Link
-            key={exercise.id}
-            href={`/exercises/${exercise.id}`}
-            asChild
-          >
+          <View key={exercise.id} style={styles.cardRow}>
+            <Link href={`/exercises/${exercise.id}`} asChild>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.card,
+                  styles.cardFlex,
+                  pressed ? styles.cardPressed : null,
+                ]}
+              >
+                <Text style={styles.cardTitle}>{exercise.name}</Text>
+                {exercise.primaryMuscleGroups &&
+                exercise.primaryMuscleGroups.length > 0 ? (
+                  <Text style={styles.meta}>
+                    {exercise.primaryMuscleGroups.join(', ')}
+                  </Text>
+                ) : null}
+              </Pressable>
+            </Link>
             <Pressable
-              style={({ pressed }) => [
-                styles.card,
-                pressed ? styles.cardPressed : null,
-              ]}
+              onPress={() => toggleFavorite(exercise.id)}
+              hitSlop={8}
+              accessibilityRole="button"
+              style={styles.starButton}
             >
-              <Text style={styles.cardTitle}>{exercise.name}</Text>
-              {exercise.primaryMuscleGroups &&
-              exercise.primaryMuscleGroups.length > 0 ? (
-                <Text style={styles.meta}>
-                  {exercise.primaryMuscleGroups.join(', ')}
-                </Text>
-              ) : null}
+              <Text style={styles.star}>
+                {favorites.has(exercise.id) ? '★' : '☆'}
+              </Text>
             </Pressable>
-          </Link>
+          </View>
         ))}
       </View>
       {hiddenCount > 0 ? (
-        <Text style={styles.meta}>
-          Refine your search to see the other {hiddenCount}.
-        </Text>
+        <Pressable
+          onPress={() => setVisibleCount((count) => count + PAGE_SIZE)}
+          style={({ pressed }) => [
+            styles.loadMore,
+            pressed ? styles.cardPressed : null,
+          ]}
+        >
+          <Text style={styles.loadMoreText}>
+            Load more ({hiddenCount} left)
+          </Text>
+        </Pressable>
       ) : null}
       <RouteLinks currentRoute="exercises" />
     </ScrollView>
@@ -144,48 +273,85 @@ export function ExercisesListScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    flex: 1,
+    ...commonStyles.screen,
   },
   container: {
-    flexGrow: 1,
-    padding: 24,
-    gap: 12,
+    ...commonStyles.scrollContent,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '600',
+    ...commonStyles.title,
   },
   input: {
+    ...commonStyles.input,
+  },
+  chipRow: {
+    gap: spacing.sm,
+    paddingVertical: 2,
+  },
+  chip: {
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+  },
+  chipActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
+  },
+  chipText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  chipTextActive: {
+    color: colors.onPrimary,
   },
   list: {
-    gap: 12,
+    gap: spacing.md,
   },
   card: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    padding: 16,
-    gap: 6,
+    ...commonStyles.card,
+  },
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  cardFlex: {
+    flex: 1,
   },
   cardPressed: {
-    opacity: 0.7,
+    ...commonStyles.pressed,
+  },
+  starButton: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  star: {
+    color: colors.primary,
+    fontSize: 24,
+  },
+  favChip: {
+    alignSelf: 'flex-start',
+  },
+  loadMore: {
+    ...commonStyles.secondaryButton,
+    alignSelf: 'center',
+  },
+  loadMoreText: {
+    ...commonStyles.secondaryButtonText,
   },
   cardTitle: {
+    color: colors.text,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   meta: {
-    fontSize: 14,
-    color: '#4b5563',
+    ...commonStyles.meta,
   },
   error: {
-    fontSize: 14,
-    color: '#b91c1c',
+    ...commonStyles.error,
   },
 });

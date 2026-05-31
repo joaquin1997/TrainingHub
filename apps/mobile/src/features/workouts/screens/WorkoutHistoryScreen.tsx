@@ -17,6 +17,7 @@ import {
   formatDuration,
 } from '@/lib/format';
 import { useRefresh } from '@/lib/useRefresh';
+import { colors, commonStyles, spacing } from '@/ui/theme';
 import type { WorkoutSession } from '@workout/domain';
 
 function countSets(session: WorkoutSession) {
@@ -84,7 +85,7 @@ export function WorkoutHistoryScreen() {
     >
       <Text style={styles.title}>Workout History</Text>
       <Text style={styles.body}>
-        Your saved workout sessions, loaded from the backend.
+        Scan previous sessions and open the details behind each lift.
       </Text>
       {showLoading ? (
         <View style={styles.stateCard}>
@@ -116,10 +117,10 @@ export function WorkoutHistoryScreen() {
                   {formatDate(session.completedAt ?? session.startedAt)}
                 </Text>
                 <Text style={styles.cardMeta}>
-                  {session.status} · {session.exercises.length} exercises ·{' '}
+                  {session.status} - {session.exercises.length} exercises -{' '}
                   {countSets(session)} sets
                   {session.completedAt
-                    ? ` · ${formatDuration(
+                    ? ` - ${formatDuration(
                         durationSecondsBetween(
                           session.startedAt,
                           session.completedAt,
@@ -139,55 +140,41 @@ export function WorkoutHistoryScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    flex: 1,
+    ...commonStyles.screen,
   },
   container: {
-    flexGrow: 1,
-    padding: 24,
-    gap: 12,
+    ...commonStyles.scrollContent,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '600',
+    ...commonStyles.title,
   },
   body: {
-    fontSize: 16,
-    lineHeight: 22,
+    ...commonStyles.body,
   },
   list: {
-    gap: 12,
+    gap: spacing.md,
   },
   stateCard: {
-    gap: 8,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    padding: 16,
+    ...commonStyles.card,
   },
   card: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    padding: 16,
-    gap: 8,
+    ...commonStyles.card,
   },
   cardPressed: {
-    opacity: 0.7,
+    ...commonStyles.pressed,
   },
   cardTitle: {
+    color: colors.text,
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   cardMeta: {
-    fontSize: 14,
-    color: '#4b5563',
+    ...commonStyles.meta,
   },
   meta: {
-    fontSize: 14,
-    color: '#4b5563',
+    ...commonStyles.meta,
   },
   error: {
-    fontSize: 14,
-    color: '#b91c1c',
+    ...commonStyles.error,
   },
 });

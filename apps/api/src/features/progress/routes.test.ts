@@ -3,10 +3,17 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('./repository.js', () => ({
   listExerciseProgress: vi.fn(),
   getExerciseProgress: vi.fn(),
+  listWeeklyVolume: vi.fn(),
+  listMuscleGroupVolume: vi.fn(),
 }));
 
 import { createApp } from '../../app.js';
-import { getExerciseProgress, listExerciseProgress } from './repository.js';
+import {
+  getExerciseProgress,
+  listExerciseProgress,
+  listMuscleGroupVolume,
+  listWeeklyVolume,
+} from './repository.js';
 
 const app = createApp({ logger: false });
 
@@ -28,6 +35,40 @@ describe('GET /progress/exercises', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject([{ exerciseId: 'e1', sessionCount: 2 }]);
+  });
+});
+
+describe('GET /progress/weekly-volume', () => {
+  it('returns the weekly volume points from the repository', async () => {
+    vi.mocked(listWeeklyVolume).mockResolvedValue([
+      { weekStart: '2026-05-04', totalVolume: 900, workoutCount: 2 },
+    ] as never);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/progress/weekly-volume',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual([
+      { weekStart: '2026-05-04', totalVolume: 900, workoutCount: 2 },
+    ]);
+  });
+});
+
+describe('GET /progress/muscle-distribution', () => {
+  it('returns the muscle-group volume from the repository', async () => {
+    vi.mocked(listMuscleGroupVolume).mockResolvedValue([
+      { group: 'Chest', totalVolume: 1000 },
+    ] as never);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/progress/muscle-distribution',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual([{ group: 'Chest', totalVolume: 1000 }]);
   });
 });
 

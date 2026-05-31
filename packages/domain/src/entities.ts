@@ -27,6 +27,8 @@ export interface Exercise {
   language?: string;
   source?: string;
   sourceId?: string;
+  /** Illustration/GIF URL from the source catalog, if any. */
+  imageUrl?: string;
   primaryMuscleGroups?: string[];
   secondaryMuscleGroups?: string[];
   equipment?: string[];
@@ -56,6 +58,8 @@ export interface Routine {
   userId: EntityId;
   name: string;
   description?: string;
+  /** Optional folder/grouping label for organizing routines. */
+  folder?: string;
   exercises: RoutineExercise[];
   createdAt: ISODateString;
   updatedAt: ISODateString;
@@ -70,6 +74,10 @@ export interface RoutineExercise {
   exerciseId: EntityId;
   exerciseName: string;
   orderIndex: number;
+  /** Target rest between sets, in seconds (optional). */
+  restSeconds?: number;
+  /** Exercises sharing a superset group number are performed together. */
+  supersetGroup?: number;
   sets: RoutineExerciseSet[];
   createdAt: ISODateString;
   updatedAt: ISODateString;
@@ -107,6 +115,8 @@ export interface RoutineSetInput {
 export interface RoutineExerciseInput {
   exerciseId: EntityId;
   orderIndex: number;
+  restSeconds?: number;
+  supersetGroup?: number;
   sets: RoutineSetInput[];
 }
 
@@ -116,6 +126,7 @@ export interface RoutineExerciseInput {
 export interface CreateRoutineInput {
   name: string;
   description?: string;
+  folder?: string;
   exercises: RoutineExerciseInput[];
 }
 
@@ -247,6 +258,24 @@ export interface ExerciseProgressSummary {
  */
 export interface ExerciseProgressDetail extends ExerciseProgressSummary {
   points: ExerciseProgressPoint[];
+}
+
+/**
+ * Total training volume for one calendar week, across all exercises.
+ */
+export interface WeeklyVolumePoint {
+  /** ISO date (YYYY-MM-DD) of the Monday that starts the week. */
+  weekStart: ISODateString;
+  totalVolume: number;
+  workoutCount: number;
+}
+
+/**
+ * Training volume attributed to one muscle group / exercise category.
+ */
+export interface MuscleGroupVolumePoint {
+  group: string;
+  totalVolume: number;
 }
 
 /**

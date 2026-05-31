@@ -11,11 +11,13 @@ import {
 
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { routinesClient } from '@/features/routines/api/routinesClient';
+import { groupRoutinesByFolder } from '@/features/routines/utils/groupRoutinesByFolder';
 import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
 import { formatDuration } from '@/lib/format';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { useRefresh } from '@/lib/useRefresh';
+import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type { Routine } from '@workout/domain';
 
 export function RoutinesListScreen() {
@@ -67,6 +69,8 @@ export function RoutinesListScreen() {
   const showLoading = isLoading && routines.length === 0;
   const hasEmptyState = !isLoading && !errorMessage && routines.length === 0;
   const hasListState = !errorMessage && routines.length > 0;
+  const folderGroups = groupRoutinesByFolder(routines);
+  const showFolderHeaders = folderGroups.some((group) => group.folder);
 
   return (
     <ScrollView
@@ -76,10 +80,10 @@ export function RoutinesListScreen() {
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
-      <Text style={styles.title}>Routines List</Text>
+      <Text style={styles.title}>Routines</Text>
       <Text style={styles.body}>
-        Routines are loaded from the backend. Template data stays separate from
-        workout execution.
+        Pick a plan, start lifting, or build a new routine from the exercise
+        catalog.
       </Text>
       {activeWorkout ? (
         <Link
@@ -91,16 +95,18 @@ export function RoutinesListScreen() {
         >
           <Pressable style={styles.banner}>
             <Text style={styles.bannerTitle}>
-              Workout in progress · {formatDuration(elapsedSeconds)}
+              Workout in progress - {formatDuration(elapsedSeconds)}
             </Text>
             <Text style={styles.bannerMeta}>
-              {activeWorkout.routineName} · tap to resume
+              {activeWorkout.routineName} - tap to resume
             </Text>
           </Pressable>
         </Link>
       ) : null}
-      <Link href="/routines/create" style={styles.primaryLink}>
-        Create routine
+      <Link href="/routines/create" asChild>
+        <Pressable style={styles.primaryButton}>
+          <Text style={styles.primaryButtonText}>Create routine</Text>
+        </Pressable>
       </Link>
       <View style={styles.links}>
         <Link href="/exercises" style={styles.link}>
@@ -136,30 +142,43 @@ export function RoutinesListScreen() {
       {hasEmptyState ? (
         <View style={styles.stateCard}>
           <Text style={styles.meta}>No routines yet.</Text>
-          <Text style={styles.meta}>
-            Create one to verify the API flow.
-          </Text>
+          <Text style={styles.meta}>Create your first plan to start logging.</Text>
         </View>
       ) : null}
       {hasListState ? (
         <View style={styles.list}>
-          {routines.map((routine) => (
-            <View key={routine.id} style={styles.card}>
-              <Text style={styles.cardTitle}>{routine.name}</Text>
-              {routine.description ? (
-                <Text style={styles.cardBody}>{routine.description}</Text>
+          {folderGroups.map((group) => (
+            <View
+              key={group.folder ?? '__unfiled__'}
+              style={styles.folderGroup}
+            >
+              {showFolderHeaders ? (
+                <Text style={styles.folderTitle}>
+                  {group.folder ?? 'Ungrouped'}
+                </Text>
               ) : null}
-              <Text style={styles.cardMeta}>
-                Exercises: {getRoutineExerciseSummary(routine)}
-              </Text>
-              <View style={styles.links}>
-                <Link href={`/routines/${routine.id}`} style={styles.link}>
-                  Open detail
-                </Link>
-                <Link href={`/routines/edit/${routine.id}`} style={styles.link}>
-                  Edit routine
-                </Link>
-              </View>
+              {group.routines.map((routine) => (
+                <View key={routine.id} style={styles.card}>
+                  <Text style={styles.cardTitle}>{routine.name}</Text>
+                  {routine.description ? (
+                    <Text style={styles.cardBody}>{routine.description}</Text>
+                  ) : null}
+                  <Text style={styles.cardMeta}>
+                    Exercises: {getRoutineExerciseSummary(routine)}
+                  </Text>
+                  <View style={styles.links}>
+                    <Link href={`/routines/${routine.id}`} style={styles.link}>
+                      Open detail
+                    </Link>
+                    <Link
+                      href={`/routines/edit/${routine.id}`}
+                      style={styles.link}
+                    >
+                      Edit routine
+                    </Link>
+                  </View>
+                </View>
+              ))}
             </View>
           ))}
         </View>
@@ -171,99 +190,91 @@ export function RoutinesListScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    flex: 1,
+    ...commonStyles.screen,
   },
   container: {
-    flexGrow: 1,
-    padding: 24,
-    gap: 12,
+    ...commonStyles.scrollContent,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '600',
+    ...commonStyles.title,
   },
   body: {
-    fontSize: 16,
-    lineHeight: 22,
+    ...commonStyles.body,
   },
-  primaryLink: {
-    fontSize: 16,
-    color: '#2563eb',
+  primaryButton: {
+    ...commonStyles.primaryButton,
+  },
+  primaryButtonText: {
+    ...commonStyles.primaryButtonText,
   },
   banner: {
-    borderRadius: 12,
-    backgroundColor: '#111827',
-    padding: 16,
-    gap: 4,
+    borderRadius: radii.md,
+    backgroundColor: colors.primary,
+    padding: spacing.lg,
+    gap: spacing.xs,
   },
   bannerTitle: {
+    color: colors.onPrimary,
     fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontWeight: '800',
   },
   bannerMeta: {
+    color: colors.onPrimary,
     fontSize: 14,
-    color: '#d1d5db',
   },
   list: {
-    gap: 12,
+    gap: spacing.lg,
+  },
+  folderGroup: {
+    gap: spacing.sm,
+  },
+  folderTitle: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   stateCard: {
-    gap: 8,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    padding: 16,
+    ...commonStyles.card,
   },
   card: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    padding: 16,
-    gap: 8,
+    ...commonStyles.card,
   },
   cardTitle: {
+    color: colors.text,
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   cardBody: {
+    color: colors.textMuted,
     fontSize: 14,
     lineHeight: 20,
   },
   cardMeta: {
-    fontSize: 14,
-    color: '#4b5563',
+    ...commonStyles.meta,
   },
   meta: {
-    fontSize: 14,
-    color: '#4b5563',
+    ...commonStyles.meta,
   },
   error: {
-    fontSize: 14,
-    color: '#b91c1c',
+    ...commonStyles.error,
   },
   secondaryButton: {
-    alignSelf: 'flex-start',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    ...commonStyles.secondaryButton,
   },
   secondaryButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
+    ...commonStyles.secondaryButtonText,
   },
   buttonPressed: {
-    opacity: 0.85,
+    ...commonStyles.pressed,
   },
   links: {
     flexDirection: 'row',
-    gap: 16,
+    flexWrap: 'wrap',
+    gap: spacing.lg,
   },
   link: {
-    fontSize: 15,
-    color: '#2563eb',
+    ...commonStyles.link,
   },
 });

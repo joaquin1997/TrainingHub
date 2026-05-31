@@ -3,6 +3,19 @@
     "name": "TrainingHub",
     "slug": "traininghub",
     "scheme": "traininghub",
+    "ios": {
+      "bundleIdentifier": "com.joaquin.traininghub",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true,
+          "NSAllowsLocalNetworking": true
+        }
+      }
+    },
+    "android": {
+      "package": "com.joaquin.traininghub"
+    },
     "plugins": [
       "expo-router"
     ]

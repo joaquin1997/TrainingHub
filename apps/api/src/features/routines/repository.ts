@@ -40,6 +40,7 @@ function mapRoutine(record: RoutineRecord): Routine {
     userId: DEVELOPMENT_USER_PUBLIC_ID,
     name: record.name,
     description: record.description ?? undefined,
+    folder: record.folder ?? undefined,
     exercises: record.exercises
       .slice()
       .sort((left, right) => left.orderIndex - right.orderIndex)
@@ -49,6 +50,8 @@ function mapRoutine(record: RoutineRecord): Routine {
         exerciseId: exercise.exercise.publicId,
         exerciseName: exercise.exerciseName,
         orderIndex: exercise.orderIndex,
+        restSeconds: exercise.restSeconds ?? undefined,
+        supersetGroup: exercise.supersetGroup ?? undefined,
         sets: exercise.sets
           .slice()
           .sort((left, right) => left.setNumber - right.setNumber)
@@ -81,6 +84,8 @@ function toRoutineExerciseCreateInput(
     },
     exerciseName: exercise.exerciseName,
     orderIndex: exercise.orderIndex,
+    restSeconds: exercise.restSeconds,
+    supersetGroup: exercise.supersetGroup,
     sets: {
       create: exercise.sets.map((set) => ({
         setNumber: set.setNumber,
@@ -175,6 +180,7 @@ export async function createRoutine(input: RoutineWriteInput) {
       },
       name: input.name,
       description: input.description,
+      folder: input.folder,
       exercises: {
         create: input.exercises.map(toRoutineExerciseCreateInput),
       },
@@ -238,6 +244,7 @@ export async function updateRoutine(id: string, input: RoutineWriteInput) {
       data: {
         name: input.name,
         description: input.description,
+        folder: input.folder,
         exercises: {
           create: input.exercises.map(toRoutineExerciseCreateInput),
         },

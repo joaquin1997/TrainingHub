@@ -2,13 +2,17 @@ import { Link, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { ProgressChart } from '@/features/progress/components/ProgressChart';
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { progressClient } from '@/features/progress/api/progressClient';
-import { formatDate } from '@/lib/format';
+import { buildProgressSeries } from '@/features/progress/utils/chartData';
+import { extractPersonalRecords } from '@/features/progress/utils/personalRecords';
+import { formatDate, formatShortDate } from '@/lib/format';
+import { colors, commonStyles, spacing } from '@/ui/theme';
 import type { ExerciseProgressDetail } from '@workout/domain';
 
 function formatValue(value?: number) {
-  return value === undefined ? '—' : String(value);
+  return value === undefined ? '-' : String(value);
 }
 
 export function ExerciseProgressDetailScreen() {
@@ -91,6 +95,13 @@ export function ExerciseProgressDetailScreen() {
     );
   }
 
+  const oneRepMaxSeries = buildProgressSeries(
+    progress.points,
+    'estimatedOneRepMax',
+  );
+  const volumeSeries = buildProgressSeries(progress.points, 'totalVolume');
+  const personalRecords = extractPersonalRecords(progress.points);
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
       <Text style={styles.title}>Exercise Progress</Text>
@@ -104,10 +115,43 @@ export function ExerciseProgressDetailScreen() {
         {formatValue(progress.personalBestReps)}
       </Text>
       <Text style={styles.meta}>
-        Est. 1RM: {formatValue(progress.bestEstimatedOneRepMax)} kg ·{' '}
+        Est. 1RM: {formatValue(progress.bestEstimatedOneRepMax)} kg -{' '}
         {progress.sessionCount} sessions
-        {progress.isRecordSession ? ' · 🏆 recent PR' : ''}
+        {progress.isRecordSession ? ' - recent PR' : ''}
       </Text>
+      {oneRepMaxSeries.bars.length > 0 ? (
+        <ProgressChart
+          title="Estimated 1RM"
+          unit="kg"
+          series={oneRepMaxSeries}
+          formatLabel={formatShortDate}
+        />
+      ) : volumeSeries.bars.length > 0 ? (
+        <ProgressChart
+          title="Volume per session"
+          unit="kg"
+          series={volumeSeries}
+          formatLabel={formatShortDate}
+        />
+      ) : null}
+      {personalRecords.length > 0 ? (
+        <View style={styles.records}>
+          <Text style={styles.sectionTitle}>Personal records</Text>
+          {personalRecords
+            .slice()
+            .reverse()
+            .map((record, index) => (
+              <View key={`${record.date}-${index}`} style={styles.recordRow}>
+                <Text style={styles.recordBadge}>🏆</Text>
+                <Text style={styles.recordText}>
+                  {record.weightKg} kg
+                  {record.reps !== undefined ? ` x ${record.reps}` : ''} -{' '}
+                  {formatDate(record.date)}
+                </Text>
+              </View>
+            ))}
+        </View>
+      ) : null}
       <View style={styles.list}>
         {progress.points
           .slice()
@@ -117,7 +161,7 @@ export function ExerciseProgressDetailScreen() {
               <Text style={styles.cardTitle}>{formatDate(point.date)}</Text>
               <Text style={styles.meta}>
                 Best: {formatValue(point.bestWeightKg)} kg x{' '}
-                {formatValue(point.bestReps)} · Volume {point.totalVolume} · 1RM{' '}
+                {formatValue(point.bestReps)} - Volume {point.totalVolume} - 1RM{' '}
                 {formatValue(point.estimatedOneRepMax)}
               </Text>
             </View>
@@ -133,41 +177,56 @@ export function ExerciseProgressDetailScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    flex: 1,
+    ...commonStyles.screen,
   },
   container: {
-    flexGrow: 1,
-    padding: 24,
-    gap: 12,
+    ...commonStyles.scrollContent,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '600',
+    ...commonStyles.title,
   },
   body: {
+    color: colors.text,
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: '800',
+  },
+  records: {
+    gap: spacing.sm,
+  },
+  sectionTitle: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  recordRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  recordBadge: {
+    fontSize: 14,
+  },
+  recordText: {
+    color: colors.textMuted,
+    fontSize: 14,
+    flexShrink: 1,
   },
   list: {
-    gap: 12,
+    gap: spacing.md,
   },
   card: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    padding: 16,
-    gap: 6,
+    ...commonStyles.card,
+    gap: spacing.sm,
   },
   cardTitle: {
+    color: colors.text,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   meta: {
-    fontSize: 14,
-    color: '#4b5563',
+    ...commonStyles.meta,
   },
   link: {
-    fontSize: 15,
-    color: '#2563eb',
+    ...commonStyles.link,
   },
 });

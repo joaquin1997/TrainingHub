@@ -7,6 +7,7 @@ import {
   getLatestCompletedWorkout,
   toWorkoutSessionSkeleton,
 } from '@/features/workouts/state/workoutDraftStore';
+import { colors, commonStyles, spacing } from '@/ui/theme';
 
 export function WorkoutSummaryScreen() {
   const workoutDraft = getLatestCompletedWorkout();
@@ -32,8 +33,8 @@ export function WorkoutSummaryScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Workout Summary</Text>
       <Text style={styles.body}>{workoutDraft.routineName}</Text>
-      <Text style={styles.meta}>This workout was saved to your history.</Text>
-      <Text style={styles.meta}>Workout session ID: {workoutSession.id}</Text>
+      <Text style={styles.meta}>Saved to history.</Text>
+      <Text style={styles.meta}>Session ID: {workoutSession.id}</Text>
       {workoutDraft.exercises.map((exercise) => (
         <View key={exercise.id} style={styles.card}>
           <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
@@ -44,9 +45,6 @@ export function WorkoutSummaryScreen() {
           ))}
         </View>
       ))}
-      <Text style={styles.todo}>
-        TODO: Surface Apple Health sync status here once native sync is wired.
-      </Text>
       <View style={styles.links}>
         <Link
           href="/routines"
@@ -86,46 +84,38 @@ export function WorkoutSummaryScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 24,
-    gap: 12,
+    ...commonStyles.scrollContent,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '600',
+    ...commonStyles.title,
   },
   body: {
+    color: colors.text,
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: '800',
   },
   meta: {
-    fontSize: 14,
-    color: '#4b5563',
+    ...commonStyles.meta,
   },
   card: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    padding: 16,
-    gap: 8,
+    ...commonStyles.card,
   },
   cardTitle: {
+    color: colors.text,
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   setText: {
+    color: colors.textMuted,
     fontSize: 14,
     lineHeight: 20,
   },
-  todo: {
-    fontSize: 14,
-    color: '#4b5563',
-  },
   links: {
     flexDirection: 'row',
-    gap: 16,
+    flexWrap: 'wrap',
+    gap: spacing.lg,
   },
   link: {
-    fontSize: 15,
-    color: '#2563eb',
+    ...commonStyles.link,
   },
 });

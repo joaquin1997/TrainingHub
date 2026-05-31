@@ -10,10 +10,10 @@ Legend: ✅ done · �doing · ⬜ todo
 | 1 | Live workout logging | [01-live-workout-logging.md](01-live-workout-logging.md) | ✅ done |
 | 2 | Rest timer | [02-rest-timer.md](02-rest-timer.md) | ✅ done (bg notif deferred) |
 | 3 | Auth & users | [03-auth-and-users.md](03-auth-and-users.md) | ⬜ |
-| 4 | Progress, PRs & charts | [04-progress-and-prs.md](04-progress-and-prs.md) | 🔁 PRs+1RM done; charts todo |
-| 5 | Routines (advanced) | [05-routines-advanced.md](05-routines-advanced.md) | 🔁 dup+reorder done |
-| 6 | Exercises (advanced) | [06-exercises-advanced.md](06-exercises-advanced.md) | ⬜ |
-| 7 | Social | [07-social.md](07-social.md) | ⬜ |
+| 4 | Progress, PRs & charts | [04-progress-and-prs.md](04-progress-and-prs.md) | 🔁 PRs+1RM+charts+PR-history; muscle/calendar todo |
+| 5 | Routines (advanced) | [05-routines-advanced.md](05-routines-advanced.md) | 🔁 dup+reorder+set-inheritance done |
+| 6 | Exercises (advanced) | [06-exercises-advanced.md](06-exercises-advanced.md) | 🔁 category/equipment filter done |
+| 7 | Social | [07-social.md](07-social.md) | ⬜ post-MVP (out of scope) |
 | 8 | Integrations & platform | [08-integrations-and-platform.md](08-integrations-and-platform.md) | ⬜ |
 | 9 | Production readiness | [09-production-readiness.md](09-production-readiness.md) | ⬜ |
 

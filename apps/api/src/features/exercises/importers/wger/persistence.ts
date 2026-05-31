@@ -27,6 +27,7 @@ export async function upsertImportedExercises(
         description: exercise.description,
         category: exercise.category,
         language: exercise.language,
+        imageUrl: exercise.imageUrl,
         equipment: exercise.equipment,
         licenseAuthor: exercise.licenseAuthor,
         lastSourceUpdate: exercise.lastUpdate
@@ -59,6 +60,7 @@ export async function upsertImportedExercises(
         description: exercise.description,
         category: exercise.category,
         language: exercise.language,
+        imageUrl: exercise.imageUrl,
         equipment: exercise.equipment,
         licenseAuthor: exercise.licenseAuthor,
         lastSourceUpdate: exercise.lastUpdate

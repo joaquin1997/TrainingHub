@@ -18,10 +18,31 @@ export async function apiRequest<T>(
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers,
-  });
+  const url = `${API_BASE_URL}${path}`;
+
+  if (typeof __DEV__ !== 'undefined' && __DEV__) {
+    console.log(`[api] ${init?.method ?? 'GET'} ${url}`);
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...init,
+      headers,
+    });
+  } catch (error) {
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      console.log(
+        `[api] FETCH FAILED ${init?.method ?? 'GET'} ${url} ->`,
+        error instanceof Error ? `${error.name}: ${error.message}` : String(error),
+      );
+    }
+    throw error;
+  }
+
+  if (typeof __DEV__ !== 'undefined' && __DEV__) {
+    console.log(`[api] ${response.status} ${init?.method ?? 'GET'} ${url}`);
+  }
 
   if (response.status === 204) {
     return undefined as T;

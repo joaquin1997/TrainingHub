@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   addExerciseToWorkout,
   addSetToWorkoutExercise,
+  applyLastPerformance,
   buildWorkoutSessionDraft,
   cycleWorkoutSetType,
   removeExerciseFromWorkout,
@@ -82,12 +83,13 @@ describe('buildWorkoutSessionDraft', () => {
     expect(draft.exercises[1]?.routineExerciseId).toBe('re-row');
   });
 
-  it('prefills weight from the target and leaves reps empty', () => {
+  it('leaves actual fields empty and ghosts the target weight as a placeholder', () => {
     const draft = buildWorkoutSessionDraft(routine);
     const rowSet = draft.exercises[1]?.entries[0];
 
-    expect(rowSet?.weightKg).toBe('50');
+    expect(rowSet?.weightKg).toBe('');
     expect(rowSet?.reps).toBe('');
+    expect(rowSet?.weightPlaceholder).toBe('50');
   });
 });
 
@@ -122,6 +124,52 @@ describe('toCreateWorkoutSessionInput', () => {
       { order: 1, reps: 8, weightKg: 60, type: 'normal' },
       { order: 2, reps: undefined, weightKg: undefined, type: 'normal' },
     ]);
+  });
+
+  it('logs the ghosted placeholder when the actual field is left empty', () => {
+    const draft: WorkoutSessionDraft = {
+      id: 'w1',
+      routineId: 'routine-1',
+      routineName: 'Push Day',
+      startedAt: '2026-05-30T09:00:00.000Z',
+      exercises: [
+        {
+          id: 'we-1',
+          exerciseId: 'ex-bench',
+          exerciseName: 'Bench',
+          order: 1,
+          entries: [
+            {
+              id: 's1',
+              order: 1,
+              reps: '',
+              weightKg: '',
+              repsPlaceholder: '10',
+              weightPlaceholder: '50',
+              done: true,
+              type: 'normal',
+            },
+            {
+              id: 's2',
+              order: 2,
+              reps: '8',
+              weightKg: '',
+              repsPlaceholder: '10',
+              weightPlaceholder: '60',
+              done: true,
+              type: 'normal',
+            },
+          ],
+        },
+      ],
+    };
+
+    const sets = toCreateWorkoutSessionInput(draft).exercises[0]!.sets;
+
+    // s1: both empty -> falls back to placeholders.
+    expect(sets[0]).toMatchObject({ reps: 10, weightKg: 50 });
+    // s2: reps edited, weight empty -> edited reps + placeholder weight.
+    expect(sets[1]).toMatchObject({ reps: 8, weightKg: 60 });
   });
 
   it('stamps completedAt on sets marked done', () => {
@@ -222,7 +270,7 @@ describe('set completion', () => {
 });
 
 describe('add / remove sets', () => {
-  it('appends an empty set, prefilling weight from the previous set', () => {
+  it('appends an empty set, ghosting the previous set values as placeholders', () => {
     const draft = buildWorkoutSessionDraft(routine);
     const exerciseId = draft.exercises[1]!.id; // Row, has a set with target 50
 
@@ -232,7 +280,8 @@ describe('add / remove sets', () => {
     expect(entries).toHaveLength(2);
     expect(entries[1]!.order).toBe(2);
     expect(entries[1]!.reps).toBe('');
-    expect(entries[1]!.weightKg).toBe('50');
+    expect(entries[1]!.weightKg).toBe('');
+    expect(entries[1]!.weightPlaceholder).toBe('50');
     expect(entries[1]!.done).toBe(false);
   });
 
@@ -247,6 +296,37 @@ describe('add / remove sets', () => {
 
     expect(entries).toHaveLength(1);
     expect(entries[0]!.order).toBe(1);
+  });
+});
+
+describe('applyLastPerformance', () => {
+  it('ghosts last-performance values as placeholders without touching actuals', () => {
+    const draft = buildWorkoutSessionDraft(routine);
+    const rowExerciseId = 'ex-row'; // Row, one set at order 1
+
+    const next = applyLastPerformance(draft, rowExerciseId, {
+      performedAt: '2026-05-29T09:00:00.000Z',
+      sets: [{ order: 1, reps: 12, weightKg: 55 }],
+    });
+
+    const rowSet = next.exercises.find((e) => e.exerciseId === rowExerciseId)!
+      .entries[0]!;
+    expect(rowSet.repsPlaceholder).toBe('12');
+    expect(rowSet.weightPlaceholder).toBe('55');
+    // Actual entry fields stay empty.
+    expect(rowSet.reps).toBe('');
+    expect(rowSet.weightKg).toBe('');
+  });
+
+  it('returns the same reference when nothing changes', () => {
+    const draft = buildWorkoutSessionDraft(routine);
+
+    const unchanged = applyLastPerformance(draft, 'ex-row', {
+      performedAt: '2026-05-29T09:00:00.000Z',
+      sets: [{ order: 99, reps: 5, weightKg: 5 }], // no matching set order
+    });
+
+    expect(unchanged).toBe(draft);
   });
 });
 

@@ -1,6 +1,7 @@
 # 7. Social (decide if in MVP)
 
-Hevy's differentiator. Likely post-MVP.
+Hevy's differentiator. **Decision (2026-05-31): OUT of scope for the MVP — post-MVP.**
+Depends on auth (point 3); revisit after the app ships.
 
 ## Checklist
 - [ ] User profiles

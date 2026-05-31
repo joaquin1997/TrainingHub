@@ -1,5 +1,6 @@
 import type {
   CreateWorkoutSessionInput,
+  ExerciseLastPerformance,
   Routine,
   WorkoutSession,
   WorkoutSetType,
@@ -17,6 +18,13 @@ export type WorkoutSetDraft = {
   order: number;
   reps: string;
   weightKg: string;
+  /**
+   * Ghosted "previous" values shown as input placeholders (last performance or
+   * routine target). When the actual field is left empty these are what gets
+   * logged, so an unedited set still records its default — mirroring Hevy.
+   */
+  repsPlaceholder?: string;
+  weightPlaceholder?: string;
   done: boolean;
   type: WorkoutSetType;
   minReps?: number;
@@ -24,12 +32,19 @@ export type WorkoutSetDraft = {
   targetWeight?: number;
 };
 
+/** Trimmed actual value, falling back to the ghosted placeholder when empty. */
+export function effectiveSetValue(value: string, placeholder?: string): string {
+  return value.trim() !== '' ? value.trim() : (placeholder ?? '');
+}
+
 export type WorkoutExerciseDraft = {
   id: string;
   exerciseId: string;
   exerciseName: string;
   imagePlaceholderText?: string;
   routineExerciseId?: string;
+  restSeconds?: number;
+  supersetGroup?: number;
   order: number;
   entries: WorkoutSetDraft[];
 };
@@ -72,6 +87,8 @@ function buildExerciseDrafts(routine: Routine): WorkoutExerciseDraft[] {
       exerciseName: routineExercise.exerciseName,
       imagePlaceholderText: `${routineExercise.exerciseName} image`,
       routineExerciseId: routineExercise.id,
+      restSeconds: routineExercise.restSeconds,
+      supersetGroup: routineExercise.supersetGroup,
       order: routineExercise.orderIndex,
       entries: routineExercise.sets
         .slice()
@@ -80,8 +97,15 @@ function buildExerciseDrafts(routine: Routine): WorkoutExerciseDraft[] {
           id: `draft-set-${routineExercise.id}-${set.setNumber}`,
           order: set.setNumber,
           reps: '',
-          weightKg:
-            set.targetWeight !== undefined ? String(set.targetWeight) : '',
+          weightKg: '',
+          repsPlaceholder:
+            set.maxReps !== undefined
+              ? String(set.maxReps)
+              : set.minReps !== undefined
+                ? String(set.minReps)
+                : undefined,
+          weightPlaceholder:
+            set.targetWeight !== undefined ? String(set.targetWeight) : undefined,
           done: false,
           type: 'normal',
           minReps: set.minReps,
@@ -181,7 +205,15 @@ export function addSetToWorkoutExercise(
         id: nextDraftId(`${exercise.id}-set`),
         order: exercise.entries.length + 1,
         reps: '',
-        weightKg: previousSet?.weightKg ?? '',
+        weightKg: '',
+        repsPlaceholder: previousSet
+          ? effectiveSetValue(previousSet.reps, previousSet.repsPlaceholder) ||
+            undefined
+          : undefined,
+        weightPlaceholder: previousSet
+          ? effectiveSetValue(previousSet.weightKg, previousSet.weightPlaceholder) ||
+            undefined
+          : undefined,
         done: false,
         type: 'normal',
       };
@@ -189,6 +221,57 @@ export function addSetToWorkoutExercise(
       return { ...exercise, entries: [...exercise.entries, newSet] };
     }),
   };
+}
+
+/**
+ * Fills each set's ghosted placeholders from the exercise's last performance
+ * (matched by set order). Only placeholders change — the user's actual entries
+ * are untouched — and the same reference is returned when nothing changes, so
+ * it is safe to call on every performance fetch without churn.
+ */
+export function applyLastPerformance(
+  workoutDraft: WorkoutSessionDraft,
+  exerciseId: string,
+  performance: ExerciseLastPerformance,
+): WorkoutSessionDraft {
+  let changed = false;
+
+  const exercises = workoutDraft.exercises.map((exercise) => {
+    if (exercise.exerciseId !== exerciseId) {
+      return exercise;
+    }
+
+    const entries = exercise.entries.map((set) => {
+      const last = performance.sets.find((item) => item.order === set.order);
+
+      if (!last) {
+        return set;
+      }
+
+      const repsPlaceholder =
+        last.reps !== undefined && last.reps !== null
+          ? String(last.reps)
+          : set.repsPlaceholder;
+      const weightPlaceholder =
+        last.weightKg !== undefined && last.weightKg !== null
+          ? String(last.weightKg)
+          : set.weightPlaceholder;
+
+      if (
+        repsPlaceholder === set.repsPlaceholder &&
+        weightPlaceholder === set.weightPlaceholder
+      ) {
+        return set;
+      }
+
+      changed = true;
+      return { ...set, repsPlaceholder, weightPlaceholder };
+    });
+
+    return { ...exercise, entries };
+  });
+
+  return changed ? { ...workoutDraft, exercises } : workoutDraft;
 }
 
 export function removeSetFromWorkoutExercise(
@@ -358,8 +441,10 @@ export function toCreateWorkoutSessionInput(
         order: set.order,
         type: set.type,
         isWarmup: set.type === 'warmup' || undefined,
-        reps: Number(set.reps) || undefined,
-        weightKg: Number(set.weightKg) || undefined,
+        reps: Number(effectiveSetValue(set.reps, set.repsPlaceholder)) || undefined,
+        weightKg:
+          Number(effectiveSetValue(set.weightKg, set.weightPlaceholder)) ||
+          undefined,
         completedAt: set.done ? completedAt : undefined,
       })),
     })),
@@ -436,8 +521,10 @@ export function toWorkoutSessionSkeleton(
         workoutExerciseId: exercise.id,
         order: set.order,
         type: set.type,
-        reps: Number(set.reps) || undefined,
-        weightKg: Number(set.weightKg) || undefined,
+        reps: Number(effectiveSetValue(set.reps, set.repsPlaceholder)) || undefined,
+        weightKg:
+          Number(effectiveSetValue(set.weightKg, set.weightPlaceholder)) ||
+          undefined,
         completedAt,
         createdAt: completedAt,
         updatedAt: completedAt,

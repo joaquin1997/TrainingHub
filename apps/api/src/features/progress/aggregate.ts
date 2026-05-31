@@ -2,6 +2,8 @@ import type {
   ExerciseProgressDetail,
   ExerciseProgressPoint,
   ExerciseProgressSummary,
+  MuscleGroupVolumePoint,
+  WeeklyVolumePoint,
 } from '@workout/domain';
 
 /**
@@ -13,6 +15,7 @@ export type ProgressSessionInput = {
   exercises: Array<{
     exerciseId: string;
     exerciseName: string;
+    category?: string | null;
     sets: Array<{ reps?: number | null; weightKg?: number | null }>;
   }>;
 };
@@ -124,4 +127,94 @@ export function buildExerciseProgressDetail(
   }
 
   return { ...toSummary(accumulator), points: accumulator.points };
+}
+
+/** Total volume (reps × weight) for one session across all its exercises. */
+function sessionVolume(session: ProgressSessionInput): number {
+  return session.exercises.reduce(
+    (sum, exercise) =>
+      sum +
+      exercise.sets.reduce(
+        (setSum, set) => setSum + (set.reps ?? 0) * (set.weightKg ?? 0),
+        0,
+      ),
+    0,
+  );
+}
+
+/** ISO date (YYYY-MM-DD) of the Monday that starts the week containing `iso`. */
+function weekStartIso(iso: string): string {
+  const date = new Date(iso);
+  const daysSinceMonday = (date.getUTCDay() + 6) % 7;
+  const monday = new Date(
+    Date.UTC(
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate() - daysSinceMonday,
+    ),
+  );
+
+  return monday.toISOString().slice(0, 10);
+}
+
+/**
+ * Bucket sessions into calendar weeks (Monday-start, UTC) and sum training
+ * volume per week. Only weeks with at least one workout are returned; the most
+ * recent `weeks` are kept, oldest-first for charting.
+ */
+export function buildWeeklyVolume(
+  sessions: ProgressSessionInput[],
+  weeks = 8,
+): WeeklyVolumePoint[] {
+  const byWeek = new Map<string, WeeklyVolumePoint>();
+
+  for (const session of sessions) {
+    const weekStart = weekStartIso(session.date);
+    const bucket = byWeek.get(weekStart) ?? {
+      weekStart,
+      totalVolume: 0,
+      workoutCount: 0,
+    };
+
+    bucket.totalVolume += sessionVolume(session);
+    bucket.workoutCount += 1;
+    byWeek.set(weekStart, bucket);
+  }
+
+  return [...byWeek.values()]
+    .map((point) => ({
+      ...point,
+      totalVolume: Math.round(point.totalVolume),
+    }))
+    .sort((left, right) => left.weekStart.localeCompare(right.weekStart))
+    .slice(-weeks);
+}
+
+/**
+ * Sums training volume by exercise category (the muscle-group proxy in the
+ * catalog), highest first. Exercises with no category fall under "Other";
+ * groups with zero volume are dropped.
+ */
+export function buildMuscleGroupVolume(
+  sessions: ProgressSessionInput[],
+): MuscleGroupVolumePoint[] {
+  const byGroup = new Map<string, number>();
+
+  for (const session of sessions) {
+    for (const exercise of session.exercises) {
+      const group = exercise.category?.trim() || 'Other';
+      const volume = exercise.sets.reduce(
+        (sum, set) => sum + (set.reps ?? 0) * (set.weightKg ?? 0),
+        0,
+      );
+
+      if (volume > 0) {
+        byGroup.set(group, (byGroup.get(group) ?? 0) + volume);
+      }
+    }
+  }
+
+  return [...byGroup.entries()]
+    .map(([group, totalVolume]) => ({ group, totalVolume: Math.round(totalVolume) }))
+    .sort((left, right) => right.totalVolume - left.totalVolume);
 }

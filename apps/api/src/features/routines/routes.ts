@@ -93,6 +93,8 @@ function parseRoutineExerciseInput(
   return {
     exerciseId: value.exerciseId.trim(),
     orderIndex,
+    restSeconds: parseOptionalInteger(value.restSeconds),
+    supersetGroup: parseOptionalInteger(value.supersetGroup),
     sets,
   };
 }
@@ -124,6 +126,7 @@ function parseRoutineWriteInput(body: unknown): CreateRoutineInput | null {
   return {
     name: normalizedBody.name.trim(),
     description: parseOptionalString(normalizedBody.description),
+    folder: parseOptionalString(normalizedBody.folder),
     exercises,
   };
 }
@@ -132,20 +135,26 @@ async function hydrateRoutineWriteInput(
   input: CreateRoutineInput,
 ): Promise<RoutineWriteInput | null> {
   const exercises = await Promise.all(
-    input.exercises.map(async (exercise) => {
-      const existingExercise = await findExerciseById(exercise.exerciseId);
+    input.exercises.map(
+      async (
+        exercise,
+      ): Promise<RoutineWriteInput['exercises'][number] | null> => {
+        const existingExercise = await findExerciseById(exercise.exerciseId);
 
-      if (!existingExercise) {
-        return null;
-      }
+        if (!existingExercise) {
+          return null;
+        }
 
-      return {
-        exerciseId: existingExercise.id,
-        exerciseName: existingExercise.name,
-        orderIndex: exercise.orderIndex,
-        sets: exercise.sets,
-      };
-    }),
+        return {
+          exerciseId: existingExercise.id,
+          exerciseName: existingExercise.name,
+          orderIndex: exercise.orderIndex,
+          restSeconds: exercise.restSeconds,
+          supersetGroup: exercise.supersetGroup,
+          sets: exercise.sets,
+        };
+      },
+    ),
   );
 
   if (exercises.some((exercise) => exercise === null)) {
@@ -155,6 +164,7 @@ async function hydrateRoutineWriteInput(
   return {
     name: input.name,
     description: input.description,
+    folder: input.folder,
     exercises: exercises.filter(
       (exercise): exercise is RoutineWriteInput['exercises'][number] =>
         exercise !== null,
