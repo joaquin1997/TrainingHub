@@ -306,15 +306,20 @@ const styles = StyleSheet.create({
     color: colors.onPrimary,
   },
   list: {
-    gap: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   card: {
-    ...commonStyles.card,
+    flex: 1,
+    paddingVertical: spacing.sm,
+    gap: 2,
   },
   cardRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderStrong,
   },
   cardFlex: {
     flex: 1,
@@ -324,7 +329,7 @@ const styles = StyleSheet.create({
   },
   starButton: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
   },
   star: {
     color: colors.primary,

@@ -32,9 +32,9 @@ export const spacing = {
 };
 
 export const radii = {
-  sm: 6,
-  md: 8,
-  lg: 10,
+  sm: 8,
+  md: 12,
+  lg: 16,
 };
 
 /** Shared navigation header styling so every stack matches the dark theme. */
@@ -93,8 +93,8 @@ export const commonStyles = StyleSheet.create({
     gap: spacing.sm,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    backgroundColor: colors.surfaceRaised,
     padding: spacing.lg,
   },
   input: {
