@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 
 export const colors = {
-  background: '#0B0F14',
+  background: '#101418',
   surface: '#151A21',
   surfaceRaised: '#1D2530',
   surfaceMuted: '#101820',
@@ -35,6 +35,14 @@ export const radii = {
   sm: 6,
   md: 8,
   lg: 10,
+};
+
+/** Shared navigation header styling so every stack matches the dark theme. */
+export const screenHeader = {
+  headerStyle: { backgroundColor: colors.background },
+  headerShadowVisible: false,
+  headerTintColor: colors.text,
+  headerTitleStyle: { color: colors.text, fontWeight: '800' as const },
 };
 
 export const commonStyles = StyleSheet.create({

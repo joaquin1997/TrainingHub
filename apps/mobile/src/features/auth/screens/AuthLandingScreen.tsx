@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { findAuthProvider } from '@/features/auth/providers';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 
@@ -58,7 +57,6 @@ export function AuthLandingScreen() {
         </View>
       ) : null}
       {statusMessage ? <Text style={styles.status}>{statusMessage}</Text> : null}
-      <RouteLinks currentRoute="auth" />
     </View>
   );
 }

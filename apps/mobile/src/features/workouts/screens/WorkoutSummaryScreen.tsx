@@ -1,7 +1,6 @@
 import { Link } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import {
   clearLatestCompletedWorkout,
   getLatestCompletedWorkout,
@@ -22,7 +21,6 @@ export function WorkoutSummaryScreen() {
         <Link href="/routines" style={styles.link}>
           Back to routines
         </Link>
-        <RouteLinks currentRoute="workout-summary" />
       </View>
     );
   }
@@ -56,7 +54,7 @@ export function WorkoutSummaryScreen() {
           Back to routines
         </Link>
         <Link
-          href="/workouts/history"
+          href="/history"
           style={styles.link}
           onPress={() => {
             clearLatestCompletedWorkout();
@@ -77,7 +75,6 @@ export function WorkoutSummaryScreen() {
           Start again
         </Link>
       </View>
-      <RouteLinks currentRoute="workout-summary" />
     </ScrollView>
   );
 }

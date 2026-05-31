@@ -14,7 +14,6 @@ import {
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { ExercisePickerModal } from '@/features/exercises/components/ExercisePickerModal';
-import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { formatDuration } from '@/lib/format';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { useRestTimer } from '@/lib/useRestTimer';
@@ -220,7 +219,6 @@ export function ActiveWorkoutScreen() {
         <Link href="/routines" style={styles.link}>
           Back to routines
         </Link>
-        <RouteLinks currentRoute="active-workout" />
       </View>
     );
   }
@@ -635,7 +633,6 @@ export function ActiveWorkoutScreen() {
       >
         <Text style={styles.discardButtonText}>Discard workout</Text>
       </Pressable>
-      <RouteLinks currentRoute="active-workout" />
     </ScrollView>
   );
 }

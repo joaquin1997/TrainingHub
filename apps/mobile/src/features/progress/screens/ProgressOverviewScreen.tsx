@@ -12,7 +12,6 @@ import {
 import { FrequencySummary } from '@/features/progress/components/FrequencySummary';
 import { MuscleDistribution } from '@/features/progress/components/MuscleDistribution';
 import { ProgressChart } from '@/features/progress/components/ProgressChart';
-import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { progressClient } from '@/features/progress/api/progressClient';
 import { buildWeeklyVolumeSeries } from '@/features/progress/utils/chartData';
 import { summarizeTrainingFrequency } from '@/features/progress/utils/trainingFrequency';
@@ -163,7 +162,6 @@ export function ProgressOverviewScreen() {
           ))}
         </View>
       ) : null}
-      <RouteLinks currentRoute="progress" />
     </ScrollView>
   );
 }

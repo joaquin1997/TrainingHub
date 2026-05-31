@@ -3,7 +3,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ProgressChart } from '@/features/progress/components/ProgressChart';
-import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { progressClient } from '@/features/progress/api/progressClient';
 import { buildProgressSeries } from '@/features/progress/utils/chartData';
 import { extractPersonalRecords } from '@/features/progress/utils/personalRecords';
@@ -75,7 +74,6 @@ export function ExerciseProgressDetailScreen() {
       <View style={styles.container}>
         <Text style={styles.title}>Exercise Progress</Text>
         <Text style={styles.meta}>Loading progress...</Text>
-        <RouteLinks currentRoute="progress" />
       </View>
     );
   }
@@ -90,7 +88,6 @@ export function ExerciseProgressDetailScreen() {
         <Link href="/progress" style={styles.link}>
           Back to progress
         </Link>
-        <RouteLinks currentRoute="progress" />
       </View>
     );
   }
@@ -170,7 +167,6 @@ export function ExerciseProgressDetailScreen() {
       <Link href="/progress" style={styles.link}>
         Back to progress
       </Link>
-      <RouteLinks currentRoute="progress" />
     </ScrollView>
   );
 }

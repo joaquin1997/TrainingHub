@@ -9,7 +9,6 @@ import {
   View,
 } from 'react-native';
 
-import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { groupRoutinesByFolder } from '@/features/routines/utils/groupRoutinesByFolder';
 import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
@@ -115,7 +114,7 @@ export function RoutinesListScreen() {
         <Link href="/progress" style={styles.link}>
           Progress
         </Link>
-        <Link href="/workouts/history" style={styles.link}>
+        <Link href="/history" style={styles.link}>
           History
         </Link>
       </View>
@@ -183,7 +182,6 @@ export function RoutinesListScreen() {
           ))}
         </View>
       ) : null}
-      <RouteLinks currentRoute="routines" />
     </ScrollView>
   );
 }

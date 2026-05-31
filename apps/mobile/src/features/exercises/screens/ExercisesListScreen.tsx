@@ -10,7 +10,6 @@ import {
   View,
 } from 'react-native';
 
-import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
 import {
   buildExerciseFacets,
@@ -266,7 +265,6 @@ export function ExercisesListScreen() {
           </Text>
         </Pressable>
       ) : null}
-      <RouteLinks currentRoute="exercises" />
     </ScrollView>
   );
 }

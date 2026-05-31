@@ -2,7 +2,6 @@ import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
@@ -152,7 +151,6 @@ export function RoutineDetailScreen() {
       <View style={styles.container}>
         <Text style={styles.title}>Routine Detail</Text>
         <Text style={styles.body}>Loading routine...</Text>
-        <RouteLinks currentRoute="routine-detail" />
       </View>
     );
   }
@@ -178,7 +176,6 @@ export function RoutineDetailScreen() {
         <Link href="/routines" style={styles.link}>
           Back to routines
         </Link>
-        <RouteLinks currentRoute="routine-detail" />
       </View>
     );
   }
@@ -294,7 +291,6 @@ export function RoutineDetailScreen() {
           {isDeleting ? 'Deleting...' : 'Delete routine'}
         </Text>
       </Pressable>
-      <RouteLinks currentRoute="routine-detail" />
     </ScrollView>
   );
 }

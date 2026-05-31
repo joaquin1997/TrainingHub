@@ -9,7 +9,6 @@ import {
   View,
 } from 'react-native';
 
-import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import {
   durationSecondsBetween,
@@ -133,7 +132,6 @@ export function WorkoutHistoryScreen() {
           ))}
         </View>
       ) : null}
-      <RouteLinks currentRoute="workout-history" />
     </ScrollView>
   );
 }

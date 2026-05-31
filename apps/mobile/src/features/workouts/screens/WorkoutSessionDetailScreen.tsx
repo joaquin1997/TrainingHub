@@ -2,7 +2,6 @@ import { Link, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import {
   durationSecondsBetween,
@@ -75,7 +74,6 @@ export function WorkoutSessionDetailScreen() {
       <View style={styles.container}>
         <Text style={styles.title}>Workout</Text>
         <Text style={styles.meta}>Loading workout...</Text>
-        <RouteLinks currentRoute="workout-history" />
       </View>
     );
   }
@@ -87,10 +85,9 @@ export function WorkoutSessionDetailScreen() {
         <Text style={styles.error}>
           {errorMessage ?? 'Workout not found.'}
         </Text>
-        <Link href="/workouts/history" style={styles.link}>
+        <Link href="/history" style={styles.link}>
           Back to history
         </Link>
-        <RouteLinks currentRoute="workout-history" />
       </View>
     );
   }
@@ -124,10 +121,9 @@ export function WorkoutSessionDetailScreen() {
           ))}
         </View>
       ))}
-      <Link href="/workouts/history" style={styles.link}>
+      <Link href="/history" style={styles.link}>
         Back to history
       </Link>
-      <RouteLinks currentRoute="workout-history" />
     </ScrollView>
   );
 }
