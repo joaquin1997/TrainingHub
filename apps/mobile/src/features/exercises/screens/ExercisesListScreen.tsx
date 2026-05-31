@@ -12,8 +12,12 @@ import {
 
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
+import {
+  buildExerciseFacets,
+  filterExercises,
+} from '@/features/exercises/utils/exerciseFilters';
 import { useRefresh } from '@/lib/useRefresh';
-import { colors, commonStyles, spacing } from '@/ui/theme';
+import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type { Exercise } from '@workout/domain';
 
 const MAX_VISIBLE = 50;
@@ -21,6 +25,8 @@ const MAX_VISIBLE = 50;
 export function ExercisesListScreen() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [query, setQuery] = useState('');
+  const [category, setCategory] = useState<string>();
+  const [equipment, setEquipment] = useState<string>();
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
 
@@ -66,17 +72,18 @@ export function ExercisesListScreen() {
     }, [loadExercises]),
   );
 
-  const filtered = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+  const facets = useMemo(() => buildExerciseFacets(exercises), [exercises]);
 
-    if (!normalizedQuery) {
-      return exercises;
-    }
+  const filtered = useMemo(
+    () => filterExercises(exercises, { query, category, equipment }),
+    [exercises, query, category, equipment],
+  );
 
-    return exercises.filter((exercise) =>
-      exercise.name.toLowerCase().includes(normalizedQuery),
-    );
-  }, [exercises, query]);
+  const toggle = (
+    current: string | undefined,
+    value: string,
+    set: (next: string | undefined) => void,
+  ) => set(current === value ? undefined : value);
 
   const visible = filtered.slice(0, MAX_VISIBLE);
   const hiddenCount = filtered.length - visible.length;
@@ -100,6 +107,54 @@ export function ExercisesListScreen() {
         style={styles.input}
         autoCorrect={false}
       />
+      {facets.categories.length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipRow}
+        >
+          {facets.categories.map((value) => (
+            <Pressable
+              key={value}
+              onPress={() => toggle(category, value, setCategory)}
+              style={[styles.chip, category === value ? styles.chipActive : null]}
+            >
+              <Text
+                style={[
+                  styles.chipText,
+                  category === value ? styles.chipTextActive : null,
+                ]}
+              >
+                {value}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : null}
+      {facets.equipment.length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipRow}
+        >
+          {facets.equipment.map((value) => (
+            <Pressable
+              key={value}
+              onPress={() => toggle(equipment, value, setEquipment)}
+              style={[styles.chip, equipment === value ? styles.chipActive : null]}
+            >
+              <Text
+                style={[
+                  styles.chipText,
+                  equipment === value ? styles.chipTextActive : null,
+                ]}
+              >
+                {value}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : null}
       {showLoading ? (
         <Text style={styles.meta}>Loading exercises...</Text>
       ) : null}
@@ -156,6 +211,30 @@ const styles = StyleSheet.create({
   },
   input: {
     ...commonStyles.input,
+  },
+  chipRow: {
+    gap: spacing.sm,
+    paddingVertical: 2,
+  },
+  chip: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+  },
+  chipActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
+  },
+  chipText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  chipTextActive: {
+    color: colors.onPrimary,
   },
   list: {
     gap: spacing.md,
