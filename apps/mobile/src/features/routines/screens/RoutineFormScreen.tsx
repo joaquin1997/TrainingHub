@@ -685,7 +685,7 @@ export function RoutineFormScreen({
                   style={styles.input}
                 />
                 {exercise.exerciseId ? (
-                  <Text style={styles.meta}>Selected exercise saved by ID.</Text>
+                  <Text style={styles.selectedHint}>✓ Exercise selected</Text>
                 ) : null}
                 {activeExerciseSelectorRowId === exercise.id &&
                 exercise.exerciseQuery.trim() ? (
@@ -1034,6 +1034,11 @@ const styles = StyleSheet.create({
   },
   meta: {
     ...commonStyles.meta,
+  },
+  selectedHint: {
+    color: colors.success,
+    fontSize: 13,
+    fontWeight: '700',
   },
   error: {
     ...commonStyles.error,
