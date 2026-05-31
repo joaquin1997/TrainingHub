@@ -14,6 +14,7 @@ import {
   updateRoutine,
   type RoutineWriteInput,
 } from './repository.js';
+import { resolveUserPublicId } from '../../infrastructure/userContext.js';
 
 function normalizeRoutineBody(body: unknown) {
   if (typeof body !== 'string') {
@@ -173,12 +174,15 @@ async function hydrateRoutineWriteInput(
 }
 
 export async function registerRoutineRoutes(app: FastifyInstance) {
-  app.get('/routines', async () => {
-    return listRoutines();
+  app.get('/routines', async (request) => {
+    return listRoutines(await resolveUserPublicId(request));
   });
 
   app.get<{ Params: { id: string } }>('/routines/:id', async (request, reply) => {
-    const routine = await findRoutineById(request.params.id);
+    const routine = await findRoutineById(
+      await resolveUserPublicId(request),
+      request.params.id,
+    );
 
     if (!routine) {
       return reply.code(404).send({
@@ -222,7 +226,10 @@ export async function registerRoutineRoutes(app: FastifyInstance) {
       });
     }
 
-    const routine = await createRoutine(input);
+    const routine = await createRoutine(
+      await resolveUserPublicId(request),
+      input,
+    );
 
     return reply.code(201).send(routine);
   });
@@ -264,7 +271,11 @@ export async function registerRoutineRoutes(app: FastifyInstance) {
         });
       }
 
-      const routine = await updateRoutine(request.params.id, input);
+      const routine = await updateRoutine(
+        await resolveUserPublicId(request),
+        request.params.id,
+        input,
+      );
 
       if (!routine) {
         return reply.code(404).send({
@@ -277,7 +288,10 @@ export async function registerRoutineRoutes(app: FastifyInstance) {
   );
 
   app.delete<{ Params: { id: string } }>('/routines/:id', async (request, reply) => {
-    const deleted = await deleteRoutine(request.params.id);
+    const deleted = await deleteRoutine(
+      await resolveUserPublicId(request),
+      request.params.id,
+    );
 
     if (!deleted) {
       return reply.code(404).send({

@@ -46,6 +46,17 @@ export function createApp(
     },
   );
 
+  // Optional auth: populate request.user when a valid bearer token is present,
+  // otherwise stay anonymous (repos fall back to the dev user during the
+  // multi-user transition). Flip to a strict `authenticate` preHandler later.
+  app.addHook('onRequest', async (request) => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      // anonymous request
+    }
+  });
+
   app.register(registerRoutes);
 
   return app;

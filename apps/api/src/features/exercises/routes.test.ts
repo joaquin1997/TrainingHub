@@ -8,9 +8,16 @@ vi.mock('./repository.js', () => {
     listMuscleGroups: vi.fn(),
     findExerciseById: vi.fn(),
     createExercise: vi.fn(),
+    listFavoriteExerciseIds: vi.fn(),
+    addFavoriteExercise: vi.fn(),
+    removeFavoriteExercise: vi.fn(),
     InvalidMuscleGroupSelectionError,
   };
 });
+
+vi.mock('../../infrastructure/userContext.js', () => ({
+  resolveUserPublicId: vi.fn(async () => 'user-test'),
+}));
 
 import { createApp } from '../../app.js';
 import {
@@ -104,6 +111,7 @@ describe('POST /exercises', () => {
     expect(response.statusCode).toBe(201);
     expect(response.json()).toMatchObject({ id: 'e1' });
     expect(createExercise).toHaveBeenCalledWith(
+      'user-test',
       expect.objectContaining({ name: 'Bench Press', primaryMuscleGroupIds: ['1'] }),
     );
   });

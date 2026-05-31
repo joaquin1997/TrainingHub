@@ -12,6 +12,9 @@ vi.mock('./repository.js', () => ({
 vi.mock('../exercises/repository.js', () => ({
   findExerciseById: vi.fn(),
 }));
+vi.mock('../../infrastructure/userContext.js', () => ({
+  resolveUserPublicId: vi.fn(async () => 'user-test'),
+}));
 
 import { createApp } from '../../app.js';
 import { findExerciseById } from '../exercises/repository.js';
@@ -62,7 +65,7 @@ describe('GET /routines/:id', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ id: 'r1' });
-    expect(findRoutineById).toHaveBeenCalledWith('r1');
+    expect(findRoutineById).toHaveBeenCalledWith('user-test', 'r1');
   });
 });
 
@@ -115,6 +118,7 @@ describe('POST /routines', () => {
     expect(response.json()).toMatchObject({ id: 'r1' });
     expect(createRoutine).toHaveBeenCalledTimes(1);
     expect(createRoutine).toHaveBeenCalledWith(
+      'user-test',
       expect.objectContaining({
         name: 'Push Day',
         exercises: [expect.objectContaining({ exerciseId: 'ex1', exerciseName: 'Bench Press' })],
@@ -130,7 +134,7 @@ describe('DELETE /routines/:id', () => {
     const response = await app.inject({ method: 'DELETE', url: '/routines/r1' });
 
     expect(response.statusCode).toBe(204);
-    expect(deleteRoutine).toHaveBeenCalledWith('r1');
+    expect(deleteRoutine).toHaveBeenCalledWith('user-test', 'r1');
   });
 
   it('returns 404 when the routine did not exist', async () => {

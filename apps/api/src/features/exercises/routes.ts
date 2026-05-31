@@ -10,6 +10,7 @@ import {
   listMuscleGroups,
   removeFavoriteExercise,
 } from './repository.js';
+import { resolveUserPublicId } from '../../infrastructure/userContext.js';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -49,14 +50,17 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
     return listMuscleGroups();
   });
 
-  app.get('/exercises/favorites', async () => {
-    return listFavoriteExerciseIds();
+  app.get('/exercises/favorites', async (request) => {
+    return listFavoriteExerciseIds(await resolveUserPublicId(request));
   });
 
   app.put<{ Params: { id: string } }>(
     '/exercises/:id/favorite',
     async (request, reply) => {
-      const ok = await addFavoriteExercise(request.params.id);
+      const ok = await addFavoriteExercise(
+        await resolveUserPublicId(request),
+        request.params.id,
+      );
 
       if (!ok) {
         return reply.code(404).send({ message: 'Exercise not found' });
@@ -69,7 +73,10 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
   app.delete<{ Params: { id: string } }>(
     '/exercises/:id/favorite',
     async (request, reply) => {
-      await removeFavoriteExercise(request.params.id);
+      await removeFavoriteExercise(
+        await resolveUserPublicId(request),
+        request.params.id,
+      );
       return reply.code(204).send();
     },
   );
@@ -84,7 +91,10 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
     }
 
     try {
-      const exercise = await createExercise(input);
+      const exercise = await createExercise(
+        await resolveUserPublicId(request),
+        input,
+      );
 
       return reply.code(201).send(exercise);
     } catch (error) {

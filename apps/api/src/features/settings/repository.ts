@@ -1,8 +1,4 @@
 import { prisma } from '../../infrastructure/prisma.js';
-import {
-  DEVELOPMENT_USER_PUBLIC_ID,
-  ensureDevelopmentUser,
-} from '../../infrastructure/developmentUser.js';
 import type {
   UpdateUserSettingsInput,
   UserSettings,
@@ -13,12 +9,11 @@ function toUnit(value: string): WeightUnit {
   return value === 'lb' ? 'lb' : 'kg';
 }
 
-// TODO: scope to the authenticated user once auth lands; uses the dev user for now.
-export async function getUserSettings(): Promise<UserSettings> {
-  await ensureDevelopmentUser();
-
+export async function getUserSettings(
+  userPublicId: string,
+): Promise<UserSettings> {
   const user = await prisma.user.findUnique({
-    where: { publicId: DEVELOPMENT_USER_PUBLIC_ID },
+    where: { publicId: userPublicId },
     select: { unit: true, defaultRestSeconds: true },
   });
 
@@ -29,12 +24,11 @@ export async function getUserSettings(): Promise<UserSettings> {
 }
 
 export async function updateUserSettings(
+  userPublicId: string,
   input: UpdateUserSettingsInput,
 ): Promise<UserSettings> {
-  await ensureDevelopmentUser();
-
   const user = await prisma.user.update({
-    where: { publicId: DEVELOPMENT_USER_PUBLIC_ID },
+    where: { publicId: userPublicId },
     data: {
       unit: input.unit,
       defaultRestSeconds: input.defaultRestSeconds,

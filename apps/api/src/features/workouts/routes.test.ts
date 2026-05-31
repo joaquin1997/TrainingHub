@@ -8,6 +8,10 @@ vi.mock('./repository.js', () => ({
   getExerciseLastPerformance: vi.fn(),
 }));
 
+vi.mock('../../infrastructure/userContext.js', () => ({
+  resolveUserPublicId: vi.fn(async () => 'user-test'),
+}));
+
 import { createApp } from '../../app.js';
 import {
   createWorkoutSession,
@@ -136,6 +140,7 @@ describe('POST /workouts', () => {
     expect(response.statusCode).toBe(201);
     expect(response.json()).toMatchObject({ id: 'w1' });
     expect(createWorkoutSession).toHaveBeenCalledWith(
+      'user-test',
       expect.objectContaining({
         routineId: 'r1',
         startedAt: validPayload.startedAt,
@@ -181,7 +186,7 @@ describe('GET /workouts/exercises/:exerciseId/last', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ sets: [{ order: 1, weightKg: 60 }] });
-    expect(getExerciseLastPerformance).toHaveBeenCalledWith('ex1');
+    expect(getExerciseLastPerformance).toHaveBeenCalledWith('user-test', 'ex1');
   });
 
   it('returns 404 when there is no previous performance', async () => {

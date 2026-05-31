@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 
+import { resolveUserPublicId } from '../../infrastructure/userContext.js';
 import { getUserSettings, updateUserSettings } from './repository.js';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -7,8 +8,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export async function registerSettingsRoutes(app: FastifyInstance) {
-  app.get('/settings', async () => {
-    return getUserSettings();
+  app.get('/settings', async (request) => {
+    return getUserSettings(await resolveUserPublicId(request));
   });
 
   app.put<{ Body: unknown }>('/settings', async (request, reply) => {
@@ -27,6 +28,9 @@ export async function registerSettingsRoutes(app: FastifyInstance) {
         ? body.defaultRestSeconds
         : undefined;
 
-    return updateUserSettings({ unit, defaultRestSeconds });
+    return updateUserSettings(await resolveUserPublicId(request), {
+      unit,
+      defaultRestSeconds,
+    });
   });
 }

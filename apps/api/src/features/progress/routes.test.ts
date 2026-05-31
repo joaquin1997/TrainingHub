@@ -6,6 +6,9 @@ vi.mock('./repository.js', () => ({
   listWeeklyVolume: vi.fn(),
   listMuscleGroupVolume: vi.fn(),
 }));
+vi.mock('../../infrastructure/userContext.js', () => ({
+  resolveUserPublicId: vi.fn(async () => 'user-test'),
+}));
 
 import { createApp } from '../../app.js';
 import {
@@ -100,6 +103,6 @@ describe('GET /progress/exercises/:exerciseId', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ exerciseId: 'e1', points: [{ totalVolume: 480 }] });
-    expect(getExerciseProgress).toHaveBeenCalledWith('e1');
+    expect(getExerciseProgress).toHaveBeenCalledWith('user-test', 'e1');
   });
 });
