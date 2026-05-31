@@ -16,6 +16,7 @@ import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { ExercisePickerModal } from '@/features/exercises/components/ExercisePickerModal';
 import { ProgressRing } from '@/features/workouts/components/ProgressRing';
 import { WheelPicker } from '@/features/workouts/components/WheelPicker';
+import { Button } from '@/ui/Button';
 import { formatDuration } from '@/lib/format';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { useRestTimer } from '@/lib/useRestTimer';
@@ -624,22 +625,19 @@ export function ActiveWorkoutScreen() {
         onSelect={handleAddExercise}
       />
       {finishError ? <Text style={styles.errorText}>{finishError}</Text> : null}
-      <Pressable
+      <Button
+        label={isFinishing ? 'Saving workout...' : 'Finish workout'}
         onPress={() => void finishWorkout()}
         disabled={isFinishing}
-        style={[styles.button, isFinishing ? styles.buttonDisabled : null]}
-      >
-        <Text style={styles.buttonText}>
-          {isFinishing ? 'Saving workout...' : 'Finish workout'}
-        </Text>
-      </Pressable>
-      <Pressable
+        fullWidth
+      />
+      <Button
+        label="Discard workout"
+        variant="danger"
         onPress={handleDiscard}
         disabled={isFinishing}
-        style={styles.discardButton}
-      >
-        <Text style={styles.discardButtonText}>Discard workout</Text>
-      </Pressable>
+        fullWidth
+      />
     </ScrollView>
   );
 }
@@ -849,15 +847,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
   },
-  button: {
-    ...commonStyles.primaryButton,
-  },
-  buttonText: {
-    ...commonStyles.primaryButtonText,
-  },
-  buttonDisabled: {
-    ...commonStyles.disabled,
-  },
   notesInput: {
     ...commonStyles.input,
     fontSize: 15,
@@ -961,16 +950,6 @@ const styles = StyleSheet.create({
   startText: {
     color: colors.onPrimary,
     fontSize: 14,
-    fontWeight: '800',
-  },
-  discardButton: {
-    ...commonStyles.secondaryButton,
-    borderColor: colors.danger,
-    backgroundColor: colors.dangerSoft,
-  },
-  discardButtonText: {
-    color: colors.danger,
-    fontSize: 15,
     fontWeight: '800',
   },
   errorText: {

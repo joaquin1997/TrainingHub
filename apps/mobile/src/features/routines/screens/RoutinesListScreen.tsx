@@ -1,4 +1,4 @@
-import { Link, useFocusEffect } from 'expo-router';
+import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   Pressable,
@@ -13,6 +13,7 @@ import { routinesClient } from '@/features/routines/api/routinesClient';
 import { groupRoutinesByFolder } from '@/features/routines/utils/groupRoutinesByFolder';
 import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
+import { Button } from '@/ui/Button';
 import { formatDuration } from '@/lib/format';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { useRefresh } from '@/lib/useRefresh';
@@ -62,6 +63,7 @@ export function RoutinesListScreen() {
     }, [loadRoutines]),
   );
 
+  const router = useRouter();
   const activeWorkout = useActiveWorkout();
   const elapsedSeconds = useElapsedSeconds(activeWorkout?.startedAt);
   const { isRefreshing, onRefresh } = useRefresh(loadRoutines);
@@ -101,11 +103,11 @@ export function RoutinesListScreen() {
           </Pressable>
         </Link>
       ) : null}
-      <Link href="/routines/create" asChild>
-        <Pressable style={styles.primaryButton}>
-          <Text style={styles.primaryButtonText}>Create routine</Text>
-        </Pressable>
-      </Link>
+      <Button
+        label="Create routine"
+        onPress={() => router.push('/routines/create')}
+        fullWidth
+      />
       {showLoading ? (
         <View style={styles.stateCard}>
           <Text style={styles.meta}>Loading routines...</Text>
@@ -186,12 +188,6 @@ const styles = StyleSheet.create({
   },
   body: {
     ...commonStyles.body,
-  },
-  primaryButton: {
-    ...commonStyles.primaryButton,
-  },
-  primaryButtonText: {
-    ...commonStyles.primaryButtonText,
   },
   banner: {
     borderRadius: radii.md,
