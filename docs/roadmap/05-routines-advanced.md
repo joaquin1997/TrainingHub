@@ -5,7 +5,7 @@
 - [x] Inherit previous set values as ghosted placeholders in the builder
 - [ ] Supersets (group exercises)
 - [x] Duplicate routine
-- [ ] Folders / organization
+- [x] Folders / organization (folder label + grouped list)
 - [x] Per-exercise rest time config
 
 ## Progress log

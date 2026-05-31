@@ -11,6 +11,7 @@ import {
 
 import { RouteLinks } from '@/features/navigation/components/RouteLinks';
 import { routinesClient } from '@/features/routines/api/routinesClient';
+import { groupRoutinesByFolder } from '@/features/routines/utils/groupRoutinesByFolder';
 import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
 import { formatDuration } from '@/lib/format';
@@ -68,6 +69,8 @@ export function RoutinesListScreen() {
   const showLoading = isLoading && routines.length === 0;
   const hasEmptyState = !isLoading && !errorMessage && routines.length === 0;
   const hasListState = !errorMessage && routines.length > 0;
+  const folderGroups = groupRoutinesByFolder(routines);
+  const showFolderHeaders = folderGroups.some((group) => group.folder);
 
   return (
     <ScrollView
@@ -144,23 +147,38 @@ export function RoutinesListScreen() {
       ) : null}
       {hasListState ? (
         <View style={styles.list}>
-          {routines.map((routine) => (
-            <View key={routine.id} style={styles.card}>
-              <Text style={styles.cardTitle}>{routine.name}</Text>
-              {routine.description ? (
-                <Text style={styles.cardBody}>{routine.description}</Text>
+          {folderGroups.map((group) => (
+            <View
+              key={group.folder ?? '__unfiled__'}
+              style={styles.folderGroup}
+            >
+              {showFolderHeaders ? (
+                <Text style={styles.folderTitle}>
+                  {group.folder ?? 'Ungrouped'}
+                </Text>
               ) : null}
-              <Text style={styles.cardMeta}>
-                Exercises: {getRoutineExerciseSummary(routine)}
-              </Text>
-              <View style={styles.links}>
-                <Link href={`/routines/${routine.id}`} style={styles.link}>
-                  Open detail
-                </Link>
-                <Link href={`/routines/edit/${routine.id}`} style={styles.link}>
-                  Edit routine
-                </Link>
-              </View>
+              {group.routines.map((routine) => (
+                <View key={routine.id} style={styles.card}>
+                  <Text style={styles.cardTitle}>{routine.name}</Text>
+                  {routine.description ? (
+                    <Text style={styles.cardBody}>{routine.description}</Text>
+                  ) : null}
+                  <Text style={styles.cardMeta}>
+                    Exercises: {getRoutineExerciseSummary(routine)}
+                  </Text>
+                  <View style={styles.links}>
+                    <Link href={`/routines/${routine.id}`} style={styles.link}>
+                      Open detail
+                    </Link>
+                    <Link
+                      href={`/routines/edit/${routine.id}`}
+                      style={styles.link}
+                    >
+                      Edit routine
+                    </Link>
+                  </View>
+                </View>
+              ))}
             </View>
           ))}
         </View>
@@ -205,7 +223,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   list: {
-    gap: spacing.md,
+    gap: spacing.lg,
+  },
+  folderGroup: {
+    gap: spacing.sm,
+  },
+  folderTitle: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   stateCard: {
     ...commonStyles.card,

@@ -159,6 +159,7 @@ export function RoutineFormScreen({
   const [routine, setRoutine] = useState<Routine | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [folder, setFolder] = useState('');
   const [exercises, setExercises] = useState<EditableRoutineExercise[]>([
     createEmptyExerciseRow(),
   ]);
@@ -230,6 +231,7 @@ export function RoutineFormScreen({
           setRoutine(nextRoutine);
           setName(nextRoutine.name);
           setDescription(nextRoutine.description ?? '');
+          setFolder(nextRoutine.folder ?? '');
           setExercises(
             nextRoutine.exercises.length > 0
               ? nextRoutine.exercises
@@ -483,6 +485,7 @@ export function RoutineFormScreen({
         const updatedRoutine = await routinesClient.update(routineId, {
           name: trimmedName,
           description: trimmedDescription || undefined,
+          folder: folder.trim() || undefined,
           exercises: routineExercises,
         });
 
@@ -500,6 +503,7 @@ export function RoutineFormScreen({
       const createdRoutine = await routinesClient.create({
         name: trimmedName,
         description: trimmedDescription || undefined,
+        folder: folder.trim() || undefined,
         exercises: routineExercises,
       });
 
@@ -575,6 +579,17 @@ export function RoutineFormScreen({
             placeholderTextColor={colors.textSubtle}
             multiline
             style={[styles.input, styles.multilineInput]}
+          />
+        </View>
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Folder</Text>
+          <TextInput
+            value={folder}
+            onChangeText={setFolder}
+            placeholder="e.g. Push / Pull / Legs (optional)"
+            placeholderTextColor={colors.textSubtle}
+            style={styles.input}
+            autoCapitalize="words"
           />
         </View>
         <View style={styles.fieldGroup}>

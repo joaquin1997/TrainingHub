@@ -40,6 +40,7 @@ function mapRoutine(record: RoutineRecord): Routine {
     userId: DEVELOPMENT_USER_PUBLIC_ID,
     name: record.name,
     description: record.description ?? undefined,
+    folder: record.folder ?? undefined,
     exercises: record.exercises
       .slice()
       .sort((left, right) => left.orderIndex - right.orderIndex)
@@ -177,6 +178,7 @@ export async function createRoutine(input: RoutineWriteInput) {
       },
       name: input.name,
       description: input.description,
+      folder: input.folder,
       exercises: {
         create: input.exercises.map(toRoutineExerciseCreateInput),
       },
@@ -240,6 +242,7 @@ export async function updateRoutine(id: string, input: RoutineWriteInput) {
       data: {
         name: input.name,
         description: input.description,
+        folder: input.folder,
         exercises: {
           create: input.exercises.map(toRoutineExerciseCreateInput),
         },

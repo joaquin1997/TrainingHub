@@ -116,6 +116,7 @@ export function RoutineDetailScreen() {
       const created = await routinesClient.create({
         name: `${routine.name} (copy)`,
         description: routine.description,
+        folder: routine.folder,
         exercises: routine.exercises
           .slice()
           .sort((left, right) => left.orderIndex - right.orderIndex)

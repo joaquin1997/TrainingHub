@@ -125,6 +125,7 @@ function parseRoutineWriteInput(body: unknown): CreateRoutineInput | null {
   return {
     name: normalizedBody.name.trim(),
     description: parseOptionalString(normalizedBody.description),
+    folder: parseOptionalString(normalizedBody.folder),
     exercises,
   };
 }
@@ -161,6 +162,7 @@ async function hydrateRoutineWriteInput(
   return {
     name: input.name,
     description: input.description,
+    folder: input.folder,
     exercises: exercises.filter(
       (exercise): exercise is RoutineWriteInput['exercises'][number] =>
         exercise !== null,

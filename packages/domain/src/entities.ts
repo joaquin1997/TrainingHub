@@ -56,6 +56,8 @@ export interface Routine {
   userId: EntityId;
   name: string;
   description?: string;
+  /** Optional folder/grouping label for organizing routines. */
+  folder?: string;
   exercises: RoutineExercise[];
   createdAt: ISODateString;
   updatedAt: ISODateString;
@@ -119,6 +121,7 @@ export interface RoutineExerciseInput {
 export interface CreateRoutineInput {
   name: string;
   description?: string;
+  folder?: string;
   exercises: RoutineExerciseInput[];
 }
 
