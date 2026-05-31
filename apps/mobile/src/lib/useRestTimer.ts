@@ -47,5 +47,15 @@ export function useRestTimer(onComplete?: () => void) {
     setRemaining(0);
   }, []);
 
-  return { remaining, isRunning, start, skip };
+  /** Add or subtract seconds from a running countdown (never below 0). */
+  const adjust = useCallback((deltaSeconds: number) => {
+    if (endRef.current == null) {
+      return;
+    }
+
+    endRef.current = Math.max(Date.now(), endRef.current + deltaSeconds * 1000);
+    setRemaining(Math.max(0, Math.round((endRef.current - Date.now()) / 1000)));
+  }, []);
+
+  return { remaining, isRunning, start, skip, adjust };
 }

@@ -424,37 +424,84 @@ export function ActiveWorkoutScreen() {
       />
       <View style={styles.restBar}>
         {restTimer.isRunning ? (
-          <>
+          <View style={styles.restRow}>
             <Text style={styles.restTime}>
-              Rest {formatDuration(restTimer.remaining)}
+              {formatDuration(restTimer.remaining)}
             </Text>
-            <Pressable onPress={restTimer.skip} hitSlop={8}>
-              <Text style={styles.addSetText}>Skip</Text>
-            </Pressable>
-          </>
-        ) : (
-          <>
-            <Text style={styles.meta}>Rest</Text>
-            {REST_PRESETS.map((seconds) => (
+            <View style={styles.restControls}>
               <Pressable
-                key={seconds}
-                onPress={() => setRestDuration(seconds)}
+                onPress={() => restTimer.adjust(-15)}
                 hitSlop={6}
+                style={styles.stepButton}
               >
-                <Text
+                <Text style={styles.stepText}>−15</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => restTimer.adjust(15)}
+                hitSlop={6}
+                style={styles.stepButton}
+              >
+                <Text style={styles.stepText}>+15</Text>
+              </Pressable>
+              <Pressable onPress={restTimer.skip} hitSlop={8}>
+                <Text style={styles.addSetText}>Skip</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.restColumn}>
+            <View style={styles.restRow}>
+              <Text style={styles.meta}>Rest timer</Text>
+              <View style={styles.restControls}>
+                <Pressable
+                  onPress={() => setRestDuration((d) => Math.max(15, d - 15))}
+                  hitSlop={6}
+                  style={styles.stepButton}
+                >
+                  <Text style={styles.stepText}>−</Text>
+                </Pressable>
+                <Text style={styles.restValue}>
+                  {formatDuration(restDuration)}
+                </Text>
+                <Pressable
+                  onPress={() => setRestDuration((d) => d + 15)}
+                  hitSlop={6}
+                  style={styles.stepButton}
+                >
+                  <Text style={styles.stepText}>+</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => restTimer.start(restDuration)}
+                  hitSlop={8}
+                  style={styles.startButton}
+                >
+                  <Text style={styles.startText}>Start</Text>
+                </Pressable>
+              </View>
+            </View>
+            <View style={styles.presetRow}>
+              {REST_PRESETS.map((seconds) => (
+                <Pressable
+                  key={seconds}
+                  onPress={() => setRestDuration(seconds)}
+                  hitSlop={6}
                   style={[
-                    styles.restPreset,
-                    restDuration === seconds ? styles.restPresetActive : null,
+                    styles.presetChip,
+                    restDuration === seconds ? styles.presetChipActive : null,
                   ]}
                 >
-                  {seconds}s
-                </Text>
-              </Pressable>
-            ))}
-            <Pressable onPress={() => restTimer.start(restDuration)} hitSlop={8}>
-              <Text style={styles.addSetText}>Start</Text>
-            </Pressable>
-          </>
+                  <Text
+                    style={[
+                      styles.restPreset,
+                      restDuration === seconds ? styles.restPresetActive : null,
+                    ]}
+                  >
+                    {seconds}s
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
         )}
       </View>
       {workoutDraft.exercises.map((exercise) => (
@@ -815,10 +862,6 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   restBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radii.md,
@@ -826,15 +869,79 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
   },
+  restColumn: {
+    gap: spacing.sm,
+  },
+  restRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  restControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  stepButton: {
+    minWidth: 38,
+    minHeight: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    paddingHorizontal: 8,
+  },
+  stepText: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  restValue: {
+    minWidth: 56,
+    textAlign: 'center',
+    color: colors.primary,
+    fontSize: 17,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+  },
+  startButton: {
+    borderRadius: radii.sm,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+  },
+  startText: {
+    color: colors.onPrimary,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  presetRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  presetChip: {
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+  },
+  presetChipActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.surface,
+  },
   restTime: {
     color: colors.primary,
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: '900',
     fontVariant: ['tabular-nums'],
   },
   restPreset: {
     color: colors.textMuted,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
   },
   restPresetActive: {
