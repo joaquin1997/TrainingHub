@@ -296,7 +296,8 @@ export function ActiveWorkoutScreen() {
     setActiveWorkout(nextDraft);
 
     if (becomingDone) {
-      restTimer.start(restDuration);
+      // Prefer the routine's per-exercise rest, falling back to the picker value.
+      restTimer.start(exercise?.restSeconds ?? restDuration);
     }
   };
 

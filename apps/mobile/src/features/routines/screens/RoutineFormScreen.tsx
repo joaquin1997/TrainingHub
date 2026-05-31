@@ -46,6 +46,7 @@ type EditableRoutineExercise = {
   id: string;
   exerciseId?: string;
   exerciseQuery: string;
+  restSeconds: string;
   sets: EditableRoutineSet[];
 };
 
@@ -72,6 +73,7 @@ function createEmptyExerciseRow(): EditableRoutineExercise {
     id: createRowId('routine-exercise-row'),
     exerciseId: undefined,
     exerciseQuery: '',
+    restSeconds: '',
     sets: [createEmptySetRow()],
   };
 }
@@ -93,6 +95,10 @@ function toEditableExercise(
     id: routineExercise.id,
     exerciseId: routineExercise.exerciseId,
     exerciseQuery: routineExercise.exerciseName,
+    restSeconds:
+      routineExercise.restSeconds !== undefined
+        ? String(routineExercise.restSeconds)
+        : '',
     sets:
       routineExercise.sets.length > 0
         ? routineExercise.sets
@@ -333,6 +339,16 @@ export function RoutineFormScreen({
     );
   }
 
+  function updateExerciseRest(exerciseId: string, value: string) {
+    setExercises((currentExercises) =>
+      currentExercises.map((exercise) =>
+        exercise.id === exerciseId
+          ? { ...exercise, restSeconds: value }
+          : exercise,
+      ),
+    );
+  }
+
   function addExerciseRow() {
     setExercises((currentExercises) => [
       ...currentExercises,
@@ -412,6 +428,13 @@ export function RoutineFormScreen({
           return;
         }
 
+        const restSeconds = parseOptionalInteger(exercise.restSeconds);
+
+        if (restSeconds === null) {
+          setErrorMessage('Rest time must be a whole number of seconds.');
+          return;
+        }
+
         const sets: RoutineExerciseInput['sets'] = [];
 
         for (const [setIndex] of exercise.sets.entries()) {
@@ -446,6 +469,7 @@ export function RoutineFormScreen({
         routineExercises.push({
           exerciseId: exercise.exerciseId,
           orderIndex: exerciseIndex + 1,
+          restSeconds,
           sets,
         });
       }
@@ -681,6 +705,19 @@ export function RoutineFormScreen({
                     );
                   })()
                 ) : null}
+                <View style={styles.restRow}>
+                  <Text style={styles.meta}>Rest between sets (sec)</Text>
+                  <TextInput
+                    value={exercise.restSeconds}
+                    onChangeText={(value) =>
+                      updateExerciseRest(exercise.id, value)
+                    }
+                    placeholder="e.g. 90"
+                    placeholderTextColor={colors.textSubtle}
+                    keyboardType="number-pad"
+                    style={[styles.input, styles.restInput]}
+                  />
+                </View>
                 <View style={styles.setList}>
                   {exercise.sets.map((set, setIndex) => (
                     <View key={set.id} style={styles.setCard}>
@@ -890,6 +927,13 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 14,
     fontWeight: '800',
+  },
+  restRow: {
+    gap: spacing.xs,
+  },
+  restInput: {
+    alignSelf: 'flex-start',
+    minWidth: 100,
   },
   setList: {
     gap: spacing.sm,

@@ -122,6 +122,7 @@ export function RoutineDetailScreen() {
           .map((exercise) => ({
             exerciseId: exercise.exerciseId,
             orderIndex: exercise.orderIndex,
+            restSeconds: exercise.restSeconds,
             sets: exercise.sets
               .slice()
               .sort((left, right) => left.setNumber - right.setNumber)
@@ -203,6 +204,9 @@ export function RoutineDetailScreen() {
                 <Text style={styles.exerciseTitle}>
                   {exercise.orderIndex}. {exercise.exerciseName}
                 </Text>
+                {exercise.restSeconds !== undefined ? (
+                  <Text style={styles.meta}>Rest: {exercise.restSeconds}s</Text>
+                ) : null}
                 {exercise.sets.length === 0 ? (
                   <Text style={styles.meta}>No target sets</Text>
                 ) : (

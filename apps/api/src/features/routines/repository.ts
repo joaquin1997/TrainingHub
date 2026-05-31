@@ -49,6 +49,7 @@ function mapRoutine(record: RoutineRecord): Routine {
         exerciseId: exercise.exercise.publicId,
         exerciseName: exercise.exerciseName,
         orderIndex: exercise.orderIndex,
+        restSeconds: exercise.restSeconds ?? undefined,
         sets: exercise.sets
           .slice()
           .sort((left, right) => left.setNumber - right.setNumber)
@@ -81,6 +82,7 @@ function toRoutineExerciseCreateInput(
     },
     exerciseName: exercise.exerciseName,
     orderIndex: exercise.orderIndex,
+    restSeconds: exercise.restSeconds,
     sets: {
       create: exercise.sets.map((set) => ({
         setNumber: set.setNumber,

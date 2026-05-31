@@ -6,7 +6,7 @@
 - [ ] Supersets (group exercises)
 - [x] Duplicate routine
 - [ ] Folders / organization
-- [ ] Per-exercise rest time config
+- [x] Per-exercise rest time config
 
 ## Progress log
 - Duplicate routine (client-side copy via the create endpoint) and up/down

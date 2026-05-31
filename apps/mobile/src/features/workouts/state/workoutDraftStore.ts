@@ -43,6 +43,7 @@ export type WorkoutExerciseDraft = {
   exerciseName: string;
   imagePlaceholderText?: string;
   routineExerciseId?: string;
+  restSeconds?: number;
   order: number;
   entries: WorkoutSetDraft[];
 };
@@ -85,6 +86,7 @@ function buildExerciseDrafts(routine: Routine): WorkoutExerciseDraft[] {
       exerciseName: routineExercise.exerciseName,
       imagePlaceholderText: `${routineExercise.exerciseName} image`,
       routineExerciseId: routineExercise.id,
+      restSeconds: routineExercise.restSeconds,
       order: routineExercise.orderIndex,
       entries: routineExercise.sets
         .slice()

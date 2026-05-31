@@ -70,6 +70,8 @@ export interface RoutineExercise {
   exerciseId: EntityId;
   exerciseName: string;
   orderIndex: number;
+  /** Target rest between sets, in seconds (optional). */
+  restSeconds?: number;
   sets: RoutineExerciseSet[];
   createdAt: ISODateString;
   updatedAt: ISODateString;
@@ -107,6 +109,7 @@ export interface RoutineSetInput {
 export interface RoutineExerciseInput {
   exerciseId: EntityId;
   orderIndex: number;
+  restSeconds?: number;
   sets: RoutineSetInput[];
 }
 
