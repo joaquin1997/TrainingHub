@@ -16,6 +16,11 @@ level.
 
 Architecture rules live in [docs/codex-project-context.md](docs/codex-project-context.md).
 
+Work is spec-driven: [docs/sdd/README.md](docs/sdd/README.md) describes the
+loop (specify → plan → tasks → implement) and
+[docs/sdd/constitution.md](docs/sdd/constitution.md) the rules every plan is
+checked against. Per-area backlog lives in [docs/roadmap/](docs/roadmap/).
+
 ## Prerequisites
 
 - Node 20.19+ and pnpm 9

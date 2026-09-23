@@ -22,6 +22,13 @@ Routines (CRUD + Prisma), Workouts (start→log→timer→notes→save, history+
 resume, edit-lock, discard, mark-set-done UI), Progress (per-exercise aggregation),
 Exercises (catalog/search/detail + custom), tests (API + mobile via Vitest).
 
+## Relationship to specs
+
+This file stays the backlog and progress log per area. A sub-point graduates
+into a spec under [../sdd/specs/](../sdd/README.md) when it is picked up for
+implementation; [../sdd/backlog.md](../sdd/backlog.md) tracks which areas have
+one.
+
 ## Working agreement
 - Small, reviewable commits; one logical change per commit; conventional messages.
 - Validate before each commit: `pnpm -r typecheck` and `pnpm -r test`.
