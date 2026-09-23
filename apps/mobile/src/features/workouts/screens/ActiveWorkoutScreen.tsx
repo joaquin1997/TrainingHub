@@ -1,5 +1,7 @@
 import { Link, router, useLocalSearchParams } from 'expo-router';
+import type { TFunction } from 'i18next';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Pressable,
@@ -16,8 +18,10 @@ import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { ExercisePickerModal } from '@/features/exercises/components/ExercisePickerModal';
 import { ProgressRing } from '@/features/workouts/components/ProgressRing';
 import { WheelPicker } from '@/features/workouts/components/WheelPicker';
+import { useSettings } from '@/features/settings/SettingsContext';
 import { Button } from '@/ui/Button';
 import { formatDuration } from '@/lib/format';
+import { fromKg, roundWeight } from '@/lib/weight';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { useRestTimer } from '@/lib/useRestTimer';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
@@ -28,6 +32,7 @@ const pad2 = (value: number) => String(value).padStart(2, '0');
 import type {
   Exercise,
   ExerciseLastPerformance,
+  WeightUnit,
   WorkoutSetType,
 } from '@workout/domain';
 import {
@@ -60,6 +65,7 @@ import {
 function prevSetLabel(
   performance: ExerciseLastPerformance | null | undefined,
   order: number,
+  unit: WeightUnit,
 ) {
   const last = performance?.sets.find((set) => set.order === order);
 
@@ -67,23 +73,26 @@ function prevSetLabel(
     return '–';
   }
 
-  return `${last.weightKg ?? '–'}×${last.reps ?? '–'}`;
+  const weight =
+    last.weightKg != null ? roundWeight(fromKg(last.weightKg, unit)) : '–';
+  return `${weight}×${last.reps ?? '–'}`;
 }
 
-function setTypeLabel(type: WorkoutSetType) {
+function setTypeLabel(type: WorkoutSetType, t: TFunction) {
   switch (type) {
     case 'warmup':
-      return 'Warmup';
+      return t('workouts.setType.warmup');
     case 'drop':
-      return 'Drop';
+      return t('workouts.setType.drop');
     case 'failure':
-      return 'Failure';
+      return t('workouts.setType.failure');
     default:
-      return 'Normal';
+      return t('workouts.setType.normal');
   }
 }
 
 export function ActiveWorkoutScreen() {
+  const { t } = useTranslation();
   const { routineId } = useLocalSearchParams<{ routineId?: string }>();
   const [workoutDraft, setWorkoutDraft] = useState<WorkoutSessionDraft | null>(
     null,
@@ -98,7 +107,8 @@ export function ActiveWorkoutScreen() {
   const [lastByExercise, setLastByExercise] = useState<
     Record<string, ExerciseLastPerformance | null>
   >({});
-  const [restDuration, setRestDuration] = useState(90);
+  const { settings } = useSettings();
+  const [restDuration, setRestDuration] = useState(settings.defaultRestSeconds);
   const restTimer = useRestTimer(() => Vibration.vibrate([0, 400, 200, 400]));
 
   useEffect(() => {
@@ -118,7 +128,7 @@ export function ActiveWorkoutScreen() {
           return;
         }
 
-        setWorkoutDraft(startActiveWorkout(routine));
+        setWorkoutDraft(startActiveWorkout(routine, settings.unit));
         setStatus('ready');
       })
       .catch((error: unknown) => {
@@ -127,7 +137,7 @@ export function ActiveWorkoutScreen() {
         }
 
         setErrorMessage(
-          error instanceof Error ? error.message : 'Could not load routine',
+          error instanceof Error ? error.message : t('workouts.loadRoutineError'),
         );
         setStatus('error');
       });
@@ -203,7 +213,7 @@ export function ActiveWorkoutScreen() {
     return (
       <View style={styles.container}>
         <ActivityIndicator color={colors.primary} />
-        <Text style={styles.meta}>Loading routine...</Text>
+        <Text style={styles.meta}>{t('workouts.loadingRoutine')}</Text>
       </View>
     );
   }
@@ -212,11 +222,10 @@ export function ActiveWorkoutScreen() {
     return (
       <View style={styles.container}>
         <Text style={styles.meta}>
-          {errorMessage ??
-            'Start this flow from a routine so the workout session can be created from a routine template.'}
+          {errorMessage ?? t('workouts.startFromRoutine')}
         </Text>
         <Link href="/routines" style={styles.link}>
-          Back to routines
+          {t('routineDetail.backToRoutines')}
         </Link>
       </View>
     );
@@ -224,9 +233,7 @@ export function ActiveWorkoutScreen() {
 
   const finishWorkout = async () => {
     if (countWorkoutSets(workoutDraft).done === 0) {
-      setFinishError(
-        'Mark at least one set as done before finishing the workout.',
-      );
+      setFinishError(t('workouts.markOneSet'));
       return;
     }
 
@@ -249,7 +256,7 @@ export function ActiveWorkoutScreen() {
       router.push('/workouts/summary');
     } catch (error) {
       setFinishError(
-        error instanceof Error ? error.message : 'Could not save the workout.',
+        error instanceof Error ? error.message : t('workouts.saveError'),
       );
     } finally {
       setIsFinishing(false);
@@ -409,12 +416,15 @@ export function ActiveWorkoutScreen() {
       </Text>
       <Text style={styles.timer}>{formatDuration(elapsedSeconds)}</Text>
       <Text style={styles.meta}>
-        {setProgress.done}/{setProgress.total} sets done · auto-saved, resume anytime
+        {t('workouts.setsProgress', {
+          done: setProgress.done,
+          total: setProgress.total,
+        })}
       </Text>
       <TextInput
         value={workoutDraft.notes ?? ''}
         onChangeText={handleNotesChange}
-        placeholder="Workout notes (optional)"
+        placeholder={t('workouts.notesPlaceholder')}
         placeholderTextColor={colors.textSubtle}
         style={styles.notesInput}
         multiline
@@ -432,7 +442,7 @@ export function ActiveWorkoutScreen() {
               <Text style={styles.ringTime}>
                 {formatDuration(restTimer.remaining)}
               </Text>
-              <Text style={styles.ringLabel}>rest</Text>
+              <Text style={styles.ringLabel}>{t('workouts.rest')}</Text>
             </ProgressRing>
             <View style={styles.ringControls}>
               <Pressable
@@ -454,13 +464,13 @@ export function ActiveWorkoutScreen() {
                 hitSlop={8}
                 style={styles.skipButton}
               >
-                <Text style={styles.skipText}>Skip</Text>
+                <Text style={styles.skipText}>{t('workouts.skip')}</Text>
               </Pressable>
             </View>
           </View>
         ) : (
           <View style={styles.restColumn}>
-            <Text style={styles.meta}>Rest timer</Text>
+            <Text style={styles.meta}>{t('workouts.restTimer')}</Text>
             <View style={styles.wheelRow}>
               <View style={styles.wheelGroup}>
                 <WheelPicker
@@ -469,7 +479,7 @@ export function ActiveWorkoutScreen() {
                   onChange={(m) => setRestDuration(m * 60 + (restDuration % 60))}
                   formatItem={pad2}
                 />
-                <Text style={styles.wheelUnit}>min</Text>
+                <Text style={styles.wheelUnit}>{t('workouts.min')}</Text>
               </View>
               <Text style={styles.wheelColon}>:</Text>
               <View style={styles.wheelGroup}>
@@ -481,14 +491,14 @@ export function ActiveWorkoutScreen() {
                   }
                   formatItem={pad2}
                 />
-                <Text style={styles.wheelUnit}>sec</Text>
+                <Text style={styles.wheelUnit}>{t('workouts.sec')}</Text>
               </View>
               <Pressable
                 onPress={() => restTimer.start(restDuration)}
                 hitSlop={8}
                 style={styles.startButton}
               >
-                <Text style={styles.startText}>Start</Text>
+                <Text style={styles.startText}>{t('workouts.start')}</Text>
               </Pressable>
             </View>
           </View>
@@ -501,7 +511,7 @@ export function ActiveWorkoutScreen() {
               <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
               {exercise.supersetGroup !== undefined ? (
                 <Text style={styles.supersetBadge}>
-                  Superset {exercise.supersetGroup}
+                  {t('routineDetail.superset', { group: exercise.supersetGroup })}
                 </Text>
               ) : null}
             </View>
@@ -522,15 +532,17 @@ export function ActiveWorkoutScreen() {
           </View>
           <View style={styles.imagePlaceholder}>
             <Text style={styles.imagePlaceholderText}>
-              {exercise.imagePlaceholderText ?? 'Image placeholder'}
+              {exercise.imagePlaceholderText ?? t('workouts.imagePlaceholder')}
             </Text>
           </View>
           <View style={styles.setList}>
             <View style={styles.setHeaderRow}>
-              <Text style={[styles.colSet, styles.colLabel]}>SET</Text>
-              <Text style={[styles.colPrev, styles.colLabel]}>PREV</Text>
-              <Text style={[styles.colInput, styles.colLabel]}>KG</Text>
-              <Text style={[styles.colInput, styles.colLabel]}>REPS</Text>
+              <Text style={[styles.colSet, styles.colLabel]}>{t('workouts.colSet')}</Text>
+              <Text style={[styles.colPrev, styles.colLabel]}>{t('workouts.colPrev')}</Text>
+              <Text style={[styles.colInput, styles.colLabel]}>
+                {(workoutDraft.unit ?? 'kg').toUpperCase()}
+              </Text>
+              <Text style={[styles.colInput, styles.colLabel]}>{t('workouts.colReps')}</Text>
               <View style={styles.colCheck} />
             </View>
             {exercise.entries.map((set) => (
@@ -546,12 +558,16 @@ export function ActiveWorkoutScreen() {
                   <Text style={styles.setNum}>{set.order}</Text>
                   {set.type !== 'normal' ? (
                     <Text style={styles.setTypeTag}>
-                      {setTypeLabel(set.type)[0]}
+                      {setTypeLabel(set.type, t)[0]}
                     </Text>
                   ) : null}
                 </Pressable>
                 <Text numberOfLines={1} style={[styles.colPrev, styles.prevText]}>
-                  {prevSetLabel(lastByExercise[exercise.exerciseId], set.order)}
+                  {prevSetLabel(
+                    lastByExercise[exercise.exerciseId],
+                    set.order,
+                    workoutDraft.unit ?? 'kg',
+                  )}
                 </Text>
                 <TextInput
                   keyboardType="decimal-pad"
@@ -602,13 +618,13 @@ export function ActiveWorkoutScreen() {
               onPress={() => handleAddSet(exercise.id)}
               style={styles.addSetButton}
             >
-              <Text style={styles.addSetText}>+ Add set</Text>
+              <Text style={styles.addSetText}>{`+ ${t('workouts.addSet')}`}</Text>
             </Pressable>
             <Pressable
               onPress={() => handleRemoveExercise(exercise.id)}
               hitSlop={8}
             >
-              <Text style={styles.removeText}>Remove exercise</Text>
+              <Text style={styles.removeText}>{t('workouts.removeExercise')}</Text>
             </Pressable>
           </View>
         </View>
@@ -617,7 +633,7 @@ export function ActiveWorkoutScreen() {
         onPress={() => setIsPickerVisible(true)}
         style={styles.addExerciseButton}
       >
-        <Text style={styles.addExerciseText}>+ Add exercise</Text>
+        <Text style={styles.addExerciseText}>{`+ ${t('workouts.addExercise')}`}</Text>
       </Pressable>
       <ExercisePickerModal
         visible={isPickerVisible}
@@ -626,13 +642,13 @@ export function ActiveWorkoutScreen() {
       />
       {finishError ? <Text style={styles.errorText}>{finishError}</Text> : null}
       <Button
-        label={isFinishing ? 'Saving workout...' : 'Finish workout'}
+        label={isFinishing ? t('workouts.savingWorkout') : t('workouts.finishWorkout')}
         onPress={() => void finishWorkout()}
         disabled={isFinishing}
         fullWidth
       />
       <Button
-        label="Discard workout"
+        label={t('workouts.discardWorkout')}
         variant="danger"
         onPress={handleDiscard}
         disabled={isFinishing}

@@ -1,5 +1,6 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Pressable,
   RefreshControl,
@@ -15,8 +16,10 @@ import { ProgressChart } from '@/features/progress/components/ProgressChart';
 import { progressClient } from '@/features/progress/api/progressClient';
 import { buildWeeklyVolumeSeries } from '@/features/progress/utils/chartData';
 import { summarizeTrainingFrequency } from '@/features/progress/utils/trainingFrequency';
+import { useSettings } from '@/features/settings/SettingsContext';
 import { EmptyState } from '@/ui/EmptyState';
 import { formatShortDate } from '@/lib/format';
+import { formatWeightValue, fromKg, roundWeight } from '@/lib/weight';
 import { useRefresh } from '@/lib/useRefresh';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type {
@@ -30,11 +33,14 @@ function formatValue(value?: number) {
 }
 
 export function ProgressOverviewScreen() {
+  const { t } = useTranslation();
   const [progress, setProgress] = useState<ExerciseProgressSummary[]>([]);
   const [weeklyVolume, setWeeklyVolume] = useState<WeeklyVolumePoint[]>([]);
   const [muscleVolume, setMuscleVolume] = useState<MuscleGroupVolumePoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
+  const { settings } = useSettings();
+  const unit = settings.unit;
 
   const loadProgress = useCallback(
     async (shouldUpdate: () => boolean = () => true) => {
@@ -57,7 +63,7 @@ export function ProgressOverviewScreen() {
       } catch (error) {
         if (shouldUpdate()) {
           setErrorMessage(
-            error instanceof Error ? error.message : 'Unable to load progress.',
+            error instanceof Error ? error.message : t('progress.loadError'),
           );
         }
       } finally {
@@ -66,7 +72,7 @@ export function ProgressOverviewScreen() {
         }
       }
     },
-    [],
+    [t],
   );
 
   useFocusEffect(
@@ -82,7 +88,12 @@ export function ProgressOverviewScreen() {
   );
 
   const { isRefreshing, onRefresh } = useRefresh(loadProgress);
-  const weeklyVolumeSeries = buildWeeklyVolumeSeries(weeklyVolume);
+  const weeklyVolumeSeries = buildWeeklyVolumeSeries(
+    weeklyVolume.map((point) => ({
+      ...point,
+      totalVolume: roundWeight(fromKg(point.totalVolume, unit)),
+    })),
+  );
   const frequency = summarizeTrainingFrequency(weeklyVolume);
   const showLoading = isLoading && progress.length === 0;
   const hasEmptyState = !isLoading && !errorMessage && progress.length === 0;
@@ -96,14 +107,12 @@ export function ProgressOverviewScreen() {
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
-      <Text style={styles.body}>
-        Review your strongest recent lifts and see which exercises are moving.
-      </Text>
+      <Text style={styles.body}>{t('progress.intro')}</Text>
       <FrequencySummary summary={frequency} />
       {weeklyVolumeSeries.bars.length > 0 ? (
         <ProgressChart
-          title="Weekly volume"
-          unit="kg"
+          title={t('progress.weeklyVolume')}
+          unit={unit}
           series={weeklyVolumeSeries}
           formatLabel={formatShortDate}
         />
@@ -111,7 +120,7 @@ export function ProgressOverviewScreen() {
       <MuscleDistribution points={muscleVolume} />
       {showLoading ? (
         <View style={styles.card}>
-          <Text style={styles.meta}>Loading progress...</Text>
+          <Text style={styles.meta}>{t('progress.loading')}</Text>
         </View>
       ) : null}
       {errorMessage ? (
@@ -122,8 +131,8 @@ export function ProgressOverviewScreen() {
       {hasEmptyState ? (
         <EmptyState
           icon="stats-chart-outline"
-          title="No progress yet"
-          subtitle="Finish a workout to start tracking your lifts."
+          title={t('progress.emptyTitle')}
+          subtitle={t('progress.emptySubtitle')}
         />
       ) : null}
       {hasListState ? (
@@ -143,20 +152,29 @@ export function ProgressOverviewScreen() {
                 <View style={styles.cardTitleRow}>
                   <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
                   {exercise.isRecordSession ? (
-                    <Text style={styles.prBadge}>PR</Text>
+                    <Text style={styles.prBadge}>{t('progress.pr')}</Text>
                   ) : null}
                 </View>
                 <Text style={styles.meta}>
-                  Latest: {formatValue(exercise.latestWeightKg)} kg x{' '}
-                  {formatValue(exercise.latestReps)}
+                  {t('progress.latest', {
+                    weight: formatWeightValue(exercise.latestWeightKg, unit),
+                    unit,
+                    reps: formatValue(exercise.latestReps),
+                  })}
                 </Text>
                 <Text style={styles.meta}>
-                  Best: {formatValue(exercise.personalBestWeightKg)} kg x{' '}
-                  {formatValue(exercise.personalBestReps)}
+                  {t('progress.best', {
+                    weight: formatWeightValue(exercise.personalBestWeightKg, unit),
+                    unit,
+                    reps: formatValue(exercise.personalBestReps),
+                  })}
                 </Text>
                 <Text style={styles.meta}>
-                  Est. 1RM: {formatValue(exercise.bestEstimatedOneRepMax)} kg -{' '}
-                  {exercise.sessionCount} sessions
+                  {t('progress.est1rm', {
+                    weight: formatWeightValue(exercise.bestEstimatedOneRepMax, unit),
+                    unit,
+                    count: exercise.sessionCount,
+                  })}
                 </Text>
               </Pressable>
             </Link>

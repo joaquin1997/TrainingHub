@@ -27,6 +27,7 @@ import {
   getExerciseLastPerformance,
   listWorkoutSessions,
 } from './repository.js';
+import { resolveUserPublicId } from '../../infrastructure/userContext.js';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -125,14 +126,15 @@ function parseCreateWorkoutSessionInput(
 }
 
 export async function registerWorkoutRoutes(app: FastifyInstance) {
-  app.get('/workouts', async () => {
-    return listWorkoutSessions();
+  app.get('/workouts', async (request) => {
+    return listWorkoutSessions(await resolveUserPublicId(request));
   });
 
   app.get<{ Params: { exerciseId: string } }>(
     '/workouts/exercises/:exerciseId/last',
     async (request, reply) => {
       const performance = await getExerciseLastPerformance(
+        await resolveUserPublicId(request),
         request.params.exerciseId,
       );
 
@@ -145,7 +147,10 @@ export async function registerWorkoutRoutes(app: FastifyInstance) {
   );
 
   app.get<{ Params: { id: string } }>('/workouts/:id', async (request, reply) => {
-    const session = await findWorkoutSessionById(request.params.id);
+    const session = await findWorkoutSessionById(
+      await resolveUserPublicId(request),
+      request.params.id,
+    );
 
     if (!session) {
       return reply.code(404).send({ message: 'Workout session not found' });
@@ -161,8 +166,21 @@ export async function registerWorkoutRoutes(app: FastifyInstance) {
       return reply.code(400).send({ message: 'Invalid workout payload' });
     }
 
+    const hasCompletedSet = parsedInput.exercises.some((exercise) =>
+      exercise.sets.some((set) => Boolean(set.completedAt)),
+    );
+
+    if (!hasCompletedSet) {
+      return reply.code(400).send({
+        message: 'A workout must have at least one completed set',
+      });
+    }
+
     try {
-      const session = await createWorkoutSession(parsedInput);
+      const session = await createWorkoutSession(
+        await resolveUserPublicId(request),
+        parsedInput,
+      );
 
       return reply.code(201).send(session);
     } catch (error) {

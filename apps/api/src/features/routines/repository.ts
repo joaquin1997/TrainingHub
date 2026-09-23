@@ -2,10 +2,6 @@ import { Prisma } from '@prisma/client';
 import type { CreateRoutineInput, RoutineExerciseInput, Routine } from '@workout/domain';
 
 import { prisma } from '../../infrastructure/prisma.js';
-import {
-  DEVELOPMENT_USER_PUBLIC_ID,
-  ensureDevelopmentUser,
-} from '../../infrastructure/developmentUser.js';
 
 /**
  * Hydrated write input the repository persists: the shared write contract plus
@@ -34,10 +30,10 @@ function logRepository(action: string, payload?: Record<string, unknown>) {
   console.info('[routinesRepository]', action, payload ?? {});
 }
 
-function mapRoutine(record: RoutineRecord): Routine {
+function mapRoutine(userPublicId: string, record: RoutineRecord): Routine {
   return {
     id: record.publicId,
-    userId: DEVELOPMENT_USER_PUBLIC_ID,
+    userId: userPublicId,
     name: record.name,
     description: record.description ?? undefined,
     folder: record.folder ?? undefined,
@@ -97,14 +93,13 @@ function toRoutineExerciseCreateInput(
   };
 }
 
-export async function listRoutines() {
+export async function listRoutines(userPublicId: string) {
   logRepository('list:start');
-  await ensureDevelopmentUser();
 
   const routines = await prisma.routine.findMany({
     where: {
       user: {
-        publicId: DEVELOPMENT_USER_PUBLIC_ID,
+        publicId: userPublicId,
       },
     },
     orderBy: { createdAt: 'asc' },
@@ -122,22 +117,23 @@ export async function listRoutines() {
     },
   });
 
-  const mappedRoutines = routines.map(mapRoutine);
+  const mappedRoutines = routines.map((routine) =>
+    mapRoutine(userPublicId, routine),
+  );
 
   logRepository('list:success', { count: mappedRoutines.length });
 
   return mappedRoutines;
 }
 
-export async function findRoutineById(id: string) {
+export async function findRoutineById(userPublicId: string, id: string) {
   logRepository('findById:start', { id });
-  await ensureDevelopmentUser();
 
   const routine = await prisma.routine.findFirst({
     where: {
       publicId: id,
       user: {
-        publicId: DEVELOPMENT_USER_PUBLIC_ID,
+        publicId: userPublicId,
       },
     },
     include: {
@@ -154,7 +150,7 @@ export async function findRoutineById(id: string) {
     },
   });
 
-  const mappedRoutine = routine ? mapRoutine(routine) : null;
+  const mappedRoutine = routine ? mapRoutine(userPublicId, routine) : null;
 
   logRepository('findById:success', {
     id,
@@ -164,18 +160,20 @@ export async function findRoutineById(id: string) {
   return mappedRoutine;
 }
 
-export async function createRoutine(input: RoutineWriteInput) {
+export async function createRoutine(
+  userPublicId: string,
+  input: RoutineWriteInput,
+) {
   logRepository('create:start', {
     name: input.name,
     exercisesCount: input.exercises.length,
   });
-  await ensureDevelopmentUser();
 
   const routine = await prisma.routine.create({
     data: {
       user: {
         connect: {
-          publicId: DEVELOPMENT_USER_PUBLIC_ID,
+          publicId: userPublicId,
         },
       },
       name: input.name,
@@ -199,7 +197,7 @@ export async function createRoutine(input: RoutineWriteInput) {
     },
   });
 
-  const mappedRoutine = mapRoutine(routine);
+  const mappedRoutine = mapRoutine(userPublicId, routine);
 
   logRepository('create:success', {
     id: mappedRoutine.id,
@@ -209,19 +207,22 @@ export async function createRoutine(input: RoutineWriteInput) {
   return mappedRoutine;
 }
 
-export async function updateRoutine(id: string, input: RoutineWriteInput) {
+export async function updateRoutine(
+  userPublicId: string,
+  id: string,
+  input: RoutineWriteInput,
+) {
   logRepository('update:start', {
     id,
     name: input.name,
     exercisesCount: input.exercises.length,
   });
-  await ensureDevelopmentUser();
 
   const existingRoutine = await prisma.routine.findFirst({
     where: {
       publicId: id,
       user: {
-        publicId: DEVELOPMENT_USER_PUBLIC_ID,
+        publicId: userPublicId,
       },
     },
     select: {
@@ -264,7 +265,7 @@ export async function updateRoutine(id: string, input: RoutineWriteInput) {
     });
   });
 
-  const mappedRoutine = mapRoutine(routine);
+  const mappedRoutine = mapRoutine(userPublicId, routine);
 
   logRepository('update:success', {
     id: mappedRoutine.id,
@@ -274,15 +275,14 @@ export async function updateRoutine(id: string, input: RoutineWriteInput) {
   return mappedRoutine;
 }
 
-export async function deleteRoutine(id: string) {
+export async function deleteRoutine(userPublicId: string, id: string) {
   logRepository('delete:start', { id });
-  await ensureDevelopmentUser();
 
   const existingRoutine = await prisma.routine.findFirst({
     where: {
       publicId: id,
       user: {
-        publicId: DEVELOPMENT_USER_PUBLIC_ID,
+        publicId: userPublicId,
       },
     },
     select: {

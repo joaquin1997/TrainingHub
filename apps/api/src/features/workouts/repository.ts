@@ -7,10 +7,6 @@ import type {
 } from '@workout/domain';
 
 import { prisma } from '../../infrastructure/prisma.js';
-import {
-  DEVELOPMENT_USER_PUBLIC_ID,
-  ensureDevelopmentUser,
-} from '../../infrastructure/developmentUser.js';
 
 type WorkoutSessionRecord = Prisma.WorkoutSessionGetPayload<{
   include: {
@@ -40,10 +36,13 @@ function logRepository(action: string, payload?: Record<string, unknown>) {
   console.info('[workoutsRepository]', action, payload ?? {});
 }
 
-function mapWorkoutSession(record: WorkoutSessionRecord): WorkoutSession {
+function mapWorkoutSession(
+  userPublicId: string,
+  record: WorkoutSessionRecord,
+): WorkoutSession {
   return {
     id: record.publicId,
-    userId: DEVELOPMENT_USER_PUBLIC_ID,
+    userId: userPublicId,
     routineId: record.routine?.publicId ?? undefined,
     status: record.status as WorkoutSession['status'],
     startedAt: record.startedAt.toISOString(),
@@ -112,48 +111,45 @@ function toWorkoutExerciseCreateInput(
   };
 }
 
-export async function listWorkoutSessions() {
+export async function listWorkoutSessions(userPublicId: string) {
   logRepository('list:start');
-  await ensureDevelopmentUser();
 
   const sessions = await prisma.workoutSession.findMany({
-    where: { user: { publicId: DEVELOPMENT_USER_PUBLIC_ID } },
+    where: { user: { publicId: userPublicId } },
     orderBy: { startedAt: 'desc' },
     include: workoutSessionInclude,
   });
 
   logRepository('list:success', { count: sessions.length });
 
-  return sessions.map(mapWorkoutSession);
+  return sessions.map((session) => mapWorkoutSession(userPublicId, session));
 }
 
-export async function findWorkoutSessionById(id: string) {
+export async function findWorkoutSessionById(userPublicId: string, id: string) {
   logRepository('findById:start', { id });
-  await ensureDevelopmentUser();
 
   const session = await prisma.workoutSession.findFirst({
     where: {
       publicId: id,
-      user: { publicId: DEVELOPMENT_USER_PUBLIC_ID },
+      user: { publicId: userPublicId },
     },
     include: workoutSessionInclude,
   });
 
-  const mapped = session ? mapWorkoutSession(session) : null;
+  const mapped = session ? mapWorkoutSession(userPublicId, session) : null;
   logRepository('findById:success', { id, found: mapped !== null });
 
   return mapped;
 }
 
 export async function getExerciseLastPerformance(
+  userPublicId: string,
   exerciseId: string,
 ): Promise<ExerciseLastPerformance | null> {
-  await ensureDevelopmentUser();
-
   const workoutExercise = await prisma.workoutExercise.findFirst({
     where: {
       exercise: { publicId: exerciseId },
-      workoutSession: { user: { publicId: DEVELOPMENT_USER_PUBLIC_ID } },
+      workoutSession: { user: { publicId: userPublicId } },
     },
     orderBy: { workoutSession: { startedAt: 'desc' } },
     include: {
@@ -182,16 +178,18 @@ export async function getExerciseLastPerformance(
   };
 }
 
-export async function createWorkoutSession(input: CreateWorkoutSessionInput) {
+export async function createWorkoutSession(
+  userPublicId: string,
+  input: CreateWorkoutSessionInput,
+) {
   logRepository('create:start', {
     routineId: input.routineId,
     exercisesCount: input.exercises.length,
   });
-  await ensureDevelopmentUser();
 
   const session = await prisma.workoutSession.create({
     data: {
-      user: { connect: { publicId: DEVELOPMENT_USER_PUBLIC_ID } },
+      user: { connect: { publicId: userPublicId } },
       routine: input.routineId
         ? { connect: { publicId: input.routineId } }
         : undefined,
@@ -206,7 +204,7 @@ export async function createWorkoutSession(input: CreateWorkoutSessionInput) {
     include: workoutSessionInclude,
   });
 
-  const mapped = mapWorkoutSession(session);
+  const mapped = mapWorkoutSession(userPublicId, session);
   logRepository('create:success', {
     id: mapped.id,
     exercisesCount: mapped.exercises.length,

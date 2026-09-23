@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { colors, screenHeader } from '@/ui/theme';
 
@@ -12,6 +13,8 @@ function tabIcon(focused: IconName, unfocused: IconName) {
 }
 
 export default function TabsLayout() {
+  const { t } = useTranslation();
+
   return (
     <Tabs
       screenOptions={{
@@ -29,30 +32,39 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="routines"
         options={{
-          title: 'Routines',
+          title: t('nav.routines'),
           tabBarIcon: tabIcon('barbell', 'barbell-outline'),
         }}
       />
       <Tabs.Screen
         name="exercises"
         options={{
-          title: 'Exercises',
+          title: t('nav.exercises'),
           tabBarIcon: tabIcon('fitness', 'fitness-outline'),
         }}
       />
       <Tabs.Screen
         name="progress"
         options={{
-          title: 'Progress',
+          title: t('nav.progress'),
           tabBarIcon: tabIcon('stats-chart', 'stats-chart-outline'),
         }}
       />
       <Tabs.Screen
         name="history"
         options={{
-          title: 'History',
+          title: t('nav.history'),
           headerShown: true,
           tabBarIcon: tabIcon('time', 'time-outline'),
+          ...screenHeader,
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: t('nav.settings'),
+          headerShown: true,
+          tabBarIcon: tabIcon('settings', 'settings-outline'),
           ...screenHeader,
         }}
       />

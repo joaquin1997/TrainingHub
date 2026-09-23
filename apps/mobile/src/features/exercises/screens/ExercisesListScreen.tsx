@@ -1,5 +1,6 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Pressable,
   RefreshControl,
@@ -23,6 +24,7 @@ import type { Exercise } from '@workout/domain';
 const PAGE_SIZE = 50;
 
 export function ExercisesListScreen() {
+  const { t } = useTranslation();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [favoritesOnly, setFavoritesOnly] = useState(false);
@@ -55,7 +57,7 @@ export function ExercisesListScreen() {
       } catch (error) {
         if (shouldUpdate()) {
           setErrorMessage(
-            error instanceof Error ? error.message : 'Unable to load exercises.',
+            error instanceof Error ? error.message : t('exercises.loadError'),
           );
         }
       } finally {
@@ -64,7 +66,7 @@ export function ExercisesListScreen() {
         }
       }
     },
-    [],
+    [t],
   );
 
   useFocusEffect(
@@ -146,7 +148,7 @@ export function ExercisesListScreen() {
       <TextInput
         value={query}
         onChangeText={setQuery}
-        placeholder="Search exercises"
+        placeholder={t('exercises.searchPlaceholder')}
         placeholderTextColor={colors.textSubtle}
         style={styles.input}
         autoCorrect={false}
@@ -158,7 +160,7 @@ export function ExercisesListScreen() {
         <Text
           style={[styles.chipText, favoritesOnly ? styles.chipTextActive : null]}
         >
-          {favoritesOnly ? '★ Favorites' : '☆ Favorites'}
+          {`${favoritesOnly ? '★' : '☆'} ${t('exercises.favorites')}`}
         </Text>
       </Pressable>
       {facets.categories.length > 0 ? (
@@ -210,23 +212,23 @@ export function ExercisesListScreen() {
         </ScrollView>
       ) : null}
       {showLoading ? (
-        <Text style={styles.meta}>Loading exercises...</Text>
+        <Text style={styles.meta}>{t('exercises.loading')}</Text>
       ) : null}
       {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
       {!isLoading && !errorMessage && filtered.length > 0 ? (
         <Text style={styles.meta}>
-          {filtered.length} exercises
-          {hiddenCount > 0 ? ` - showing ${visible.length}` : ''}
+          {t('exercises.count', { count: filtered.length })}
+          {hiddenCount > 0 ? t('exercises.showing', { shown: visible.length }) : ''}
         </Text>
       ) : null}
       {!isLoading && !errorMessage && filtered.length === 0 ? (
         <EmptyState
           icon={favoritesOnly ? 'star-outline' : 'search-outline'}
-          title={favoritesOnly ? 'No favorites yet' : 'No matches'}
+          title={favoritesOnly ? t('exercises.emptyFavoritesTitle') : t('exercises.emptyMatchesTitle')}
           subtitle={
             favoritesOnly
-              ? 'Tap the star on an exercise to save it here.'
-              : 'Try a different search or clear the filters.'
+              ? t('exercises.emptyFavoritesSubtitle')
+              : t('exercises.emptyMatchesSubtitle')
           }
         />
       ) : null}
@@ -272,7 +274,7 @@ export function ExercisesListScreen() {
           ]}
         >
           <Text style={styles.loadMoreText}>
-            Load more ({hiddenCount} left)
+            {t('exercises.loadMore', { count: hiddenCount })}
           </Text>
         </Pressable>
       ) : null}

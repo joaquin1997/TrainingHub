@@ -273,6 +273,14 @@ Apple Watch support is future-ready only at this stage.
 
 ---
 
+## Development workflow
+
+Work is spec-driven: see [sdd/README.md](sdd/README.md) for the four-phase loop
+(specify → plan → tasks → implement) and [sdd/constitution.md](sdd/constitution.md)
+for the enforceable rules every plan is checked against. This document remains
+the full architecture reference; the constitution is its short, checkable
+subset. The historical prompt list (`prompts`) is superseded by that workflow.
+
 ## Development workflow with Codex
 Development must happen in small, sequential steps.
 

@@ -1,24 +1,28 @@
 import { Link, useLocalSearchParams } from 'expo-router';
+import type { TFunction } from 'i18next';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { useSettings } from '@/features/settings/SettingsContext';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import {
   durationSecondsBetween,
   formatDateTime,
   formatDuration,
 } from '@/lib/format';
+import { formatWeightValue, fromKg, roundWeight } from '@/lib/weight';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type { WorkoutSession, WorkoutSet } from '@workout/domain';
 
-function setTypeLabel(type: WorkoutSet['type']) {
+function setTypeLabel(type: WorkoutSet['type'], t: TFunction) {
   switch (type) {
     case 'warmup':
-      return 'Warmup';
+      return t('workouts.setType.warmup');
     case 'drop':
-      return 'Drop';
+      return t('workouts.setType.drop');
     case 'failure':
-      return 'Failure';
+      return t('workouts.setType.failure');
     default:
       return null;
   }
@@ -56,10 +60,13 @@ const exerciseVolume = (exercise: WorkoutSession['exercises'][number]) =>
   );
 
 export function WorkoutSessionDetailScreen() {
+  const { t } = useTranslation();
   const { workoutId } = useLocalSearchParams<{ workoutId?: string }>();
   const [session, setSession] = useState<WorkoutSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
+  const { settings } = useSettings();
+  const unit = settings.unit;
 
   const loadSession = useCallback(
     async (shouldUpdate: () => boolean = () => true) => {
@@ -71,7 +78,7 @@ export function WorkoutSessionDetailScreen() {
 
       if (!workoutId) {
         if (shouldUpdate()) {
-          setErrorMessage('Missing workout id.');
+          setErrorMessage(t('workouts.missingId'));
           setIsLoading(false);
         }
         return;
@@ -82,7 +89,7 @@ export function WorkoutSessionDetailScreen() {
 
         if (shouldUpdate()) {
           if (!nextSession) {
-            setErrorMessage('Workout not found.');
+            setErrorMessage(t('workouts.notFound'));
             return;
           }
 
@@ -91,7 +98,7 @@ export function WorkoutSessionDetailScreen() {
       } catch (error) {
         if (shouldUpdate()) {
           setErrorMessage(
-            error instanceof Error ? error.message : 'Unable to load workout.',
+            error instanceof Error ? error.message : t('workouts.detailLoadError'),
           );
         }
       } finally {
@@ -100,7 +107,7 @@ export function WorkoutSessionDetailScreen() {
         }
       }
     },
-    [workoutId],
+    [workoutId, t],
   );
 
   useEffect(() => {
@@ -116,7 +123,7 @@ export function WorkoutSessionDetailScreen() {
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.meta}>Loading workout...</Text>
+        <Text style={styles.meta}>{t('workouts.loadingWorkout')}</Text>
       </View>
     );
   }
@@ -125,10 +132,10 @@ export function WorkoutSessionDetailScreen() {
     return (
       <View style={styles.container}>
         <Text style={styles.error}>
-          {errorMessage ?? 'Workout not found.'}
+          {errorMessage ?? t('workouts.notFound')}
         </Text>
         <Link href="/history" style={styles.link}>
-          Back to history
+          {t('workouts.backToHistory')}
         </Link>
       </View>
     );
@@ -155,23 +162,25 @@ export function WorkoutSessionDetailScreen() {
                 )
               : '–'}
           </Text>
-          <Text style={styles.summaryLabel}>Duration</Text>
+          <Text style={styles.summaryLabel}>{t('workouts.duration')}</Text>
         </View>
         <View style={styles.summaryTile}>
           <Text style={styles.summaryValue}>
             {totals.doneSets}/{totals.totalSets}
           </Text>
-          <Text style={styles.summaryLabel}>Sets done</Text>
+          <Text style={styles.summaryLabel}>{t('workouts.setsDone')}</Text>
         </View>
         <View style={styles.summaryTile}>
-          <Text style={styles.summaryValue}>{totals.volume}</Text>
-          <Text style={styles.summaryLabel}>Volume kg</Text>
+          <Text style={styles.summaryValue}>
+            {roundWeight(fromKg(totals.volume, unit))}
+          </Text>
+          <Text style={styles.summaryLabel}>{t('workouts.volume', { unit })}</Text>
         </View>
         <View style={styles.summaryTile}>
           <Text style={styles.summaryValue}>
             {totals.restSeconds > 0 ? formatDuration(totals.restSeconds) : '–'}
           </Text>
-          <Text style={styles.summaryLabel}>Rest</Text>
+          <Text style={styles.summaryLabel}>{t('workouts.restLabel')}</Text>
         </View>
       </View>
 
@@ -181,10 +190,12 @@ export function WorkoutSessionDetailScreen() {
             <Text style={styles.cardTitle}>
               {exercise.order}. {exercise.exerciseName}
             </Text>
-            <Text style={styles.exerciseVolume}>{exerciseVolume(exercise)} kg</Text>
+            <Text style={styles.exerciseVolume}>
+              {roundWeight(fromKg(exerciseVolume(exercise), unit))} {unit}
+            </Text>
           </View>
           {exercise.sets.map((set) => {
-            const type = setTypeLabel(set.type);
+            const type = setTypeLabel(set.type, t);
             const done = isDone(set);
             return (
               <View key={set.id} style={styles.setRow}>
@@ -194,11 +205,13 @@ export function WorkoutSessionDetailScreen() {
                 <Text style={styles.setNum}>{set.order}</Text>
                 {type ? <Text style={styles.typeTag}>{type}</Text> : null}
                 <Text style={styles.setValue}>
-                  {set.weightKg ?? '–'} kg × {set.reps ?? '–'}
+                  {formatWeightValue(set.weightKg, unit)} {unit} × {set.reps ?? '–'}
                 </Text>
                 {set.restSeconds ? (
                   <Text style={styles.setRest}>
-                    rest {formatDuration(set.restSeconds)}
+                    {t('workouts.setRest', {
+                      duration: formatDuration(set.restSeconds),
+                    })}
                   </Text>
                 ) : null}
               </View>
@@ -207,7 +220,7 @@ export function WorkoutSessionDetailScreen() {
         </View>
       ))}
       <Link href="/history" style={styles.link}>
-        Back to history
+        {t('workouts.backToHistory')}
       </Link>
     </ScrollView>
   );

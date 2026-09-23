@@ -2,10 +2,6 @@ import { Prisma } from '@prisma/client';
 import type { Exercise, MuscleGroup } from '@workout/domain';
 
 import { prisma } from '../../infrastructure/prisma.js';
-import {
-  DEVELOPMENT_USER_PUBLIC_ID,
-  ensureDevelopmentUser,
-} from '../../infrastructure/developmentUser.js';
 
 const exerciseInclude = {
   createdByUser: {
@@ -130,23 +126,24 @@ export async function findExerciseById(id: string) {
   return exercise ? mapExercise(exercise) : null;
 }
 
-export async function listFavoriteExerciseIds(): Promise<string[]> {
-  await ensureDevelopmentUser();
-
+export async function listFavoriteExerciseIds(
+  userPublicId: string,
+): Promise<string[]> {
   const favorites = await prisma.exerciseFavorite.findMany({
-    where: { user: { publicId: DEVELOPMENT_USER_PUBLIC_ID } },
+    where: { user: { publicId: userPublicId } },
     select: { exercise: { select: { publicId: true } } },
   });
 
   return favorites.map((favorite) => favorite.exercise.publicId);
 }
 
-async function resolveFavoriteIds(exercisePublicId: string) {
-  await ensureDevelopmentUser();
-
+async function resolveFavoriteIds(
+  userPublicId: string,
+  exercisePublicId: string,
+) {
   const [user, exercise] = await Promise.all([
     prisma.user.findUnique({
-      where: { publicId: DEVELOPMENT_USER_PUBLIC_ID },
+      where: { publicId: userPublicId },
       select: { id: true },
     }),
     prisma.exercise.findUnique({
@@ -162,8 +159,11 @@ async function resolveFavoriteIds(exercisePublicId: string) {
   return { userId: user.id, exerciseId: exercise.id };
 }
 
-export async function addFavoriteExercise(exercisePublicId: string) {
-  const ids = await resolveFavoriteIds(exercisePublicId);
+export async function addFavoriteExercise(
+  userPublicId: string,
+  exercisePublicId: string,
+) {
+  const ids = await resolveFavoriteIds(userPublicId, exercisePublicId);
 
   if (!ids) {
     return false;
@@ -178,8 +178,11 @@ export async function addFavoriteExercise(exercisePublicId: string) {
   return true;
 }
 
-export async function removeFavoriteExercise(exercisePublicId: string) {
-  const ids = await resolveFavoriteIds(exercisePublicId);
+export async function removeFavoriteExercise(
+  userPublicId: string,
+  exercisePublicId: string,
+) {
+  const ids = await resolveFavoriteIds(userPublicId, exercisePublicId);
 
   if (!ids) {
     return false;
@@ -190,9 +193,10 @@ export async function removeFavoriteExercise(exercisePublicId: string) {
   return true;
 }
 
-export async function createExercise(input: CreateExerciseInput) {
-  await ensureDevelopmentUser();
-
+export async function createExercise(
+  userPublicId: string,
+  input: CreateExerciseInput,
+) {
   const primaryMuscleGroupIds = dedupeIds(input.primaryMuscleGroupIds);
   const primaryMuscleGroupIdSet = new Set(primaryMuscleGroupIds);
   const secondaryMuscleGroupIds = dedupeIds(input.secondaryMuscleGroupIds).filter(
@@ -250,7 +254,7 @@ export async function createExercise(input: CreateExerciseInput) {
       isSystemDefined: false,
       createdByUser: {
         connect: {
-          publicId: DEVELOPMENT_USER_PUBLIC_ID,
+          publicId: userPublicId,
         },
       },
       primaryMuscleGroupLinks: {

@@ -4,6 +4,19 @@ type ErrorResponse = {
   message?: string;
 };
 
+let authToken: string | null = null;
+let onUnauthorized: (() => void) | null = null;
+
+/** Set (or clear) the bearer token sent with every request. */
+export function setAuthToken(token: string | null) {
+  authToken = token;
+}
+
+/** Register a callback fired when the API returns 401 (e.g. to sign out). */
+export function setOnUnauthorized(handler: (() => void) | null) {
+  onUnauthorized = handler;
+}
+
 /**
  * Shared fetch wrapper for the API clients: sets JSON content-type on writes,
  * handles 204 responses, and throws Error(message) on non-2xx responses.
@@ -16,6 +29,10 @@ export async function apiRequest<T>(
 
   if (init?.body !== undefined) {
     headers.set('Content-Type', 'application/json');
+  }
+
+  if (authToken) {
+    headers.set('Authorization', `Bearer ${authToken}`);
   }
 
   const url = `${API_BASE_URL}${path}`;
@@ -42,6 +59,10 @@ export async function apiRequest<T>(
 
   if (typeof __DEV__ !== 'undefined' && __DEV__) {
     console.log(`[api] ${response.status} ${init?.method ?? 'GET'} ${url}`);
+  }
+
+  if (response.status === 401) {
+    onUnauthorized?.();
   }
 
   if (response.status === 204) {

@@ -8,6 +8,10 @@ vi.mock('./repository.js', () => ({
   getExerciseLastPerformance: vi.fn(),
 }));
 
+vi.mock('../../infrastructure/userContext.js', () => ({
+  resolveUserPublicId: vi.fn(async () => 'user-test'),
+}));
+
 import { createApp } from '../../app.js';
 import {
   createWorkoutSession,
@@ -26,7 +30,14 @@ const validPayload = {
     {
       exerciseId: 'ex1',
       order: 1,
-      sets: [{ order: 1, reps: 8, weightKg: 60 }],
+      sets: [
+        {
+          order: 1,
+          reps: 8,
+          weightKg: 60,
+          completedAt: '2026-05-30T09:10:00.000Z',
+        },
+      ],
     },
   ],
 };
@@ -94,6 +105,29 @@ describe('POST /workouts', () => {
     expect(createWorkoutSession).not.toHaveBeenCalled();
   });
 
+  it('returns 400 when no set is completed', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/workouts',
+      payload: {
+        ...validPayload,
+        exercises: [
+          {
+            exerciseId: 'ex1',
+            order: 1,
+            sets: [{ order: 1, reps: 8, weightKg: 60 }],
+          },
+        ],
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      message: 'A workout must have at least one completed set',
+    });
+    expect(createWorkoutSession).not.toHaveBeenCalled();
+  });
+
   it('creates the session (201) and passes the parsed input', async () => {
     vi.mocked(createWorkoutSession).mockResolvedValue({ id: 'w1' } as never);
 
@@ -106,6 +140,7 @@ describe('POST /workouts', () => {
     expect(response.statusCode).toBe(201);
     expect(response.json()).toMatchObject({ id: 'w1' });
     expect(createWorkoutSession).toHaveBeenCalledWith(
+      'user-test',
       expect.objectContaining({
         routineId: 'r1',
         startedAt: validPayload.startedAt,
@@ -151,7 +186,7 @@ describe('GET /workouts/exercises/:exerciseId/last', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ sets: [{ order: 1, weightKg: 60 }] });
-    expect(getExerciseLastPerformance).toHaveBeenCalledWith('ex1');
+    expect(getExerciseLastPerformance).toHaveBeenCalledWith('user-test', 'ex1');
   });
 
   it('returns 404 when there is no previous performance', async () => {

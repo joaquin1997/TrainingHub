@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, radii, spacing } from '@/ui/theme';
@@ -9,6 +10,8 @@ interface MuscleDistributionProps {
 
 /** Horizontal volume-by-muscle-group bars (proportional to the top group). */
 export function MuscleDistribution({ points }: MuscleDistributionProps) {
+  const { t } = useTranslation();
+
   if (points.length === 0) {
     return null;
   }
@@ -17,7 +20,7 @@ export function MuscleDistribution({ points }: MuscleDistributionProps) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Volume by muscle group</Text>
+      <Text style={styles.title}>{t('progress.volumeByMuscleGroup')}</Text>
       {points.map((point) => (
         <View key={point.group} style={styles.row}>
           <Text numberOfLines={1} style={styles.label}>

@@ -1,9 +1,5 @@
 import { prisma } from '../../infrastructure/prisma.js';
 import {
-  DEVELOPMENT_USER_PUBLIC_ID,
-  ensureDevelopmentUser,
-} from '../../infrastructure/developmentUser.js';
-import {
   buildExerciseProgressDetail,
   buildExerciseProgressSummaries,
   buildMuscleGroupVolume,
@@ -11,11 +7,11 @@ import {
   type ProgressSessionInput,
 } from './aggregate.js';
 
-async function loadSessionInputs(): Promise<ProgressSessionInput[]> {
-  await ensureDevelopmentUser();
-
+async function loadSessionInputs(
+  userPublicId: string,
+): Promise<ProgressSessionInput[]> {
   const sessions = await prisma.workoutSession.findMany({
-    where: { user: { publicId: DEVELOPMENT_USER_PUBLIC_ID } },
+    where: { user: { publicId: userPublicId } },
     orderBy: { startedAt: 'asc' },
     include: {
       exercises: {
@@ -41,18 +37,24 @@ async function loadSessionInputs(): Promise<ProgressSessionInput[]> {
   }));
 }
 
-export async function listExerciseProgress() {
-  return buildExerciseProgressSummaries(await loadSessionInputs());
+export async function listExerciseProgress(userPublicId: string) {
+  return buildExerciseProgressSummaries(await loadSessionInputs(userPublicId));
 }
 
-export async function getExerciseProgress(exerciseId: string) {
-  return buildExerciseProgressDetail(await loadSessionInputs(), exerciseId);
+export async function getExerciseProgress(
+  userPublicId: string,
+  exerciseId: string,
+) {
+  return buildExerciseProgressDetail(
+    await loadSessionInputs(userPublicId),
+    exerciseId,
+  );
 }
 
-export async function listWeeklyVolume() {
-  return buildWeeklyVolume(await loadSessionInputs());
+export async function listWeeklyVolume(userPublicId: string) {
+  return buildWeeklyVolume(await loadSessionInputs(userPublicId));
 }
 
-export async function listMuscleGroupVolume() {
-  return buildMuscleGroupVolume(await loadSessionInputs());
+export async function listMuscleGroupVolume(userPublicId: string) {
+  return buildMuscleGroupVolume(await loadSessionInputs(userPublicId));
 }

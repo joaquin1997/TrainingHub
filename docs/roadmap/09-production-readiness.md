@@ -11,7 +11,8 @@
 - [ ] Error handling / loading skeletons everywhere
 - [ ] Rate limiting + basic security hardening
 - [ ] Crash reporting + analytics
-- [ ] CI (typecheck + tests on PRs)
+- [x] CI (GitHub Actions: install → prisma generate → typecheck → tests on PRs)
+- [x] Server-side guard: reject workouts with no completed set
 
 ## Notes
 - A simple CI workflow (GitHub Actions running pnpm typecheck + test) is a quick,

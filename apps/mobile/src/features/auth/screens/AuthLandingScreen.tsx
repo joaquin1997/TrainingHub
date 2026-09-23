@@ -1,116 +1,143 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+} from 'react-native';
 
-import { findAuthProvider } from '@/features/auth/providers';
-import { colors, commonStyles, radii, spacing } from '@/ui/theme';
+import { useAuth } from '@/features/auth/AuthContext';
+import { Button } from '@/ui/Button';
+import { colors, commonStyles, spacing } from '@/ui/theme';
 
 export function AuthLandingScreen() {
-  const appleProvider = findAuthProvider('apple');
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const { t } = useTranslation();
+  const { signIn, register } = useAuth();
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [error, setError] = useState<string>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleAppleSignIn = async () => {
-    if (!appleProvider) {
-      setStatusMessage('Apple provider stub is not configured.');
-      return;
+  const isRegister = mode === 'register';
+
+  const submit = async () => {
+    setError(undefined);
+    setIsSubmitting(true);
+    try {
+      if (isRegister) {
+        await register(email.trim(), password, displayName.trim() || undefined);
+      } else {
+        await signIn(email.trim(), password);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('common.somethingWentWrong'));
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const credential = await appleProvider.createCredential();
-
-    setStatusMessage(
-      `Mock Apple sign-in complete. Credential created with provider ${credential.providerId}.`,
-    );
-
-    // TODO: Send the Apple credential to the backend auth route when the client API layer is introduced.
-    // TODO: Replace placeholder success state with real session bootstrap and token refresh handling.
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.hero}>
-        <Text style={styles.kicker}>TrainingHub</Text>
-        <Text style={styles.title}>Track every lift with less friction.</Text>
-        <Text style={styles.body}>
-          Build routines, start a workout from your plan and keep your progress
-          visible while the auth layer stays isolated.
+    <KeyboardAvoidingView
+      style={styles.screen}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.brand}>TrainingHub</Text>
+        <Text style={styles.subtitle}>
+          {isRegister
+            ? t('auth.subtitleRegister')
+            : t('auth.subtitleLogin')}
         </Text>
-      </View>
-      {appleProvider ? (
-        <View style={styles.providerList}>
-          <View style={styles.providerCard}>
-            <Text style={styles.providerLabel}>{appleProvider.label}</Text>
-            <Text style={styles.providerMeta}>
-              iOS-first sign-in path prepared behind the provider abstraction.
-            </Text>
-            <Pressable
-              onPress={handleAppleSignIn}
-              style={({ pressed }) => [
-                styles.button,
-                pressed ? commonStyles.pressed : null,
-              ]}
-            >
-              <Text style={styles.buttonText}>Sign in with Apple</Text>
-            </Pressable>
-            <Text style={styles.providerMeta}>
-              This currently creates a mock credential only.
-            </Text>
-          </View>
-        </View>
-      ) : null}
-      {statusMessage ? <Text style={styles.status}>{statusMessage}</Text> : null}
-    </View>
+
+        {isRegister ? (
+          <TextInput
+            value={displayName}
+            onChangeText={setDisplayName}
+            placeholder={t('auth.namePlaceholder')}
+            placeholderTextColor={colors.textSubtle}
+            style={styles.input}
+            autoCapitalize="words"
+          />
+        ) : null}
+        <TextInput
+          value={email}
+          onChangeText={setEmail}
+          placeholder={t('auth.emailPlaceholder')}
+          placeholderTextColor={colors.textSubtle}
+          style={styles.input}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="email-address"
+          inputMode="email"
+        />
+        <TextInput
+          value={password}
+          onChangeText={setPassword}
+          placeholder={t('auth.passwordPlaceholder')}
+          placeholderTextColor={colors.textSubtle}
+          style={styles.input}
+          secureTextEntry
+        />
+
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        <Button
+          label={
+            isSubmitting
+              ? t('common.pleaseWait')
+              : isRegister
+                ? t('auth.createAccount')
+                : t('auth.signIn')
+          }
+          onPress={() => void submit()}
+          disabled={isSubmitting}
+          fullWidth
+        />
+        <Button
+          label={
+            isRegister ? t('auth.haveAccount') : t('auth.noAccount')
+          }
+          variant="secondary"
+          onPress={() => {
+            setError(undefined);
+            setMode(isRegister ? 'login' : 'register');
+          }}
+          fullWidth
+        />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    ...commonStyles.screen,
+  },
   container: {
-    ...commonStyles.fixedContent,
+    flexGrow: 1,
     justifyContent: 'center',
-  },
-  hero: {
+    padding: spacing.xl,
     gap: spacing.md,
   },
-  kicker: {
+  brand: {
     color: colors.primary,
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 34,
+    fontWeight: '900',
   },
-  title: {
-    ...commonStyles.title,
-  },
-  body: {
-    ...commonStyles.body,
-  },
-  providerList: {
-    gap: spacing.md,
-  },
-  providerCard: {
-    ...commonStyles.card,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  providerLabel: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  providerMeta: {
+  subtitle: {
     color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 16,
+    marginBottom: spacing.sm,
   },
-  button: {
-    ...commonStyles.primaryButton,
-    alignSelf: 'flex-start',
-    marginTop: spacing.xs,
+  input: {
+    ...commonStyles.input,
   },
-  buttonText: {
-    ...commonStyles.primaryButtonText,
-  },
-  status: {
-    color: colors.primary,
-    fontSize: 14,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceRaised,
-    padding: spacing.md,
+  error: {
+    ...commonStyles.error,
   },
 });

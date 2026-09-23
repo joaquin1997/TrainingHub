@@ -14,13 +14,20 @@ Legend: ✅ done · �doing · ⬜ todo
 | 5 | Routines (advanced) | [05-routines-advanced.md](05-routines-advanced.md) | 🔁 dup+reorder+set-inheritance done |
 | 6 | Exercises (advanced) | [06-exercises-advanced.md](06-exercises-advanced.md) | 🔁 category/equipment filter done |
 | 7 | Social | [07-social.md](07-social.md) | ⬜ post-MVP (out of scope) |
-| 8 | Integrations & platform | [08-integrations-and-platform.md](08-integrations-and-platform.md) | ⬜ |
+| 8 | Integrations & platform | [08-integrations-and-platform.md](08-integrations-and-platform.md) | 🔁 i18n ES/EN done; rest todo |
 | 9 | Production readiness | [09-production-readiness.md](09-production-readiness.md) | ⬜ |
 
 ## Already built (baseline)
 Routines (CRUD + Prisma), Workouts (start→log→timer→notes→save, history+detail,
 resume, edit-lock, discard, mark-set-done UI), Progress (per-exercise aggregation),
 Exercises (catalog/search/detail + custom), tests (API + mobile via Vitest).
+
+## Relationship to specs
+
+This file stays the backlog and progress log per area. A sub-point graduates
+into a spec under [../sdd/specs/](../sdd/README.md) when it is picked up for
+implementation; [../sdd/backlog.md](../sdd/backlog.md) tracks which areas have
+one.
 
 ## Working agreement
 - Small, reviewable commits; one logical change per commit; conventional messages.

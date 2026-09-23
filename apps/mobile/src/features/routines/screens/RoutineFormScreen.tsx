@@ -1,5 +1,6 @@
 import { Link, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Keyboard,
   Pressable,
@@ -20,7 +21,9 @@ import {
   effectiveRoutineSetValue,
   setFieldPlaceholder,
 } from '@/features/routines/utils/routineSetInheritance';
+import { useSettings } from '@/features/settings/SettingsContext';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
+import { kgToInputString, roundWeight, toKg } from '@/lib/weight';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type {
   Exercise,
@@ -28,6 +31,7 @@ import type {
   RoutineExercise,
   RoutineExerciseInput,
   RoutineExerciseSet,
+  WeightUnit,
 } from '@workout/domain';
 
 type RoutineFormScreenProps = {
@@ -80,18 +84,24 @@ function createEmptyExerciseRow(): EditableRoutineExercise {
   };
 }
 
-function toEditableSet(routineSet: RoutineExerciseSet): EditableRoutineSet {
+function toEditableSet(
+  routineSet: RoutineExerciseSet,
+  unit: WeightUnit,
+): EditableRoutineSet {
   return {
     id: routineSet.id,
     minReps: routineSet.minReps !== undefined ? String(routineSet.minReps) : '',
     maxReps: routineSet.maxReps !== undefined ? String(routineSet.maxReps) : '',
     targetWeight:
-      routineSet.targetWeight !== undefined ? String(routineSet.targetWeight) : '',
+      routineSet.targetWeight !== undefined
+        ? kgToInputString(routineSet.targetWeight, unit)
+        : '',
   };
 }
 
 function toEditableExercise(
   routineExercise: RoutineExercise,
+  unit: WeightUnit,
 ): EditableRoutineExercise {
   return {
     id: routineExercise.id,
@@ -110,7 +120,7 @@ function toEditableExercise(
         ? routineExercise.sets
             .slice()
             .sort((left, right) => left.setNumber - right.setNumber)
-            .map(toEditableSet)
+            .map((set) => toEditableSet(set, unit))
         : [createEmptySetRow()],
   };
 }
@@ -160,8 +170,11 @@ export function RoutineFormScreen({
   mode,
   routineId,
 }: RoutineFormScreenProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const isEditMode = mode === 'edit';
+  const { settings } = useSettings();
+  const unit = settings.unit;
   const [routine, setRoutine] = useState<Routine | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -197,7 +210,7 @@ export function RoutineFormScreen({
       } catch (error) {
         if (isMounted) {
           setExerciseLoadError(
-            error instanceof Error ? error.message : 'Unable to load exercises.',
+            error instanceof Error ? error.message : t('routineForm.loadExercisesError'),
           );
         }
       } finally {
@@ -212,7 +225,7 @@ export function RoutineFormScreen({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     let isMounted = true;
@@ -224,7 +237,7 @@ export function RoutineFormScreen({
       }
 
       if (!routineId) {
-        setErrorMessage('Missing routine id.');
+        setErrorMessage(t('routineDetail.missingId'));
         setIsLoading(false);
         return;
       }
@@ -243,14 +256,14 @@ export function RoutineFormScreen({
               ? nextRoutine.exercises
                   .slice()
                   .sort((left, right) => left.orderIndex - right.orderIndex)
-                  .map(toEditableExercise)
+                  .map((exercise) => toEditableExercise(exercise, unit))
               : [createEmptyExerciseRow()],
           );
         }
       } catch (error) {
         if (isMounted) {
           setErrorMessage(
-            error instanceof Error ? error.message : 'Unable to load routine.',
+            error instanceof Error ? error.message : t('routineDetail.loadError'),
           );
         }
       } finally {
@@ -265,7 +278,7 @@ export function RoutineFormScreen({
     return () => {
       isMounted = false;
     };
-  }, [isEditMode, routineId]);
+  }, [isEditMode, routineId, t]);
 
   function updateExerciseQuery(exerciseId: string, value: string) {
     setActiveExerciseSelectorRowId(value.trim() ? exerciseId : null);
@@ -302,7 +315,7 @@ export function RoutineFormScreen({
     const exerciseName = exerciseRow?.exerciseQuery.trim();
 
     if (!exerciseName) {
-      setErrorMessage('Enter an exercise name before creating a custom exercise.');
+      setErrorMessage(t('routineForm.enterExerciseName'));
       return;
     }
 
@@ -430,7 +443,7 @@ export function RoutineFormScreen({
     const trimmedDescription = description.trim();
 
     if (!trimmedName) {
-      setErrorMessage('Routine name is required.');
+      setErrorMessage(t('routineForm.nameRequired'));
       return;
     }
 
@@ -442,21 +455,21 @@ export function RoutineFormScreen({
 
       for (const [exerciseIndex, exercise] of exercises.entries()) {
         if (!exercise.exerciseId) {
-          setErrorMessage('Select an exercise for each routine exercise.');
+          setErrorMessage(t('routineForm.selectExercise'));
           return;
         }
 
         const restSeconds = parseOptionalInteger(exercise.restSeconds);
 
         if (restSeconds === null) {
-          setErrorMessage('Rest time must be a whole number of seconds.');
+          setErrorMessage(t('routineForm.restWholeNumber'));
           return;
         }
 
         const supersetGroup = parseOptionalInteger(exercise.supersetGroup);
 
         if (supersetGroup === null) {
-          setErrorMessage('Superset group must be a whole number.');
+          setErrorMessage(t('routineForm.supersetWholeNumber'));
           return;
         }
 
@@ -479,7 +492,7 @@ export function RoutineFormScreen({
             maxReps === null ||
             targetWeight === null
           ) {
-            setErrorMessage('Routine set values must be valid numbers.');
+            setErrorMessage(t('routineForm.setValuesInvalid'));
             return;
           }
 
@@ -487,7 +500,11 @@ export function RoutineFormScreen({
             setNumber: setIndex + 1,
             minReps,
             maxReps,
-            targetWeight,
+            // Stored canonically in kg; the input is in the user's unit.
+            targetWeight:
+              targetWeight !== undefined
+                ? roundWeight(toKg(targetWeight, unit))
+                : undefined,
           });
         }
 
@@ -502,7 +519,7 @@ export function RoutineFormScreen({
 
       if (isEditMode) {
         if (!routineId || !routine) {
-          setErrorMessage('Routine not available for editing.');
+          setErrorMessage(t('routineForm.notAvailableEdit'));
           return;
         }
 
@@ -518,7 +535,7 @@ export function RoutineFormScreen({
           updatedRoutine.exercises
             .slice()
             .sort((left, right) => left.orderIndex - right.orderIndex)
-            .map(toEditableExercise),
+            .map((exercise) => toEditableExercise(exercise, unit)),
         );
         router.replace(`/routines/${updatedRoutine.id}`);
         return;
@@ -534,7 +551,7 @@ export function RoutineFormScreen({
       router.replace(`/routines/${createdRoutine.id}`);
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : 'Unable to save routine.',
+        error instanceof Error ? error.message : t('routineForm.saveError'),
       );
     } finally {
       setIsSubmitting(false);
@@ -544,12 +561,9 @@ export function RoutineFormScreen({
   if (isEditMode && activeWorkout?.routineId === routineId) {
     return (
       <View style={styles.container}>
-        <Text style={styles.body}>
-          This routine has a workout in progress. Finish or discard it before
-          editing.
-        </Text>
+        <Text style={styles.body}>{t('routineForm.workoutInProgress')}</Text>
         <Link href={`/routines/${routineId}`} style={styles.link}>
-          Back to routine
+          {t('routineForm.backToRoutine')}
         </Link>
       </View>
     );
@@ -558,7 +572,7 @@ export function RoutineFormScreen({
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.body}>Loading routine...</Text>
+        <Text style={styles.body}>{t('routineDetail.loading')}</Text>
       </View>
     );
   }
@@ -573,49 +587,47 @@ export function RoutineFormScreen({
       >
         <Text style={styles.body}>
           {isEditMode
-            ? 'Tune the exercise order, targets and weights before your next session.'
-            : 'Choose exercises and set realistic targets for your next workout.'}
+            ? t('routineForm.editIntro')
+            : t('routineForm.createIntro')}
         </Text>
         {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Routine name</Text>
+          <Text style={styles.label}>{t('routineForm.routineName')}</Text>
           <TextInput
             value={name}
             onChangeText={setName}
-            placeholder="Enter routine name"
+            placeholder={t('routineForm.routineNamePlaceholder')}
             placeholderTextColor={colors.textSubtle}
             style={styles.input}
           />
         </View>
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Description</Text>
+          <Text style={styles.label}>{t('routineForm.description')}</Text>
           <TextInput
             value={description}
             onChangeText={setDescription}
-            placeholder="Add a short description"
+            placeholder={t('routineForm.descriptionPlaceholder')}
             placeholderTextColor={colors.textSubtle}
             multiline
             style={[styles.input, styles.multilineInput]}
           />
         </View>
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Folder</Text>
+          <Text style={styles.label}>{t('routineForm.folder')}</Text>
           <TextInput
             value={folder}
             onChangeText={setFolder}
-            placeholder="e.g. Push / Pull / Legs (optional)"
+            placeholder={t('routineForm.folderPlaceholder')}
             placeholderTextColor={colors.textSubtle}
             style={styles.input}
             autoCapitalize="words"
           />
         </View>
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Routine exercises</Text>
-          <Text style={styles.meta}>
-            Add exercises, then add the target sets for each exercise.
-          </Text>
+          <Text style={styles.label}>{t('routineForm.routineExercises')}</Text>
+          <Text style={styles.meta}>{t('routineForm.exercisesHint')}</Text>
           {isExercisesLoading ? (
-            <Text style={styles.meta}>Loading exercises...</Text>
+            <Text style={styles.meta}>{t('routineForm.loadingExercises')}</Text>
           ) : null}
           {exerciseLoadError ? (
             <View style={styles.inlineState}>
@@ -634,7 +646,7 @@ export function RoutineFormScreen({
                       setExerciseLoadError(
                         error instanceof Error
                           ? error.message
-                          : 'Unable to load exercises.',
+                          : t('routineForm.loadExercisesError'),
                       );
                     })
                     .finally(() => {
@@ -646,7 +658,9 @@ export function RoutineFormScreen({
                   pressed ? styles.buttonPressed : null,
                 ]}
               >
-                <Text style={styles.secondaryButtonText}>Retry exercises</Text>
+                <Text style={styles.secondaryButtonText}>
+                  {t('routineForm.retryExercises')}
+                </Text>
               </Pressable>
             </View>
           ) : null}
@@ -655,7 +669,7 @@ export function RoutineFormScreen({
               <View key={exercise.id} style={styles.exerciseCard}>
                 <View style={styles.exerciseCardHeader}>
                   <Text style={styles.exerciseCardTitle}>
-                    Exercise {index + 1}
+                    {t('routineForm.exerciseN', { number: index + 1 })}
                   </Text>
                   <View style={styles.exerciseReorder}>
                     <Pressable
@@ -680,12 +694,14 @@ export function RoutineFormScreen({
                       setActiveExerciseSelectorRowId(exercise.id);
                     }
                   }}
-                  placeholder="Search exercise"
+                  placeholder={t('routineForm.searchExercise')}
                   placeholderTextColor={colors.textSubtle}
                   style={styles.input}
                 />
                 {exercise.exerciseId ? (
-                  <Text style={styles.selectedHint}>✓ Exercise selected</Text>
+                  <Text style={styles.selectedHint}>
+                    {t('routineForm.exerciseSelected')}
+                  </Text>
                 ) : null}
                 {activeExerciseSelectorRowId === exercise.id &&
                 exercise.exerciseQuery.trim() ? (
@@ -712,8 +728,8 @@ export function RoutineFormScreen({
                             <Text style={styles.searchResultTitle}>{candidate.name}</Text>
                             <Text style={styles.meta}>
                               {candidate.isSystemDefined
-                                ? 'Existing exercise'
-                                : 'Custom exercise'}
+                                ? t('routineForm.existingExercise')
+                                : t('routineForm.customExercise')}
                             </Text>
                           </Pressable>
                         ))}
@@ -729,7 +745,7 @@ export function RoutineFormScreen({
                             ]}
                           >
                             <Text style={styles.secondaryButtonText}>
-                              Create custom exercise
+                              {t('routineForm.createCustomExercise')}
                             </Text>
                           </Pressable>
                         ) : null}
@@ -739,26 +755,26 @@ export function RoutineFormScreen({
                 ) : null}
                 <View style={styles.metaInputsRow}>
                   <View style={styles.restRow}>
-                    <Text style={styles.meta}>Rest between sets (sec)</Text>
+                    <Text style={styles.meta}>{t('routineForm.restBetweenSets')}</Text>
                     <TextInput
                       value={exercise.restSeconds}
                       onChangeText={(value) =>
                         updateExerciseRest(exercise.id, value)
                       }
-                      placeholder="e.g. 90"
+                      placeholder={t('routineForm.restPlaceholder')}
                       placeholderTextColor={colors.textSubtle}
                       keyboardType="number-pad"
                       style={[styles.input, styles.restInput]}
                     />
                   </View>
                   <View style={styles.restRow}>
-                    <Text style={styles.meta}>Superset group</Text>
+                    <Text style={styles.meta}>{t('routineForm.supersetGroup')}</Text>
                     <TextInput
                       value={exercise.supersetGroup}
                       onChangeText={(value) =>
                         updateExerciseSuperset(exercise.id, value)
                       }
-                      placeholder="e.g. 1"
+                      placeholder={t('routineForm.supersetPlaceholder')}
                       placeholderTextColor={colors.textSubtle}
                       keyboardType="number-pad"
                       style={[styles.input, styles.restInput]}
@@ -768,7 +784,16 @@ export function RoutineFormScreen({
                 <View style={styles.setList}>
                   {exercise.sets.map((set, setIndex) => (
                     <View key={set.id} style={styles.setCard}>
-                      <Text style={styles.setCardTitle}>Set {setIndex + 1}</Text>
+                      <Text style={styles.setCardTitle}>
+                        {t('routineForm.setN', { number: setIndex + 1 })}
+                      </Text>
+                      <View style={styles.numericRow}>
+                        <Text style={styles.numericLabel}>{t('routineForm.minReps')}</Text>
+                        <Text style={styles.numericLabel}>{t('routineForm.maxReps')}</Text>
+                        <Text style={styles.numericLabel}>
+                          {t('routineForm.weightUnit', { unit })}
+                        </Text>
+                      </View>
                       <View style={styles.numericRow}>
                         <TextInput
                           value={set.minReps}
@@ -826,7 +851,9 @@ export function RoutineFormScreen({
                           pressed ? styles.buttonPressed : null,
                         ]}
                       >
-                        <Text style={styles.secondaryButtonText}>Remove set</Text>
+                        <Text style={styles.secondaryButtonText}>
+                          {t('routineForm.removeSet')}
+                        </Text>
                       </Pressable>
                     </View>
                   ))}
@@ -840,7 +867,9 @@ export function RoutineFormScreen({
                       pressed ? styles.buttonPressed : null,
                     ]}
                   >
-                    <Text style={styles.secondaryButtonText}>Add set</Text>
+                    <Text style={styles.secondaryButtonText}>
+                      {t('routineForm.addSet')}
+                    </Text>
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"
@@ -850,7 +879,9 @@ export function RoutineFormScreen({
                       pressed ? styles.buttonPressed : null,
                     ]}
                   >
-                    <Text style={styles.secondaryButtonText}>Remove exercise</Text>
+                    <Text style={styles.secondaryButtonText}>
+                      {t('routineForm.removeExercise')}
+                    </Text>
                   </Pressable>
                 </View>
               </View>
@@ -864,19 +895,25 @@ export function RoutineFormScreen({
               pressed ? styles.buttonPressed : null,
             ]}
           >
-            <Text style={styles.secondaryButtonText}>Add exercise</Text>
+            <Text style={styles.secondaryButtonText}>
+              {t('routineForm.addExercise')}
+            </Text>
           </Pressable>
         </View>
         {isEditMode ? (
           routine ? (
             <Text style={styles.meta}>
-              Current routine summary: {getRoutineExerciseSummary(routine, 3)}
+              {t('routineForm.currentSummary', {
+                summary: getRoutineExerciseSummary(routine, 3),
+              })}
             </Text>
           ) : (
-            <Text style={styles.meta}>Routine not found in the API response.</Text>
+            <Text style={styles.meta}>{t('routineDetail.notFoundResponse')}</Text>
           )
         ) : null}
-        {isSubmitting ? <Text style={styles.meta}>Saving routine...</Text> : null}
+        {isSubmitting ? (
+          <Text style={styles.meta}>{t('routineForm.savingRoutine')}</Text>
+        ) : null}
         <Pressable
           accessibilityRole="button"
           onPress={() => void handleSubmit()}
@@ -889,19 +926,19 @@ export function RoutineFormScreen({
         >
           <Text style={styles.buttonText}>
             {isSubmitting
-              ? 'Saving...'
+              ? t('routineForm.saving')
               : isEditMode
-                ? 'Save routine'
-                : 'Create routine'}
+                ? t('routineForm.saveRoutine')
+                : t('routines.createRoutine')}
           </Text>
         </Pressable>
         <View style={styles.links}>
           <Link href="/routines" style={styles.link}>
-            Back to routines
+            {t('routineDetail.backToRoutines')}
           </Link>
           {isEditMode && routine ? (
             <Link href={`/routines/${routine.id}`} style={styles.link}>
-              Open detail
+              {t('routineForm.openDetail')}
             </Link>
           ) : null}
         </View>
@@ -1026,6 +1063,13 @@ const styles = StyleSheet.create({
   },
   numericInput: {
     flex: 1,
+  },
+  numericLabel: {
+    flex: 1,
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
   },
   actionRow: {
     flexDirection: 'row',

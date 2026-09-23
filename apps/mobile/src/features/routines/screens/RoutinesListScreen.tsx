@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Alert,
   Pressable,
@@ -26,6 +27,7 @@ import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type { Routine } from '@workout/domain';
 
 export function RoutinesListScreen() {
+  const { t } = useTranslation();
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
@@ -45,7 +47,7 @@ export function RoutinesListScreen() {
       } catch (error) {
         if (shouldUpdate()) {
           setErrorMessage(
-            error instanceof Error ? error.message : 'Unable to load routines.',
+            error instanceof Error ? error.message : t('routines.loadError'),
           );
         }
       } finally {
@@ -54,7 +56,7 @@ export function RoutinesListScreen() {
         }
       }
     },
-    [],
+    [t],
   );
 
   useFocusEffect(
@@ -85,33 +87,37 @@ export function RoutinesListScreen() {
       await loadRoutines();
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : 'Unable to duplicate routine.',
+        error instanceof Error ? error.message : t('routines.duplicateError'),
       );
     }
   };
 
   const handleDelete = (routine: Routine) => {
-    Alert.alert('Delete routine', `Delete "${routine.name}"? This can't be undone.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          void (async () => {
-            try {
-              await routinesClient.remove(routine.id);
-              await loadRoutines();
-            } catch (error) {
-              setErrorMessage(
-                error instanceof Error
-                  ? error.message
-                  : 'Unable to delete routine.',
-              );
-            }
-          })();
+    Alert.alert(
+      t('routines.deleteTitle'),
+      t('routines.deleteConfirm', { name: routine.name }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              try {
+                await routinesClient.remove(routine.id);
+                await loadRoutines();
+              } catch (error) {
+                setErrorMessage(
+                  error instanceof Error
+                    ? error.message
+                    : t('routines.deleteError'),
+                );
+              }
+            })();
+          },
         },
-      },
-    ]);
+      ],
+    );
   };
 
   const startTarget = (routine: Routine) =>
@@ -121,9 +127,9 @@ export function RoutinesListScreen() {
 
   const startLabel = (routine: Routine) => {
     if (activeWorkout?.routineId === routine.id) {
-      return 'Continue workout';
+      return t('routines.continueWorkout');
     }
-    return activeWorkout ? 'Resume active workout' : 'Start workout';
+    return activeWorkout ? t('routines.resumeWorkout') : t('routines.startWorkout');
   };
 
   return (
@@ -135,10 +141,7 @@ export function RoutinesListScreen() {
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
-      <Text style={styles.body}>
-        Pick a plan, start lifting, or build a new routine from the exercise
-        catalog.
-      </Text>
+      <Text style={styles.body}>{t('routines.intro')}</Text>
       {activeWorkout ? (
         <Link
           href={{
@@ -149,22 +152,24 @@ export function RoutinesListScreen() {
         >
           <Pressable style={styles.banner}>
             <Text style={styles.bannerTitle}>
-              Workout in progress - {formatDuration(elapsedSeconds)}
+              {t('routines.workoutInProgress', {
+                duration: formatDuration(elapsedSeconds),
+              })}
             </Text>
             <Text style={styles.bannerMeta}>
-              {activeWorkout.routineName} - tap to resume
+              {t('routines.tapToResume', { name: activeWorkout.routineName })}
             </Text>
           </Pressable>
         </Link>
       ) : null}
       <Button
-        label="Create routine"
+        label={t('routines.createRoutine')}
         onPress={() => router.push('/routines/create')}
         fullWidth
       />
       {showLoading ? (
         <View style={styles.stateCard}>
-          <Text style={styles.meta}>Loading routines...</Text>
+          <Text style={styles.meta}>{t('routines.loadingRoutines')}</Text>
         </View>
       ) : null}
       {errorMessage ? (
@@ -178,16 +183,16 @@ export function RoutinesListScreen() {
               pressed ? styles.buttonPressed : null,
             ]}
           >
-            <Text style={styles.secondaryButtonText}>Retry</Text>
+            <Text style={styles.secondaryButtonText}>{t('common.retry')}</Text>
           </Pressable>
         </View>
       ) : null}
       {hasEmptyState ? (
         <EmptyState
           icon="barbell-outline"
-          title="No routines yet"
-          subtitle="Create your first plan to start logging your workouts."
-          actionLabel="Create routine"
+          title={t('routines.emptyTitle')}
+          subtitle={t('routines.emptySubtitle')}
+          actionLabel={t('routines.createRoutine')}
           onAction={() => router.push('/routines/create')}
         />
       ) : null}
@@ -200,7 +205,7 @@ export function RoutinesListScreen() {
             >
               {showFolderHeaders ? (
                 <Text style={styles.folderTitle}>
-                  {group.folder ?? 'Ungrouped'}
+                  {group.folder ?? t('routines.ungrouped')}
                 </Text>
               ) : null}
               {group.routines.map((routine) => (
@@ -257,15 +262,15 @@ export function RoutinesListScreen() {
         menuRoutine
           ? [
               {
-                label: 'Edit',
+                label: t('common.edit'),
                 onPress: () => router.push(`/routines/edit/${menuRoutine.id}`),
               },
               {
-                label: 'Duplicate',
+                label: t('routines.duplicate'),
                 onPress: () => void handleDuplicate(menuRoutine),
               },
               {
-                label: 'Delete',
+                label: t('common.delete'),
                 destructive: true,
                 onPress: () => handleDelete(menuRoutine),
               },

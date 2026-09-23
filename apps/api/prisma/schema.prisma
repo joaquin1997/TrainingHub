@@ -11,8 +11,12 @@ model User {
   id          BigInt    @id @default(autoincrement())
   publicId    String    @unique
   displayName String
-  email       String?
+  email       String?   @unique
+  passwordHash String?
   avatarUrl   String?
+  unit        String    @default("kg")
+  defaultRestSeconds Int @default(90)
+  language    String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   routines        Routine[]

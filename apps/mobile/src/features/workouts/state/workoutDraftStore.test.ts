@@ -172,6 +172,39 @@ describe('toCreateWorkoutSessionInput', () => {
     expect(sets[1]).toMatchObject({ reps: 8, weightKg: 60 });
   });
 
+  it('converts lb input back to canonical kg on persist', () => {
+    const draft: WorkoutSessionDraft = {
+      id: 'w1',
+      routineId: 'routine-1',
+      routineName: 'Push Day',
+      startedAt: '2026-05-30T09:00:00.000Z',
+      unit: 'lb',
+      exercises: [
+        {
+          id: 'we-1',
+          exerciseId: 'ex-bench',
+          exerciseName: 'Bench',
+          order: 1,
+          entries: [
+            { id: 's1', order: 1, reps: '8', weightKg: '220.5', done: true, type: 'normal' },
+          ],
+        },
+      ],
+    };
+
+    const set = toCreateWorkoutSessionInput(draft).exercises[0]!.sets[0]!;
+    // 220.5 lb -> 100 kg.
+    expect(set.weightKg).toBe(100);
+  });
+
+  it('ghosts the routine target weight in the session unit', () => {
+    const draft = buildWorkoutSessionDraft(routine, 'lb'); // Row target 50 kg
+    const rowSet = draft.exercises[1]?.entries[0];
+
+    // 50 kg -> 110.2 lb shown as the placeholder.
+    expect(rowSet?.weightPlaceholder).toBe('110.2');
+  });
+
   it('stamps completedAt on sets marked done', () => {
     const draft: WorkoutSessionDraft = {
       id: 'w1',
