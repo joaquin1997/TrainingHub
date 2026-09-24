@@ -7,7 +7,19 @@ import type {
 } from '@workout/domain';
 
 import { prisma } from '../../infrastructure/prisma.js';
-import { isLegacySession, isPerformedSet } from './performedSets.js';
+import {
+  isLegacySession,
+  isPerformedSet,
+  pickLastPerformance,
+} from './performedSets.js';
+
+/**
+ * How many recent workouts containing an exercise "last time" looks through
+ * for one with performed sets (spec 0013).
+ * TODO(sdd): raise it or page the look-back only if "last time" is seen missing
+ * in practice.
+ */
+const LAST_PERFORMANCE_LOOKBACK = 10;
 
 type WorkoutSessionRecord = Prisma.WorkoutSessionGetPayload<{
   include: {
@@ -152,28 +164,48 @@ export async function getExerciseLastPerformance(
   userPublicId: string,
   exerciseId: string,
 ): Promise<ExerciseLastPerformance | null> {
-  const workoutExercise = await prisma.workoutExercise.findFirst({
+  const recent = await prisma.workoutExercise.findMany({
     where: {
       exercise: { publicId: exerciseId },
       workoutSession: { user: { publicId: userPublicId } },
     },
     orderBy: { workoutSession: { startedAt: 'desc' } },
+    take: LAST_PERFORMANCE_LOOKBACK,
     include: {
       sets: true,
-      workoutSession: { select: { startedAt: true, completedAt: true } },
+      workoutSession: {
+        select: {
+          startedAt: true,
+          completedAt: true,
+          // One row is enough to know the session is not a legacy one.
+          exercises: {
+            where: { sets: { some: { completedAt: { not: null } } } },
+            select: { id: true },
+            take: 1,
+          },
+        },
+      },
     },
   });
 
-  if (!workoutExercise) {
+  const picked = pickLastPerformance(
+    recent.map((workoutExercise) => ({
+      performedAt: (
+        workoutExercise.workoutSession.completedAt ??
+        workoutExercise.workoutSession.startedAt
+      ).toISOString(),
+      sessionHasCompletedSet: workoutExercise.workoutSession.exercises.length > 0,
+      sets: workoutExercise.sets,
+    })),
+  );
+
+  if (!picked) {
     return null;
   }
 
   return {
-    performedAt: (
-      workoutExercise.workoutSession.completedAt ??
-      workoutExercise.workoutSession.startedAt
-    ).toISOString(),
-    sets: workoutExercise.sets
+    performedAt: picked.performedAt,
+    sets: picked.sets
       .slice()
       .sort((left, right) => left.order - right.order)
       .map((set) => ({
