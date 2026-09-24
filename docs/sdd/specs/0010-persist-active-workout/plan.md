@@ -38,6 +38,26 @@ empty`; foreign and invalid are cleared (EF-1, EF-2).
 (decodes the JWT `sub`, no verification) restores the real id. Spec 0001's
 `/auth/me` will replace it.
 
+**Owner in memory, not only on disk** (amended 2026-09-24). The store keeps the
+owner next to the draft (`activeWorkoutOwnerId`, set by `startActiveWorkout`
+and by `hydrateActiveWorkout`). Today a 401 signs out without touching the
+draft, so a different person signing in inherits it in the running app.
+`AuthContext` calls `discardActiveWorkoutIfForeign(userId)` on every sign-in
+(FR-8). The persister, subscribed to the store, then clears storage too.
+
+**Hydration waits for a user** (EF-6). `RootNavigator` keeps the spinner until
+auth is restored. If there is a user, it hydrates for that user before the routes
+render. If not, storage is left untouched and hydration runs right after the
+next sign-in, with the same `parsePersistedActiveWorkout(raw, ownerId)` check
+(`foreign` → clear).
+
+**Permanent rejections** (EF-5). `apiRequest` in `lib/http.ts` throws an
+`ApiError` carrying `status` instead of a bare `Error` (network failures stay
+as they are). On finish, a 4xx other than 401 shows the server's message plus
+a "Discard workout" action (confirm → `clearActiveWorkout`); 401, 5xx and
+network errors only offer retry. Spec 0001's boot decision reuses the same
+status distinction.
+
 `nextDraftId` uses a module counter (`we-gen-N`) that restarts at 0, so ids
 created after hydration would collide with ids in the restored draft. Seed it
 with a time-based prefix first.
@@ -74,8 +94,12 @@ None.
   none`, so an existing draft opens without the network; `routineId` optional.
 - New `features/workouts/persistence/`: `ActiveWorkoutStorage` interface,
   AsyncStorage and in-memory implementations, envelope helpers, persister.
-- `AuthContext.tsx`: restore `user.id` from `tokenSubject(token)`.
-- `src/app/_layout.tsx`: keep the spinner until the draft is hydrated.
+- `AuthContext.tsx`: restore `user.id` from `tokenSubject(token)`; on sign-in,
+  `discardActiveWorkoutIfForeign(user.id)` then hydrate if nothing is in memory.
+- `src/app/_layout.tsx`: keep the spinner until auth is restored and, when
+  signed in, the draft is hydrated.
+- `lib/http.ts`: `ApiError` with `status`.
+- `ActiveWorkoutScreen.tsx`: on a permanent rejection, offer to discard (EF-5).
 - `SettingsScreen.tsx`: confirm sign-out while a workout is active, then clear.
 - **Native rebuild required** (new native dependency).
 
@@ -89,10 +113,14 @@ None.
 | AC-4 | Unit: envelope `foreign`; device: two accounts |
 | AC-5 | Unit: 401 path does not clear; device |
 | AC-6 | Device: save with the API unreachable, reopen |
+| AC-7 | Unit: `discardActiveWorkoutIfForeign`; device: expire the token, sign in as someone else |
+| AC-8 | Unit: finish-error classification (`ApiError` 4xx vs network); device: force a 400 |
+| AC-9 | Unit: hydration deferred while signed out; device |
 
 Unit (Vitest, node): draft ids, subscribe/notify, `resolveActiveWorkoutEntry`,
 envelope parse (`ok`/`foreign`/`invalid`/`empty`/old version), `tokenSubject`,
-persister debounce and clear with fake timers and in-memory storage.
+persister debounce and clear with fake timers and in-memory storage,
+`discardActiveWorkoutIfForeign`, `ApiError` classification.
 
 ## Files to touch
 
@@ -101,10 +129,12 @@ persister debounce and clear with fake timers and in-memory storage.
 - `apps/mobile/src/features/workouts/screens/ActiveWorkoutScreen.tsx`
 - `apps/mobile/src/features/workouts/persistence/*` (new, + tests)
 - `apps/mobile/src/features/auth/AuthContext.tsx`, `features/auth/tokenSubject.ts` (+ test)
+- `apps/mobile/src/lib/http.ts` (+ test)
 - `apps/mobile/src/app/_layout.tsx`
 - `apps/mobile/src/features/settings/screens/SettingsScreen.tsx`
 - `apps/mobile/package.json`, `pnpm-lock.yaml`
 - `docs/sdd/specs/0005-retro-workouts/spec.md`, `docs/sdd/backlog.md`, `docs/roadmap/01-live-workout-logging.md`
+- `docs/sdd/glossary.md` (`WorkoutSessionDraft` stops being "in-memory"; active workout survives restarts)
 
 ## Risks and open questions
 
@@ -112,6 +142,10 @@ persister debounce and clear with fake timers and in-memory storage.
   picker) is not part of the draft and is not restored — acceptable.
 - Moving the screen to read from the store touches many handlers; keep the
   change mechanical (`setWorkoutDraft(x); setActiveWorkout(x)` → `setActiveWorkout(x)`).
+- **Ordering:** spec 0014 (idempotent save, routine link as optional provenance)
+  must be deployed before task 7 switches persistence on. Otherwise retries
+  after a restart can duplicate a workout, and a deleted routine leaves a
+  stored workout that can never be saved.
 
 ## Rollout
 

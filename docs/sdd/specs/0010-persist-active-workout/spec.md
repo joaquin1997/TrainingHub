@@ -5,6 +5,7 @@ status: planned
 roadmap: docs/roadmap/01-live-workout-logging.md
 created: 2026-09-24
 decided: 2026-09-24
+amended: 2026-09-24
 ---
 
 # Persist the active workout
@@ -34,8 +35,9 @@ spec 0001's EF-4.
   expect to continue exactly where they were.
 - **Coming back from the lock screen.** Someone taps the workout status on the
   lock screen; the app starts from scratch and must open the same workout.
-- **Shared device.** Someone signs out and a different person signs in on the
-  same phone; the first person's workout must not appear.
+- **Shared device.** Someone signs out — or their session expires — and a
+  different person signs in on the same phone; the first person's workout must
+  not appear, and must not be saved under the second person's account.
 
 ## Scope
 
@@ -75,6 +77,9 @@ spec 0001's EF-4.
   without needing a connection.
 - **FR-7.** The system MUST NOT lose the stored workout when the session ends
   involuntarily (expired or rejected credentials).
+- **FR-8.** When someone signs in and the active workout on the device belongs
+  to a different person, the system MUST discard it — whether it is in the
+  running app or only in storage.
 
 ## Behaviour when things go wrong
 
@@ -87,6 +92,14 @@ spec 0001's EF-4.
   stored workout so the person can retry, even after reopening the app.
 - **EF-4.** When device storage is unavailable, the app MUST keep working with
   an in-memory workout, as it does today.
+- **EF-5.** When saving a finished workout is rejected for a reason that
+  retrying cannot fix (the server refuses the workout itself, not the
+  connection or the session), the system MUST keep the workout, show the
+  reason, and let the person discard it. A stored workout that can never be
+  saved and never be removed is the failure this prevents.
+- **EF-6.** When the app starts signed out, the stored workout MUST stay in
+  storage untouched and be restored after the next sign-in, subject to FR-3 and
+  FR-8.
 
 ## Domain impact
 
@@ -110,6 +123,14 @@ from editing until finished or discarded, unit fixed at start.
   signs in again as the same user, then the workout is still in progress.
 - **AC-6.** Given a failed save on finish, when the app is reopened, then the
   workout is still in progress and can be finished again.
+- **AC-7.** Given a workout in progress and an expired session, when a
+  different person signs in, then no workout is in progress.
+- **AC-8.** Given a finished workout the server refuses, when the person
+  chooses to discard it, then no workout is in progress, including after
+  reopening the app.
+- **AC-9.** Given a workout in progress and a session that expired while the
+  app was closed, when the app starts and the same person signs in, then the
+  workout is in progress.
 
 ## Non-functional requirements
 
@@ -130,5 +151,8 @@ status (0012) and pause (0011).
 
 - Closes the known gap in 0005; extends 0001 EF-4 beyond the running app.
 - Prerequisite for 0012.
+- Depends on spec 0014 (a save that can be retried without creating a
+  duplicate, and that survives the routine being deleted) before the stored
+  workout is switched on: persisting makes retries across restarts routine.
 - Roadmap: `docs/roadmap/01-live-workout-logging.md`
 - Constitution articles engaged: 1, 3, 6, 8, 9
