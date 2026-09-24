@@ -1,0 +1,60 @@
+---
+spec: 0013
+status: in-progress  # tasks approved by the owner, 2026-09-24
+created: 2026-09-24
+---
+
+# Tasks — Progress counts only performed work
+
+Ordered, independently committable, independently verifiable. Each task leaves
+the tree green: `pnpm -r typecheck` and `pnpm -r test` pass at every step
+(Article 8).
+
+No migration. The API tasks change derived figures only, and the mobile tasks
+cope with both an old and a new API (the `performed` fallback), so the API can
+be deployed at any point after task 5.
+
+## Task list
+
+| # | Task | Area | Verify | Commit message |
+|---|---|---|---|---|
+| 1 | Spec, plan and tasks; glossary (performed set, warmup set, legacy session); backlog | docs | links resolve | `docs(sdd): spec 0013 progress counts only performed work` |
+| 2 | `performedSets.ts`: `isLegacySession`, `isPerformedSet`, `isWarmupSet`, `pickLastPerformance` (pure, not wired yet) | api | unit tests (`performedSets.test.ts`) | `feat(workouts): rule for performed and warmup sets` |
+| 3 | `WorkoutSet.performed?` in domain; `mapWorkoutSession` sets it from the rule | domain / api | typecheck; unit test on the pure flagging helper | `feat(workouts): expose the performed flag on saved sets` |
+| 4 | Progress: loader passes `completedAt` / `type` / `isWarmup`; `selectPerformedWork`; bests and 1RM from performed non-warmup sets, volume from all performed | api | unit tests (`aggregate.test.ts`): 1 of 4 done, warmup above best, legacy session, stored unperformed values ignored; existing fixtures updated | `fix(progress): count only performed sets; keep warmups out of records` |
+| 5 | "Last time": fetch the 10 most recent entries, choose with `pickLastPerformance` | api | unit tests (picker); route test unchanged (repository mocked) | `fix(workouts): last time shows only performed sets` |
+| 6 | Redeploy the API; check progress and "last time" on the phone | ops | **[DEPLOY]** `/health` ok; **[DEVICE]** AC-1, AC-2, AC-3, AC-5 | — (no commit) |
+| 7 | `isPerformedSet` (mobile, with `completedAt` fallback); history volume and detail ✓/○, totals use it | mobile | unit test (`performedSet.test.ts`); **[DEVICE]** AC-4 | `fix(workouts): history treats legacy sessions as performed` |
+| 8 | Post-workout summary renders the saved values from the skeleton, formatted in the session unit | mobile | unit test for the skeleton values if missing; **[DEVICE]** AC-6 | `fix(workouts): summary shows the values that were saved` |
+| 9 | Rename `progress.volumeByMuscleGroup` → `volumeByCategory` (en/es) | mobile | typecheck (catalog shape); **[DEVICE]** AC-7 in ES and EN | `fix(progress): label the volume distribution by category` |
+| 10 | Roadmap 04 (with the "figures drop on purpose" note), retro 0006, backlog; spec status `done` | docs | links resolve | `docs(sdd): close spec 0013` |
+
+Tasks 6–9 need a redeploy or the phone for their acceptance checks. The mobile
+tasks need only a Metro reload, not a native rebuild.
+
+### Acceptance criteria → tasks
+
+| AC | Unit-tested in | Checked on device in |
+|---|---|---|
+| AC-1 | 4 | 6 |
+| AC-2 | 2, 5 | 6 |
+| AC-3 | 4 | 6 |
+| AC-4 | 2, 3, 4, 7 | 7 |
+| AC-5 | 4 | 6 |
+| AC-6 | 8 | 8 |
+| AC-7 | 9 (typecheck) | 9 |
+
+## Progress log
+
+- 2026-09-24 — Spec (gate 1: unmarked sets keep being saved) and plan approved;
+  tasks approved; implementation started.
+
+## Definition of done
+
+- [ ] Every functional requirement and acceptance criterion in `spec.md` is met
+      or explicitly deferred with a TODO
+- [ ] `pnpm -r typecheck` and `pnpm -r test` green
+- [ ] `docs/roadmap/04-progress-and-prs.md` checklist and progress log updated
+- [ ] `spec.md` status set to `done`; `../backlog.md` updated
+- [ ] Retro 0006 records the invariant: progress reads only performed sets;
+      warmups count for volume, never for records

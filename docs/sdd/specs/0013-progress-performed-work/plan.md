@@ -1,6 +1,6 @@
 ---
 spec: 0013
-status: draft        # ready for review — not self-approved
+status: approved     # approved by the owner, 2026-09-24
 created: 2026-09-24
 ---
 
