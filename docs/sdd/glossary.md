@@ -14,7 +14,10 @@ production.
 | **Routine folder** | Grouping of routines for organisation. | — |
 | **WorkoutSession** | One real training session actually performed. | `Routine` |
 | **WorkoutExercise** | An exercise as performed inside one `WorkoutSession`. | `RoutineExercise` |
-| **WorkoutSet** | The actual logged data for one performed set: weight in kg, reps, set type, rest. | Target values, which live on the template |
+| **WorkoutSet** | The logged data for one set of a `WorkoutExercise`: weight in kg, reps, set type, rest, and whether it was marked done. | Target values, which live on the template |
+| **Performed set** | A `WorkoutSet` marked done — or, in a legacy session, any set. The only sets that count as work for progress and "last time" (spec 0013). | A logged set left unmarked |
+| **Warmup set** | A `WorkoutSet` of type warmup. Counts toward training volume, never toward personal records or estimated 1RM (spec 0013). | Drop and failure sets, which are working sets |
+| **Legacy session** | A `WorkoutSession` saved before sets could be marked done, recognisable because none of its sets is. All its sets count as performed. | — |
 | **Active workout** | The single in-progress `WorkoutSession`. At most one exists at a time; it is resumable, and its routine is locked from editing until it is finished or discarded. | A saved (finished) session |
 | **WorkoutSessionDraft** | The mobile-side in-memory state of the active workout, including the display `unit` captured at session start. | `WorkoutSession`, which is the persisted record |
 | **Superset** | A group of `RoutineExercise` entries performed back to back. | — |

@@ -13,11 +13,12 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0010](specs/0010-persist-active-workout/spec.md) | Persist the active workout | `planned` — tasks awaiting review; amendments pending (see below) | 1 — Live workout logging |
 | [0011](specs/0011-workout-pause/spec.md) | Pause the active workout | `planned` — tasks awaiting review | 1 — Live workout logging |
 | [0012](specs/0012-workout-live-activity/spec.md) | Live workout status on the lock screen | `planned` — spike done, tasks awaiting review; amendments pending | 8 — Integrations & platform |
-| 0013 | Progress counts only performed work | `draft` — not written yet | 4 — Progress |
+| [0013](specs/0013-progress-performed-work/spec.md) | Progress counts only performed work | `ready` — plan written, awaiting review | 4 — Progress |
 | 0014 | Workout save integrity (idempotent save, owned references, date validation) | `draft` — not written yet; needed before 0010 task 7 | 1 — Live workout logging |
 | 0015 | Custom exercises are private | `draft` — not written yet; ships alongside 0001 | 6 — Exercises |
 
-Execution order agreed 2026-09-24: 0013 → 0014 → 0010 → 0011 → 0012 → 0001 →
+Execution order agreed 2026-09-24: 0013 → 0014 → 0010 → 0011 → 0012 →
+visual redesign (to be specified; "functional first, then pretty") → 0001 →
 0015. Before implementing 0001, 0010 and 0012, their specs get the amendments
 found in the 2026-09-24 review (0001: public auth routes, offline start, data
 reassignment as a one-off script; 0010: owner check on sign-in, hydration after
