@@ -35,9 +35,10 @@ pnpm install
 cp apps/api/.env.example apps/api/.env
 ```
 
-The dev database runs in Docker on the home server and is reached over Tailscale
-(`100.109.119.75:5432`, db `app_db`). `apps/api/.env` is gitignored. Off the
-tailnet, use an SSH tunnel (see `.env.example`).
+The dev database runs in Docker on the home server, published on its loopback
+only (`127.0.0.1:5434`, db `app_db`). `apps/api/.env` is gitignored. To reach it
+from the Mac (migrations, Prisma Studio), open an SSH tunnel first:
+`ssh -N -L 5434:127.0.0.1:5434 joaquin@joaquinserver.tail644a1a.ts.net`.
 
 ## Database
 
@@ -102,7 +103,8 @@ Topology:
 
 - Docker host `joaquinserver`: LAN `192.168.1.98`, Tailscale `100.124.208.26`
   (SSH docker contexts `docker-lan` and `docker-ts`).
-- PostgreSQL: separate Tailscale node `100.109.119.75:5432`.
+- PostgreSQL: same host, loopback only `127.0.0.1:5434` (compose in
+  `/home/joaquin/docker_composes/postgresql`).
 - API reachable at `https://joaquinserver.tail644a1a.ts.net:8443` for any device on the tailnet.
 
 ```bash
@@ -117,7 +119,8 @@ DOCKER_BUILDKIT=0 docker build -t traininghub-api:latest .
 docker rm -f traininghub-api
 docker run -d --name traininghub-api --restart unless-stopped --network host \
   -e NODE_ENV=production -e HOST=0.0.0.0 -e PORT=3000 \
-  -e DATABASE_URL="postgresql://USER:PASSWORD@100.109.119.75:5432/app_db?schema=public" \
+  -e DATABASE_URL="postgresql://USER:PASSWORD@127.0.0.1:5434/app_db?schema=public" \
+  -e JWT_SECRET="..." \
   traininghub-api:latest
 
 # Verify
