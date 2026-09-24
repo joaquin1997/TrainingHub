@@ -5,6 +5,7 @@ status: planned
 roadmap: docs/roadmap/08-integrations-and-platform.md
 created: 2026-09-24
 decided: 2026-09-24
+amended: 2026-09-24
 ---
 
 # Live workout status on the lock screen
@@ -82,7 +83,21 @@ make it safe to act on the workout from outside the app.
 - **EF-4.** When the pause state differs between the status and the app, the
   most recent action MUST win.
 - **EF-5.** Calories shown while the phone is locked MAY lag: they refresh when
-  the app runs, and the watch syncs with a delay. The clock never lags.
+  the app runs, and the watch syncs with a delay. The clock never lags. When
+  calories cannot be read at a given moment (for example, health data is
+  locked while the phone is), the last known value MUST stay shown; only "no
+  data" or "no permission" shows unknown.
+- **EF-6.** When Finish is tapped on the status and no set has been completed,
+  the app MUST open on the workout and show the usual notice that at least one
+  set must be completed; nothing is saved.
+- **EF-7.** When the status is used while the person is signed out (their
+  session expired), the app MUST ask them to sign in and then open the workout
+  in progress, provided it is theirs (spec 0010, FR-8).
+  **[ASSUMPTION: returning to the workout after sign-in is enough; the Finish
+  confirmation is not replayed.]**
+- **EF-8.** When the phone removes the status on its own after many hours, the
+  workout MUST continue unaffected in the app, and the status MUST be shown
+  again the next time the app is opened while the workout is in progress.
 
 ## Domain impact
 
@@ -124,7 +139,8 @@ None blocking. See `TODO(sdd)` in `plan.md` for the lock-screen Face ID prompt.
 
 ## Related
 
-- Depends on 0010 and 0011.
+- Depends on 0010 (task 4: opening the workout in progress with no routine
+  reference, which is how the status opens it) and 0011.
 - Roadmap: `docs/roadmap/08-integrations-and-platform.md` (Apple Health), `02-rest-timer.md`
 - `docs/codex-project-context.md` defers native health integrations "unless
   explicitly requested": the owner explicitly requested real calories.

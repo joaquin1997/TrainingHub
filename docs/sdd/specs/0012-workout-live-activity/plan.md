@@ -1,6 +1,7 @@
 ---
 spec: 0012
 status: approved     # approved with the Live Activity plan, 2026-09-24
+amended: 2026-09-24 # review: reuse LiveWorkoutBridge, HealthKit errors, extra failure paths
 created: 2026-09-24
 ---
 
@@ -12,10 +13,10 @@ created: 2026-09-24
 |---|---|---|
 | 1 — Scope control | yes | iOS only; no rest timer, no watch app, no writing to Health. |
 | 2 — Template vs performed | no | |
-| 3 — Shared domain types | yes | `HealthIntegration.readActiveEnergyKcal` added in `packages/domain`. |
+| 3 — Shared domain types | yes | `HealthIntegration.readActiveEnergyKcal` added and `LiveWorkoutBridge` / `HealthWorkoutPayload` extended in `packages/domain`. |
 | 4 — Weight in kg | no | |
 | 5 — Prisma migrations | no | |
-| 6 — Integrations behind interfaces | yes | `WorkoutLiveActivity` (iOS impl + no-op); HealthKit behind `HealthIntegration`. |
+| 6 — Integrations behind interfaces | yes | The Live Activity is the iOS implementation of the existing `LiveWorkoutBridge` (Android: no-op); no parallel interface. HealthKit behind `HealthIntegration`. |
 | 7 — Secrets | yes | `appleTeamId` is not a secret. |
 | 8 — Committable + verified | yes | Pure helpers tested; native tasks marked [DEVICE]. |
 | 9 — Dependencies | yes | `@bacons/apple-targets` (dev, config plugin only). HealthKit and ActivityKit through own local modules instead of `@kingstinct/react-native-healthkit` + nitro (2 native deps for 2 calls). Native rebuild required. |
@@ -35,15 +36,43 @@ created: 2026-09-24
   attributes (a pod cannot see app-target types); a Vitest test asserts both
   copies are identical.
 - **Local module `modules/health-energy`**: `HKStatisticsQuery` cumulative sum of
-  `activeEnergyBurned` (de-duplicates iPhone + Watch). No data / denied → `null`.
-- **JS**: `WorkoutLiveActivity` interface (`index.ios.ts` adapter, `index.ts`
-  no-op). A controller subscribes to the draft store (0010): start on workout
-  start, `setPause` on pause (0011), `end` on finish/discard. Pure
-  `reconcile(draft, activityState)` on mount and on app active: end orphans,
-  restart on mismatch, adopt a lock-screen pause. kcal read at start, on app
-  active, and every 60 s while not paused.
+  `activeEnergyBurned` (de-duplicates iPhone + Watch). No samples, or read
+  permission refused (HealthKit does not tell them apart) → `null`. A query
+  *error* — notably `errorDatabaseInaccessible` while the phone is locked —
+  rejects instead, so the caller keeps the last known value (EF-5).
+- **JS boundary — reuse `LiveWorkoutBridge`** (amended 2026-09-24). The domain
+  already has `LiveWorkoutBridge` (start / update / finish), which constitution
+  Article 6 lists as a known instance, with stubs in
+  `features/health/providers/appleHealth.ts` and `androidHealthConnect.ts`.
+  Instead of a parallel `WorkoutLiveActivity` interface:
+  - `HealthWorkoutPayload` gains optional `routineName`, `pausedAt`,
+    `pausedSeconds` and `activeEnergyKcal` (`number | null`).
+  - `LiveWorkoutBridge` gains optional `getLiveWorkoutState()` and
+    `onLiveWorkoutStateChange(listener)` (for lock-screen pauses). Optional, so
+    the Android stub stays a no-op.
+  - `appleHealthLiveWorkoutBridge` becomes the adapter over the
+    `workout-live-activity` module.
+- **Controller** (`features/workouts/liveActivity/`): subscribes to the draft
+  store (0010) and drives the bridge found by `findLiveWorkoutBridge`: start on
+  workout start, update on pause/resume (0011) and on new kcal, finish on
+  finish/discard. Pure `reconcile(draft, bridgeState)` on mount and on app
+  active: end orphans, restart on mismatch or when the system ended the
+  activity (EF-8), adopt a lock-screen pause (EF-4). kcal is read at start and
+  on app active, and every 60 s **while the app is in the foreground** and not
+  paused. JS timers do not run in the background, so a locked phone shows the
+  last value (EF-5).
+- **Remove the existing per-change hook.** `ActiveWorkoutScreen` runs
+  `notifyAppleWorkoutStarted(workoutDraft)` in an effect that fires on *every*
+  draft change (`ActiveWorkoutScreen.tsx` L150–154) and calls
+  `notifyAppleWorkoutFinished` on finish. Once the bridge is real, that would
+  start an activity per keystroke. Both calls go; the controller replaces them.
+  `syncWorkoutCompletionToAppleHealth` (writing to Health) stays a stub; it is
+  out of scope.
 - **Finish link** `traininghub://workouts/active?action=finish` → `Alert`
-  confirm → existing `finishWorkout`.
+  confirm → existing `finishWorkout`. With no completed set, `finishWorkout`
+  already shows the "mark one set" notice (EF-6). If the auth gate redirects to
+  sign-in, the link is dropped and, after sign-in, `RootNavigator` opens
+  `/workouts/active` when a workout owned by that user is in progress (EF-7).
 - **app.json**: `ios.appleTeamId`, `NSSupportsLiveActivities`,
   `NSHealthShareUsageDescription`, `com.apple.developer.healthkit`, plugin.
   App deployment target stays 15.1 (`@available` guards).
@@ -72,8 +101,14 @@ On iPhone (iOS 26.5) with the free team 23X2PC36Y7:
 
 ## Shared contracts (`packages/domain`)
 
-`HealthIntegration.readActiveEnergyKcal(since: ISODateString, until?: ISODateString): Promise<number | null>`;
-the Android implementation returns `null`.
+- `HealthIntegration.readActiveEnergyKcal(since: ISODateString, until?: ISODateString): Promise<number | null>`:
+  resolves `null` for no data or no permission; rejects on a read error. The
+  Android implementation returns `null`.
+- `HealthWorkoutPayload`: optional `routineName`, `pausedAt`, `pausedSeconds`,
+  `activeEnergyKcal`.
+- `LiveWorkoutBridge`: optional `getLiveWorkoutState(): Promise<LiveWorkoutState | null>`
+  and `onLiveWorkoutStateChange(listener): () => void`, with
+  `LiveWorkoutState = { workoutSessionId; pausedAt?; pausedSeconds; updatedAt }`.
 
 ## Data model and migrations
 
@@ -86,8 +121,12 @@ None.
 ## Mobile surface (`apps/mobile`)
 
 New `targets/workout-activity/`, `modules/workout-live-activity/`,
-`modules/health-energy/`, `src/features/workouts/liveActivity/`. Changes in
-`app.json`, `ActiveWorkoutScreen` (finish action), `features/health/providers/appleHealth.ts`.
+`modules/health-energy/`, `src/features/workouts/liveActivity/` (controller +
+`reconcile`). Changes in `app.json`, `ActiveWorkoutScreen` (finish action;
+remove the per-change `notifyAppleWorkoutStarted` effect),
+`features/health/providers/appleHealth.ts` (real bridge + energy read),
+`features/health/integrations/appleWorkoutIntegration.ts` (drop the notify
+helpers), `src/app/_layout.tsx` (open the workout after sign-in, EF-7).
 **Native rebuild required**: `EXPO_NO_GIT_STATUS=1 npx expo prebuild -p ios --clean`
 → `xcodebuild … -allowProvisioningUpdates build` → `xcrun devicectl device install app …`.
 
@@ -100,6 +139,10 @@ New `targets/workout-activity/`, `modules/workout-live-activity/`,
 | AC-3, AC-4 | Unit: action parsing; device |
 | AC-5 | Device: compare with Fitness |
 | AC-6 | Unit: `null` → unknown; device: deny permission |
+| EF-5 | Unit: a rejected read keeps the last value; device: lock the phone, reopen |
+| EF-6 | Device: Finish from the status with no set done |
+| EF-7 | Device: expire the token, tap the status, sign in |
+| EF-8 | Unit: `reconcile` restarts when the bridge reports no activity |
 
 ## Files to touch
 
@@ -109,6 +152,8 @@ New `targets/workout-activity/`, `modules/workout-live-activity/`,
 - `apps/mobile/src/features/workouts/liveActivity/*` (+ tests)
 - `apps/mobile/src/features/workouts/screens/ActiveWorkoutScreen.tsx`
 - `apps/mobile/src/features/health/providers/appleHealth.ts`, `androidHealthConnect.ts`
+- `apps/mobile/src/features/health/integrations/appleWorkoutIntegration.ts`
+- `apps/mobile/src/app/_layout.tsx`
 - `packages/domain/src/health.ts`
 - `README.md` (native builds), `docs/sdd/glossary.md`, `docs/roadmap/08-*.md`, `docs/sdd/backlog.md`
 
@@ -117,7 +162,11 @@ New `targets/workout-activity/`, `modules/workout-live-activity/`,
 - Face ID on lock-screen pause (TODO above).
 - `@bacons/apple-targets` calls itself experimental.
 - Free team: 7-day profiles; 10 App IDs per 7 days (the extension uses one).
-- A Live Activity lasts at most 8 hours.
+- A Live Activity lasts at most 8 hours (EF-8: `reconcile` restarts it when the
+  app comes to the foreground).
+- `LiveWorkoutBridge` lives under the health providers although a Live Activity
+  is not a health feature. `TODO(sdd): rename or move it only if a second`
+  `non-health live surface appears; not worth a reshuffle for one.`
 
 ## Rollout
 
