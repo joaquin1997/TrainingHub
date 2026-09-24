@@ -59,10 +59,15 @@ All remaining items live in
 the checklist there is complete, so the area has no open sub-points at the time
 of writing.
 
-`TODO(sdd): unverified in this pass — whether deleting a routine that has`
-`performed workouts attached is blocked, soft-deleted, or leaves those workouts`
-`orphaned. This is exactly the kind of question a real spec would have`
-`answered, and it needs reading the delete path in the API to settle.`
+**Deleting a routine keeps its history** (verified 2026-09-24): the delete is
+a hard delete, and performed workouts survive with their link to the routine
+(and to its exercise slots) cleared. They stay in history and in progress.
+
+**Gap:** the edit-lock does not cover deletion. Deleting the routine of the
+*active* workout is allowed, after which saving that workout is rejected
+because it references a routine that no longer exists. Decided 2026-09-24:
+block the deletion in the app and treat the routine link as optional provenance
+when saving — spec 0014.
 
 ## Related
 

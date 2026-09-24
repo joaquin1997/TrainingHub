@@ -85,11 +85,26 @@ conversion helpers?
 `npm run db:migrate` → commit the generated `prisma/migrations/` folder. No
 hand-written DDL that competes with the schema.
 
+**Exception — hand-written migration.** When `prisma migrate dev` cannot run
+non-interactively (e.g. it stops on a data-loss warning), a `migration.sql` may
+be written by hand, as long as it expresses *exactly* the change made to
+`schema.prisma`, sits in its own timestamped folder, and is applied with
+`npm run db:deploy`. The schema file stays the authority; the SQL only mirrors
+it. Precedent: `add_user_password_email_unique`.
+
+**Data changes are not migrations.** Moving or fixing *rows* (e.g. reassigning
+one account's data to another) goes in a one-off script under
+`apps/api/src/scripts/`, never in `prisma/migrations/`. Migrations run on every
+database, including fresh ones; a data fix tied to specific rows would fail or
+misbehave there.
+
 **Why.** A previous `sql/` init script competed with Prisma and was removed
 for exactly this reason.
 
-**Check.** Does the plan introduce SQL that is not a generated migration? Are
-the migrations committed alongside the schema change?
+**Check.** Does the plan introduce SQL that is not a generated migration? If it
+is hand-written, does it mirror a `schema.prisma` change exactly? Does any
+migration touch data that only exists on one database? Are the migrations
+committed alongside the schema change?
 
 ---
 
@@ -180,6 +195,10 @@ change. Record it below.
   the per-area roadmap notes, and decisions taken during the routines /
   workouts / progress / auth / settings slices (weight-unit invariant,
   `TokenStorage` interface, Prisma-only schema authority).
+- **2026-09-24 — Article 5.** Recorded the hand-written migration exception
+  already used by `add_user_password_email_unique`, and ruled that data fixes
+  are scripts, not migrations. Forced by spec 0001, whose plan put an
+  account-specific data reassignment into a migration.
 
 `TODO(sdd): Articles 4 and 6 encode decisions that currently live only in the`
 `assistant's memory notes, not in any repo document. Confirm they are stated`

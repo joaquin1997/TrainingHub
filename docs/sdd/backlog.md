@@ -10,9 +10,19 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0001](specs/0001-auth-session-hardening/spec.md) | Auth session hardening | `ready` — plan written, awaiting review | 3 — Auth & users |
 | [0002](specs/0002-apple-sign-in/spec.md) | Sign in with Apple | `draft` — blocked on open decisions | 3 — Auth & users |
 | [0003](specs/0003-session-revocation/spec.md) | Session revocation | `draft` — deferred from 0001, before distribution | 3 — Auth & users |
-| [0010](specs/0010-persist-active-workout/spec.md) | Persist the active workout | `ready` — plan approved, tasks awaiting review | 1 — Live workout logging |
-| [0011](specs/0011-workout-pause/spec.md) | Pause the active workout | `ready` — plan approved, tasks awaiting review | 1 — Live workout logging |
-| [0012](specs/0012-workout-live-activity/spec.md) | Live workout status on the lock screen | `ready` — spike done, tasks awaiting review | 8 — Integrations & platform |
+| [0010](specs/0010-persist-active-workout/spec.md) | Persist the active workout | `planned` — tasks awaiting review; amendments pending (see below) | 1 — Live workout logging |
+| [0011](specs/0011-workout-pause/spec.md) | Pause the active workout | `planned` — tasks awaiting review | 1 — Live workout logging |
+| [0012](specs/0012-workout-live-activity/spec.md) | Live workout status on the lock screen | `planned` — spike done, tasks awaiting review; amendments pending | 8 — Integrations & platform |
+| 0013 | Progress counts only performed work | `draft` — not written yet | 4 — Progress |
+| 0014 | Workout save integrity (idempotent save, owned references, date validation) | `draft` — not written yet; needed before 0010 task 7 | 1 — Live workout logging |
+| 0015 | Custom exercises are private | `draft` — not written yet; ships alongside 0001 | 6 — Exercises |
+
+Execution order agreed 2026-09-24: 0013 → 0014 → 0010 → 0011 → 0012 → 0001 →
+0015. Before implementing 0001, 0010 and 0012, their specs get the amendments
+found in the 2026-09-24 review (0001: public auth routes, offline start, data
+reassignment as a one-off script; 0010: owner check on sign-in, hydration after
+sign-in, permanently rejected saves; 0012: reuse `LiveWorkoutBridge`, HealthKit
+errors vs no data, extra failure paths).
 
 ## Retro-specs
 
@@ -31,19 +41,21 @@ known gaps. They are the base a future change builds on.
 
 ### Questions the retro pass raised
 
-Writing these surfaced four things nobody had recorded. Each is a
-`TODO(sdd)` in its spec; listed here because they are easy to lose:
+Writing these surfaced four things nobody had recorded. Status as of the
+2026-09-24 review:
 
-- **Routine deletion with performed workouts attached** — blocked,
-  soft-deleted, or orphaning history? Unverified (0004).
-- **Active workout is in-memory only** — does not survive an app restart, which
-  is also what bounds spec 0001's EF-4. Persisting it deserves its own spec
-  (0005).
+- **Routine deletion with performed workouts attached** — *answered* (0004):
+  the history is kept and loses only its link to the routine. Deleting the
+  routine of the *active* workout, however, makes that workout unsaveable —
+  spec 0014.
+- **Active workout is in-memory only** — *specified* as 0010, which also lifts
+  the bound on spec 0001's EF-4.
 - **Muscle-group data is sparse from wger** — blocks both muscle-group
   distribution (0006) and any muscle-based filtering (0007). The decision on
   where muscle data comes from *is* the spec.
-- **Are custom exercises private to their creator?** Unverified, and it matters
-  before anyone else uses the app (0007).
+- **Are custom exercises private to their creator?** — *answered* (0007): no,
+  every user sees every custom exercise. Decided 2026-09-24 that they should be
+  private — spec 0015.
 
 ## Areas with no spec yet
 

@@ -1,7 +1,7 @@
 ---
 id: 0012
 title: Live workout status on the lock screen
-status: ready
+status: planned
 roadmap: docs/roadmap/08-integrations-and-platform.md
 created: 2026-09-24
 decided: 2026-09-24

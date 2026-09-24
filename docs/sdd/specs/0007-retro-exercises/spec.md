@@ -47,10 +47,11 @@ From [docs/roadmap/06-exercises-advanced.md](../../../roadmap/06-exercises-advan
   reads the most recent logged sets for an exercise, so this is largely a
   presentation gap rather than new plumbing.
 
-`TODO(sdd): confirm whether custom exercises are private to their creator. The`
-`catalog is shared, per-user scoping was retrofitted, and this pass did not`
-`verify which side user-defined exercises fell on. It matters before anyone`
-`else uses the app.`
+**Custom exercises are not private** (verified 2026-09-24). The catalog lists
+every exercise of every user, and creating a custom exercise whose name
+matches an existing one (case-insensitive) returns that existing exercise —
+possibly another user's. Decided 2026-09-24 that each user sees system
+exercises plus their own — spec 0015.
 
 ## Related
 
