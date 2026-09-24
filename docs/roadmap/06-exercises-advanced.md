@@ -5,7 +5,7 @@
 - [ ] Per-exercise history (past sets)
 - [x] Favorite exercises (API-backed, star toggle + favorites filter)
 - [x] Exercise images / GIFs (wger image URL, shown on detail)
-- [x] Pagination of the catalog
+- [x] Pagination of the catalog (client-side: the API returns the full catalog)
 
 ## Progress log
 - (2026-05-31) Catalog filter chips for category + equipment, derived from the
@@ -14,7 +14,8 @@
   wger's `primaryMuscleGroups` comes back sparse while category/equipment are
   well populated.
 - (2026-05-31) Favorites, API-backed with a star toggle and a favorites filter
-  (`22915b3`); load-more pagination of the catalog (`108fb73`); wger image URLs
+  (`22915b3`); client-side load-more pagination of the catalog (`108fb73`; the list endpoint
+  is not paginated); wger image URLs
   imported and shown on the detail screen (`9442567`).
 
 ## Notes

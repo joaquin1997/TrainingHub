@@ -17,6 +17,9 @@
   unnoticed for a week)
 - [ ] Error handling / loading skeletons everywhere
 - [ ] Rate limiting + basic security hardening
+- [ ] Remove `NSAllowsArbitraryLoads` from `app.json` (left over from plain-HTTP
+  days; the API is HTTPS now). Needs a native rebuild and a check that Metro
+  still loads over the tailnet
 - [ ] Crash reporting + analytics
 - [x] CI (GitHub Actions: install → prisma generate → typecheck → tests on PRs)
 - [x] Server-side guard: reject workouts with no completed set

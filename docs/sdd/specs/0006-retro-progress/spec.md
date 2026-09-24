@@ -35,6 +35,12 @@ session for a given exercise, computed from that session's sets.
   chart dependency and renders identically on iOS, Android and web.
 - **Weekly volume.** Training volume bucketed into Monday-start weeks, charted
   on the progress overview.
+- **Volume by category.** Training volume summed per exercise *category*, shown
+  as horizontal bars on the overview. Category stands in for muscle group (see
+  known gaps); the on-screen label still says "muscle group", which overstates
+  what it measures.
+- **Training frequency.** Streak, total workouts, active weeks and best week,
+  derived on the device from the weekly-volume data.
 
 ## Invariants worth protecting
 
@@ -54,10 +60,10 @@ session for a given exercise, computed from that session's sets.
 
 From [docs/roadmap/04-progress-and-prs.md](../../../roadmap/04-progress-and-prs.md):
 
-- Muscle-group distribution — blocked in practice because wger's
-  `primaryMuscleGroups` data comes back sparse, which is also why the exercise
-  filters use category and equipment instead. Any spec here must decide where
-  muscle data comes from.
+- Muscle-group distribution from *real* muscle data — wger's
+  `primaryMuscleGroups` comes back sparse, which is why the shipped distribution
+  groups by category and the exercise filters use category and equipment. Any
+  spec here must decide where muscle data comes from.
 - Workout calendar view.
 - Smooth line charts / multi-metric toggle — deferred: needs
   `react-native-svg` and a full rebuild; the bars suffice.

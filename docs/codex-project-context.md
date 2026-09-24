@@ -24,8 +24,10 @@ Development advances by vertical slices. Status so far:
 - **Workouts** — done: start from a routine, log sets (mark each set done), live timer, optional notes, save the completed session, history + detail with durations. One workout can be active (in-progress) at a time; it is resumable, and editing its routine is locked until it is finished or discarded
 - **Progress** — done: per-exercise summaries and per-session points aggregated from saved workouts
 - **Exercises** — catalog browsing + search + detail (seeded from wger), used by the routine builder
+- **Auth** — email/password + JWT end-to-end, per-user scoping of every repository, mobile login gating with the token behind `TokenStorage`. The boundary is not enforced yet (anonymous requests fall back to a dev user); that is spec 0001. Apple sign-in is spec 0002.
+- **Settings and i18n** — kg/lb display unit, default rest and ES/EN language, persisted per user
 
-Next candidates: `auth` (Apple first) and `health` remain deferred until a product reason arises. Keep closing UX gaps and tests on the slices above before starting them.
+Work is now spec-driven: pick the next item from `docs/sdd/backlog.md`, not from this list. `health` stays interface-only except where a spec explicitly asks for a real implementation (spec 0012 reads active energy from Apple Health).
 
 ---
 
@@ -219,11 +221,11 @@ packages/
 Authentication must be provider-based.
 
 ### Current direction
-- Apple is the first provider
+- Email/password shipped first (simpler to build and verify); Apple is the next provider (spec 0002)
 
 ### Future providers may include
+- Apple
 - Google
-- Email/password
 - Self-hosted OIDC
 
 ### Rules
@@ -245,7 +247,7 @@ Health integrations must be abstracted behind interfaces.
 - Keep provider implementations isolated
 
 ### Rules
-- Do not fully implement native health integrations yet
+- Do not fully implement native health integrations unless a spec explicitly asks for it. The one exception so far: spec 0012 reads active energy from Apple Health, requested by the owner (2026-09-24)
 - Keep sync responsibilities explicit
 - Treat health sync as an integration boundary, not core domain logic
 - Store sync metadata separately from workout data

@@ -11,7 +11,9 @@
     `react-native-svg` dep (full rebuild), and the dependency-free bars suffice for now
 - [~] Weekly volume, muscle-group distribution
   - [x] Weekly training-volume chart on the progress overview
-  - [ ] Muscle-group distribution
+  - [x] Volume distribution by exercise **category** (a proxy, see notes)
+  - [ ] Muscle-group distribution (real muscle data)
+- [x] Training-frequency tiles (streak, total workouts, active weeks, best week)
 - [ ] Workout calendar view
 
 ## Progress log
@@ -29,6 +31,13 @@
 - PR history on the exercise detail: `extractPersonalRecords` (pure, unit-tested)
   walks the per-session points and lists every session that beat the max weight.
   Mobile-only, reuses the existing detail `points`.
+- (2026-05-31) Volume distribution (`6e6a553`): `GET /progress/muscle-distribution`
+  sums volume per exercise **category** (`buildMuscleGroupVolume`), rendered as
+  horizontal bars. Category stands in for muscle group because wger's muscle
+  data is sparse — the UI label still says "muscle group", which overstates it.
+- (2026-05-31) Training-frequency tiles (`2cdc6c4`): streak, total workouts,
+  active weeks and best week, derived on the device from the weekly-volume data
+  (`summarizeTrainingFrequency`).
 
 ## Notes
 - Progress aggregation already exists (`apps/api/src/features/progress`). PRs can

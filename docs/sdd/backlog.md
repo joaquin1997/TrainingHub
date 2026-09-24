@@ -53,7 +53,7 @@ next `specify` pass.
 | # | Area | Remaining | Notes |
 |---|---|---|---|
 | 2 | Rest timer | Background notification | Native dep (`expo-notifications`) → rebuild (Article 9) |
-| 4 | Progress | Muscle-group distribution, workout calendar, line charts | Muscle data blocked; line charts need `react-native-svg` |
+| 4 | Progress | Muscle-group distribution from real muscle data, workout calendar, line charts | A category-based proxy ships today; real muscle data is sparse; line charts need `react-native-svg` |
 | 6 | Exercises | Per-exercise history | Data already exists via "last time" — mostly presentation |
 | 7 | Social | Everything | Decided out of scope for the MVP (2026-05-31); post-MVP |
 | 8 | Integrations & platform | Offline sync, health, Apple Watch, push, theme, onboarding, export | Interfaces exist; implementations deliberately deferred |

@@ -3,14 +3,14 @@
 Each point lives in its own file so context can be reloaded per-area. Status is
 kept here (index) and in each file's checklist + progress log.
 
-Legend: ✅ done · �doing · ⬜ todo
+Legend: ✅ done · 🔁 in progress · ⬜ todo
 
 | # | Area | File | Status |
 |---|------|------|--------|
 | 1 | Live workout logging | [01-live-workout-logging.md](01-live-workout-logging.md) | ✅ done |
 | 2 | Rest timer | [02-rest-timer.md](02-rest-timer.md) | ✅ done (bg notif deferred) |
 | 3 | Auth & users | [03-auth-and-users.md](03-auth-and-users.md) | 🔁 email/password + JWT + scoping done; enforcement (spec 0001), revocation, Apple todo |
-| 4 | Progress, PRs & charts | [04-progress-and-prs.md](04-progress-and-prs.md) | 🔁 PRs+1RM+charts+PR-history; muscle/calendar todo |
+| 4 | Progress, PRs & charts | [04-progress-and-prs.md](04-progress-and-prs.md) | 🔁 PRs+1RM+charts+PR-history+volume by category+frequency tiles; real muscle data/calendar todo |
 | 5 | Routines (advanced) | [05-routines-advanced.md](05-routines-advanced.md) | ✅ done (drag&drop reorder deferred) |
 | 6 | Exercises (advanced) | [06-exercises-advanced.md](06-exercises-advanced.md) | 🔁 filters+favorites+images+pagination done; per-exercise history todo |
 | 7 | Social | [07-social.md](07-social.md) | ⬜ post-MVP (out of scope) |

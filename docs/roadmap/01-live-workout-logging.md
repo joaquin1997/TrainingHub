@@ -19,7 +19,7 @@ previous performance, set types, and persist completion.
 - The API `WorkoutSet` table already has `isWarmup`, `completedAt`, `durationSeconds`,
   `distanceMeters` columns — completion just needs wiring through the write DTO.
 - "Last time": new API endpoint returning the most recent logged sets for an
-  exercise (dev user), consumed when building/showing the active workout.
+  exercise (for the acting user), consumed when building/showing the active workout.
 - Set types beyond warmup (drop/failure) need a `type` column on `WorkoutSet`
   (additive migration) + a field on the write DTO; warmup maps to `isWarmup`.
 - Reorder: up/down buttons (drag&drop is deferred — heavier, needs a gesture lib).
