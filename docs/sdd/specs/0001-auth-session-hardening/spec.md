@@ -5,6 +5,7 @@ status: ready
 roadmap: docs/roadmap/03-auth-and-users.md
 created: 2026-09-23
 decided: 2026-09-23
+amended: 2026-09-24
 ---
 
 # Auth session hardening
@@ -53,7 +54,9 @@ unauthenticated callers.
 ## Scope
 
 ### In scope
-- Rejecting every request that is not authenticated, with no fallback account.
+- Rejecting every request that is not authenticated, with no fallback account
+  — except the operations that exist to obtain credentials, and the liveness
+  check.
 - A way for the app to validate restored credentials at startup and learn who
   they belong to.
 - Credential expiry, and defined app behaviour when a session expires.
@@ -70,9 +73,9 @@ unauthenticated callers.
   Nothing in the product surfaces sessions yet; also 0003 territory.
 - **Account deletion and data export.** Separate concern, likely needed before
   any public distribution. Data export is already roadmap area 8.
-- **Surviving an app restart with an unsaved active workout.** The active
-  workout is held in memory today; persisting it is its own piece of work. See
-  EF-4.
+- **Surviving an app restart with an unsaved active workout.** Specified
+  separately as [0010](../0010-persist-active-workout/spec.md); this spec relies
+  on it (EF-4) rather than re-implementing it.
 - **Rate limiting and abuse protection on the sign-in path.** Belongs with
   roadmap area 9.
 - **Offline reading of previously loaded data.** Nothing is cached today;
@@ -81,7 +84,7 @@ unauthenticated callers.
 ## Functional requirements
 
 - **FR-1.** The system MUST reject any request that does not carry valid
-  credentials, with the single exception in FR-8.
+  credentials, with the exceptions in FR-8 and FR-10.
 - **FR-2.** The system MUST NOT attribute any request to a fallback or default
   account, and MUST NOT create such an account.
 - **FR-3.** The system MUST offer a way for a client to validate its stored
@@ -93,13 +96,19 @@ unauthenticated callers.
 - **FR-6.** The app MUST return the user to the sign-in screen when its
   credentials are rejected, at any point in its lifetime.
 - **FR-7.** No data belonging to one user may be readable or writable by
-  another, for every operation that touches user data.
+  another, for every operation that touches user data. This includes a write
+  that *refers* to another user's records (e.g. saving a workout that points at
+  someone else's routine) — closed by
+  spec 0014 for workouts and
+  spec 0015 for custom exercises.
 - **FR-8.** A liveness check MUST remain answerable without credentials, so the
   service can be monitored. It MUST NOT expose any user data or any count
   derived from it.
 - **FR-9.** Training data currently owned by the legacy development account
   MUST end up owned by the owner's real account, and MUST remain intact and
   visible in the app afterwards.
+- **FR-10.** Signing in and creating an account MUST remain available without
+  credentials — they are how credentials are obtained.
 
 ## Behaviour when things go wrong
 
@@ -110,15 +119,18 @@ unauthenticated callers.
   presented as a failure of the app.
 - **EF-3.** When the app starts and the server is *unreachable*, it MUST NOT
   discard the stored credentials and MUST NOT force a sign-in — an unreachable
-  server is not a rejection. It MUST show that it could not reach the server
-  and offer to retry. Distinguishing "rejected" from "unreachable" is a
+  server is not a rejection. It MUST open as signed in, show a non-blocking
+  notice that it could not reach the server, and offer to retry. Anything
+  already on the device — above all an active workout
+  ([0010](../0010-persist-active-workout/spec.md)) — MUST stay usable; screens
+  that need the server fail individually. Distinguishing "rejected" from "unreachable" is a
   requirement, not an implementation detail: conflating them logs people out
   every time they open the app outside the private network.
 - **EF-4.** When a session expires while an active workout holds logged sets,
   returning to the sign-in screen MUST NOT discard that workout. After
-  re-authenticating, the user MUST be able to save it. Surviving a full app
-  restart is out of scope (the active workout is in-memory today), so the
-  guarantee is bounded to the running app.
+  re-authenticating *as the same user*, the user MUST be able to save it. Spec
+  0010 extends this across an app restart (its FR-7) and discards the workout
+  if a *different* user signs in; this spec relies on that behaviour.
 - **EF-5.** When the reassignment in FR-9 cannot map a record to the target
   account, the migration MUST fail loudly rather than drop or orphan the record.
 
@@ -150,10 +162,13 @@ training model.
 - **AC-7.** Given no credentials, when the liveness check is requested, then it
   answers successfully and contains no user data.
 - **AC-8.** Given the app cannot reach the server at startup, when it starts,
-  then the stored credentials survive and a retry is offered.
+  then the stored credentials survive, the app opens with a notice and a retry,
+  and an active workout already on the device can be opened.
 - **AC-9.** Given the legacy account's data, when the reassignment has run,
   then every one of those routines, workouts and settings is visible under the
   owner's real account, and nothing remains reachable without credentials.
+- **AC-10.** Given no credentials, when the person signs in or creates an
+  account, then the request is served.
 
 ## Non-functional requirements
 
@@ -180,7 +195,9 @@ knowingly rather than rediscovered.
 1. **Legacy account data → reassigned to the owner's real account.** Chosen
    over deletion (loses real training history, and a destructive migration has
    no rollback) and over orphaning (zero work now, but the rows sit in the
-   database forever). Cost: a migration, plus FR-9/EF-5.
+   database forever). Cost: a one-off operation run once against the existing
+   database — not part of the schema history, which must keep working on a
+   fresh database (constitution Article 5) — plus FR-9/EF-5.
    `TODO(sdd): the target account must be named before the migration is`
    `written. It is the owner's existing account — readable from the users table`
    `on the dev database, so this closes during planning, not now.`
@@ -193,15 +210,21 @@ knowingly rather than rediscovered.
    year — noticeable enough to prove the flow still works, rare enough not to
    be an irritation — and bounds a leak, which an indefinite credential does
    not. Revisit before any public distribution.
-3. **Public surface → the liveness check only.** Everything else requires
-   credentials (FR-1, FR-8). Chosen over also exposing the exercise catalog,
-   which would open surface for a browse-before-signup screen that does not
-   exist.
+3. **Public surface → the liveness check, sign-in and registration.**
+   Everything else requires credentials (FR-1, FR-8, FR-10). Chosen over also
+   exposing the exercise catalog, which would open surface for a
+   browse-before-signup screen that does not exist. (Amended 2026-09-24: the
+   first version said "the liveness check only", which would have made signing
+   in impossible.)
 4. **Server-side invalidation → deferred, with follow-up work created.** No way
    to revoke a credential before it expires; with a 90-day lifetime that is a
    real, bounded risk, accepted knowingly. Tracked as
    [spec 0003](../0003-session-revocation/spec.md) rather than left as a note,
    and added to the roadmap checklist.
+5. **Unreachable server at startup → open the app, with a notice.** Settled
+   2026-09-24 when spec 0010 required the active workout to open without a
+   connection. A blocking "could not connect" screen would have contradicted
+   it. Recorded in EF-3 and AC-8.
 
 ## Related
 

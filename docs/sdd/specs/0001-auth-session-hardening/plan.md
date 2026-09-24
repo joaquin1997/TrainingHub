@@ -2,7 +2,7 @@
 spec: 0001
 status: draft        # ready for review — not self-approved
 created: 2026-09-23
-updated: 2026-09-23
+updated: 2026-09-24
 ---
 
 # Plan — Auth session hardening
@@ -10,6 +10,12 @@ updated: 2026-09-23
 Spec 0001 passed gate 1 on 2026-09-23 (all decisions resolved), so this plan is
 now concrete. It is **pending human approval**, not approved: gate 2 is passed
 by review, not by the author.
+
+**Amended 2026-09-24** after a review against the code: the public surface
+includes sign-in and registration (FR-10); an unreachable server opens the app
+with a notice (EF-3); the reassignment is a one-off script, not a migration
+(constitution Article 5, amended); the data-model notes now match
+`schema.prisma`.
 
 ## Current state (verified, not assumed)
 
@@ -48,7 +54,7 @@ Read on 2026-09-23.
 | 2 — Template vs performed | no | — |
 | 3 — Shared domain types | yes | The identity shape returned by FR-3 goes in `packages/domain`, consumed by both apps. |
 | 4 — Weight in kg | no | — |
-| 5 — Prisma migrations | yes | One data migration for FR-9. Prior gotcha: `prisma migrate dev` fails non-interactively on warnings — the `add_user_password_email_unique` migration had to be hand-written and applied with `migrate deploy`. Expect the same here. |
+| 5 — Prisma migrations | yes | No migration. FR-9 is a data change, so it is a one-off script under `apps/api/src/scripts/` (Article 5, amended 2026-09-24): a migration would run on every database, and fail on a fresh one where the legacy account does not exist. |
 | 6 — Integrations behind interfaces | yes | No new provider; `TokenStorage` stays the only storage seam. No renewal mechanism, so nothing new to hide behind an interface. |
 | 7 — Secrets | yes | The insecure `JWT_SECRET` fallback must hard-fail outside development, otherwise a missing env var makes every token forgeable. |
 | 8 — Committable + verified | yes | Task ordering below keeps the tree green; the breaking task lands after the app can cope. |
@@ -67,18 +73,21 @@ Four pieces, in dependency order.
 2. **Expiry and secret handling.** Add a 90-day lifetime at both signing call
    sites (FR-5), and make a missing `JWT_SECRET` fatal outside development
    (Article 7).
-3. **Reassignment migration.** Move the legacy account's rows to the owner's
-   real account (FR-9), failing loudly on anything unmappable (EF-5).
+3. **Reassignment script.** Move the legacy account's rows to the owner's
+   real account (FR-9), failing loudly on anything unmappable (EF-5). Run once
+   against the dev database; not part of the migration history.
 4. **Close the boundary.** Replace the swallowing `onRequest` hook with strict
-   authentication plus an allowlist containing only `GET /health`, and make
-   `resolveUserPublicId` fail instead of inventing a user. This is the breaking
-   step; the app change lands with it.
+   authentication plus an allowlist of `GET /health`, `POST /auth/login` and
+   `POST /auth/register` (FR-8, FR-10), and make `resolveUserPublicId` fail
+   instead of inventing a user. This is the breaking step; the app change lands
+   with it.
 
 On the app side, `AuthProvider` calls the validation operation while it restores
 the token, and — the part that needs care — distinguishes *rejected* from
 *unreachable* (EF-2 vs EF-3). The current auto-logout-on-401 does not make that
 distinction, so a network error must not be allowed to fall into the logout
-path.
+path. *Unreachable* renders the app as signed in, with a non-blocking notice and
+a retry, so an active workout on the device (0010) stays reachable.
 
 ### Alternatives considered
 
@@ -105,31 +114,42 @@ Article 3 violation in spirit even if both live in `packages/domain`.
 
 ## Data model and migrations
 
-No schema change — this is a **data** migration.
+No schema change and no migration — this is a **data** change, done by a
+one-off script: `apps/api/src/scripts/reassign-dev-user.ts`, with an npm script
+following the `import:wger` pattern in `apps/api/package.json`.
 
-- Reassign every row owned by the legacy account (`user-development`) to the
-  owner's real account: routines and their exercises, workout sessions and
-  their exercises/sets, user-defined exercises, favorites, folders, settings.
-- Ordering matters: reassign children with the parent, or rely on the
-  ownership column being on the parent only — to be confirmed against
-  `schema.prisma` during implementation.
-- Settings collide: both accounts may already have a settings row. The real
-  account's settings win; the legacy row is dropped.
-- Then delete the legacy account, so `ensureDevelopmentUser` cannot resurrect
-  it and so FR-2 is verifiable by its absence.
-- Write the migration SQL by hand and apply with `migrate deploy` (Article 5
-  note above).
+What moves, checked against `schema.prisma` (2026-09-24). Ownership sits on the
+parent only, so children follow without being touched:
 
-`TODO(sdd): the target account must be named before this is written — it is`
+- `Routine.userId` → owner. `RoutineExercise` / `RoutineExerciseSet` follow;
+  `Routine.folder` is a column, so folders travel with their routines.
+- `WorkoutSession.userId` → owner. `WorkoutExercise` / `WorkoutSet` follow.
+- `Exercise.createdByUserId` → owner (user-defined exercises).
+- `ExerciseFavorite.userId` → owner, **except** where the owner already has the
+  same favorite: `@@unique([userId, exerciseId])` would reject the move, so
+  those legacy rows are deleted instead.
+- Settings are columns on `User` (`unit`, `defaultRestSeconds`, `language`),
+  not rows: the owner's values win and nothing is copied.
+- Then delete the legacy `User`, so `ensureDevelopmentUser` cannot resurrect it
+  and FR-2 is verifiable by its absence.
+
+Script behaviour: `--dry-run` by default (prints counts per table); `--apply`
+runs everything in one transaction; the owner is passed as an argument, never
+hardcoded; it prints the moved row ids (for a manual rollback) and aborts on
+anything it cannot map (EF-5). Idempotent: once the legacy account is gone it
+reports "nothing to do".
+
+`TODO(sdd): the target account must be named before the script is run — it is`
 `the owner's existing account, readable from the users table on the dev`
-`database. Blocking for task 3 only; everything else can proceed.`
+`database. Blocking for running task 4 only; writing it can proceed.`
 
 ## API surface (`apps/api`)
 
 | Operation | Auth | Notes |
 |---|---|---|
 | Validation of current credentials (FR-3) | required | Read-only, no side effects. Returns the identity DTO. Rejects per EF-1. |
-| `GET /health` | **public** (FR-8) | The only allowlisted route. Must not gain any user-derived field. |
+| `GET /health` | **public** (FR-8) | Allowlisted. Must not gain any user-derived field. |
+| `POST /auth/login`, `POST /auth/register` | **public** (FR-10) | Allowlisted: they are how credentials are obtained. |
 | Every other existing route | required | Behaviour change only: 401 instead of falling back to the legacy account. |
 
 All rejections must be indistinguishable per EF-1 — same status, same body, no
@@ -142,10 +162,13 @@ EF-3 distinction), `lib/http.ts` (already attaches the bearer token and already
 has `[api]` diagnostic logging). No new screen — the sign-in screen and the
 `_layout.tsx` gating exist.
 
-EF-4 needs a check before signing out: if an active workout holds logged sets,
-the draft must survive the return to the sign-in screen so it can be saved
-after re-authenticating. The draft lives in `workoutDraftStore`, so this is
-about not clearing it on sign-out, not about persisting it.
+EF-4 is covered by spec 0010: its FR-7 keeps the active workout across an
+involuntary sign-out (and an app restart), and it discards the workout when a
+different user signs in. Nothing to build here; verify it once both land.
+
+EF-3 needs a small non-blocking notice ("could not reach the server · retry")
+rendered by `RootNavigator` in `src/app/_layout.tsx` while the boot decision is
+`offline`.
 
 **No native rebuild expected** — no new native dependency, no `app.json` change.
 Worth stating because `EXPO_PUBLIC_*` values are baked into the Metro bundle: if
@@ -160,7 +183,8 @@ this work touches the API URL for any reason, it needs
 | AC-3 | Route tests with two distinct authenticated subjects |
 | AC-4, AC-5, AC-6, AC-8 | Manual on device, unless the boot logic is extracted (see below) |
 | AC-7 | Route test: liveness check answers without credentials |
-| AC-9 | Manual verification against the dev database after the migration |
+| AC-9 | Script `--dry-run` counts, then manual verification against the dev database after `--apply` |
+| AC-10 | Route tests: login and register answer without credentials after the boundary closes |
 
 Two things to watch:
 
@@ -179,11 +203,10 @@ Two things to watch:
 - `apps/api/src/infrastructure/userContext.ts` — fail instead of falling back
 - `apps/api/src/infrastructure/developmentUser.ts` — **delete**
 - `apps/api/src/features/auth/routes.ts` — `expiresIn`; validation route
-- `apps/api/prisma/migrations/<new>/migration.sql` — reassignment (hand-written)
+- `apps/api/src/scripts/reassign-dev-user.ts` (new) + npm script in `apps/api/package.json` — reassignment
 - API route tests that currently mock `resolveUserPublicId`
-- `apps/mobile/src/features/auth/providers/*` — boot validation, EF-2/EF-3
-- `apps/mobile/src/features/workouts/state/*` — do not clear the draft on
-  sign-out (EF-4)
+- `apps/mobile/src/features/auth/AuthContext.tsx` — boot validation, EF-2/EF-3
+- `apps/mobile/src/app/_layout.tsx` — offline notice (EF-3)
 - `docs/roadmap/03-auth-and-users.md`, `docs/sdd/backlog.md`,
   `docs/sdd/glossary.md` (retire "dev user")
 
@@ -191,7 +214,8 @@ Two things to watch:
 
 - **Locking the owner out of their own history.** The mitigation *is* the
   reassignment migration; the risk is running the boundary change (task 4)
-  before the migration, which would make that data unreachable in between.
+  before the reassignment script has run, which would make that data
+  unreachable in between.
   Ordering is load-bearing, not cosmetic.
 - **A stale bundle on a device.** An installed app built before this change
   starts failing outright. Accepted by the spec, but it means rebuilding and
@@ -206,8 +230,8 @@ Two things to watch:
 ## Rollout
 
 API first, then the app — the reverse order leaves the app calling an operation
-that does not exist. Within the API, the migration deploys before the boundary
-change.
+that does not exist. Within the API, the reassignment script runs (against the
+dev database, over the SSH tunnel) before the boundary change deploys.
 
 Deployment is the existing path: container on `joaquinserver`,
 `prisma migrate deploy` on startup, reachable over Tailscale. Confirm
@@ -215,7 +239,8 @@ Deployment is the existing path: container on `joaquinserver`,
 API will refuse to start — that is the intended behaviour, but it should not be
 a surprise at deploy time.
 
-**Rollback.** Tasks 1, 2 and 4 roll back by redeploying the previous image. The
-reassignment (task 3) does not roll back automatically: it is reversible in
-principle (the rows are still there, under a different owner) but only if the
-migration records which rows it moved. Write it so that is true.
+**Rollback.** Code tasks roll back by redeploying the previous image. The
+reassignment does not roll back automatically: it is reversible in principle
+(the rows are still there, under a different owner) because the script prints
+which rows it moved — keep that output. Deleted duplicate favorites are not
+worth restoring.
