@@ -16,3 +16,8 @@ dist
 # Local scratch / temp data (e.g. importer source CSVs)
 tmp/
 
+
+# Compiler output must go to packages/domain/dist, never next to the sources
+/packages/domain/src/**/*.js
+/packages/domain/src/**/*.js.map
+/packages/domain/src/**/*.d.ts
