@@ -21,7 +21,7 @@ be deployed at any point after task 5.
 | 1 | [x] Spec, plan and tasks; glossary (performed set, warmup set, legacy session); backlog | docs | links resolve | `docs(sdd): spec 0013 progress counts only performed work` |
 | 2 | [x] `performedSets.ts`: `isLegacySession`, `isPerformedSet`, `isWarmupSet`, `pickLastPerformance` (pure, not wired yet) | api | unit tests (`performedSets.test.ts`) | `feat(workouts): rule for performed and warmup sets` |
 | 3 | [x] `WorkoutSet.performed?` in domain; `mapWorkoutSession` sets it from the rule | domain / api | typecheck; unit test on the pure flagging helper | `feat(workouts): expose the performed flag on saved sets` |
-| 4 | Progress: loader passes `completedAt` / `type` / `isWarmup`; `selectPerformedWork`; bests and 1RM from performed non-warmup sets, volume from all performed | api | unit tests (`aggregate.test.ts`): 1 of 4 done, warmup above best, legacy session, stored unperformed values ignored; existing fixtures updated | `fix(progress): count only performed sets; keep warmups out of records` |
+| 4 | [x] Progress: loader passes `completedAt` / `type` / `isWarmup`; `selectPerformedWork`; bests and 1RM from performed non-warmup sets, volume from all performed | api | unit tests (`aggregate.test.ts`): 1 of 4 done, warmup above best, legacy session, stored unperformed values ignored; existing fixtures updated | `fix(progress): count only performed sets; keep warmups out of records` |
 | 5 | "Last time": fetch the 10 most recent entries, choose with `pickLastPerformance` | api | unit tests (picker); route test unchanged (repository mocked) | `fix(workouts): last time shows only performed sets` |
 | 6 | Redeploy the API; check progress and "last time" on the phone | ops | **[DEPLOY]** `/health` ok; **[DEVICE]** AC-1, AC-2, AC-3, AC-5 | — (no commit) |
 | 7 | `isPerformedSet` (mobile, with `completedAt` fallback); history volume and detail ✓/○, totals use it | mobile | unit test (`performedSet.test.ts`); **[DEVICE]** AC-4 | `fix(workouts): history treats legacy sessions as performed` |
@@ -53,6 +53,10 @@ tasks need only a Metro reload, not a native rebuild.
 - 2026-09-24 — Task 3: `performed` on `WorkoutSet`, set in `mapWorkoutSession`
   from the task-2 helpers (the mapper itself is not unit-testable: the route
   tests mock the repository; the helpers carry the logic and are tested).
+- 2026-09-24 — Task 4: `selectPerformedWork` runs once in the loader, so the
+  builders stay rule-free and existing fixtures needed no change. 6 new tests
+  (1-of-4 done, dropped exercise, legacy, warmup in volume not records, older
+  warmup flag, warmup-only session).
 
 ## Definition of done
 

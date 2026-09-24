@@ -4,6 +4,7 @@ import {
   buildExerciseProgressSummaries,
   buildMuscleGroupVolume,
   buildWeeklyVolume,
+  selectPerformedWork,
   type ProgressSessionInput,
 } from './aggregate.js';
 
@@ -23,7 +24,7 @@ async function loadSessionInputs(
     },
   });
 
-  return sessions.map((session) => ({
+  const inputs = sessions.map((session) => ({
     date: (session.completedAt ?? session.startedAt).toISOString(),
     exercises: session.exercises.map((exercise) => ({
       exerciseId: exercise.exercise.publicId,
@@ -32,9 +33,15 @@ async function loadSessionInputs(
       sets: exercise.sets.map((set) => ({
         reps: set.reps,
         weightKg: set.weightKg,
+        completedAt: set.completedAt,
+        type: set.type,
+        isWarmup: set.isWarmup,
       })),
     })),
   }));
+
+  // Every builder reads only performed work (spec 0013).
+  return selectPerformedWork(inputs);
 }
 
 export async function listExerciseProgress(userPublicId: string) {

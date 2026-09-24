@@ -6,6 +6,20 @@ import type {
   WeeklyVolumePoint,
 } from '@workout/domain';
 
+import {
+  isLegacySession,
+  isPerformedSet,
+  isWarmupSet,
+} from '../workouts/performedSets.js';
+
+type ProgressSetInput = {
+  reps?: number | null;
+  weightKg?: number | null;
+  completedAt?: Date | string | null;
+  type?: string | null;
+  isWarmup?: boolean | null;
+};
+
 /**
  * Framework-agnostic input shape for progress aggregation, so the pure logic
  * can be unit tested without Prisma.
@@ -16,9 +30,34 @@ export type ProgressSessionInput = {
     exerciseId: string;
     exerciseName: string;
     category?: string | null;
-    sets: Array<{ reps?: number | null; weightKg?: number | null }>;
+    sets: ProgressSetInput[];
   }>;
 };
+
+/**
+ * Keeps only performed work (spec 0013): sets marked done, or every set of a
+ * legacy session. Exercise entries left with no performed set are dropped, so
+ * they add no empty point. Call once, before any of the builders below.
+ */
+export function selectPerformedWork(
+  sessions: ProgressSessionInput[],
+): ProgressSessionInput[] {
+  return sessions.map((session) => {
+    const legacy = isLegacySession(
+      session.exercises.flatMap((exercise) => exercise.sets),
+    );
+
+    return {
+      ...session,
+      exercises: session.exercises
+        .map((exercise) => ({
+          ...exercise,
+          sets: exercise.sets.filter((set) => isPerformedSet(set, legacy)),
+        }))
+        .filter((exercise) => exercise.sets.length > 0),
+    };
+  });
+}
 
 type ProgressAccumulator = {
   exerciseId: string;
@@ -59,17 +98,20 @@ function buildAccumulators(
         points: [],
       };
 
+      // Warmups add volume but never set a best, a 1RM or a record.
+      const workingSets = exercise.sets.filter((set) => !isWarmupSet(set));
+
       accumulator.exerciseName = exercise.exerciseName;
       accumulator.points.push({
         date: session.date,
-        bestWeightKg: maxDefined(exercise.sets.map((set) => set.weightKg)),
-        bestReps: maxDefined(exercise.sets.map((set) => set.reps)),
+        bestWeightKg: maxDefined(workingSets.map((set) => set.weightKg)),
+        bestReps: maxDefined(workingSets.map((set) => set.reps)),
         totalVolume: exercise.sets.reduce(
           (sum, set) => sum + (set.reps ?? 0) * (set.weightKg ?? 0),
           0,
         ),
         estimatedOneRepMax: maxDefined(
-          exercise.sets.map((set) => estimateOneRepMax(set.reps, set.weightKg)),
+          workingSets.map((set) => estimateOneRepMax(set.reps, set.weightKg)),
         ),
       });
 

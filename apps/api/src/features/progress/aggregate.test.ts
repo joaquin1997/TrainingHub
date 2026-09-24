@@ -5,6 +5,7 @@ import {
   buildExerciseProgressSummaries,
   buildMuscleGroupVolume,
   buildWeeklyVolume,
+  selectPerformedWork,
   type ProgressSessionInput,
 } from './aggregate.js';
 
@@ -244,5 +245,179 @@ describe('records & estimated 1RM', () => {
       (s) => s.exerciseId === 'bench',
     );
     expect(bench?.isRecordSession).toBe(false);
+  });
+});
+
+describe('performed work only (spec 0013)', () => {
+  const done = '2026-06-01T10:00:00.000Z';
+
+  it('ignores sets not marked done, even when they carry values (AC-1, AC-5)', () => {
+    const input: ProgressSessionInput[] = [
+      {
+        date: '2026-06-01T10:30:00.000Z',
+        exercises: [
+          {
+            exerciseId: 'bench',
+            exerciseName: 'Bench',
+            sets: [
+              { reps: 5, weightKg: 80, completedAt: done },
+              { reps: 5, weightKg: 100, completedAt: null },
+              { reps: 5, weightKg: 100, completedAt: null },
+              { reps: 5, weightKg: 100, completedAt: null },
+            ],
+          },
+        ],
+      },
+    ];
+
+    const detail = buildExerciseProgressDetail(selectPerformedWork(input), 'bench');
+
+    expect(detail?.points).toEqual([
+      {
+        date: '2026-06-01T10:30:00.000Z',
+        bestWeightKg: 80,
+        bestReps: 5,
+        totalVolume: 400,
+        estimatedOneRepMax: 93.3,
+      },
+    ]);
+  });
+
+  it('drops exercises with no performed set from the session', () => {
+    const performed = selectPerformedWork([
+      {
+        date: done,
+        exercises: [
+          { exerciseId: 'bench', exerciseName: 'Bench', sets: [{ reps: 5, weightKg: 80, completedAt: done }] },
+          { exerciseId: 'row', exerciseName: 'Row', sets: [{ reps: 5, weightKg: 60, completedAt: null }] },
+        ],
+      },
+    ]);
+
+    expect(performed[0]?.exercises.map((exercise) => exercise.exerciseId)).toEqual([
+      'bench',
+    ]);
+  });
+
+  it('treats every set of a legacy session as performed (AC-4)', () => {
+    const performed = selectPerformedWork([
+      {
+        date: '2026-05-30T08:00:00.000Z',
+        exercises: [
+          {
+            exerciseId: 'bench',
+            exerciseName: 'Bench',
+            sets: [
+              { reps: 10, weightKg: 60 },
+              { reps: 8, weightKg: 65 },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    expect(performed[0]?.exercises[0]?.sets).toHaveLength(2);
+  });
+
+  it('keeps warmups out of records and 1RM but in volume (AC-3)', () => {
+    const input = selectPerformedWork([
+      {
+        date: '2026-05-01T09:00:00.000Z',
+        exercises: [
+          {
+            exerciseId: 'bench',
+            exerciseName: 'Bench',
+            category: 'Chest',
+            sets: [{ reps: 5, weightKg: 100, completedAt: done }],
+          },
+        ],
+      },
+      {
+        date: '2026-05-08T09:00:00.000Z',
+        exercises: [
+          {
+            exerciseId: 'bench',
+            exerciseName: 'Bench',
+            category: 'Chest',
+            sets: [
+              { reps: 3, weightKg: 110, completedAt: done, type: 'warmup' },
+              { reps: 5, weightKg: 90, completedAt: done, type: 'normal' },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    const bench = buildExerciseProgressSummaries(input).find(
+      (summary) => summary.exerciseId === 'bench',
+    );
+    expect(bench?.isRecordSession).toBe(false);
+    expect(bench?.personalBestWeightKg).toBe(100);
+    expect(bench?.latestWeightKg).toBe(90);
+
+    // 330 (warmup) + 450 in the second week; 500 in the first.
+    expect(buildWeeklyVolume(input).map((week) => week.totalVolume)).toEqual([
+      500, 780,
+    ]);
+    expect(buildMuscleGroupVolume(input)).toEqual([
+      { group: 'Chest', totalVolume: 1280 },
+    ]);
+  });
+
+  it('recognises warmups flagged the older way', () => {
+    const detail = buildExerciseProgressDetail(
+      selectPerformedWork([
+        {
+          date: done,
+          exercises: [
+            {
+              exerciseId: 'bench',
+              exerciseName: 'Bench',
+              sets: [
+                { reps: 3, weightKg: 110, completedAt: done, isWarmup: true },
+                { reps: 5, weightKg: 90, completedAt: done },
+              ],
+            },
+          ],
+        },
+      ]),
+      'bench',
+    );
+
+    expect(detail?.points[0]?.bestWeightKg).toBe(90);
+  });
+
+  it('a warmup-only session adds volume without touching the records (EF-1)', () => {
+    const input = selectPerformedWork([
+      {
+        date: '2026-05-01T09:00:00.000Z',
+        exercises: [
+          { exerciseId: 'bench', exerciseName: 'Bench', sets: [{ reps: 5, weightKg: 100, completedAt: done }] },
+        ],
+      },
+      {
+        date: '2026-05-08T09:00:00.000Z',
+        exercises: [
+          {
+            exerciseId: 'bench',
+            exerciseName: 'Bench',
+            sets: [{ reps: 5, weightKg: 120, completedAt: done, type: 'warmup' }],
+          },
+        ],
+      },
+    ]);
+
+    const detail = buildExerciseProgressDetail(input, 'bench');
+
+    expect(detail?.points[1]).toEqual({
+      date: '2026-05-08T09:00:00.000Z',
+      bestWeightKg: undefined,
+      bestReps: undefined,
+      totalVolume: 600,
+      estimatedOneRepMax: undefined,
+    });
+    expect(detail?.personalBestWeightKg).toBe(100);
+    expect(detail?.bestEstimatedOneRepMax).toBe(116.7);
+    expect(detail?.isRecordSession).toBe(false);
   });
 });
