@@ -203,6 +203,12 @@ export interface WorkoutSet {
   restSeconds?: number;
   isWarmup?: boolean;
   completedAt?: ISODateString;
+  /**
+   * Derived by the server on read, never sent or stored: true when the set was
+   * marked done, or when its session is a legacy one in which no set was
+   * (spec 0013). Absent from older servers — fall back to `completedAt`.
+   */
+  performed?: boolean;
   createdAt: ISODateString;
   updatedAt: ISODateString;
 }

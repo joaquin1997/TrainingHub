@@ -7,6 +7,7 @@ import type {
 } from '@workout/domain';
 
 import { prisma } from '../../infrastructure/prisma.js';
+import { isLegacySession, isPerformedSet } from './performedSets.js';
 
 type WorkoutSessionRecord = Prisma.WorkoutSessionGetPayload<{
   include: {
@@ -40,6 +41,10 @@ function mapWorkoutSession(
   userPublicId: string,
   record: WorkoutSessionRecord,
 ): WorkoutSession {
+  const legacy = isLegacySession(
+    record.exercises.flatMap((exercise) => exercise.sets),
+  );
+
   return {
     id: record.publicId,
     userId: userPublicId,
@@ -74,6 +79,7 @@ function mapWorkoutSession(
             restSeconds: set.restSeconds ?? undefined,
             isWarmup: set.isWarmup,
             completedAt: set.completedAt?.toISOString() ?? undefined,
+            performed: isPerformedSet(set, legacy),
             createdAt: set.createdAt.toISOString(),
             updatedAt: set.updatedAt.toISOString(),
           })),
