@@ -10,6 +10,9 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0001](specs/0001-auth-session-hardening/spec.md) | Auth session hardening | `ready` — plan written, awaiting review | 3 — Auth & users |
 | [0002](specs/0002-apple-sign-in/spec.md) | Sign in with Apple | `draft` — blocked on open decisions | 3 — Auth & users |
 | [0003](specs/0003-session-revocation/spec.md) | Session revocation | `draft` — deferred from 0001, before distribution | 3 — Auth & users |
+| [0010](specs/0010-persist-active-workout/spec.md) | Persist the active workout | `ready` — plan approved, tasks awaiting review | 1 — Live workout logging |
+| [0011](specs/0011-workout-pause/spec.md) | Pause the active workout | `ready` — plan approved, tasks awaiting review | 1 — Live workout logging |
+| [0012](specs/0012-workout-live-activity/spec.md) | Live workout status on the lock screen | `ready` — spike done, tasks awaiting review | 8 — Integrations & platform |
 
 ## Retro-specs
 

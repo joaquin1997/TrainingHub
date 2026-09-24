@@ -5,13 +5,17 @@
 - [ ] Apple Health / Health Connect (calories, heart rate)
 - [ ] Apple Watch app
 - [ ] Push notifications (rest timer, reminders)
-- [ ] Settings: units (kg/lb), theme, default rest, onboarding
+- [~] Settings
+  - [x] Units (kg/lb), server-persisted, applied across logging, history and progress
+  - [x] Default rest duration, server-persisted
+  - [ ] Theme (the app is dark-only today)
+  - [ ] Onboarding
 - [ ] Data export
 - [x] i18n ES/EN (full app, persisted language preference)
 
 ## Notes
 - Health stubs exist under `apps/*/src/features/health`.
-- Units (kg/lb) is a small, high-value settings win that touches many screens.
+- Weight is stored in kg everywhere; lb is display-only, converted at the edges.
 
 ## Progress log
 - i18n (P2d): `i18next` + `react-i18next` wired via `apps/mobile/src/i18n`

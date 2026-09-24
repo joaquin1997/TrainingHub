@@ -14,6 +14,10 @@
 - (2026-05-31) Builder sets now ghost the previous set's values as placeholders
   (`routineSetInheritance`), matching the active-workout behaviour: an unedited
   field saves the inherited value. Pure helpers, unit-tested.
+- (2026-05-31) Remaining sub-points landed: per-exercise rest time
+  (`b84514b`), folders with a grouped list (`cec462e`) and supersets grouped
+  by number with a badge in detail + active workout (`73987d4`). **Point 5
+  complete**; drag&drop reorder stays deferred (needs a gesture lib).
 
 ## Notes
 - Builder is `RoutineFormScreen`. Supersets need a grouping concept on

@@ -24,5 +24,3 @@ A configurable countdown timer between sets, like Hevy.
   dep for notifications.
 - Surface the rest timer on the active workout screen; auto-start on set "done".
 
-## Progress log
-(append commit hashes + notes as sub-points land)

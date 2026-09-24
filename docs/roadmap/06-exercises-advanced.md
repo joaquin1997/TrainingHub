@@ -13,7 +13,11 @@
   (pure, unit-tested). Used category/equipment rather than muscle group because
   wger's `primaryMuscleGroups` comes back sparse while category/equipment are
   well populated.
+- (2026-05-31) Favorites, API-backed with a star toggle and a favorites filter
+  (`22915b3`); load-more pagination of the catalog (`108fb73`); wger image URLs
+  imported and shown on the detail screen (`9442567`).
 
 ## Notes
-- Catalog screen `apps/mobile/src/features/exercises`. wger has image URLs that
-  could be imported later.
+- Catalog screen `apps/mobile/src/features/exercises`.
+- Per-exercise history is mostly presentation: the data already exists via the
+  "last time" endpoint (`GET /workouts/exercises/:id/last`).
