@@ -34,7 +34,7 @@ and data the screen shows, so AC-11 (nothing lost) can be reviewed.
 | 13 | [x] Exercises list and detail (FR-23) | mobile | visual | `feat(exercises): redesigned exercises list and detail` |
 | 14 | [x] Progress overview (FR-21) and exercise progress (FR-22), incl. chart, distribution and frequency components | mobile | visual | `feat(progress): redesigned progress screens` |
 | 15 | [x] Settings (FR-24) and sign-in (FR-25) | mobile | visual | `feat(settings): redesigned settings and sign-in` |
-| 16 | [ ] Sweep: remove `EmptyState` and unused i18n keys; grep for hard-coded strings, stray colours and tonnes; spec status, backlog, progress log | mobile / docs | typecheck, tests, greps (AC-1, AC-2, AC-9) | `docs(sdd): close spec 0017 implementation` |
+| 16 | [x] Sweep: remove `EmptyState` and unused i18n keys; grep for hard-coded strings, stray colours and tonnes; spec status, backlog, progress log | mobile / docs | typecheck, tests, greps (AC-1, AC-2, AC-9) | `docs(sdd): close spec 0017 implementation` |
 
 **[DEVICE]** for the owner's batch, after task 16: AC-2 in both languages,
 AC-6 on an iPhone, AC-8 with a 40-character custom exercise, AC-12 at the
@@ -73,12 +73,34 @@ the workout flow of task 8.
   routine cards say "+2 more" in Spanish and History dates are English-style
   (FR-8, fixed in their screen tasks).
 
+- 2026-10-16 — Tasks 3–15. Each screen checked on the web build against the
+  local preview data (screenshots scrolled end to end) before its commit.
+  Deviations from the first spec draft, all recorded in the spec: sessions
+  carry no routine name (FR-19/20), the picker has no filters (FR-16), the
+  exercise progress chart has no metric switch (FR-21/22), and FR-1 now
+  says lime also marks tappable secondary actions and the app's mark.
+  Amendment at the owner's request: active energy shown in the workout
+  header (task 8b). Pre-existing bugs fixed on the way: "+N more" in
+  English on Spanish routine cards, dates following the device locale
+  instead of the app language, muscle-distribution volumes in raw kg with
+  lb selected, the PR badge in lime instead of orange.
+- 2026-10-16 — Task 16 sweep: `EmptyState` and the English
+  `getRoutineExerciseSummary` removed; 36 i18n keys orphaned by the redesign
+  deleted from both catalogs (five `common.*` keys were already unused and
+  stay); duplicate "back to …" links dropped where the header back does the
+  same (FR-6); the white image backdrop became a theme token; supersets,
+  muscle bars and the summary icon moved off lime (FR-1: no decoration).
+  Known limits, not fixed here: catalog data (exercise and category names
+  from wger) stays in the language it was imported in; the account email is
+  missing after a restored session (no `/auth/me`, spec 0001); the web tab
+  bar clips its labels (web only, check on device).
+
 ## Definition of done
 
-- [ ] Every functional requirement and acceptance criterion in `spec.md` is met
-      or explicitly deferred with a TODO
-- [ ] `pnpm -r typecheck` and `pnpm -r test` green
-- [ ] Relevant `docs/roadmap/NN-*.md` checklist and progress log updated
+- [x] Every functional requirement and acceptance criterion in `spec.md` is met
+      or explicitly deferred with a TODO (visual ACs pending the [DEVICE] pass)
+- [x] `pnpm -r typecheck` and `pnpm -r test` green
+- [x] Relevant `docs/roadmap/NN-*.md` checklist and progress log updated
       (cross-cutting: no area file; recorded in the backlog)
 - [ ] `spec.md` status set to `done`; `../backlog.md` updated
-- [ ] Constitution amended if this work settled a new invariant
+- [x] Constitution amended if this work settled a new invariant (none)

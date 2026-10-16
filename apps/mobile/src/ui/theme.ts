@@ -27,6 +27,8 @@ export const colors = {
   border: '#2C3543',
   borderStrong: '#3D4A5C',
   overlay: 'rgba(4, 8, 13, 0.76)',
+  /** Behind catalog images, which are line drawings on white. */
+  imageBackdrop: '#FFFFFF',
 };
 
 /**

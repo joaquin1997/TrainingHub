@@ -755,7 +755,6 @@ export function ActiveWorkoutScreen() {
           <View key={key} style={styles.card}>
             <Chip
               icon="flash"
-              tone="primary"
               label={t('routineDetail.superset', { group: first.supersetIndex })}
               size="sm"
             />
@@ -976,7 +975,7 @@ const styles = StyleSheet.create({
     bottom: 14,
     width: 2,
     borderRadius: 1,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.borderStrong,
   },
   supersetMembers: {
     gap: spacing.lg,
@@ -1005,7 +1004,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: colors.surface,
     borderWidth: 1.5,
-    borderColor: colors.primary,
+    borderColor: colors.textMuted,
   },
   blockBadgeText: {
     color: colors.text,
@@ -1013,7 +1012,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   blockBadgeTextSuperset: {
-    color: colors.primary,
+    color: colors.text,
     fontSize: 12,
   },
   exerciseTitle: {

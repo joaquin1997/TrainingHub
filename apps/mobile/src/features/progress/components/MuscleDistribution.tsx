@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   bar: {
     height: '100%',
     borderRadius: 4,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.textMuted,
   },
   value: {
     width: 80,

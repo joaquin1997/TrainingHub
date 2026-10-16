@@ -188,12 +188,6 @@ export function ExerciseDetailScreen() {
           />
         </View>
       ) : null}
-      <Button
-        label={t('exercises.backToExercises')}
-        variant="ghost"
-        style={styles.centered}
-        onPress={() => router.replace('/exercises')}
-      />
     </ScrollView>
   );
 }
@@ -220,7 +214,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 220,
     borderRadius: radii.lg,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.imageBackdrop,
   },
   card: {
     ...commonStyles.card,

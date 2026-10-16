@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 32,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.success,
   },
   heroTitle: {
     ...commonStyles.heading,
