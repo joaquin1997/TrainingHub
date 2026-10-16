@@ -12,7 +12,11 @@
           "NSAllowsArbitraryLoads": true,
           "NSAllowsLocalNetworking": true
         },
-        "NSSupportsLiveActivities": true
+        "NSSupportsLiveActivities": true,
+        "NSHealthShareUsageDescription": "TrainingHub reads your active energy from Health to show the calories of the workout in progress."
+      },
+      "entitlements": {
+        "com.apple.developer.healthkit": true
       }
     },
     "android": {

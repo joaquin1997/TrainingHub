@@ -43,6 +43,16 @@ export interface HealthIntegration {
   displayName: string;
   isAvailable(): Promise<boolean>;
   requestPermissions(): Promise<boolean>;
+  /**
+   * Active energy burned between two instants, in kcal (spec 0012). Resolves
+   * null when there is no data or no permission (the provider may not tell
+   * them apart); rejects when the data cannot be read right now, so callers
+   * can keep the last known value.
+   */
+  readActiveEnergyKcal(
+    since: ISODateString,
+    until?: ISODateString,
+  ): Promise<number | null>;
 }
 
 /**

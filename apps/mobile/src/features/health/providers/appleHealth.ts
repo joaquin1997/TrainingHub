@@ -5,18 +5,29 @@ import type {
   LiveWorkoutState,
 } from '@workout/domain';
 
+import { HealthEnergy } from '../../../../modules/health-energy';
 import { WorkoutLiveActivity } from '../../../../modules/workout-live-activity';
 
 export const appleHealthIntegration: HealthIntegration = {
   providerId: 'apple-health',
   displayName: 'Apple Health',
   async isAvailable() {
-    // TODO: Replace placeholder availability check with native Apple Health capability detection.
-    return true;
+    return HealthEnergy?.isAvailable() ?? false;
   },
+  // Resolves true once the prompt was answered; HealthKit never says whether
+  // read access was granted (a denial reads as "no data").
   async requestPermissions() {
-    // TODO: Replace placeholder permission request with native Apple Health authorization flow.
-    return false;
+    return (await HealthEnergy?.requestReadAuthorization()) ?? false;
+  },
+  async readActiveEnergyKcal(since: string, until?: string) {
+    if (!HealthEnergy) {
+      return null;
+    }
+
+    return HealthEnergy.activeEnergyKcal(
+      Date.parse(since),
+      until ? Date.parse(until) : Date.now(),
+    );
   },
 };
 

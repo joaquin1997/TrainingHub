@@ -19,7 +19,7 @@ up; the spike's debug panel is not carried over.
 | 3 | [x] Extend `LiveWorkoutBridge` / `HealthWorkoutPayload` in domain; `appleHealthLiveWorkoutBridge` becomes the adapter over the module; Android stays no-op; pure `reconcile` | domain / mobile | unit tests | `feat(workouts): Live Activity behind LiveWorkoutBridge` |
 | 4 | [x] Controller subscribed to the draft store, mounted after hydration; remove the per-change `notifyAppleWorkoutStarted` effect and the notify helpers | mobile | unit tests (fakes); **[DEVICE]** start, pause in app and on lock screen, finish, discard, kill + relaunch | `feat(workouts): drive the Live Activity from the active workout` |
 | 5 | [x] Finish from the status: `action=finish` → confirm → finish (no set done → existing notice); open the workout after sign-in (EF-7) | mobile | unit test (action parsing); **[DEVICE]** EF-6, EF-7 | `feat(workouts): confirm finishing from the Live Activity` |
-| 6 | HealthKit entitlement + usage string, `health-energy` module (`null` for no data/permission, reject on error), `readActiveEnergyKcal` in domain, Apple impl, Android `null` | health | typecheck; **[DEVICE]** permission prompt, kcal vs Fitness | `feat(health): read active energy from Apple Health` |
+| 6 | [x] HealthKit entitlement + usage string, `health-energy` module (`null` for no data/permission, reject on error), `readActiveEnergyKcal` in domain, Apple impl, Android `null` | health | typecheck; **[DEVICE]** permission prompt, kcal vs Fitness | `feat(health): read active energy from Apple Health` |
 | 7 | kcal refresh (start, app active, every 60 s in foreground unless paused; keep last value on error) and permission request | mobile | unit tests (fake clock); **[DEVICE]** AC-5, AC-6, EF-5 | `feat(workouts): show active calories on the Live Activity` |
 | 8 | README native builds (targets/, modules/, when to `prebuild --clean`); roadmap; backlog; spec status | docs | links resolve | `docs(sdd): close spec 0012` |
 
@@ -69,6 +69,13 @@ Tasks 2, 4–7 need a device rebuild; they are not verifiable in CI.
   notice comes for free. After sign-in, `RootNavigator` replaces to Routines and
   pushes the active workout when one is in progress (EF-7); the Finish request
   itself is not replayed, per the spec's assumption. Device checks pending.
+- 2026-10-16 — Task 6: HealthKit entitlement and usage string; `health-energy`
+  module from the spike, changed so no data / denied / not determined resolve
+  `null` and any other query error rejects (EF-5). `readActiveEnergyKcal` in
+  `HealthIntegration`; Apple reads the module, Android returns `null`.
+  `isAvailable` / `requestPermissions` on Apple are now real. Swift not
+  compiled here (no Xcode run) — the device build is the check; the HealthKit
+  read itself is still the spike's open TODO.
 
 ## Definition of done
 
