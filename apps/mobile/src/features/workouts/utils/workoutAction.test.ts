@@ -8,6 +8,10 @@ describe('parseWorkoutAction', () => {
     expect(parseWorkoutAction(['finish', 'x'])).toBe('finish');
   });
 
+  it('recognises switch', () => {
+    expect(parseWorkoutAction('switch')).toBe('switch');
+  });
+
   it('ignores anything else', () => {
     expect(parseWorkoutAction(undefined)).toBeNull();
     expect(parseWorkoutAction('delete')).toBeNull();

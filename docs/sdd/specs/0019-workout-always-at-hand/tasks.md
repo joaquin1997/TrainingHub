@@ -16,7 +16,7 @@ dependency is JS-only).
 |---|---|---|---|---|
 | 1 | [x] Plan and tasks; backlog status | docs | links resolve | `docs(sdd): plan and tasks for 0019` |
 | 2 | [x] `@react-navigation/bottom-tabs` as a direct dependency (`npx expo install`, same version as expo-router's); `WorkoutBar` (dot, routine, clock, paused state, tap → `/workouts/active`); mounted in the tabs' `tabBar` above `BottomTabBar` and under `workouts/[workoutId]` and `workouts/summary` with the bottom inset; Routines active card removed; i18n en/es for the bar's accessibility label | mobile | typecheck + tests; web preview: AC-1, EF-2 (last History row reachable, tab bar uncovered) | `feat(workouts): workout bar on every screen` |
-| 3 | [ ] `resolveRoutineStart` (start / open / ask) and `resolveSwitchOutcome` (save / discard) next to `resolveActiveWorkoutEntry`; `parseWorkoutAction` learns `'switch'`; unit tests | mobile | unit tests (FR-4, FR-5) | `feat(workouts): decide how a routine starts while another is active` |
+| 3 | [x] `resolveRoutineStart` (start / open / ask) and `resolveSwitchOutcome` (save / discard) next to `resolveActiveWorkoutEntry`; `parseWorkoutAction` learns `'switch'`; unit tests | mobile | unit tests (FR-4, FR-5) | `feat(workouts): decide how a routine starts while another is active` |
 | 4 | [ ] `useRoutineStart` hook + `ActionSheet` in `RoutinesListScreen` and `RoutineDetailScreen` (both names, save/discard message, finish-and-start / back / cancel); labels ("Start workout" for other routines, `resumeWorkout`/`resumeHint` keys removed); `ActiveWorkoutScreen` handles `action=switch&nextRoutineId`: discard or `finishWorkout` without the summary, then start the next routine; on failure stays with the finish error and scrolls to it; i18n en/es | mobile | typecheck + tests; web preview: AC-2, AC-3, FR-5 (own routine opens without asking), EF-1 (local API stopped → Torso A stays with the error) | `feat(workouts): finish the active workout and start another` |
 | 5 | [ ] Active screen `ScrollView`: `automaticallyAdjustKeyboardInsets`, `keyboardShouldPersistTaps="handled"`, `keyboardDismissMode="interactive"`; notes `maxHeight` | mobile | typecheck; **iOS device (owner's batch): AC-4** | `fix(workouts): keep active workout fields above the keyboard` |
 | 6 | [ ] Roadmap 01 checklist and log; backlog; one line in retro-spec 0004 that 0019 supersedes the redirect; spec status | docs | links resolve | `docs(sdd): close spec 0019 implementation` |
@@ -49,6 +49,9 @@ must add it to `WorkoutBar`.
   Routines card and its `resumeHint` key removed. Web preview: the bar shows
   on Routines and History above the tab bar, the clock ticks (0:10 → 0:12),
   tapping opens `/workouts/active` (AC-1).
+- 2026-10-16 — Task 3: `resolveRoutineStart` and `resolveSwitchOutcome` (built
+  on `countWorkoutSets`) next to `resolveActiveWorkoutEntry`;
+  `parseWorkoutAction` accepts `switch`. 6 new unit tests.
 
 ## Definition of done
 
