@@ -35,6 +35,12 @@ production.
 | **Estimated 1RM** | One-rep-max estimate (Epley) computed from a performed set. Derived. |
 | **Training volume** | Aggregated work, in kg. Derived. |
 
+## Presentation
+
+| Term | Meaning |
+|---|---|
+| **Primary action** | The one action a screen is for (start, finish, save), drawn as the filled lime button. At most one per screen (spec 0017). | 
+
 ## Identity and preferences
 
 | Term | Meaning |
