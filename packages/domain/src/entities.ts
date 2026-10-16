@@ -163,6 +163,8 @@ export interface WorkoutSession {
   status: WorkoutSessionStatus;
   startedAt: ISODateString;
   completedAt?: ISODateString;
+  /** Whole seconds the workout was paused; active duration = elapsed − this (spec 0011). */
+  pausedSeconds?: number;
   notes?: string;
   exercises: WorkoutExercise[];
   createdAt: ISODateString;
@@ -255,6 +257,8 @@ export interface CreateWorkoutSessionInput {
   routineId?: EntityId;
   startedAt: ISODateString;
   completedAt?: ISODateString;
+  /** Whole seconds paused, ≤ completedAt − startedAt (spec 0011). Absent from older clients. */
+  pausedSeconds?: number;
   notes?: string;
   exercises: WorkoutExerciseInput[];
 }

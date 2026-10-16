@@ -1,6 +1,6 @@
 ---
 spec: 0011
-status: draft        # awaiting review
+status: in-progress  # self-approved 2026-10-16 under the owner's delegation
 created: 2026-09-24
 ---
 
@@ -12,8 +12,8 @@ Each task leaves the tree green (`pnpm -r typecheck` and `pnpm -r test`).
 
 | # | Task | Area | Verify | Commit message |
 |---|---|---|---|---|
-| 1 | Spec, plan and tasks; glossary (pause, active duration); backlog | docs | links resolve | `docs(sdd): spec 0011 pause the active workout` |
-| 2 | Optional `pausedSeconds` on the create input and the session | domain | `pnpm -r typecheck` | `feat(domain): paused time on workout sessions` |
+| 1 | [x] Spec, plan and tasks; glossary (pause, active duration); backlog | docs | links resolve | `docs(sdd): spec 0011 pause the active workout` |
+| 2 | [x] Optional `pausedSeconds` on the create input and the session | domain | `pnpm -r typecheck` | `feat(domain): paused time on workout sessions` |
 | 3 | Prisma field + migration; repository; validation | api | route tests (valid, negative, over duration, missing) | `feat(api): store paused time on workout sessions` |
 | 4 | Pause/resume helpers, `activeDurationSeconds`, send `pausedSeconds` | mobile | unit tests | `feat(workouts): pause model and active duration` |
 | 5 | Pause/Resume button, paused state, active duration in banner/history/detail, i18n en/es | mobile | manual in app (Metro reload) | `feat(workouts): pause and resume the active workout` |
@@ -24,6 +24,9 @@ Task 6 includes a redeploy; not verifiable in CI.
 ## Progress log
 
 - 2026-09-24 — Spec written from decisions taken with the owner; tasks awaiting review.
+- 2026-10-16 — Tasks self-approved under the owner's delegation. Tasks 1–2:
+  glossary (pause, active duration), backlog; optional `pausedSeconds` on
+  `WorkoutSession` and `CreateWorkoutSessionInput`.
 
 ## Definition of done
 

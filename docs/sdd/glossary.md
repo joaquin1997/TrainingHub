@@ -20,6 +20,8 @@ production.
 | **Legacy session** | A `WorkoutSession` saved before sets could be marked done, recognisable because none of its sets is. All its sets count as performed. | — |
 | **Active workout** | The single in-progress `WorkoutSession`. At most one exists at a time; it is resumable, survives the app being closed (spec 0010), and its routine is locked from editing and deletion until it is finished or discarded (spec 0014). | A saved (finished) session |
 | **WorkoutSessionDraft** | The mobile-side state of the active workout, including the display `unit` captured at session start and the workout identity. Kept on the device, scoped to its owner, so it survives the app being closed (spec 0010). | `WorkoutSession`, which is the persisted record |
+| **Pause** | A stretch during which the active workout's clock is stopped. Sets can still be logged. Paused time is saved with the workout and never counts toward its duration (spec 0011). | Rest, which is time between sets and does count |
+| **Active duration** | A workout's elapsed time minus its paused time. What every screen shows as a workout's duration (spec 0011). | Elapsed time (end − start) |
 | **Workout identity** | An id the device gives a workout when it starts, unique per user. Saving the same identity again returns the workout saved first instead of creating a duplicate (spec 0014). | The server's own session id |
 | **Optional provenance** | A saved `WorkoutSession`'s link to the `Routine` / `RoutineExercise` it came from. Kept only when it points at the user's own existing records; the workout is saved without it otherwise (spec 0014). | A required reference |
 | **Superset** | A group of `RoutineExercise` entries performed back to back. | — |
