@@ -90,7 +90,8 @@ does not have. Each one is a feature of its own, not a restyle.
 - **FR-1.** The app MUST keep its current palette. Accent colours MUST carry
   one meaning each, everywhere:
   - **lime** — the primary action on a screen, the active or selected state,
-    the active tab;
+    the active tab, and the accent (icon or label) of a tappable secondary
+    action, and the app's mark — never decoration;
   - **orange** — a personal record or a failure set;
   - **green** — a completed (done) set or item;
   - **red** — destructive actions and errors.

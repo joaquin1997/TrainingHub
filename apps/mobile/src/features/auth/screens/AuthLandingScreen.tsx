@@ -1,17 +1,20 @@
-import { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  View,
 } from 'react-native';
 
 import { useAuth } from '@/features/auth/AuthContext';
 import { Button } from '@/ui/Button';
-import { colors, commonStyles, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
 
 export function AuthLandingScreen() {
   const { t } = useTranslation();
@@ -41,48 +44,85 @@ export function AuthLandingScreen() {
     }
   };
 
+  const switchMode = (next: 'login' | 'register') => {
+    if (next !== mode) {
+      setError(undefined);
+      setMode(next);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.screen}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.brand}>TrainingHub</Text>
-        <Text style={styles.subtitle}>
-          {isRegister
-            ? t('auth.subtitleRegister')
-            : t('auth.subtitleLogin')}
-        </Text>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <View style={styles.brandBlock}>
+          <View style={styles.mark}>
+            <Ionicons name="pulse" size={30} color={colors.primary} />
+          </View>
+          <Text style={styles.brand}>TrainingHub</Text>
+          <Text style={styles.subtitle}>
+            {isRegister ? t('auth.subtitleRegister') : t('auth.subtitleLogin')}
+          </Text>
+        </View>
 
-        {isRegister ? (
-          <TextInput
-            value={displayName}
-            onChangeText={setDisplayName}
-            placeholder={t('auth.namePlaceholder')}
-            placeholderTextColor={colors.textSubtle}
-            style={styles.input}
-            autoCapitalize="words"
-          />
-        ) : null}
-        <TextInput
-          value={email}
-          onChangeText={setEmail}
-          placeholder={t('auth.emailPlaceholder')}
-          placeholderTextColor={colors.textSubtle}
-          style={styles.input}
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="email-address"
-          inputMode="email"
-        />
-        <TextInput
-          value={password}
-          onChangeText={setPassword}
-          placeholder={t('auth.passwordPlaceholder')}
-          placeholderTextColor={colors.textSubtle}
-          style={styles.input}
-          secureTextEntry
-        />
+        <View style={styles.switcher}>
+          {(['login', 'register'] as const).map((option) => {
+            const selected = mode === option;
+            return (
+              <Pressable
+                key={option}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                onPress={() => switchMode(option)}
+                style={[styles.switchItem, selected ? styles.switchItemActive : null]}
+              >
+                <Text style={[styles.switchText, selected ? styles.switchTextActive : null]}>
+                  {option === 'login' ? t('auth.signIn') : t('auth.createAccount')}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <View style={styles.fields}>
+          {isRegister ? (
+            <Field icon="person-outline">
+              <TextInput
+                value={displayName}
+                onChangeText={setDisplayName}
+                placeholder={t('auth.namePlaceholder')}
+                placeholderTextColor={colors.textSubtle}
+                style={styles.fieldInput}
+                autoCapitalize="words"
+              />
+            </Field>
+          ) : null}
+          <Field icon="mail-outline">
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              placeholder={t('auth.emailPlaceholder')}
+              placeholderTextColor={colors.textSubtle}
+              style={styles.fieldInput}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              inputMode="email"
+            />
+          </Field>
+          <Field icon="lock-closed-outline">
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              placeholder={t('auth.passwordPlaceholder')}
+              placeholderTextColor={colors.textSubtle}
+              style={styles.fieldInput}
+              secureTextEntry
+            />
+          </Field>
+        </View>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -94,23 +134,28 @@ export function AuthLandingScreen() {
                 ? t('auth.createAccount')
                 : t('auth.signIn')
           }
+          icon={isSubmitting ? undefined : 'arrow-forward'}
           onPress={() => void submit()}
           disabled={isSubmitting}
           fullWidth
         />
-        <Button
-          label={
-            isRegister ? t('auth.haveAccount') : t('auth.noAccount')
-          }
-          variant="secondary"
-          onPress={() => {
-            setError(undefined);
-            setMode(isRegister ? 'login' : 'register');
-          }}
-          fullWidth
-        />
       </ScrollView>
     </KeyboardAvoidingView>
+  );
+}
+
+function Field({
+  icon,
+  children,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  children: ReactNode;
+}) {
+  return (
+    <View style={styles.field}>
+      <Ionicons name={icon} size={18} color={colors.textMuted} />
+      {children}
+    </View>
   );
 }
 
@@ -122,22 +167,77 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     padding: spacing.xl,
-    gap: spacing.md,
+    gap: spacing.lg,
   },
-  brand: {
-    color: colors.primary,
-    fontSize: 34,
-    fontWeight: '900',
-  },
-  subtitle: {
-    color: colors.textMuted,
-    fontSize: 16,
+  brandBlock: {
+    alignItems: 'center',
+    gap: spacing.sm,
     marginBottom: spacing.sm,
   },
-  input: {
+  mark: {
+    width: 64,
+    height: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    backgroundColor: colors.surface,
+  },
+  brand: {
+    ...commonStyles.title,
+  },
+  subtitle: {
+    ...commonStyles.body,
+    textAlign: 'center',
+  },
+  switcher: {
+    flexDirection: 'row',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    backgroundColor: colors.surface,
+    padding: 4,
+  },
+  switchItem: {
+    flex: 1,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.sm,
+    paddingHorizontal: spacing.xs,
+  },
+  switchItemActive: {
+    backgroundColor: colors.surfaceRaised,
+  },
+  switchText: {
+    color: colors.textMuted,
+    fontFamily: fonts.displayBold,
+    fontSize: 15,
+  },
+  switchTextActive: {
+    color: colors.text,
+  },
+  fields: {
+    gap: spacing.sm,
+  },
+  field: {
     ...commonStyles.input,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: 0,
+  },
+  fieldInput: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 50,
+    color: colors.text,
+    fontSize: 16,
   },
   error: {
     ...commonStyles.error,
+    textAlign: 'center',
   },
 });
