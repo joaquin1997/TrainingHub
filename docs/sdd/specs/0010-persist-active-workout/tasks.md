@@ -19,7 +19,7 @@ Each task leaves the tree green (`pnpm -r typecheck` and `pnpm -r test`).
 | 5 | [x] Stored envelope + parse; `tokenSubject`; `AuthContext` restores the real user id; owner kept in the store; `discardActiveWorkoutIfForeign` on sign-in (FR-8) | mobile | unit tests | `feat(workouts): versioned, owner-scoped active-workout envelope` |
 | 6 | [x] AsyncStorage dependency; `ActiveWorkoutStorage` interface + implementations | mobile | typecheck; **[DEVICE: rebuild]** app launches | `chore(mobile): add active-workout storage` |
 | 7 | [x] Hydrate before routes (or after the next sign-in, EF-6); debounced save; flush on background; clear on finish/discard; confirm sign-out while active. **Requires spec 0014 deployed.** | mobile | unit tests (fake timers); **[DEVICE]** AC-1…AC-7, AC-9 | `feat(workouts): keep the active workout across app restarts` |
-| 8 | `ApiError` with status in `lib/http.ts`; on a permanent rejection at finish, show the reason and offer to discard (EF-5) | mobile | unit tests; **[DEVICE]** AC-8 | `feat(workouts): let a refused workout be discarded` |
+| 8 | [x] `ApiError` with status in `lib/http.ts`; on a permanent rejection at finish, show the reason and offer to discard (EF-5) | mobile | unit tests; **[DEVICE]** AC-8 | `feat(workouts): let a refused workout be discarded` |
 | 9 | Close the 0005 gap; glossary (`WorkoutSessionDraft`, active workout); roadmap; backlog; spec status | docs | links resolve | `docs(sdd): close spec 0010` |
 
 Tasks 6 and 7 need a device rebuild; they are not verifiable in CI. If spec
@@ -71,6 +71,12 @@ rebuild.
   a workout in progress asks first (new `confirmAction`, which falls back to
   the browser's confirm on web where `Alert` is a no-op). Device checks
   pending: AC-1…AC-7, AC-9.
+- 2026-10-16 — Task 8: `ApiError` (message + status) and
+  `isPermanentRejection` (4xx except 401/408/429); 4 tests. A refused finish
+  shows the server's reason plus a hint that retrying won't help and the
+  workout can be discarded. Found and fixed here: "Discard workout" acted on a
+  single tap; it now always confirms (with persistence, an accidental discard
+  would have been just as final). Device check pending: AC-8.
 
 ## Definition of done
 

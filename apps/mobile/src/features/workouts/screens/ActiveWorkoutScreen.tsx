@@ -23,7 +23,9 @@ import { useSettings } from '@/features/settings/SettingsContext';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
 import { resolveActiveWorkoutEntry } from '@/features/workouts/utils/activeWorkoutEntry';
 import { Button } from '@/ui/Button';
+import { confirmAction } from '@/lib/confirmAction';
 import { formatDuration } from '@/lib/format';
+import { isPermanentRejection } from '@/lib/http';
 import { fromKg, roundWeight } from '@/lib/weight';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { useRestTimer } from '@/lib/useRestTimer';
@@ -107,6 +109,8 @@ export function ActiveWorkoutScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
   const [finishError, setFinishError] = useState<string | null>(null);
+  // The server refused the workout itself; retrying cannot help (EF-5).
+  const [finishRefused, setFinishRefused] = useState(false);
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const [lastByExercise, setLastByExercise] = useState<
     Record<string, ExerciseLastPerformance | null>
@@ -251,6 +255,7 @@ export function ActiveWorkoutScreen() {
     try {
       setIsFinishing(true);
       setFinishError(null);
+      setFinishRefused(false);
 
       await workoutsClient.create(toCreateWorkoutSessionInput(workoutDraft));
 
@@ -270,6 +275,7 @@ export function ActiveWorkoutScreen() {
       setFinishError(
         error instanceof Error ? error.message : t('workouts.saveError'),
       );
+      setFinishRefused(isPermanentRejection(error));
     } finally {
       setIsFinishing(false);
     }
@@ -409,7 +415,19 @@ export function ActiveWorkoutScreen() {
     setActiveWorkout(nextDraft);
   };
 
-  const handleDiscard = () => {
+  // Discarding loses every logged set, so it always asks first.
+  const handleDiscard = async () => {
+    const confirmed = await confirmAction({
+      title: t('workouts.discardTitle'),
+      message: t('workouts.discardConfirm'),
+      confirmLabel: t('workouts.discardWorkout'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (!confirmed) {
+      return;
+    }
+
     clearActiveWorkout();
     router.replace('/routines');
   };
@@ -648,6 +666,9 @@ export function ActiveWorkoutScreen() {
         onSelect={handleAddExercise}
       />
       {finishError ? <Text style={styles.errorText}>{finishError}</Text> : null}
+      {finishRefused ? (
+        <Text style={styles.meta}>{t('workouts.saveRefusedHint')}</Text>
+      ) : null}
       <Button
         label={isFinishing ? t('workouts.savingWorkout') : t('workouts.finishWorkout')}
         onPress={() => void finishWorkout()}
@@ -657,7 +678,7 @@ export function ActiveWorkoutScreen() {
       <Button
         label={t('workouts.discardWorkout')}
         variant="danger"
-        onPress={handleDiscard}
+        onPress={() => void handleDiscard()}
         disabled={isFinishing}
         fullWidth
       />
