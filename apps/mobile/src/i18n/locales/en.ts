@@ -93,6 +93,8 @@ export const en = {
     colTarget: 'TARGET',
   },
   routineForm: {
+    colMin: 'MIN',
+    colMax: 'MAX',
     editIntro:
       'Tune the exercise order, targets and weights before your next session.',
     createIntro:
@@ -113,13 +115,13 @@ export const en = {
     retryExercises: 'Retry exercises',
     exerciseN: 'Exercise {{number}}',
     searchExercise: 'Search exercise',
-    exerciseSelected: '✓ Exercise selected',
+    exerciseSelected: 'Exercise selected',
     existingExercise: 'Existing exercise',
     customExercise: 'Custom exercise',
     createCustomExercise: 'Create custom exercise',
-    restBetweenSets: 'Rest between sets (sec)',
+    restBetweenSets: 'Rest (s)',
     restPlaceholder: 'e.g. 90',
-    supersetGroup: 'Superset group',
+    supersetGroup: 'Superset',
     supersetPlaceholder: 'e.g. 1',
     setN: 'Set {{number}}',
     minReps: 'Min reps',

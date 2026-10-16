@@ -95,6 +95,8 @@ export const es: TranslationCatalog = {
     colTarget: 'OBJETIVO',
   },
   routineForm: {
+    colMin: 'MÍN',
+    colMax: 'MÁX',
     editIntro:
       'Ajusta el orden de los ejercicios, los objetivos y los pesos antes de tu próxima sesión.',
     createIntro:
@@ -115,13 +117,13 @@ export const es: TranslationCatalog = {
     retryExercises: 'Reintentar ejercicios',
     exerciseN: 'Ejercicio {{number}}',
     searchExercise: 'Buscar ejercicio',
-    exerciseSelected: '✓ Ejercicio seleccionado',
+    exerciseSelected: 'Ejercicio seleccionado',
     existingExercise: 'Ejercicio existente',
     customExercise: 'Ejercicio personalizado',
     createCustomExercise: 'Crear ejercicio personalizado',
-    restBetweenSets: 'Descanso entre series (seg)',
+    restBetweenSets: 'Descanso (s)',
     restPlaceholder: 'p. ej. 90',
-    supersetGroup: 'Grupo de superserie',
+    supersetGroup: 'Superserie',
     supersetPlaceholder: 'p. ej. 1',
     setN: 'Serie {{number}}',
     minReps: 'Reps mín.',
