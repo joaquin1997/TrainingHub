@@ -199,6 +199,7 @@ export const es: TranslationCatalog = {
     illustration: 'Ilustración de {{name}}',
   },
   workouts: {
+    kcalActive: 'kcal activas',
     setsDoneShort: 'Series hechas',
     setsCountOf: '{{done}} / {{total}}',
     autosaveHint: 'Se guarda sola · retómala cuando quieras',

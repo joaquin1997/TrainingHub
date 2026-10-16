@@ -13,6 +13,7 @@ import {
 } from '@/features/workouts/state/workoutDraftStore';
 
 import { startActiveEnergyRefresher } from './activeEnergyRefresher';
+import { publishActiveEnergy } from './activeEnergyStore';
 
 import { startLiveWorkoutController } from './liveWorkoutController';
 
@@ -49,7 +50,11 @@ export function useLiveWorkoutController(enabled: boolean) {
       ? startActiveEnergyRefresher({
           health,
           store: { get: getActiveWorkout, subscribe: subscribeActiveWorkout },
-          onKcal: (kcal) => controller.setActiveEnergyKcal(kcal),
+          onKcal: (kcal) => {
+            controller.setActiveEnergyKcal(kcal);
+            // The same reading, for the active workout screen (spec 0017).
+            publishActiveEnergy(getActiveWorkout()?.clientId, kcal);
+          },
         })
       : null;
     const subscription = AppState.addEventListener('change', (state) => {

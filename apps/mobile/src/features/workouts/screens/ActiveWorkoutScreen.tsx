@@ -20,6 +20,7 @@ import { ProgressRing } from '@/features/workouts/components/ProgressRing';
 import { WheelPicker } from '@/features/workouts/components/WheelPicker';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useSettings } from '@/features/settings/SettingsContext';
+import { useActiveEnergyKcal } from '@/features/workouts/hooks/useActiveEnergyKcal';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
 import { resolveActiveWorkoutEntry } from '@/features/workouts/utils/activeWorkoutEntry';
 import { parseWorkoutAction } from '@/features/workouts/utils/workoutAction';
@@ -193,6 +194,8 @@ export function ActiveWorkoutScreen() {
     // Runs once per link; the draft is read through the ref at confirm time.
   }, [linkAction, status, workoutDraft === null]);
 
+  // Active energy from the person's health data, when known (spec 0017 AC-13).
+  const activeKcal = useActiveEnergyKcal(workoutDraft?.clientId);
   const elapsedSeconds = useElapsedSeconds(workoutDraft?.startedAt, {
     pausedAt: workoutDraft?.pausedAt,
     pausedSeconds: workoutDraft?.pausedSeconds,
@@ -641,6 +644,13 @@ export function ActiveWorkoutScreen() {
             onPress={handleTogglePause}
           />
         </View>
+        {activeKcal !== null ? (
+          <View style={styles.energyRow}>
+            <Ionicons name="flame-outline" size={16} color={colors.textMuted} />
+            <Text style={styles.energyValue}>{Math.round(activeKcal)}</Text>
+            <Text style={styles.energyUnit}>{t('workouts.kcalActive')}</Text>
+          </View>
+        ) : null}
         <View style={styles.progressRow}>
           <Text style={styles.meta}>{t('workouts.setsDoneShort')}</Text>
           <Text style={styles.progressCount}>
@@ -864,6 +874,20 @@ const styles = StyleSheet.create({
   },
   clockPaused: {
     color: colors.textMuted,
+  },
+  energyRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.xs,
+  },
+  energyValue: {
+    ...commonStyles.figure,
+    fontSize: 18,
+    lineHeight: 22,
+  },
+  energyUnit: {
+    color: colors.textMuted,
+    fontSize: 13,
   },
   progressRow: {
     flexDirection: 'row',

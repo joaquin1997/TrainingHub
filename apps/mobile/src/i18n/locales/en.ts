@@ -196,6 +196,7 @@ export const en = {
     illustration: '{{name}} illustration',
   },
   workouts: {
+    kcalActive: 'kcal active',
     setsDoneShort: 'Sets done',
     setsCountOf: '{{done}} / {{total}}',
     autosaveHint: 'Saved as you go · pick it up any time',
