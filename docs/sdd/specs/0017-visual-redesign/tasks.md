@@ -27,7 +27,7 @@ and data the screen shows, so AC-11 (nothing lost) can be reviewed.
 | 7 | [x] Routine detail (FR-14): header block, lock notice, numbered blocks with superset rail, set rows, rest chips, actions | mobile | visual (AC-5) | `feat(routines): redesigned routine detail` |
 | 8 | [x] Active workout (FR-17): header card with clock / pause / progress, rest card, uniform set table, set-type markers, done green / failure orange, superset rail, footer actions | mobile | store tests; visual (AC-6, AC-7, AC-8); **[DEVICE]** start → log → pause → rest → finish | `feat(workouts): redesigned active workout` |
 | 8b | [x] Active energy in the app (amendment): latest kcal published to a small store keyed by the workout identity, fed by the existing refresher; header tile on the active workout when known | mobile | unit test (store reset per workout, unknown stays hidden); **[DEVICE]** AC-13 | `feat(workouts): show active calories during the workout` |
-| 9 | [ ] Workout summary (FR-18): hero, stat tiles, sets per exercise, kg/lb not tonnes | mobile | visual (AC-9) | `feat(workouts): redesigned workout summary` |
+| 9 | [x] Workout summary (FR-18): hero, stat tiles, sets per exercise, kg/lb not tonnes | mobile | visual (AC-9) | `feat(workouts): redesigned workout summary` |
 | 10 | [ ] History (FR-19) and workout detail (FR-20) | mobile | visual (AC-8) | `feat(workouts): redesigned history and workout detail` |
 | 11 | [ ] Routine create / edit (FR-15): details card, numbered exercise cards, full-width set fields, single save with summary | mobile | visual (AC-10) | `feat(routines): redesigned routine editor` |
 | 12 | [ ] Exercise picker and custom exercise (FR-16) | mobile | visual | `feat(exercises): redesigned exercise picker` |
