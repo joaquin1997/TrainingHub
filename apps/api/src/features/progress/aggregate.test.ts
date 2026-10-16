@@ -421,3 +421,77 @@ describe('performed work only (spec 0013)', () => {
     expect(detail?.isRecordSession).toBe(false);
   });
 });
+
+describe('records by type (spec 0023)', () => {
+  const done = '2026-05-01T10:00:00.000Z';
+  const bench = (date: string, sets: ProgressSessionInput['exercises'][number]['sets']) => ({
+    date,
+    exercises: [{ exerciseId: 'bench', exerciseName: 'Bench', sets }],
+  });
+
+  it('flags more reps at the same weight as a record session', () => {
+    const summary = buildExerciseProgressSummaries([
+      bench('2026-05-01T09:00:00.000Z', [{ reps: 6, weightKg: 100 }]),
+      bench('2026-05-08T09:00:00.000Z', [{ reps: 8, weightKg: 100 }]),
+    ])[0];
+
+    expect(summary?.isRecordSession).toBe(true);
+  });
+
+  it('puts the current bests of each type on the detail', () => {
+    const detail = buildExerciseProgressDetail(
+      [
+        bench('2026-05-01T09:00:00.000Z', [{ reps: 6, weightKg: 100 }]),
+        bench('2026-05-08T09:00:00.000Z', [{ reps: 8, weightKg: 100 }]),
+      ],
+      'bench',
+    );
+
+    expect(detail?.records?.find((record) => record.type === 'repsAtWeight')).toEqual({
+      type: 'repsAtWeight',
+      value: 8,
+      weightKg: 100,
+      date: '2026-05-08T09:00:00.000Z',
+    });
+    expect(detail?.records?.find((record) => record.type === 'heaviestWeight')?.date).toBe(
+      '2026-05-01T09:00:00.000Z',
+    );
+  });
+
+  it('a warmup heavier than any working set is no record (AC-3)', () => {
+    const input = selectPerformedWork([
+      bench('2026-05-01T09:00:00.000Z', [{ reps: 5, weightKg: 100, completedAt: done }]),
+      bench('2026-05-08T09:00:00.000Z', [
+        { reps: 5, weightKg: 140, completedAt: done, type: 'warmup' },
+        { reps: 5, weightKg: 100, completedAt: done },
+      ]),
+    ]);
+    const detail = buildExerciseProgressDetail(input, 'bench');
+
+    expect(detail?.isRecordSession).toBe(false);
+    expect(detail?.records?.find((record) => record.type === 'heaviestWeight')?.value).toBe(100);
+  });
+
+  it('counts an exercise logged twice in one workout as one session', () => {
+    const detail = buildExerciseProgressDetail(
+      [
+        bench('2026-05-01T09:00:00.000Z', [{ reps: 5, weightKg: 100 }]),
+        {
+          date: '2026-05-08T09:00:00.000Z',
+          exercises: [
+            { exerciseId: 'bench', exerciseName: 'Bench', sets: [{ reps: 5, weightKg: 100 }] },
+            { exerciseId: 'bench', exerciseName: 'Bench', sets: [{ reps: 5, weightKg: 100 }] },
+          ],
+        },
+      ],
+      'bench',
+    );
+
+    expect(detail?.isRecordSession).toBe(true);
+    expect(detail?.records?.find((record) => record.type === 'bestSessionVolume')).toEqual({
+      type: 'bestSessionVolume',
+      value: 1000,
+      date: '2026-05-08T09:00:00.000Z',
+    });
+  });
+});
