@@ -16,6 +16,7 @@ import { routinesClient } from '@/features/routines/api/routinesClient';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { ExercisePickerModal } from '@/features/exercises/components/ExercisePickerModal';
 import { RestBar } from '@/features/workouts/components/RestBar';
+import { RestEditorSheet } from '@/features/workouts/components/RestEditorSheet';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { useActiveEnergyKcal } from '@/features/workouts/hooks/useActiveEnergyKcal';
@@ -59,6 +60,7 @@ import {
   resumeWorkout,
   saveCompletedWorkout,
   setActiveWorkout,
+  setExerciseRest,
   skipRest,
   startActiveWorkout,
   startRest,
@@ -84,6 +86,11 @@ function prevSetLabel(
   const weight =
     last.weightKg != null ? roundWeight(fromKg(last.weightKg, unit)) : '–';
   return `${weight}×${last.reps ?? '–'}`;
+}
+
+/** The rest chip of an exercise: "2:00", or "Off" for no rest. */
+function restChipLabel(seconds: number, t: TFunction) {
+  return seconds > 0 ? formatDuration(seconds) : t('workouts.restOff');
 }
 
 function setTypeLabel(type: WorkoutSetType, t: TFunction) {
@@ -125,6 +132,8 @@ export function ActiveWorkoutScreen() {
   // The server refused the workout itself; retrying cannot help (EF-5).
   const [finishRefused, setFinishRefused] = useState(false);
   const [isPickerVisible, setIsPickerVisible] = useState(false);
+  // The exercise whose rest is being changed (spec 0018 FR-2).
+  const [restEditorFor, setRestEditorFor] = useState<string | null>(null);
   const [lastByExercise, setLastByExercise] = useState<
     Record<string, ExerciseLastPerformance | null>
   >({});
@@ -515,6 +524,10 @@ export function ActiveWorkoutScreen() {
     router.replace('/routines');
   };
 
+  const restEditorExercise = restEditorFor
+    ? workoutDraft.exercises.find((exercise) => exercise.id === restEditorFor)
+    : undefined;
+
   const setProgress = countWorkoutSets(workoutDraft);
   const unit = workoutDraft.unit ?? 'kg';
   const isPaused = Boolean(workoutDraft.pausedAt);
@@ -543,7 +556,20 @@ export function ActiveWorkoutScreen() {
               {label.label}
             </Text>
           </View>
-          <Text style={styles.exerciseTitle}>{exercise.exerciseName}</Text>
+          <View style={styles.exerciseTitleColumn}>
+            <Text style={styles.exerciseTitle}>{exercise.exerciseName}</Text>
+            <View style={styles.restChipRow}>
+              <Chip
+                icon="timer-outline"
+                size="sm"
+                label={restChipLabel(
+                  resolveRestSeconds(exercise, settings.defaultRestSeconds),
+                  t,
+                )}
+                onPress={() => setRestEditorFor(exercise.id)}
+              />
+            </View>
+          </View>
           <View style={styles.reorderRow}>
             <Pressable
               accessibilityRole="button"
@@ -811,6 +837,22 @@ export function ActiveWorkoutScreen() {
           }}
         />
       ) : null}
+      <RestEditorSheet
+        visible={restEditorExercise !== undefined}
+        exerciseName={restEditorExercise?.exerciseName ?? ''}
+        seconds={
+          restEditorExercise
+            ? resolveRestSeconds(restEditorExercise, settings.defaultRestSeconds)
+            : settings.defaultRestSeconds
+        }
+        onSave={(seconds) => {
+          const current = getActiveWorkout();
+          if (current && restEditorFor) {
+            setActiveWorkout(setExerciseRest(current, restEditorFor, seconds));
+          }
+        }}
+        onClose={() => setRestEditorFor(null)}
+      />
     </View>
   );
 }
@@ -972,10 +1014,16 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 12,
   },
+  exerciseTitleColumn: {
+    flex: 1,
+    gap: spacing.xs,
+  },
   exerciseTitle: {
     ...commonStyles.cardTitle,
-    flex: 1,
     paddingTop: 2,
+  },
+  restChipRow: {
+    flexDirection: 'row',
   },
   reorderRow: {
     flexDirection: 'row',
