@@ -26,6 +26,7 @@ and data the screen shows, so AC-11 (nothing lost) can be reviewed.
 | 6 | [ ] Routines list (FR-13): active-workout card, folder sections, routine cards with chips, `StateView` | mobile | visual | `feat(routines): redesigned routines list` |
 | 7 | [ ] Routine detail (FR-14): header block, lock notice, numbered blocks with superset rail, set rows, rest chips, actions | mobile | visual (AC-5) | `feat(routines): redesigned routine detail` |
 | 8 | [ ] Active workout (FR-17): header card with clock / pause / progress, rest card, uniform set table, set-type markers, done green / failure orange, superset rail, footer actions | mobile | store tests; visual (AC-6, AC-7, AC-8); **[DEVICE]** start → log → pause → rest → finish | `feat(workouts): redesigned active workout` |
+| 8b | [ ] Active energy in the app (amendment): latest kcal published to a small store keyed by the workout identity, fed by the existing refresher; header tile on the active workout when known | mobile | unit test (store reset per workout, unknown stays hidden); **[DEVICE]** AC-13 | `feat(workouts): show active calories during the workout` |
 | 9 | [ ] Workout summary (FR-18): hero, stat tiles, sets per exercise, kg/lb not tonnes | mobile | visual (AC-9) | `feat(workouts): redesigned workout summary` |
 | 10 | [ ] History (FR-19) and workout detail (FR-20) | mobile | visual (AC-8) | `feat(workouts): redesigned history and workout detail` |
 | 11 | [ ] Routine create / edit (FR-15): details card, numbered exercise cards, full-width set fields, single save with summary | mobile | visual (AC-10) | `feat(routines): redesigned routine editor` |
@@ -37,7 +38,8 @@ and data the screen shows, so AC-11 (nothing lost) can be reviewed.
 
 **[DEVICE]** for the owner's batch, after task 16: AC-2 in both languages,
 AC-6 on an iPhone, AC-8 with a 40-character custom exercise, AC-12 at the
-largest text size, and the workout flow of task 8.
+largest text size, AC-13 (kcal in the workout header vs the lock screen), and
+the workout flow of task 8.
 
 ## Acceptance criteria → tasks
 
@@ -55,6 +57,7 @@ largest text size, and the workout flow of task 8.
 | AC-10 two-digit fields | 11 |
 | AC-11 nothing lost | every screen task (commit message inventory) |
 | AC-12 largest text size | [DEVICE] |
+| AC-13 kcal in the app | 8b, [DEVICE] |
 
 ## Progress log
 

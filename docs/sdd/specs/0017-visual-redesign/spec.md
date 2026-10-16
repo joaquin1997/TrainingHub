@@ -168,7 +168,10 @@ removed (Out of scope, last item).
   and primary action as the rest of the app.
 - **FR-17. Active workout.** From top to bottom:
   1. a header card with the routine name, the workout clock (active duration,
-     spec 0011), pause/resume, and the sets-done progress as a bar and a count;
+     spec 0011), pause/resume, the sets-done progress as a bar and a count,
+     and the workout's **active energy** when it is known (spec 0012) — the
+     same reading the lock-screen status shows, hidden (never 0) when there is
+     no data or no permission;
   2. while a rest is running, a rest card with the countdown inside a ring,
      the −15 s / +15 s / skip controls, and the rest-picker the screen already
      has;
@@ -207,6 +210,12 @@ removed (Out of scope, last item).
 - **FR-25. Sign-in.** App name and mark, a two-way switch between sign in and
   create account, the existing fields, one primary button, and the error
   message area. Nothing else.
+
+> **Amendment 2026-10-16 (owner request).** Active energy was read from the
+> person's health data only for the lock-screen status (spec 0012); the owner
+> asked for it to be visible during the workout in the app too. It is the one
+> exception to "nothing is added" (Out of scope, last item): no new data, no
+> new permission — the existing reading is shown in a second place.
 
 ## Behaviour when things go wrong
 
@@ -268,6 +277,10 @@ to the glossary.
 - **AC-12.** Given the system text size at its largest accessibility setting,
   when the active workout, routine detail and settings are opened, then no text
   is clipped and every control can still be reached.
+- **AC-13.** Given an active workout on an iPhone with Health permission and
+  calories recorded since it started, when the active workout screen is open,
+  then its header shows the same kcal as the lock-screen status; given no
+  permission or no data, then no calorie figure is shown.
 
 ## Non-functional requirements
 
