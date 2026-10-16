@@ -31,6 +31,28 @@ are gitignored). `app.json` (the `expo` config) is the source of truth for nativ
 settings: `ios.bundleIdentifier` / `android.package` and the iOS ATS exception that
 allows the app to reach the `http://` backend over Tailscale.
 
+Native code that lives in the repo (spec 0012):
+
+- `targets/workout-activity/` — the Live Activity widget extension, generated
+  into the Xcode project by `@bacons/apple-targets`. `_shared/` is compiled into
+  both the app and the extension (activity attributes, Pause/Resume intents).
+- `modules/workout-live-activity/` — local Expo module (ActivityKit). Keeps its
+  own copy of `WorkoutActivityAttributes.swift`; `attributes.test.mjs` fails if
+  it drifts from `_shared/`.
+- `modules/health-energy/` — local Expo module (HealthKit active energy).
+
+Local modules under `modules/` are autolinked. Run
+`EXPO_NO_GIT_STATUS=1 npx expo prebuild -p ios --clean` after changing
+`app.json`, anything under `targets/` or `modules/`, or a native dependency;
+a JS-only change needs only a Metro reload. To check that the native code
+compiles without a device or signing:
+
+```bash
+cd ios && xcodebuild -workspace TrainingHub.xcworkspace -scheme TrainingHub \
+  -configuration Debug -sdk iphonesimulator \
+  -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+```
+
 To install a dev build on a connected iPhone, see the root `README.md`
 ("Run the mobile app on a physical iPhone").
 

@@ -12,7 +12,7 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0003](specs/0003-session-revocation/spec.md) | Session revocation | `draft` — deferred from 0001, before distribution | 3 — Auth & users |
 | [0010](specs/0010-persist-active-workout/spec.md) | Persist the active workout | `in-progress` — code complete on `feat/sdd-0013-0012`; awaiting a device rebuild (new native dependency) and device checks | 1 — Live workout logging |
 | [0011](specs/0011-workout-pause/spec.md) | Pause the active workout | `in-progress` — code complete on `feat/sdd-0013-0012`; awaiting the migration, redeploy and device checks (task 6) | 1 — Live workout logging |
-| [0012](specs/0012-workout-live-activity/spec.md) | Live workout status on the lock screen | `planned` — spike done; amended 2026-09-24; tasks awaiting review | 8 — Integrations & platform |
+| [0012](specs/0012-workout-live-activity/spec.md) | Live workout status on the lock screen | `in-progress` — code complete on `feat/sdd-0013-0012`; awaiting a device rebuild and device checks | 8 — Integrations & platform |
 | [0013](specs/0013-progress-performed-work/spec.md) | Progress counts only performed work | `in-progress` — code complete on `feat/sdd-0013-0012`; awaiting the owner's redeploy and device checks (task 6) | 4 — Progress |
 | [0014](specs/0014-workout-save-integrity/spec.md) | Workout save integrity | `in-progress` — code complete on `feat/sdd-0013-0012`; awaiting the migration, redeploy and device checks (task 7); needed before 0010 task 7 | 1 — Live workout logging |
 | 0015 | Custom exercises are private | `draft` — not written yet; ships alongside 0001 | 6 — Exercises |

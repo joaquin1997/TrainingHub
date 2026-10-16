@@ -70,8 +70,9 @@ dockerized backend over Tailscale:
 ```bash
 cd apps/mobile
 
-# 1. Generate the native project (only when ios/ is missing or native config changed).
-npx expo prebuild -p ios
+# 1. Generate the native project (when ios/ is missing, or app.json, targets/,
+#    modules/ or a native dependency changed — see apps/mobile/README.md).
+EXPO_NO_GIT_STATUS=1 npx expo prebuild -p ios --clean
 
 # 2. Build and sign. -allowProvisioningUpdates lets Xcode create/renew the
 #    development profile; `expo run:ios --device` does not pass it, so it fails

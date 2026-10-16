@@ -50,8 +50,10 @@ production.
 | Term | Meaning |
 |---|---|
 | **Auth provider** | A pluggable identity source. Email/password ships today; Apple is the next. |
+| **Live workout status** | The active workout shown outside the app — on iOS a Live Activity on the lock screen and Dynamic Island: routine, clock, active energy, pause, finish (spec 0012). Reached through `LiveWorkoutBridge`. |
+| **Active energy** | Calories burned as measured by the person's health data (e.g. a watch), read with permission — never estimated by formula. Unknown when there is no data or no permission, never shown as 0 (spec 0012). |
 | **HealthSyncRecord** | Sync *metadata* only. Never a place to duplicate workout data. |
-| **HealthIntegration / WorkoutSyncService / LiveWorkoutBridge** | Prepared interfaces for Apple Health, Android Health Connect and future Apple Watch mirroring. Interfaces and stubs only at this stage. |
+| **HealthIntegration / WorkoutSyncService / LiveWorkoutBridge** | Interfaces for Apple Health, Android Health Connect and live surfaces. Implemented on iOS for the live workout status and active energy (spec 0012); the rest are stubs. |
 
 `TODO(sdd): terms not yet pinned down because the product decision is open —`
 `"program" or "training plan" (a multi-week structure above Routine), "cycle",`

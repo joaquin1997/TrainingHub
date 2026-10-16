@@ -21,7 +21,7 @@ up; the spike's debug panel is not carried over.
 | 5 | [x] Finish from the status: `action=finish` → confirm → finish (no set done → existing notice); open the workout after sign-in (EF-7) | mobile | unit test (action parsing); **[DEVICE]** EF-6, EF-7 | `feat(workouts): confirm finishing from the Live Activity` |
 | 6 | [x] HealthKit entitlement + usage string, `health-energy` module (`null` for no data/permission, reject on error), `readActiveEnergyKcal` in domain, Apple impl, Android `null` | health | typecheck; **[DEVICE]** permission prompt, kcal vs Fitness | `feat(health): read active energy from Apple Health` |
 | 7 | [x] kcal refresh (start, app active, every 60 s in foreground unless paused; keep last value on error) and permission request | mobile | unit tests (fake clock); **[DEVICE]** AC-5, AC-6, EF-5 | `feat(workouts): show active calories on the Live Activity` |
-| 8 | README native builds (targets/, modules/, when to `prebuild --clean`); roadmap; backlog; spec status | docs | links resolve | `docs(sdd): close spec 0012` |
+| 8 | [x] README native builds (targets/, modules/, when to `prebuild --clean`); roadmap; backlog; spec status | docs | links resolve | `docs(sdd): close spec 0012` |
 
 Tasks 2, 4–7 need a device rebuild; they are not verifiable in CI.
 
@@ -82,12 +82,21 @@ Tasks 2, 4–7 need a device rebuild; they are not verifiable in CI.
   last value, a late reading for a previous workout is dropped. Feeds
   `controller.setActiveEnergyKcal`. 4 tests with fake timers. Device checks
   pending (AC-5, AC-6, EF-5).
+- 2026-10-16 — Native compile check: `expo prebuild -p ios --clean` and an
+  unsigned simulator build (`xcodebuild … -sdk iphonesimulator
+  CODE_SIGNING_ALLOWED=NO`, Xcode 26.6) succeed — app, widget extension,
+  `_shared` intents and both local modules compile. Signing, the device
+  install and every [DEVICE] check remain the owner's.
+- 2026-10-16 — Task 8: README (native code in the repo, when to prebuild, the
+  unsigned compile check), glossary (live workout status, active energy),
+  roadmap 08, backlog. Spec stays `in-progress` until the device checks; the
+  spike branch is deleted once they pass.
 
 ## Definition of done
 
 - [ ] Every functional requirement and acceptance criterion in `spec.md` is met
       or explicitly deferred with a TODO
-- [ ] `pnpm -r typecheck` and `pnpm -r test` green
-- [ ] `docs/roadmap/08-integrations-and-platform.md` updated
+- [x] `pnpm -r typecheck` and `pnpm -r test` green
+- [x] `docs/roadmap/08-integrations-and-platform.md` updated
 - [ ] `spec.md` status set to `done`; `../backlog.md` updated
 - [ ] Spike branch deleted once everything is carried over
