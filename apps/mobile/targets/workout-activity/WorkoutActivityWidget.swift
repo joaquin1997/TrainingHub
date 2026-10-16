@@ -15,7 +15,7 @@ private let accent = Color(red: 0xFF / 255, green: 0x8A / 255, blue: 0x3D / 255)
 struct WorkoutActivityWidget: Widget {
   var body: some WidgetConfiguration {
     ActivityConfiguration(for: WorkoutActivityAttributes.self) { context in
-      LockScreenView(context: context)
+      FamilyAwareView(context: context)
         .activityBackgroundTint(background)
         .activitySystemActionForegroundColor(.white)
         .widgetURL(activeWorkoutURL)
@@ -66,6 +66,96 @@ struct WorkoutActivityWidget: Widget {
       }
       .widgetURL(activeWorkoutURL)
     }
+    .watchSmartStackFamily()
+  }
+}
+
+extension WidgetConfiguration {
+  /// Declares the small family, so the paired Apple Watch's Smart Stack shows
+  /// our own layout instead of the compact Dynamic Island views (spec 0025
+  /// FR-1). iOS 18+; the extension still deploys to iOS 17.
+  func watchSmartStackFamily() -> some WidgetConfiguration {
+    if #available(iOS 18.0, *) {
+      return supplementalActivityFamilies([.small])
+    } else {
+      return self
+    }
+  }
+}
+
+/// The iPhone lock screen, or the small layout where the system asks for it
+/// (the Apple Watch Smart Stack).
+private struct FamilyAwareView: View {
+  let context: ActivityViewContext<WorkoutActivityAttributes>
+
+  var body: some View {
+    if #available(iOS 18.0, *) {
+      FamilySwitch(context: context)
+    } else {
+      LockScreenView(context: context)
+    }
+  }
+}
+
+@available(iOS 18.0, *)
+private struct FamilySwitch: View {
+  let context: ActivityViewContext<WorkoutActivityAttributes>
+  @Environment(\.activityFamily) private var family
+
+  var body: some View {
+    switch family {
+    case .small:
+      WatchSmallView(context: context)
+    default:
+      LockScreenView(context: context)
+    }
+  }
+}
+
+/// Read-only status for the watch (spec 0025 Level 1): routine, clock, rest
+/// countdown while one runs, calories when known. Pause and Finish stay on the
+/// phone's surfaces.
+private struct WatchSmallView: View {
+  let context: ActivityViewContext<WorkoutActivityAttributes>
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 2) {
+      HStack(spacing: 4) {
+        Image(systemName: context.state.pausedAt == nil ? "dumbbell.fill" : "pause.fill")
+          .foregroundStyle(primary)
+        Text(context.attributes.routineName)
+          .foregroundStyle(textMuted)
+          .lineLimit(1)
+        Spacer(minLength: 0)
+        if context.state.pausedAt != nil {
+          Text(context.attributes.pausedLabel)
+            .foregroundStyle(accent)
+            .lineLimit(1)
+        }
+      }
+      .font(.caption2.weight(.semibold))
+      ElapsedText(attributes: context.attributes, state: context.state)
+        .font(.title2.weight(.bold).monospacedDigit())
+        .foregroundStyle(.white)
+        .lineLimit(1)
+        .minimumScaleFactor(0.7)
+      HStack(spacing: 4) {
+        if let restEndsAt = runningRest(context) {
+          Image(systemName: "timer")
+          RestCountdown(endsAt: restEndsAt)
+            .lineLimit(1)
+        }
+        Spacer(minLength: 0)
+        // Unknown calories are left out here, not shown as "— kcal".
+        if let kcal = context.state.activeKcal {
+          Text("\(kcal) kcal")
+            .lineLimit(1)
+        }
+      }
+      .font(.caption.weight(.semibold).monospacedDigit())
+      .foregroundStyle(accent)
+    }
+    .padding(.horizontal, 4)
   }
 }
 

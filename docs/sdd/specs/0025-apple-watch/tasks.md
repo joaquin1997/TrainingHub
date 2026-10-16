@@ -17,7 +17,7 @@ follows in separate commits; its JS reaches native code through
 |---|---|---|---|---|
 | 1 | [x] Plan and tasks; spec → `in-progress` | docs | links resolve | `docs(sdd): plan and tasks for 0025` |
 | **L1** | | | | |
-| 2 | [ ] `supplementalActivityFamilies([.small])` behind `if #available(iOS 18.0, *)`; `FamilyAwareView` → `WatchSmallView` (routine, paused, clock, rest countdown, kcal when known; no buttons) | ios (**native — rebuild**) | `swiftc -typecheck` of the extension at iOS 17.0 against the iOS 26.5 simulator SDK; Swift-copies test unchanged; **[DEVICE]** AC-1 | `feat(ios): the Live Activity on the Apple Watch Smart Stack` |
+| 2 | [x] `supplementalActivityFamilies([.small])` behind `if #available(iOS 18.0, *)`; `FamilyAwareView` → `WatchSmallView` (routine, paused, clock, rest countdown, kcal when known; no buttons) | ios (**native — rebuild**) | `swiftc -typecheck` of the extension at iOS 17.0 against the iOS 26.5 simulator SDK; Swift-copies test unchanged; **[DEVICE]** AC-1 | `feat(ios): the Live Activity on the Apple Watch Smart Stack` |
 | **L2** | | | | |
 | 3 | [ ] `WatchWorkoutSnapshot`, `WatchWorkoutEvent`, `WatchWorkoutBridge` in `packages/domain/src/health.ts` | domain | `pnpm -r typecheck` | `feat(domain): watch workout contract` |
 | 4 | [ ] `completeSet` in `workoutDraftStore.ts` (done + rest from an instant; no-op when done or unknown) used by `handleToggleDone`; `watch/watchProtocol.ts`: `currentSetToDo`, `toWatchSnapshot`, `parseWatchEvent`, `applyWatchEvent` + tests | mobile | unit tests: tick → done + rest from the tick's instant (AC-3), replay is a no-op (EF-1), events for another workout dropped, unknown/malformed JSON ignored, target text in the session unit (Art. 4), superset order | `feat(workouts): apply watch requests to the active workout` |
@@ -53,6 +53,15 @@ Ultra 2.
 ## Progress log
 
 - 2026-10-17 — Plan and tasks written and self-approved (delegated gates).
+- 2026-10-17 — Task 2 (Level 1): the Live Activity declares the small family
+  on iOS 18 (`watchSmartStackFamily()`, an opaque result with an
+  `if #available` branch, so the extension still deploys to iOS 17.0) and
+  renders `WatchSmallView` for it: routine and paused label, the elapsed
+  clock, the rest countdown while one runs, calories when known; no buttons.
+  The iPhone lock screen and Dynamic Island are unchanged; so are the
+  attributes (both copies) and the JS. `swiftc -typecheck` of the extension
+  (index, widget, `_shared`) at `arm64-apple-ios17.0-simulator` against the
+  iOS 26.5 simulator SDK passes. Device check pending (AC-1).
 
 ## Definition of done
 
