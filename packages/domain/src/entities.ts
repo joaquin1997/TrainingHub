@@ -245,6 +245,13 @@ export interface WorkoutExerciseInput {
  * the live values local during the session and sends the whole session at the end.
  */
 export interface CreateWorkoutSessionInput {
+  /**
+   * Workout identity chosen on the device when the workout starts, unique per
+   * user. Saving it again returns the workout saved first instead of creating
+   * a duplicate (spec 0014). Absent from older clients.
+   */
+  clientId?: string;
+  /** Optional provenance: dropped by the server unless it is the user's own. */
   routineId?: EntityId;
   startedAt: ISODateString;
   completedAt?: ISODateString;

@@ -14,8 +14,8 @@ the tree green: `pnpm -r typecheck` and `pnpm -r test` pass at every step
 
 | # | Task | Area | Verify | Commit message |
 |---|---|---|---|---|
-| 1 | Spec, plan and tasks; glossary (workout identity, optional provenance, lock covers deletion); backlog | docs | links resolve | `docs(sdd): spec 0014 workout save integrity` |
-| 2 | `CreateWorkoutSessionInput.clientId?`; schema `clientId` + `@@unique([userId, clientId])`; generated migration | domain / data | `prisma validate`; typecheck | `feat(workouts): client identity on saved workouts` |
+| 1 | [x] Spec, plan and tasks; glossary (workout identity, optional provenance, lock covers deletion); backlog | docs | links resolve | `docs(sdd): spec 0014 workout save integrity` |
+| 2 | [x] `CreateWorkoutSessionInput.clientId?`; schema `clientId` + `@@unique([userId, clientId])`; generated migration | domain / data | `prisma validate`; typecheck | `feat(workouts): client identity on saved workouts` |
 | 3 | Route: parse `clientId`, validate times (unreadable, end < start) | api | route tests (4 new) | `fix(workouts): refuse unreadable or inverted workout times` |
 | 4 | `saveReferences.ts` (`dropForeignLinks`, `findUnknownExercise`); repository resolves owned refs, throws `UnknownExerciseError`, replays by `clientId` (incl. `P2002`); route `201`/`200`/`400` | api | unit tests; route tests | `fix(workouts): idempotent save with owned references only` |
 | 5 | Draft `clientId` (generated, stable across edits) sent in the payload | mobile | unit tests | `feat(workouts): send a stable identity with each workout` |
@@ -43,6 +43,10 @@ Task 7 is the owner's (deploy and device checks are batched).
   owner's delegation (see spec "Open decisions"). Found while verifying: the
   routines list menu bypasses the edit lock, and the detail screen deletes
   without confirmation; both folded into task 6.
+- 2026-10-16 — Task 2: `clientId` in the contract and the schema. Migration
+  SQL generated offline with `prisma migrate diff` (old schema from git →
+  edited schema), so it mirrors `schema.prisma` exactly; not yet applied to any
+  database (task 7).
 
 ## Definition of done
 
