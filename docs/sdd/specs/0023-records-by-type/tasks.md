@@ -18,7 +18,7 @@ shows records (the app copes with an older API by showing none).
 | 2 | [x] Domain: `RecordType`, `ExerciseRecord`, `SessionRecord`, `SessionRecords`; optional `records` on `ExerciseProgressDetail`. API: `records.ts` (one pure function per single-value type + reps at weight; bests and per-session hits); `aggregate.ts` fills `records` and computes `isRecordSession` from any type; Epley moved into `records.ts` | domain + api | unit tests: each type, strict improvement, EF-1, AC-3 warm-up, AC-1 reps at weight, top three weights, session grouping | `feat(progress): derive personal records by type` |
 | 3 | [x] `buildSessionRecords` (+ `workoutId` / `clientId` on the input, filled by the repository); `GET /progress/session-records`; route test; `progressClient.sessionRecords()` | api + mobile client | unit test AC-2 (session volume hit), route test | `feat(progress): list the records each workout beat` |
 | 4 | [x] `describeRecord` (+ test, kg and lb); `RecordsCard`; exercise progress screen: records card (type, value, date) and most reps for the top three weights; timeline card retitled; "Best" tile caption from the heaviest set; i18n en/es | mobile | unit test; web preview: AC-1 exercise screen shows 8 reps | `feat(progress): show the best of each record type` |
-| 5 | [ ] Summary: records card matched by `clientId`; History list: "N records" chip; History detail: records card by `workoutId`; i18n en/es | mobile | typecheck; web preview: AC-1 summary "Most reps at 100 kg", AC-2 History entry | `feat(workouts): name the records a workout beat` |
+| 5 | [x] Summary: records card matched by `clientId`; History list: "N records" chip; History detail: records card by `workoutId`; i18n en/es | mobile | typecheck; web preview: AC-1 summary "Most reps at 100 kg", AC-2 History entry | `feat(workouts): name the records a workout beat` |
 | 6 | [ ] Progress log, definition of done, spec status | docs | — | `docs(sdd): close spec 0023 implementation` |
 
 Not verifiable in CI: the screens (tasks 4–5) on the owner's device; the API
@@ -54,6 +54,18 @@ deploy that makes them show data.
   the "Best" tile's reps come from the heaviest set. i18n en/es under
   `progress.records`; `progress.personalRecords` replaced by
   `progress.heaviestOverTime`.
+- 2026-10-17 — Task 5: summary (matched by `clientId`), History list
+  ("N records" chip) and History detail ("Records beaten" card by
+  `workoutId`); a failed records fetch only hides the card or chip. Web
+  preview on the local API (PGlite), screenshots: AC-1 — 100 × 6 seeded,
+  then 100 × 8 finished in the app: the summary lists "Most reps at 100 kg
+  · 8 reps" and the exercise screen shows most reps 8 and most reps at
+  100 kg 8 with today's date; AC-2 — a seeded workout with Squat's highest
+  session volume shows "1 record" in History and "Best session volume ·
+  Squat · 1200 kg" in its detail; AC-3 — the same workout's 140 kg warm-up
+  beat no Bench record. Also seen (not this spec): a new workout's first set
+  takes last time's first set as its placeholder even when that was a
+  warm-up, so ticking it logs the warm-up weight as a working set.
 
 ## Definition of done
 
