@@ -37,6 +37,8 @@ const styles = StyleSheet.create({
   },
   field: {
     flex: 1,
+    // Lets the input shrink below its intrinsic width (web) inside narrow rows.
+    minWidth: 0,
   },
   unit: {
     ...commonStyles.figureUnit,

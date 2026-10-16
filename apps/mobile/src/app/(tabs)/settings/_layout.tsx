@@ -12,6 +12,7 @@ export default function SettingsStackLayout() {
       <Stack.Screen name="index" options={{ title: t('nav.settings'), headerShown: false }} />
       <Stack.Screen name="profile" options={{ title: t('nav.profile') }} />
       <Stack.Screen name="profile-edit" options={{ title: t('nav.editProfile') }} />
+      <Stack.Screen name="measurement" options={{ title: t('nav.measurement') }} />
     </Stack>
   );
 }

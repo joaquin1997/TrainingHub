@@ -2,25 +2,38 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import type { BodyMeasurementEntry, WeightUnit } from '@workout/domain';
 
 import { profileClient } from '@/features/profile/api/profileClient';
 import { ProfileAvatar } from '@/features/profile/components/ProfileAvatar';
 import { pickProfilePhoto } from '@/features/profile/photo/pickProfilePhoto';
 import { useProfileData } from '@/features/profile/useProfileData';
+import {
+  bmiBand,
+  bodyMassIndex,
+  formatMeasurement,
+  latestByKind,
+  MEASUREMENT_KINDS,
+  waistToHeight,
+} from '@/features/profile/utils/measurements';
 import { useSettings } from '@/features/settings/SettingsContext';
+import { formatDate } from '@/lib/format';
 import { formatHeight } from '@/lib/length';
 import { ActionSheet, type SheetAction } from '@/ui/ActionSheet';
 import { Button } from '@/ui/Button';
+import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, spacing } from '@/ui/theme';
 
 /** The person's profile (spec 0027), reached from the Settings account card. */
 export function ProfileScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const { settings } = useSettings();
   const unit = settings.unit;
-  const { profile, setProfile, isLoading, error, reload } = useProfileData();
+  const { profile, setProfile, entries, isLoading, error, reload } = useProfileData({
+    withMeasurements: true,
+  });
   const [photoSheetOpen, setPhotoSheetOpen] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoError, setPhotoError] = useState<string>();
@@ -101,6 +114,14 @@ export function ProfileScreen() {
           fullWidth
         />
       </View>
+
+      <BodySection
+        entries={entries}
+        heightCm={profile.heightCm}
+        unit={unit}
+        locale={i18n.language}
+        onAdd={() => router.push('/settings/measurement')}
+      />
       <ActionSheet
         visible={photoSheetOpen}
         title={t('profile.changePhoto')}
@@ -119,6 +140,69 @@ export function ProfileScreen() {
         onClose={() => setPhotoSheetOpen(false)}
       />
     </ScrollView>
+  );
+}
+
+/** Derived figures and the latest value of each measurement (FR-4 to FR-6). */
+function BodySection({
+  entries,
+  heightCm,
+  unit,
+  locale,
+  onAdd,
+}: {
+  entries: BodyMeasurementEntry[];
+  heightCm: number | null;
+  unit: WeightUnit;
+  locale: string;
+  onAdd: () => void;
+}) {
+  const { t } = useTranslation();
+  const latest = latestByKind(entries);
+  // Derived figures need both values; neither is shown otherwise (AC-4).
+  const bmi = bodyMassIndex(latest.weightKg?.value, heightCm);
+  const ratio = waistToHeight(latest.waistCm?.value, heightCm);
+  const measured = MEASUREMENT_KINDS.filter(({ key }) => latest[key]);
+  const needsHeight = !heightCm && (latest.weightKg || latest.waistCm);
+
+  return (
+    <View style={styles.section}>
+      <Text style={commonStyles.cardTitle}>{t('profile.body')}</Text>
+
+      {bmi !== null || ratio !== null ? (
+        <View style={styles.tiles}>
+          {bmi !== null ? (
+            <StatTile label={t('profile.bmi')} value={bmi.toFixed(1)} caption={t(`profile.bmiBands.${bmiBand(bmi)}`)} />
+          ) : null}
+          {ratio !== null ? (
+            <StatTile label={t('profile.waistToHeight')} value={ratio.toFixed(2)} />
+          ) : null}
+        </View>
+      ) : null}
+      {bmi !== null ? <Text style={styles.note}>{t('profile.bmiNote')}</Text> : null}
+      {needsHeight ? <Text style={styles.note}>{t('profile.derivedNeedsHeight')}</Text> : null}
+
+      {measured.length === 0 ? (
+        <Text style={commonStyles.meta}>{t('profile.noMeasurements')}</Text>
+      ) : (
+        <View>
+          {measured.map(({ key }) => {
+            const point = latest[key]!;
+            return (
+              <View key={key} style={styles.latestRow}>
+                <Text style={styles.latestLabel}>{t(`profile.kinds.${key}`)}</Text>
+                <View style={styles.latestValue}>
+                  <Text style={commonStyles.label}>{formatMeasurement(key, point.value, unit)}</Text>
+                  <Text style={styles.latestDate}>{formatDate(point.measuredAt, locale)}</Text>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      <Button label={t('profile.addMeasurement')} icon="add" onPress={onAdd} fullWidth />
+    </View>
   );
 }
 
@@ -157,6 +241,38 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
     paddingTop: spacing.md,
+  },
+  section: {
+    ...commonStyles.card,
+    gap: spacing.md,
+  },
+  tiles: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  note: {
+    ...commonStyles.meta,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  latestRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  latestLabel: {
+    ...commonStyles.meta,
+    flex: 1,
+  },
+  latestValue: {
+    alignItems: 'flex-end',
+  },
+  latestDate: {
+    color: colors.textSubtle,
+    fontSize: 12,
   },
   factLabel: {
     ...commonStyles.meta,
