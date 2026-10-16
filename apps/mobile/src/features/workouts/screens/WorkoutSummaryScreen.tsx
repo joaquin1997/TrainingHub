@@ -7,6 +7,7 @@ import {
   getLatestCompletedWorkout,
   toWorkoutSessionSkeleton,
 } from '@/features/workouts/state/workoutDraftStore';
+import { formatWeightValue } from '@/lib/weight';
 import { colors, commonStyles, spacing } from '@/ui/theme';
 
 export function WorkoutSummaryScreen() {
@@ -24,7 +25,10 @@ export function WorkoutSummaryScreen() {
     );
   }
 
+  // Rendered from the skeleton so the summary shows what was saved, ghosted
+  // placeholders included, formatted back into the session unit (spec 0013).
   const workoutSession = toWorkoutSessionSkeleton(workoutDraft);
+  const unit = workoutDraft.unit ?? 'kg';
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -33,16 +37,16 @@ export function WorkoutSummaryScreen() {
       <Text style={styles.meta}>
         {t('workouts.sessionId', { id: workoutSession.id })}
       </Text>
-      {workoutDraft.exercises.map((exercise) => (
+      {workoutSession.exercises.map((exercise) => (
         <View key={exercise.id} style={styles.card}>
           <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
-          {exercise.entries.map((set) => (
+          {exercise.sets.map((set) => (
             <Text key={set.id} style={styles.setText}>
               {t('workouts.setSummary', {
                 order: set.order,
-                reps: set.reps || '-',
-                weight: set.weightKg || '-',
-                unit: workoutDraft.unit ?? 'kg',
+                reps: set.reps ?? '–',
+                weight: formatWeightValue(set.weightKg, unit),
+                unit,
               })}
             </Text>
           ))}

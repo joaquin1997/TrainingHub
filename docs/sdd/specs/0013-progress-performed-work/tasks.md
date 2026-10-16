@@ -25,7 +25,7 @@ be deployed at any point after task 5.
 | 5 | [x] "Last time": fetch the 10 most recent entries, choose with `pickLastPerformance` | api | unit tests (picker); route test unchanged (repository mocked) | `fix(workouts): last time shows only performed sets` |
 | 6 | Redeploy the API; check progress and "last time" on the phone | ops | **[DEPLOY]** `/health` ok; **[DEVICE]** AC-1, AC-2, AC-3, AC-5 | — (no commit) |
 | 7 | [x] `isPerformedSet` (mobile, with `completedAt` fallback); history volume and detail ✓/○, totals use it | mobile | unit test (`performedSet.test.ts`); **[DEVICE]** AC-4 | `fix(workouts): history treats legacy sessions as performed` |
-| 8 | Post-workout summary renders the saved values from the skeleton, formatted in the session unit | mobile | unit test for the skeleton values if missing; **[DEVICE]** AC-6 | `fix(workouts): summary shows the values that were saved` |
+| 8 | [x] Post-workout summary renders the saved values from the skeleton, formatted in the session unit | mobile | unit test for the skeleton values if missing; **[DEVICE]** AC-6 | `fix(workouts): summary shows the values that were saved` |
 | 9 | Rename `progress.volumeByMuscleGroup` → `volumeByCategory` (en/es) | mobile | typecheck (catalog shape); **[DEVICE]** AC-7 in ES and EN | `fix(progress): label the volume distribution by category` |
 | 10 | Roadmap 04 (with the "figures drop on purpose" note), retro 0006, backlog; spec status `done` | docs | links resolve | `docs(sdd): close spec 0013` |
 
@@ -68,6 +68,11 @@ tasks need only a Metro reload, not a native rebuild.
   drives history volume and the detail's ✓/○, totals and per-exercise volume.
   3 unit tests. The history list's set count still includes unperformed sets
   (out of scope in the plan).
+- 2026-10-16 — Task 8: the summary renders the skeleton (effective values, kg
+  formatted into the session unit). 2 unit tests on the skeleton values.
+  Found, not fixed (pre-existing, out of scope): saving rounds kg to one
+  decimal, so 100 lb is stored as 45.4 kg and reads back as 100.1 lb in the
+  summary, history and detail. Logged in `../../backlog.md` follow-ups.
 
 ## Definition of done
 

@@ -19,6 +19,7 @@ import {
   setActiveWorkout,
   startActiveWorkout,
   toCreateWorkoutSessionInput,
+  toWorkoutSessionSkeleton,
   toggleWorkoutSetDone,
   type WorkoutSessionDraft,
 } from './workoutDraftStore';
@@ -436,5 +437,52 @@ describe('set type', () => {
 
     const drop = cycleWorkoutSetType(warmup, exercise.id, setId);
     expect(drop.exercises[0]!.entries[0]!.type).toBe('drop');
+  });
+});
+
+describe('toWorkoutSessionSkeleton', () => {
+  const draftWith = (unit: 'kg' | 'lb'): WorkoutSessionDraft => ({
+    id: 'w1',
+    routineId: 'routine-1',
+    routineName: 'Push Day',
+    startedAt: '2026-05-30T09:00:00.000Z',
+    unit,
+    exercises: [
+      {
+        id: 'we-1',
+        exerciseId: 'ex-bench',
+        exerciseName: 'Bench',
+        routineExerciseId: 're-bench',
+        order: 1,
+        entries: [
+          {
+            id: 's1',
+            order: 1,
+            reps: '',
+            weightKg: '',
+            repsPlaceholder: '8',
+            weightPlaceholder: '100',
+            done: true,
+            type: 'normal',
+          },
+          { id: 's2', order: 2, reps: '', weightKg: '', done: false, type: 'normal' },
+        ],
+      },
+    ],
+  });
+
+  it('carries the values that get saved, placeholders included (spec 0013 FR-6)', () => {
+    const sets = toWorkoutSessionSkeleton(draftWith('kg')).exercises[0]?.sets;
+
+    expect(sets?.map((set) => [set.reps, set.weightKg])).toEqual([
+      [8, 100],
+      [undefined, undefined],
+    ]);
+  });
+
+  it('converts a placeholder typed in lb to canonical kg', () => {
+    const set = toWorkoutSessionSkeleton(draftWith('lb')).exercises[0]?.sets[0];
+
+    expect(set?.weightKg).toBeCloseTo(45.36, 1);
   });
 });
