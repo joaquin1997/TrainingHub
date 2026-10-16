@@ -228,7 +228,7 @@ export const es: TranslationCatalog = {
     colReps: 'REPS',
     // Series de tiempo y distancia (spec 0021).
     colTime: 'TIEMPO',
-    colDistance: 'METROS',
+    colDistance: 'DIST',
     startSetTimer: 'Iniciar cronómetro de la serie',
     stopSetTimer: 'Parar cronómetro de la serie',
     addSet: 'Añadir serie',
@@ -263,6 +263,9 @@ export const es: TranslationCatalog = {
     backToHistory: 'Volver al historial',
     duration: 'Duración',
     restLabel: 'Descanso',
+    // Series de tiempo y distancia (spec 0021).
+    setTimeLabel: 'Tiempo en series',
+    distanceLabel: 'Distancia',
   },
   progress: {
     est1rmShort: '1RM est.',
@@ -286,6 +289,9 @@ export const es: TranslationCatalog = {
     notAvailable: 'Aún no hay datos de progreso para este ejercicio.',
     backToProgress: 'Volver al progreso',
     personalRecords: 'Récords personales',
+    // Récords de tiempo y distancia (spec 0021).
+    longestTime: 'Mayor tiempo',
+    longestDistance: 'Mayor distancia',
     volumeByCategory: 'Volumen por categoría',
     freqWeekStreak: 'Racha semanal',
     freqWorkouts: 'Entrenamientos',

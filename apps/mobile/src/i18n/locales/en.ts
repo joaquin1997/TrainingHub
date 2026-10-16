@@ -225,7 +225,7 @@ export const en = {
     colReps: 'REPS',
     // Time and distance sets (spec 0021).
     colTime: 'TIME',
-    colDistance: 'METRES',
+    colDistance: 'DIST',
     startSetTimer: 'Start set timer',
     stopSetTimer: 'Stop set timer',
     addSet: 'Add set',
@@ -260,6 +260,9 @@ export const en = {
     backToHistory: 'Back to history',
     duration: 'Duration',
     restLabel: 'Rest',
+    // Time and distance sets (spec 0021).
+    setTimeLabel: 'Set time',
+    distanceLabel: 'Distance',
   },
   progress: {
     est1rmShort: 'Est. 1RM',
@@ -283,6 +286,9 @@ export const en = {
     notAvailable: 'Progress data is not available for this exercise yet.',
     backToProgress: 'Back to progress',
     personalRecords: 'Personal records',
+    // Time and distance records (spec 0021).
+    longestTime: 'Longest time',
+    longestDistance: 'Longest distance',
     volumeByCategory: 'Volume by category',
     freqWeekStreak: 'Week streak',
     freqWorkouts: 'Workouts',

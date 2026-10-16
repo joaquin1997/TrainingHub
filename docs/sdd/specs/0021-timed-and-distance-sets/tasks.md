@@ -24,7 +24,7 @@ rebuild.
 | 8 | [x] Draft store: type per exercise, time/distance values, placeholders from targets and last time, save sends only the type's fields; tests | mobile | tests (AC-1, AC-2, AC-3) | `feat(workouts): workout draft holds time and distance` |
 | 9 | [x] `WorkoutSetRow` / header components with columns per type and the set timer (`setTimer.ts` + test); active screen uses them; added exercises keep their type; i18n | mobile | tests; web preview (AC-2, AC-3) | `feat(workouts): log time and distance sets` |
 | 10 | [x] Routines: `RoutineSetTable` columns per type, validation, detail targets; custom exercise tracking type (FR-2); domain `CreateExerciseInput` in the client; i18n | mobile | typecheck; web preview | `feat(routines): time and distance targets in the routine editor` |
-| 11 | [ ] Summary, history (list + detail), exercise detail and progress show time/distance (`summarizeSession` totals + test; `TimedProgressFigures`); i18n | mobile | tests; web preview (AC-1) | `feat(workouts): show time and distance in history and progress` |
+| 11 | [x] Summary, history (list + detail), exercise detail and progress show time/distance (`summarizeSession` totals + test; `TimedProgressFigures`); i18n | mobile | tests; web preview (AC-1) | `feat(workouts): show time and distance in history and progress` |
 | 12 | [ ] Spec status, tasks log | docs | — | `docs(sdd): close spec 0021 implementation` |
 
 Not verifiable in CI: the migration and the catalog script on the server
