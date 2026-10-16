@@ -12,6 +12,12 @@ import {
   isPerformedSet,
   pickLastPerformance,
 } from './performedSets.js';
+import {
+  dropForeignLinks,
+  findUnknownExercise,
+  referencedIds,
+  UnknownExerciseError,
+} from './saveReferences.js';
 
 /**
  * How many recent workouts containing an exercise "last time" looks through
@@ -216,37 +222,130 @@ export async function getExerciseLastPerformance(
   };
 }
 
-export async function createWorkoutSession(
+async function findWorkoutSessionByClientId(
   userPublicId: string,
-  input: CreateWorkoutSessionInput,
+  clientId: string,
 ) {
-  logRepository('create:start', {
-    routineId: input.routineId,
-    exercisesCount: input.exercises.length,
-  });
-
-  const session = await prisma.workoutSession.create({
-    data: {
-      user: { connect: { publicId: userPublicId } },
-      routine: input.routineId
-        ? { connect: { publicId: input.routineId } }
-        : undefined,
-      status: 'completed',
-      startedAt: new Date(input.startedAt),
-      completedAt: input.completedAt ? new Date(input.completedAt) : undefined,
-      notes: input.notes,
-      exercises: {
-        create: input.exercises.map(toWorkoutExerciseCreateInput),
-      },
-    },
+  const session = await prisma.workoutSession.findFirst({
+    where: { clientId, user: { publicId: userPublicId } },
     include: workoutSessionInclude,
   });
 
-  const mapped = mapWorkoutSession(userPublicId, session);
-  logRepository('create:success', {
-    id: mapped.id,
-    exercisesCount: mapped.exercises.length,
+  return session ? mapWorkoutSession(userPublicId, session) : null;
+}
+
+/**
+ * Which of the referenced records exist and, for routines and routine slots,
+ * belong to the user. Exercises only need to exist for now.
+ * TODO(sdd): spec 0015 narrows exercises to "system or created by this user".
+ */
+async function resolveOwnedReferences(
+  userPublicId: string,
+  input: CreateWorkoutSessionInput,
+) {
+  const refs = referencedIds(input);
+  const [routines, routineExercises, exercises] = await Promise.all([
+    refs.routineId
+      ? prisma.routine.findMany({
+          where: { publicId: refs.routineId, user: { publicId: userPublicId } },
+          select: { publicId: true },
+        })
+      : [],
+    refs.routineExerciseIds.length > 0
+      ? prisma.routineExercise.findMany({
+          where: {
+            publicId: { in: refs.routineExerciseIds },
+            routine: { user: { publicId: userPublicId } },
+          },
+          select: { publicId: true },
+        })
+      : [],
+    prisma.exercise.findMany({
+      where: { publicId: { in: refs.exerciseIds } },
+      select: { publicId: true },
+    }),
+  ]);
+
+  const toSet = (rows: { publicId: string }[]) =>
+    new Set(rows.map((row) => row.publicId));
+
+  return {
+    routineIds: toSet(routines),
+    routineExerciseIds: toSet(routineExercises),
+    exerciseIds: toSet(exercises),
+  };
+}
+
+const isClientIdConflict = (error: unknown) =>
+  error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
+
+/**
+ * Saves a finished workout (spec 0014). A repeated `clientId` returns the
+ * workout saved first (`created: false`); routine links are kept only when
+ * they are the user's own; an unknown exercise throws `UnknownExerciseError`.
+ */
+export async function createWorkoutSession(
+  userPublicId: string,
+  input: CreateWorkoutSessionInput,
+): Promise<{ session: WorkoutSession; created: boolean }> {
+  logRepository('create:start', {
+    routineId: input.routineId,
+    exercisesCount: input.exercises.length,
+    hasClientId: Boolean(input.clientId),
   });
 
-  return mapped;
+  if (input.clientId) {
+    const existing = await findWorkoutSessionByClientId(userPublicId, input.clientId);
+    if (existing) {
+      logRepository('create:replay', { id: existing.id });
+      return { session: existing, created: false };
+    }
+  }
+
+  const owned = await resolveOwnedReferences(userPublicId, input);
+  const unknownExercise = findUnknownExercise(input, owned.exerciseIds);
+  if (unknownExercise) {
+    throw new UnknownExerciseError(unknownExercise);
+  }
+
+  const linked = dropForeignLinks(input, owned);
+
+  try {
+    const session = await prisma.workoutSession.create({
+      data: {
+        user: { connect: { publicId: userPublicId } },
+        clientId: linked.clientId,
+        routine: linked.routineId
+          ? { connect: { publicId: linked.routineId } }
+          : undefined,
+        status: 'completed',
+        startedAt: new Date(linked.startedAt),
+        completedAt: linked.completedAt ? new Date(linked.completedAt) : undefined,
+        notes: linked.notes,
+        exercises: {
+          create: linked.exercises.map(toWorkoutExerciseCreateInput),
+        },
+      },
+      include: workoutSessionInclude,
+    });
+
+    const mapped = mapWorkoutSession(userPublicId, session);
+    logRepository('create:success', {
+      id: mapped.id,
+      exercisesCount: mapped.exercises.length,
+    });
+
+    return { session: mapped, created: true };
+  } catch (error) {
+    // A concurrent save of the same workout won the race (EF-2).
+    if (input.clientId && isClientIdConflict(error)) {
+      const existing = await findWorkoutSessionByClientId(userPublicId, input.clientId);
+      if (existing) {
+        logRepository('create:replay', { id: existing.id, concurrent: true });
+        return { session: existing, created: false };
+      }
+    }
+
+    throw error;
+  }
 }

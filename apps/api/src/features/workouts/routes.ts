@@ -27,6 +27,7 @@ import {
   getExerciseLastPerformance,
   listWorkoutSessions,
 } from './repository.js';
+import { UnknownExerciseError } from './saveReferences.js';
 import { resolveUserPublicId } from '../../infrastructure/userContext.js';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -224,14 +225,21 @@ export async function registerWorkoutRoutes(app: FastifyInstance) {
     }
 
     try {
-      const session = await createWorkoutSession(
+      const { session, created } = await createWorkoutSession(
         await resolveUserPublicId(request),
         parsedInput,
       );
 
-      return reply.code(201).send(session);
+      // A repeated clientId answers with the workout saved first (spec 0014).
+      return reply.code(created ? 201 : 200).send(session);
     } catch (error) {
-      // Prisma throws P2025 when a connected exercise/routine publicId is unknown.
+      if (error instanceof UnknownExerciseError) {
+        return reply.code(400).send({
+          message: 'Workout references an unknown exercise',
+        });
+      }
+
+      // Safety net: a reference deleted between the check and the create.
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2025'

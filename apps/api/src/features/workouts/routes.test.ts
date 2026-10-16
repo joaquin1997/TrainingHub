@@ -13,6 +13,7 @@ vi.mock('../../infrastructure/userContext.js', () => ({
 }));
 
 import { createApp } from '../../app.js';
+import { UnknownExerciseError } from './saveReferences.js';
 import {
   createWorkoutSession,
   findWorkoutSessionById,
@@ -185,7 +186,10 @@ describe('POST /workouts', () => {
   });
 
   it('passes the clientId through to the repository', async () => {
-    vi.mocked(createWorkoutSession).mockResolvedValue({ id: 'w1' } as never);
+    vi.mocked(createWorkoutSession).mockResolvedValue({
+      session: { id: 'w1' },
+      created: true,
+    } as never);
 
     await app.inject({
       method: 'POST',
@@ -200,7 +204,10 @@ describe('POST /workouts', () => {
   });
 
   it('creates the session (201) and passes the parsed input', async () => {
-    vi.mocked(createWorkoutSession).mockResolvedValue({ id: 'w1' } as never);
+    vi.mocked(createWorkoutSession).mockResolvedValue({
+      session: { id: 'w1' },
+      created: true,
+    } as never);
 
     const response = await app.inject({
       method: 'POST',
@@ -220,6 +227,39 @@ describe('POST /workouts', () => {
         ],
       }),
     );
+  });
+
+  it('answers 200 with the stored workout when the clientId was already saved', async () => {
+    vi.mocked(createWorkoutSession).mockResolvedValue({
+      session: { id: 'w-first' },
+      created: false,
+    } as never);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/workouts',
+      payload: { ...validPayload, clientId: 'c1' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ id: 'w-first' });
+  });
+
+  it('returns 400 when an exercise does not exist', async () => {
+    vi.mocked(createWorkoutSession).mockRejectedValue(
+      new UnknownExerciseError('ex-gone'),
+    );
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/workouts',
+      payload: validPayload,
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      message: 'Workout references an unknown exercise',
+    });
   });
 
   it('returns 400 when an exercise/routine reference is unknown (Prisma P2025)', async () => {
