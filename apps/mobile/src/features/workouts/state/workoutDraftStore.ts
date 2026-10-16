@@ -89,10 +89,16 @@ function draftUnit(workoutDraft: WorkoutSessionDraft): WeightUnit {
 let latestCompletedWorkout: WorkoutSessionDraft | null = null;
 let activeWorkout: WorkoutSessionDraft | null = null;
 let draftIdCounter = 0;
+/**
+ * Time-based prefix for generated ids. The counter restarts with the app, and a
+ * draft restored after a restart (spec 0010) already holds ids from the
+ * previous run; the seed keeps new ids from colliding with them.
+ */
+const draftIdSeed = Date.now().toString(36);
 
 function nextDraftId(prefix: string) {
   draftIdCounter += 1;
-  return `${prefix}-gen-${draftIdCounter}`;
+  return `${prefix}-gen-${draftIdSeed}-${draftIdCounter}`;
 }
 
 function renumberSets(entries: WorkoutSetDraft[]): WorkoutSetDraft[] {

@@ -1,5 +1,5 @@
 import type { Routine } from '@workout/domain';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   addExerciseToWorkout,
@@ -509,5 +509,30 @@ describe('toWorkoutSessionSkeleton', () => {
     const set = toWorkoutSessionSkeleton(draftWith('lb')).exercises[0]?.sets[0];
 
     expect(set?.weightKg).toBeCloseTo(45.36, 1);
+  });
+});
+
+describe('generated draft ids (spec 0010)', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.resetModules();
+  });
+
+  async function firstGeneratedSetId(now: string) {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(now));
+    vi.resetModules();
+    const store = await import('./workoutDraftStore');
+    const draft = store.buildWorkoutSessionDraft(routine);
+    const exerciseId = draft.exercises[0]!.id;
+    const withSet = store.addSetToWorkoutExercise(draft, exerciseId);
+    return withSet.exercises[0]!.entries.at(-1)!.id;
+  }
+
+  it('do not repeat after an app restart', async () => {
+    const beforeRestart = await firstGeneratedSetId('2026-10-16T09:00:00.000Z');
+    const afterRestart = await firstGeneratedSetId('2026-10-16T09:20:00.000Z');
+
+    expect(beforeRestart).not.toBe(afterRestart);
   });
 });

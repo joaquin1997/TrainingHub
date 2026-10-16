@@ -1,6 +1,6 @@
 ---
 spec: 0010
-status: draft        # awaiting review
+status: in-progress  # self-approved 2026-10-16 under the owner's delegation
 created: 2026-09-24
 ---
 
@@ -12,8 +12,8 @@ Each task leaves the tree green (`pnpm -r typecheck` and `pnpm -r test`).
 
 | # | Task | Area | Verify | Commit message |
 |---|---|---|---|---|
-| 1 | Spec, plan and tasks; backlog entry | docs | links resolve | `docs(sdd): spec 0010 persist the active workout` |
-| 2 | Draft ids that cannot collide after a restart (time-seeded) | mobile | unit test | `fix(workouts): draft ids stay unique across restarts` |
+| 1 | [x] Spec, plan and tasks; backlog entry | docs | links resolve | `docs(sdd): spec 0010 persist the active workout` |
+| 2 | [x] Draft ids that cannot collide after a restart (time-seeded) | mobile | unit test | `fix(workouts): draft ids stay unique across restarts` |
 | 3 | Store subscription; `useActiveWorkout` via `useSyncExternalStore`; screen reads the draft from the store | mobile | unit test for subscribe/notify; manual smoke in app | `feat(workouts): observable active-workout store` |
 | 4 | Open an existing draft without the network; `routineId` optional (`resolveActiveWorkoutEntry`) | mobile | unit test | `feat(workouts): resume the active workout without a network round-trip` |
 | 5 | Stored envelope + parse; `tokenSubject`; `AuthContext` restores the real user id; owner kept in the store; `discardActiveWorkoutIfForeign` on sign-in (FR-8) | mobile | unit tests | `feat(workouts): versioned, owner-scoped active-workout envelope` |
@@ -32,6 +32,12 @@ rebuild.
 - 2026-09-24 — Amended after review: FR-8 (discard a foreign draft on sign-in),
   EF-5 (discard a refused workout), EF-6 (hydrate after sign-in); task 8 added;
   dependency on spec 0014 before task 7.
+- 2026-10-16 — Tasks self-approved under the owner's delegation. Spec 0014 is
+  implemented on the same branch; "deployed before task 7" becomes a deploy
+  order: the API with 0014's migration goes out before (or with) the app build
+  that carries task 7.
+- 2026-10-16 — Task 2: generated ids carry a per-launch time seed
+  (`-gen-<seed>-<n>`). Unit test re-imports the store at two clock times.
 
 ## Definition of done
 
