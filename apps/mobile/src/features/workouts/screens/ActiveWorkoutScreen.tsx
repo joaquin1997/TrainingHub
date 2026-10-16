@@ -22,7 +22,10 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { useActiveEnergyKcal } from '@/features/workouts/hooks/useActiveEnergyKcal';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
-import { resolveActiveWorkoutEntry } from '@/features/workouts/utils/activeWorkoutEntry';
+import {
+  resolveActiveWorkoutEntry,
+  resolveSwitchOutcome,
+} from '@/features/workouts/utils/activeWorkoutEntry';
 import { parseWorkoutAction } from '@/features/workouts/utils/workoutAction';
 import { exerciseBlockLabels } from '@/features/routines/utils/exerciseBlockLabels';
 import { Button } from '@/ui/Button';
@@ -101,13 +104,17 @@ function setTypeLabel(type: WorkoutSetType, t: TFunction) {
 
 export function ActiveWorkoutScreen() {
   const { t } = useTranslation();
-  const { routineId, action } = useLocalSearchParams<{
+  const { routineId, action, nextRoutineId } = useLocalSearchParams<{
     routineId?: string;
     action?: string;
+    /** With `action=switch`: the routine to start after this one (spec 0019). */
+    nextRoutineId?: string;
   }>();
   const linkAction = parseWorkoutAction(action);
-  // Set below, after the early returns; lets the link effect reach it.
-  const finishRef = useRef<(() => Promise<void>) | null>(null);
+  // Set below, after the early returns; lets the link effects reach them.
+  const finishRef = useRef<(() => Promise<boolean>) | null>(null);
+  const switchRef = useRef<((nextId: string) => Promise<void>) | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
   const workoutDraft = useActiveWorkout();
   // An active workout already on the device opens immediately, offline too.
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(() =>
@@ -194,6 +201,19 @@ export function ActiveWorkoutScreen() {
     // Runs once per link; the draft is read through the ref at confirm time.
   }, [linkAction, status, workoutDraft === null]);
 
+  // "Finish and start" from a routine, already confirmed there (spec 0019).
+  useEffect(() => {
+    if (linkAction !== 'switch' || status !== 'ready' || !workoutDraft) {
+      return;
+    }
+
+    router.setParams({ action: undefined, nextRoutineId: undefined });
+    if (nextRoutineId) {
+      void switchRef.current?.(nextRoutineId);
+    }
+    // Runs once per link, like the finish link above.
+  }, [linkAction, status, workoutDraft === null]);
+
   // Active energy from the person's health data, when known (spec 0017 AC-13).
   const activeKcal = useActiveEnergyKcal(workoutDraft?.clientId);
   const elapsedSeconds = useElapsedSeconds(workoutDraft?.startedAt, {
@@ -276,10 +296,14 @@ export function ActiveWorkoutScreen() {
     );
   }
 
-  const finishWorkout = async () => {
+  /**
+   * Saves the workout. Goes to the summary, or with `nextRoutineId` starts that
+   * routine instead (spec 0019). Resolves whether the save succeeded.
+   */
+  const finishWorkout = async (nextId?: string) => {
     if (countWorkoutSets(workoutDraft).done === 0) {
       setFinishError(t('workouts.markOneSet'));
-      return;
+      return false;
     }
 
     try {
@@ -292,22 +316,50 @@ export function ActiveWorkoutScreen() {
       const workoutSession = toWorkoutSessionSkeleton(workoutDraft);
 
       saveCompletedWorkout(workoutDraft);
-      clearActiveWorkout();
-
       void syncWorkoutCompletionToAppleHealth(workoutSession);
-      // Replace, so Back from the summary does not land on a finished workout.
-      router.replace('/workouts/summary');
+
+      if (nextId) {
+        startNextRoutine(nextId);
+      } else {
+        clearActiveWorkout();
+        // Replace, so Back from the summary does not land on a finished workout.
+        router.replace('/workouts/summary');
+      }
+      return true;
     } catch (error) {
       setFinishError(
         error instanceof Error ? error.message : t('workouts.saveError'),
       );
       setFinishRefused(isPermanentRejection(error));
+      return false;
     } finally {
       setIsFinishing(false);
     }
   };
 
-  finishRef.current = finishWorkout;
+  finishRef.current = () => finishWorkout();
+
+  /** Drops the finished workout and lets the entry effect fetch the next one. */
+  const startNextRoutine = (nextId: string) => {
+    // Loading first, so the empty state never flashes between the two.
+    setStatus('loading');
+    clearActiveWorkout();
+    router.setParams({ routineId: nextId });
+  };
+
+  // FR-4: saved with at least one set done, discarded otherwise. A failed save
+  // keeps this workout on screen with the error, as on finish (EF-1); the
+  // person arrived at the top, so the error is scrolled into view.
+  switchRef.current = async (nextId: string) => {
+    if (resolveSwitchOutcome(workoutDraft) === 'discard') {
+      startNextRoutine(nextId);
+      return;
+    }
+
+    if (!(await finishWorkout(nextId))) {
+      requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+    }
+  };
 
   const handleSetChange = (
     workoutExerciseId: string,
@@ -624,7 +676,11 @@ export function ActiveWorkoutScreen() {
   };
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
+    <ScrollView
+      ref={scrollRef}
+      style={styles.screen}
+      contentContainerStyle={styles.container}
+    >
       <View style={styles.headerCard}>
         <View style={styles.liveRow}>
           <View style={[styles.liveDot, isPaused ? styles.liveDotPaused : null]} />

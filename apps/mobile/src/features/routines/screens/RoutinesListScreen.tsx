@@ -16,6 +16,7 @@ import { buildRoutineCopyInput } from '@/features/routines/utils/duplicateRoutin
 import { groupRoutinesByFolder } from '@/features/routines/utils/groupRoutinesByFolder';
 import { getRoutineExerciseNames } from '@/features/routines/utils/routineSummary';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
+import { useRoutineStart } from '@/features/workouts/hooks/useRoutineStart';
 import { ActionSheet } from '@/ui/ActionSheet';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
@@ -116,17 +117,13 @@ export function RoutinesListScreen() {
   const menuRoutineLocked =
     menuRoutine !== null && activeWorkout?.routineId === menuRoutine.id;
 
-  const startTarget = (routine: Routine) =>
-    activeWorkout && activeWorkout.routineId !== routine.id
-      ? activeWorkout.routineId
-      : routine.id;
+  // Another routine's Start asks before replacing the workout (spec 0019).
+  const { startRoutine, sheet: switchSheet } = useRoutineStart();
 
-  const startLabel = (routine: Routine) => {
-    if (activeWorkout?.routineId === routine.id) {
-      return t('routines.continueWorkout');
-    }
-    return activeWorkout ? t('routines.resumeWorkout') : t('routines.startWorkout');
-  };
+  const startLabel = (routine: Routine) =>
+    activeWorkout?.routineId === routine.id
+      ? t('routines.continueWorkout')
+      : t('routines.startWorkout');
 
   return (
     <>
@@ -242,12 +239,7 @@ export function RoutinesListScreen() {
                       label={startLabel(routine)}
                       icon="play"
                       variant="secondary"
-                      onPress={() =>
-                        router.push({
-                          pathname: '/workouts/active',
-                          params: { routineId: startTarget(routine) },
-                        })
-                      }
+                      onPress={() => startRoutine(routine)}
                       fullWidth
                     />
                   </Pressable>
@@ -258,6 +250,7 @@ export function RoutinesListScreen() {
         </View>
       ) : null}
     </ScrollView>
+    <ActionSheet {...switchSheet} />
     <ActionSheet
       visible={menuRoutine !== null}
       title={menuRoutine?.name}

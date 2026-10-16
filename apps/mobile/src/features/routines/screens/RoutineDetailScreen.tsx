@@ -10,9 +10,11 @@ import { exerciseBlockLabels } from '@/features/routines/utils/exerciseBlockLabe
 import { buildRoutineCopyInput } from '@/features/routines/utils/duplicateRoutine';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
+import { useRoutineStart } from '@/features/workouts/hooks/useRoutineStart';
 import { confirmAction } from '@/lib/confirmAction';
 import { formatDuration } from '@/lib/format';
 import { formatWeightValue } from '@/lib/weight';
+import { ActionSheet } from '@/ui/ActionSheet';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StateView } from '@/ui/StateView';
@@ -44,6 +46,8 @@ export function RoutineDetailScreen() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
   const activeWorkout = useActiveWorkout();
+  // Starting while another workout is in progress asks first (spec 0019).
+  const { startRoutine, sheet: switchSheet } = useRoutineStart();
   const { settings } = useSettings();
 
   const loadRoutine = useCallback(
@@ -255,6 +259,7 @@ export function RoutineDetailScreen() {
   };
 
   return (
+    <>
     <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
       <View style={styles.header}>
         {routine.folder ? <Chip icon="folder-outline" label={routine.folder} size="sm" /> : null}
@@ -312,26 +317,10 @@ export function RoutineDetailScreen() {
       )}
       <View style={styles.actions}>
         <Button
-          label={
-            isLocked
-              ? t('routines.continueWorkout')
-              : activeWorkout
-                ? t('routines.resumeWorkout')
-                : t('routines.startWorkout')
-          }
+          label={isLocked ? t('routines.continueWorkout') : t('routines.startWorkout')}
           icon="play"
           fullWidth
-          onPress={() =>
-            router.push({
-              pathname: '/workouts/active',
-              params: {
-                routineId:
-                  activeWorkout && activeWorkout.routineId !== routine.id
-                    ? activeWorkout.routineId
-                    : routine.id,
-              },
-            })
-          }
+          onPress={() => startRoutine(routine)}
         />
         <View style={styles.actionRow}>
           {/* Editing and deleting are locked while this routine's workout is in progress (spec 0014). */}
@@ -363,6 +352,8 @@ export function RoutineDetailScreen() {
         />
       </View>
     </ScrollView>
+    <ActionSheet {...switchSheet} />
+    </>
   );
 }
 
