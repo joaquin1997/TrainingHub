@@ -421,3 +421,87 @@ describe('performed work only (spec 0013)', () => {
     expect(detail?.isRecordSession).toBe(false);
   });
 });
+
+describe('time and distance (spec 0021)', () => {
+  const plank = (date: string, seconds: number[]): ProgressSessionInput => ({
+    date,
+    exercises: [
+      {
+        exerciseId: 'plank',
+        exerciseName: 'Plank',
+        trackingType: 'duration',
+        sets: seconds.map((durationSeconds) => ({ durationSeconds })),
+      },
+    ],
+  });
+
+  it('keeps the longest time per session and overall, with no volume (FR-5)', () => {
+    const detail = buildExerciseProgressDetail(
+      [plank('2026-05-01T09:00:00.000Z', [45, 60]), plank('2026-05-08T09:00:00.000Z', [50])],
+      'plank',
+    );
+
+    expect(detail?.points.map((point) => point.bestDurationSeconds)).toEqual([60, 50]);
+    expect(detail?.points.map((point) => point.totalVolume)).toEqual([0, 0]);
+    expect(detail).toMatchObject({
+      trackingType: 'duration',
+      latestDurationSeconds: 50,
+      personalBestDurationSeconds: 60,
+      isRecordSession: false,
+    });
+  });
+
+  it('a longer time is the record of a timed exercise (FR-6)', () => {
+    const [summary] = buildExerciseProgressSummaries([
+      plank('2026-05-01T09:00:00.000Z', [45]),
+      plank('2026-05-08T09:00:00.000Z', [70]),
+    ]);
+
+    expect(summary?.isRecordSession).toBe(true);
+  });
+
+  it('weight & time records the longest time, not the heaviest weight', () => {
+    const carry = (date: string, weightKg: number, durationSeconds: number) => ({
+      date,
+      exercises: [
+        {
+          exerciseId: 'carry',
+          exerciseName: 'Carry',
+          trackingType: 'weight_duration' as const,
+          sets: [{ weightKg, durationSeconds }],
+        },
+      ],
+    });
+    const [summary] = buildExerciseProgressSummaries([
+      carry('2026-05-01T09:00:00.000Z', 24, 60),
+      carry('2026-05-08T09:00:00.000Z', 32, 40),
+    ]);
+
+    expect(summary?.isRecordSession).toBe(false);
+    expect(buildWeeklyVolume([carry('2026-05-08T09:00:00.000Z', 32, 40)])[0]?.totalVolume).toBe(0);
+  });
+
+  it('a longer distance is the record of a distance exercise', () => {
+    const row = (date: string, distanceMeters: number) => ({
+      date,
+      exercises: [
+        {
+          exerciseId: 'row',
+          exerciseName: 'Rowing Machine',
+          trackingType: 'distance_duration' as const,
+          sets: [{ distanceMeters, durationSeconds: 105 }],
+        },
+      ],
+    });
+    const [summary] = buildExerciseProgressSummaries([
+      row('2026-05-01T09:00:00.000Z', 500),
+      row('2026-05-08T09:00:00.000Z', 1000),
+    ]);
+
+    expect(summary).toMatchObject({
+      isRecordSession: true,
+      latestDistanceMeters: 1000,
+      personalBestDistanceMeters: 1000,
+    });
+  });
+});

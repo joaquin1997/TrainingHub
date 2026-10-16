@@ -1,4 +1,5 @@
 import type {
+  ExerciseTrackingType,
   ExerciseProgressDetail,
   ExerciseProgressPoint,
   ExerciseProgressSummary,
@@ -15,6 +16,8 @@ import {
 type ProgressSetInput = {
   reps?: number | null;
   weightKg?: number | null;
+  durationSeconds?: number | null;
+  distanceMeters?: number | null;
   completedAt?: Date | string | null;
   type?: string | null;
   isWarmup?: boolean | null;
@@ -30,6 +33,8 @@ export type ProgressSessionInput = {
     exerciseId: string;
     exerciseName: string;
     category?: string | null;
+    /** The exercise's current tracking type; absent = weight & reps. */
+    trackingType?: ExerciseTrackingType;
     sets: ProgressSetInput[];
   }>;
 };
@@ -62,8 +67,28 @@ export function selectPerformedWork(
 type ProgressAccumulator = {
   exerciseId: string;
   exerciseName: string;
+  trackingType?: ExerciseTrackingType;
   points: ExerciseProgressPoint[];
 };
+
+/**
+ * The per-session best that makes a record for a tracking type (spec 0021
+ * FR-6): longest time for timed exercises, longest distance for distance
+ * ones, heaviest weight otherwise.
+ */
+function recordMetric(
+  trackingType: ExerciseTrackingType | undefined,
+): 'bestWeightKg' | 'bestDurationSeconds' | 'bestDistanceMeters' {
+  switch (trackingType) {
+    case 'duration':
+    case 'weight_duration':
+      return 'bestDurationSeconds';
+    case 'distance_duration':
+      return 'bestDistanceMeters';
+    default:
+      return 'bestWeightKg';
+  }
+}
 
 function maxDefined(values: Array<number | null | undefined>): number | undefined {
   const defined = values.filter((value): value is number => typeof value === 'number');
@@ -102,6 +127,7 @@ function buildAccumulators(
       const workingSets = exercise.sets.filter((set) => !isWarmupSet(set));
 
       accumulator.exerciseName = exercise.exerciseName;
+      accumulator.trackingType = exercise.trackingType;
       accumulator.points.push({
         date: session.date,
         bestWeightKg: maxDefined(workingSets.map((set) => set.weightKg)),
@@ -113,6 +139,8 @@ function buildAccumulators(
         estimatedOneRepMax: maxDefined(
           workingSets.map((set) => estimateOneRepMax(set.reps, set.weightKg)),
         ),
+        bestDurationSeconds: maxDefined(workingSets.map((set) => set.durationSeconds)),
+        bestDistanceMeters: maxDefined(workingSets.map((set) => set.distanceMeters)),
       });
 
       byExercise.set(exercise.exerciseId, accumulator);
@@ -125,12 +153,11 @@ function buildAccumulators(
 function toSummary(accumulator: ProgressAccumulator): ExerciseProgressSummary {
   const { points } = accumulator;
   const lastPoint = points[points.length - 1];
-  const priorBestWeight = maxDefined(
-    points.slice(0, -1).map((point) => point.bestWeightKg),
-  );
+  const metric = recordMetric(accumulator.trackingType);
+  const lastBest = lastPoint?.[metric];
+  const priorBest = maxDefined(points.slice(0, -1).map((point) => point[metric]));
   const isRecordSession =
-    lastPoint?.bestWeightKg !== undefined &&
-    (priorBestWeight === undefined || lastPoint.bestWeightKg > priorBestWeight);
+    lastBest !== undefined && (priorBest === undefined || lastBest > priorBest);
 
   return {
     exerciseId: accumulator.exerciseId,
@@ -143,6 +170,15 @@ function toSummary(accumulator: ProgressAccumulator): ExerciseProgressSummary {
     personalBestReps: maxDefined(points.map((point) => point.bestReps)),
     bestEstimatedOneRepMax: maxDefined(
       points.map((point) => point.estimatedOneRepMax),
+    ),
+    trackingType: accumulator.trackingType,
+    latestDurationSeconds: lastPoint?.bestDurationSeconds,
+    latestDistanceMeters: lastPoint?.bestDistanceMeters,
+    personalBestDurationSeconds: maxDefined(
+      points.map((point) => point.bestDurationSeconds),
+    ),
+    personalBestDistanceMeters: maxDefined(
+      points.map((point) => point.bestDistanceMeters),
     ),
     isRecordSession,
   };
