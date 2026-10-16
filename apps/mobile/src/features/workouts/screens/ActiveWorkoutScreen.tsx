@@ -15,6 +15,7 @@ import {
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { ExercisePickerModal } from '@/features/exercises/components/ExercisePickerModal';
+import { useExerciseReplacement } from '@/features/workouts/hooks/useExerciseReplacement';
 import { RestBar } from '@/features/workouts/components/RestBar';
 import { RestEditorSheet } from '@/features/workouts/components/RestEditorSheet';
 import { nextSetToDo } from '@/features/workouts/restTimer/nextSetToDo';
@@ -139,6 +140,7 @@ export function ActiveWorkoutScreen() {
   // The server refused the workout itself; retrying cannot help (EF-5).
   const [finishRefused, setFinishRefused] = useState(false);
   const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const replacement = useExerciseReplacement(workoutDraft);
   // The exercise whose rest is being changed (spec 0018 FR-2).
   const [restEditorFor, setRestEditorFor] = useState<string | null>(null);
   const [lastByExercise, setLastByExercise] = useState<
@@ -735,6 +737,15 @@ export function ActiveWorkoutScreen() {
               onPress={() => handleAddSet(exercise.id)}
               style={styles.compactButton}
             />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('workouts.replaceExercise')}
+              onPress={() => replacement.start(exercise.id)}
+              hitSlop={6}
+              style={styles.iconButton}
+            >
+              <Ionicons name="swap-horizontal" size={18} color={colors.textMuted} />
+            </Pressable>
             <Button
               label={t('workouts.removeExercise')}
               variant="ghost"
@@ -843,9 +854,11 @@ export function ActiveWorkoutScreen() {
             fullWidth
           />
           <ExercisePickerModal
-            visible={isPickerVisible}
-            onClose={() => setIsPickerVisible(false)}
-            onSelect={handleAddExercise}
+            {...(replacement.pickerProps ?? {
+              visible: isPickerVisible,
+              onClose: () => setIsPickerVisible(false),
+              onSelect: handleAddExercise,
+            })}
           />
           <TextInput
             value={workoutDraft.notes ?? ''}
@@ -1212,6 +1225,8 @@ const styles = StyleSheet.create({
   },
   cardActions: {
     flexDirection: 'row',
+    // Three actions may not fit an indented superset card (spec 0020).
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
     alignItems: 'center',
   },

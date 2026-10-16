@@ -17,6 +17,7 @@ import {
   buildExerciseFacets,
   filterExercises,
 } from '@/features/exercises/utils/exerciseFilters';
+import { CustomExerciseModal } from '@/features/exercises/components/CustomExerciseModal';
 import { ExerciseThumb } from '@/features/exercises/components/ExerciseThumb';
 import { useRefresh } from '@/lib/useRefresh';
 import { Button } from '@/ui/Button';
@@ -40,6 +41,7 @@ export function ExercisesListScreen() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
+  const [isCreating, setIsCreating] = useState(false);
 
   const loadExercises = useCallback(
     async (shouldUpdate: () => boolean = () => true) => {
@@ -138,152 +140,180 @@ export function ExercisesListScreen() {
     });
   };
 
+  // The new exercise is put in view: filters cleared, searched by name (0020).
+  const handleCreated = (created: Exercise) => {
+    setExercises((current) =>
+      [...current.filter((exercise) => exercise.id !== created.id), created].sort(
+        (left, right) => left.name.localeCompare(right.name),
+      ),
+    );
+    setFavoritesOnly(false);
+    setCategory(undefined);
+    setEquipment(undefined);
+    setQuery(created.name);
+  };
+
   const visible = filtered.slice(0, visibleCount);
   const hiddenCount = filtered.length - visible.length;
   const { isRefreshing, onRefresh } = useRefresh(loadExercises);
   const showLoading = isLoading && exercises.length === 0;
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
-      }
-      keyboardShouldPersistTaps="handled"
-    >
-      <ScreenTitle title={t('nav.exercises')} />
-      <View style={styles.search}>
-        <Ionicons name="search" size={18} color={colors.textMuted} />
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder={t('exercises.searchPlaceholder')}
-          placeholderTextColor={colors.textSubtle}
-          style={styles.searchInput}
-          autoCorrect={false}
-        />
-      </View>
+    <>
       <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.chipRow}
+        style={styles.screen}
+        contentContainerStyle={styles.container}
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
+        }
+        keyboardShouldPersistTaps="handled"
       >
-        <Chip
-          icon={favoritesOnly ? 'star' : 'star-outline'}
-          label={t('exercises.favorites')}
-          selected={favoritesOnly}
-          onPress={() => setFavoritesOnly((value) => !value)}
+        <ScreenTitle
+          title={t('nav.exercises')}
+          action={{
+            label: t('exercises.newExercise'),
+            icon: 'add',
+            onPress: () => setIsCreating(true),
+          }}
         />
-        {facets.categories.map((value) => (
-          <Chip
-            key={value}
-            label={value}
-            selected={category === value}
-            onPress={() => toggle(category, value, setCategory)}
+        <View style={styles.search}>
+          <Ionicons name="search" size={18} color={colors.textMuted} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t('exercises.searchPlaceholder')}
+            placeholderTextColor={colors.textSubtle}
+            style={styles.searchInput}
+            autoCorrect={false}
           />
-        ))}
-      </ScrollView>
-      {facets.equipment.length > 0 ? (
+        </View>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.chipRow}
         >
-          <View style={styles.facetLabel}>
-            <Ionicons name="options-outline" size={14} color={colors.textMuted} />
-            <Text style={styles.sectionLabel}>{t('exercises.equipmentLabel')}</Text>
-          </View>
-          {facets.equipment.map((value) => (
+          <Chip
+            icon={favoritesOnly ? 'star' : 'star-outline'}
+            label={t('exercises.favorites')}
+            selected={favoritesOnly}
+            onPress={() => setFavoritesOnly((value) => !value)}
+          />
+          {facets.categories.map((value) => (
             <Chip
               key={value}
               label={value}
-              size="sm"
-              selected={equipment === value}
-              onPress={() => toggle(equipment, value, setEquipment)}
+              selected={category === value}
+              onPress={() => toggle(category, value, setCategory)}
             />
           ))}
         </ScrollView>
-      ) : null}
-      {showLoading ? <StateView kind="loading" message={t('exercises.loading')} /> : null}
-      {errorMessage ? (
-        <StateView
-          kind="error"
-          message={errorMessage}
-          actionLabel={t('common.retry')}
-          onAction={() => void onRefresh()}
-        />
-      ) : null}
-      {!isLoading && !errorMessage && filtered.length > 0 ? (
-        <Text style={styles.sectionLabel}>
-          {t('exercises.count', { count: filtered.length })}
-          {hiddenCount > 0 ? t('exercises.showing', { shown: visible.length }) : ''}
-        </Text>
-      ) : null}
-      {!isLoading && !errorMessage && filtered.length === 0 ? (
-        <StateView
-          kind="empty"
-          icon={favoritesOnly ? 'star-outline' : 'search-outline'}
-          title={favoritesOnly ? t('exercises.emptyFavoritesTitle') : t('exercises.emptyMatchesTitle')}
-          message={
-            favoritesOnly
-              ? t('exercises.emptyFavoritesSubtitle')
-              : t('exercises.emptyMatchesSubtitle')
-          }
-        />
-      ) : null}
-      <View style={styles.list}>
-        {visible.map((exercise) => {
-          const isFavorite = favorites.has(exercise.id);
-          const details = [
-            exercise.primaryMuscleGroups?.join(', '),
-            exercise.equipment?.join(', '),
-          ].filter(Boolean);
-
-          return (
-            <View key={exercise.id} style={styles.row}>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => router.push(`/exercises/${exercise.id}`)}
-                style={({ pressed }) => [styles.rowMain, pressed ? styles.pressed : null]}
-              >
-                <ExerciseThumb imageUrl={exercise.imageUrl} />
-                <View style={styles.rowText}>
-                  <Text style={styles.rowTitle}>{exercise.name}</Text>
-                  {details.length > 0 ? (
-                    <Text style={styles.meta} numberOfLines={1}>
-                      {details.join(' · ')}
-                    </Text>
-                  ) : null}
-                </View>
-              </Pressable>
-              <Pressable
-                onPress={() => toggleFavorite(exercise.id)}
-                hitSlop={8}
-                accessibilityRole="button"
-                accessibilityState={{ selected: isFavorite }}
-                accessibilityLabel={t('exercises.favorites')}
-                style={styles.starButton}
-              >
-                <Ionicons
-                  name={isFavorite ? 'star' : 'star-outline'}
-                  size={22}
-                  color={isFavorite ? colors.primary : colors.textSubtle}
-                />
-              </Pressable>
+        {facets.equipment.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chipRow}
+          >
+            <View style={styles.facetLabel}>
+              <Ionicons name="options-outline" size={14} color={colors.textMuted} />
+              <Text style={styles.sectionLabel}>{t('exercises.equipmentLabel')}</Text>
             </View>
-          );
-        })}
-      </View>
-      {hiddenCount > 0 ? (
-        <Button
-          label={t('exercises.loadMore', { count: hiddenCount })}
-          variant="secondary"
-          style={styles.centered}
-          onPress={() => setVisibleCount((count) => count + PAGE_SIZE)}
-        />
-      ) : null}
-    </ScrollView>
+            {facets.equipment.map((value) => (
+              <Chip
+                key={value}
+                label={value}
+                size="sm"
+                selected={equipment === value}
+                onPress={() => toggle(equipment, value, setEquipment)}
+              />
+            ))}
+          </ScrollView>
+        ) : null}
+        {showLoading ? <StateView kind="loading" message={t('exercises.loading')} /> : null}
+        {errorMessage ? (
+          <StateView
+            kind="error"
+            message={errorMessage}
+            actionLabel={t('common.retry')}
+            onAction={() => void onRefresh()}
+          />
+        ) : null}
+        {!isLoading && !errorMessage && filtered.length > 0 ? (
+          <Text style={styles.sectionLabel}>
+            {t('exercises.count', { count: filtered.length })}
+            {hiddenCount > 0 ? t('exercises.showing', { shown: visible.length }) : ''}
+          </Text>
+        ) : null}
+        {!isLoading && !errorMessage && filtered.length === 0 ? (
+          <StateView
+            kind="empty"
+            icon={favoritesOnly ? 'star-outline' : 'search-outline'}
+            title={favoritesOnly ? t('exercises.emptyFavoritesTitle') : t('exercises.emptyMatchesTitle')}
+            message={
+              favoritesOnly
+                ? t('exercises.emptyFavoritesSubtitle')
+                : t('exercises.emptyMatchesSubtitle')
+            }
+          />
+        ) : null}
+        <View style={styles.list}>
+          {visible.map((exercise) => {
+            const isFavorite = favorites.has(exercise.id);
+            const details = [
+              exercise.primaryMuscleGroups?.join(', '),
+              exercise.equipment?.join(', '),
+            ].filter(Boolean);
+
+            return (
+              <View key={exercise.id} style={styles.row}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push(`/exercises/${exercise.id}`)}
+                  style={({ pressed }) => [styles.rowMain, pressed ? styles.pressed : null]}
+                >
+                  <ExerciseThumb imageUrl={exercise.imageUrl} />
+                  <View style={styles.rowText}>
+                    <Text style={styles.rowTitle}>{exercise.name}</Text>
+                    {details.length > 0 ? (
+                      <Text style={styles.meta} numberOfLines={1}>
+                        {details.join(' · ')}
+                      </Text>
+                    ) : null}
+                  </View>
+                </Pressable>
+                <Pressable
+                  onPress={() => toggleFavorite(exercise.id)}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isFavorite }}
+                  accessibilityLabel={t('exercises.favorites')}
+                  style={styles.starButton}
+                >
+                  <Ionicons
+                    name={isFavorite ? 'star' : 'star-outline'}
+                    size={22}
+                    color={isFavorite ? colors.primary : colors.textSubtle}
+                  />
+                </Pressable>
+              </View>
+            );
+          })}
+        </View>
+        {hiddenCount > 0 ? (
+          <Button
+            label={t('exercises.loadMore', { count: hiddenCount })}
+            variant="secondary"
+            style={styles.centered}
+            onPress={() => setVisibleCount((count) => count + PAGE_SIZE)}
+          />
+        ) : null}
+      </ScrollView>
+      <CustomExerciseModal
+        visible={isCreating}
+        initialName={query.trim()}
+        onClose={() => setIsCreating(false)}
+        onCreated={handleCreated}
+      />
+    </>
   );
 }
 
