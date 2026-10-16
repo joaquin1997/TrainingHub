@@ -87,10 +87,12 @@ export const es: TranslationCatalog = {
     editLocked: 'La edición está bloqueada mientras este entrenamiento está en curso',
     duplicating: 'Duplicando…',
     deleting: 'Eliminando…',
-    repsRange: '{{min}}-{{max}} reps',
+    repsRange: '{{min}}–{{max}} reps',
     repsMin: '{{min}}+ reps',
     repsUpTo: 'hasta {{max}} reps',
     repsNone: '- reps',
+    repsExact: '{{reps}} reps',
+    colTarget: 'OBJETIVO',
   },
   routineForm: {
     editIntro:

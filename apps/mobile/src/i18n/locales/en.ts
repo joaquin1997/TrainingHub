@@ -85,10 +85,12 @@ export const en = {
     editLocked: 'Editing is locked while this workout is in progress',
     duplicating: 'Duplicating…',
     deleting: 'Deleting…',
-    repsRange: '{{min}}-{{max}} reps',
+    repsRange: '{{min}}–{{max}} reps',
     repsMin: '{{min}}+ reps',
     repsUpTo: 'up to {{max}} reps',
     repsNone: '- reps',
+    repsExact: '{{reps}} reps',
+    colTarget: 'TARGET',
   },
   routineForm: {
     editIntro:
