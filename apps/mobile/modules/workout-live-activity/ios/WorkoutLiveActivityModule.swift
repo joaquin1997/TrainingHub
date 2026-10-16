@@ -8,6 +8,7 @@ struct StartActivityPayload: Record {
   @Field var pausedAtMs: Double? = nil
   @Field var pausedSeconds: Double = 0
   @Field var activeKcal: Int? = nil
+  @Field var restEndsAtMs: Double? = nil
   @Field var pausedLabel: String = ""
   @Field var pauseLabel: String = ""
   @Field var resumeLabel: String = ""
@@ -67,6 +68,13 @@ public class WorkoutLiveActivityModule: Module {
       }
     }
 
+    AsyncFunction("setRest") { (workoutId: String, restEndsAtMs: Double?) async in
+      guard #available(iOS 16.2, *) else { return }
+      await ActivityStore.update(workoutId: workoutId) { state in
+        state.restEndsAt = restEndsAtMs.map { Date(timeIntervalSince1970: $0 / 1000) }
+      }
+    }
+
     AsyncFunction("end") { () async in
       guard #available(iOS 16.2, *) else { return }
       await ActivityStore.endAll()
@@ -94,12 +102,13 @@ private enum ActivityStore {
     let state = WorkoutActivityAttributes.ContentState(
       pausedAt: payload.pausedAtMs.map { Date(timeIntervalSince1970: $0 / 1000) },
       pausedSeconds: payload.pausedSeconds,
-      activeKcal: payload.activeKcal
+      activeKcal: payload.activeKcal,
+      restEndsAt: payload.restEndsAtMs.map { Date(timeIntervalSince1970: $0 / 1000) }
     )
     // pushType nil: a free developer team has no push entitlement.
     _ = try Activity.request(
       attributes: attributes,
-      content: ActivityContent(state: state, staleDate: nil),
+      content: ActivityContent(state: state, staleDate: state.staleDate),
       pushType: nil
     )
   }
@@ -112,7 +121,7 @@ private enum ActivityStore {
     where activity.attributes.workoutId == workoutId {
       var state = activity.content.state
       change(&state)
-      await activity.update(ActivityContent(state: state, staleDate: nil))
+      await activity.update(ActivityContent(state: state, staleDate: state.staleDate))
     }
   }
 

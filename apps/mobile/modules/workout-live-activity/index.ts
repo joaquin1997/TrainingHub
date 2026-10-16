@@ -7,6 +7,8 @@ export type StartActivityPayload = {
   pausedAtMs: number | null;
   pausedSeconds: number;
   activeKcal: number | null;
+  /** End of the running rest (spec 0018); ignored by builds before it. */
+  restEndsAtMs?: number | null;
   pausedLabel: string;
   pauseLabel: string;
   resumeLabel: string;
@@ -36,6 +38,8 @@ type WorkoutLiveActivityNative = {
     pausedSeconds: number,
   ): Promise<void>;
   setKcal(workoutId: string, kcal: number | null): Promise<void>;
+  /** The running rest's end, or null (spec 0018). Absent in builds before it. */
+  setRest?(workoutId: string, restEndsAtMs: number | null): Promise<void>;
   end(): Promise<void>;
   getState(): Promise<ActivityState | null>;
   addListener(

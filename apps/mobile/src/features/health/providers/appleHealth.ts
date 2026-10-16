@@ -90,6 +90,7 @@ export const appleHealthLiveWorkoutBridge: LiveWorkoutBridge = {
       pausedAtMs: toMs(payload.pausedAt),
       pausedSeconds: payload.pausedSeconds ?? 0,
       activeKcal: toKcal(payload.activeEnergyKcal),
+      restEndsAtMs: toMs(payload.restEndsAt),
       pausedLabel: liveActivityLabels.paused,
       pauseLabel: liveActivityLabels.pause,
       resumeLabel: liveActivityLabels.resume,
@@ -108,6 +109,8 @@ export const appleHealthLiveWorkoutBridge: LiveWorkoutBridge = {
       payload.pausedSeconds ?? 0,
     );
     await module.setKcal(payload.workoutSessionId, toKcal(payload.activeEnergyKcal));
+    // Optional: a build from before spec 0018 has no rest on the activity.
+    await module.setRest?.(payload.workoutSessionId, toMs(payload.restEndsAt));
   },
   async finishLiveWorkout(_payload: HealthWorkoutPayload) {
     await WorkoutLiveActivity?.end();

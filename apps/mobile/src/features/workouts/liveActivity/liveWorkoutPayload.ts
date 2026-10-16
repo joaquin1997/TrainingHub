@@ -19,7 +19,16 @@ export function toLiveWorkoutPayload(
     pausedAt: draft.pausedAt,
     pausedSeconds: draft.pausedSeconds ?? 0,
     activeEnergyKcal,
+    restEndsAt: draft.rest?.endsAt,
   };
+}
+
+/** Whether the surface already shows the draft's running rest (spec 0018). */
+export function sameRest(
+  draft: Pick<WorkoutSessionDraft, 'rest'>,
+  shownRestEndsAt: string | undefined,
+) {
+  return draft.rest?.endsAt === shownRestEndsAt;
 }
 
 /** Seconds of drift tolerated between the draft and the surface's pause total. */

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { WorkoutSessionDraft } from '@/features/workouts/state/workoutDraftStore';
 
-import { reconcile, toLiveWorkoutPayload } from './liveWorkoutPayload';
+import { reconcile, sameRest, toLiveWorkoutPayload } from './liveWorkoutPayload';
 
 const draft = {
   id: 'workout-session-r1',
@@ -31,6 +31,23 @@ describe('toLiveWorkoutPayload', () => {
       pausedSeconds: 60,
       activeEnergyKcal: 123,
     });
+  });
+});
+
+describe('rest on the surface (spec 0018)', () => {
+  const rest = { endsAt: '2026-10-16T09:31:30.000Z', totalSeconds: 90, workoutExerciseId: 'we1' };
+
+  it('carries the end of the running rest, absent when none runs', () => {
+    expect(toLiveWorkoutPayload({ ...draft, rest }, null).restEndsAt).toBe(rest.endsAt);
+    expect(toLiveWorkoutPayload(draft, null).restEndsAt).toBeUndefined();
+  });
+
+  it('tells whether the surface shows the same rest', () => {
+    expect(sameRest({ rest }, rest.endsAt)).toBe(true);
+    expect(sameRest({}, undefined)).toBe(true);
+    expect(sameRest({ rest }, undefined)).toBe(false);
+    expect(sameRest({}, rest.endsAt)).toBe(false);
+    expect(sameRest({ rest: { ...rest, endsAt: '2026-10-16T09:31:45.000Z' } }, rest.endsAt)).toBe(false);
   });
 });
 
