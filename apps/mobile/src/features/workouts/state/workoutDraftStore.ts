@@ -536,10 +536,27 @@ export function clearLatestCompletedWorkout() {
 }
 
 /**
- * Active (in-progress) workout. Kept in memory so a started routine can be
- * resumed when navigating away and back without losing logged sets. Only one
- * workout can be active at a time.
+ * Active (in-progress) workout. The module variable is the single source of
+ * truth; screens and the persister observe it through
+ * `subscribeActiveWorkout`. Only one workout can be active at a time.
  */
+type ActiveWorkoutListener = () => void;
+const activeWorkoutListeners = new Set<ActiveWorkoutListener>();
+
+function notifyActiveWorkout() {
+  for (const listener of activeWorkoutListeners) {
+    listener();
+  }
+}
+
+/** Calls `listener` after every change to the active workout; returns the unsubscribe. */
+export function subscribeActiveWorkout(listener: ActiveWorkoutListener) {
+  activeWorkoutListeners.add(listener);
+  return () => {
+    activeWorkoutListeners.delete(listener);
+  };
+}
+
 export function startActiveWorkout(
   routine: Routine,
   unit: WeightUnit = 'kg',
@@ -549,6 +566,7 @@ export function startActiveWorkout(
   }
 
   activeWorkout = buildWorkoutSessionDraft(routine, unit);
+  notifyActiveWorkout();
   return activeWorkout;
 }
 
@@ -558,10 +576,16 @@ export function getActiveWorkout() {
 
 export function setActiveWorkout(workoutDraft: WorkoutSessionDraft) {
   activeWorkout = workoutDraft;
+  notifyActiveWorkout();
 }
 
 export function clearActiveWorkout() {
+  if (activeWorkout === null) {
+    return;
+  }
+
   activeWorkout = null;
+  notifyActiveWorkout();
 }
 
 export function hasActiveWorkout() {

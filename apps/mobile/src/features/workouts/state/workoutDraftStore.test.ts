@@ -18,6 +18,7 @@ import {
   isActiveWorkoutForRoutine,
   setActiveWorkout,
   startActiveWorkout,
+  subscribeActiveWorkout,
   toCreateWorkoutSessionInput,
   toWorkoutSessionSkeleton,
   toggleWorkoutSetDone,
@@ -534,5 +535,41 @@ describe('generated draft ids (spec 0010)', () => {
     const afterRestart = await firstGeneratedSetId('2026-10-16T09:20:00.000Z');
 
     expect(beforeRestart).not.toBe(afterRestart);
+  });
+});
+
+describe('subscribeActiveWorkout (spec 0010)', () => {
+  beforeEach(() => {
+    clearActiveWorkout();
+  });
+
+  it('notifies on start, set and clear, and stops after unsubscribe', () => {
+    const calls: Array<string | null> = [];
+    const unsubscribe = subscribeActiveWorkout(() => {
+      calls.push(getActiveWorkout()?.routineId ?? null);
+    });
+
+    const draft = startActiveWorkout(routine);
+    setActiveWorkout({ ...draft, notes: 'heavy day' });
+    clearActiveWorkout();
+    unsubscribe();
+    startActiveWorkout(routine);
+
+    expect(calls).toEqual(['routine-1', 'routine-1', null]);
+  });
+
+  it('does not notify when resuming the same routine or clearing nothing', () => {
+    let calls = 0;
+    startActiveWorkout(routine);
+    const unsubscribe = subscribeActiveWorkout(() => {
+      calls += 1;
+    });
+
+    startActiveWorkout(routine);
+    clearActiveWorkout();
+    clearActiveWorkout();
+    unsubscribe();
+
+    expect(calls).toBe(1);
   });
 });

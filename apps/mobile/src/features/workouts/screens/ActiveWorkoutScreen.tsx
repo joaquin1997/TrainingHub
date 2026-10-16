@@ -19,6 +19,7 @@ import { ExercisePickerModal } from '@/features/exercises/components/ExercisePic
 import { ProgressRing } from '@/features/workouts/components/ProgressRing';
 import { WheelPicker } from '@/features/workouts/components/WheelPicker';
 import { useSettings } from '@/features/settings/SettingsContext';
+import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
 import { Button } from '@/ui/Button';
 import { formatDuration } from '@/lib/format';
 import { fromKg, roundWeight } from '@/lib/weight';
@@ -94,9 +95,7 @@ function setTypeLabel(type: WorkoutSetType, t: TFunction) {
 export function ActiveWorkoutScreen() {
   const { t } = useTranslation();
   const { routineId } = useLocalSearchParams<{ routineId?: string }>();
-  const [workoutDraft, setWorkoutDraft] = useState<WorkoutSessionDraft | null>(
-    null,
-  );
+  const workoutDraft = useActiveWorkout();
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
     'loading',
   );
@@ -128,7 +127,7 @@ export function ActiveWorkoutScreen() {
           return;
         }
 
-        setWorkoutDraft(startActiveWorkout(routine, settings.unit));
+        startActiveWorkout(routine, settings.unit);
         setStatus('ready');
       })
       .catch((error: unknown) => {
@@ -200,7 +199,6 @@ export function ActiveWorkoutScreen() {
 
       if (next !== current) {
         setActiveWorkout(next);
-        setWorkoutDraft(next);
       }
     });
 
@@ -253,7 +251,8 @@ export function ActiveWorkoutScreen() {
         workoutSession.completedAt ?? workoutSession.updatedAt,
       );
       void syncWorkoutCompletionToAppleHealth(workoutSession);
-      router.push('/workouts/summary');
+      // Replace, so Back from the summary does not land on a finished workout.
+      router.replace('/workouts/summary');
     } catch (error) {
       setFinishError(
         error instanceof Error ? error.message : t('workouts.saveError'),
@@ -281,7 +280,6 @@ export function ActiveWorkoutScreen() {
       value,
     );
 
-    setWorkoutDraft(nextDraft);
     setActiveWorkout(nextDraft);
   };
 
@@ -307,7 +305,6 @@ export function ActiveWorkoutScreen() {
       becomingDone ? rest : undefined,
     );
 
-    setWorkoutDraft(nextDraft);
     setActiveWorkout(nextDraft);
 
     if (becomingDone) {
@@ -316,7 +313,6 @@ export function ActiveWorkoutScreen() {
   };
 
   const applyDraft = (nextDraft: WorkoutSessionDraft) => {
-    setWorkoutDraft(nextDraft);
     setActiveWorkout(nextDraft);
   };
 
@@ -388,7 +384,6 @@ export function ActiveWorkoutScreen() {
       workoutExerciseId,
       workoutSetId,
     );
-    setWorkoutDraft(nextDraft);
     setActiveWorkout(nextDraft);
   };
 
@@ -398,7 +393,6 @@ export function ActiveWorkoutScreen() {
     }
 
     const nextDraft = { ...workoutDraft, notes: value };
-    setWorkoutDraft(nextDraft);
     setActiveWorkout(nextDraft);
   };
 

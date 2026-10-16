@@ -14,7 +14,7 @@ Each task leaves the tree green (`pnpm -r typecheck` and `pnpm -r test`).
 |---|---|---|---|---|
 | 1 | [x] Spec, plan and tasks; backlog entry | docs | links resolve | `docs(sdd): spec 0010 persist the active workout` |
 | 2 | [x] Draft ids that cannot collide after a restart (time-seeded) | mobile | unit test | `fix(workouts): draft ids stay unique across restarts` |
-| 3 | Store subscription; `useActiveWorkout` via `useSyncExternalStore`; screen reads the draft from the store | mobile | unit test for subscribe/notify; manual smoke in app | `feat(workouts): observable active-workout store` |
+| 3 | [x] Store subscription; `useActiveWorkout` via `useSyncExternalStore`; screen reads the draft from the store | mobile | unit test for subscribe/notify; manual smoke in app | `feat(workouts): observable active-workout store` |
 | 4 | Open an existing draft without the network; `routineId` optional (`resolveActiveWorkoutEntry`) | mobile | unit test | `feat(workouts): resume the active workout without a network round-trip` |
 | 5 | Stored envelope + parse; `tokenSubject`; `AuthContext` restores the real user id; owner kept in the store; `discardActiveWorkoutIfForeign` on sign-in (FR-8) | mobile | unit tests | `feat(workouts): versioned, owner-scoped active-workout envelope` |
 | 6 | AsyncStorage dependency; `ActiveWorkoutStorage` interface + implementations | mobile | typecheck; **[DEVICE: rebuild]** app launches | `chore(mobile): add active-workout storage` |
@@ -38,6 +38,11 @@ rebuild.
   that carries task 7.
 - 2026-10-16 — Task 2: generated ids carry a per-launch time seed
   (`-gen-<seed>-<n>`). Unit test re-imports the store at two clock times.
+- 2026-10-16 — Task 3: `subscribeActiveWorkout` (notifies on new draft, set,
+  clear-when-present); `useActiveWorkout` is `useSyncExternalStore`, so the
+  routines list and detail update live too; the active screen has no local
+  copy. Finish now `replace`s to the summary, so Back no longer shows the
+  finished workout. 2 unit tests. Manual smoke pending (device batch).
 
 ## Definition of done
 
