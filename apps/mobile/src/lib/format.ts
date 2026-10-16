@@ -1,23 +1,40 @@
 /**
- * Shared date formatting for screens that render ISO timestamps.
+ * Shared date formatting for screens that render ISO timestamps. Pass the
+ * app's language (`i18n.language`) so dates follow it rather than the
+ * device or browser locale (spec 0017 FR-8).
  */
-export function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
+export function formatDate(iso: string, locale?: string) {
+  return new Date(iso).toLocaleDateString(locale, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
   });
 }
 
-export function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString();
+export function formatDateTime(iso: string, locale?: string) {
+  return new Date(iso).toLocaleString(locale);
+}
+
+/** Weekday and date, e.g. "jueves, 16 de octubre" / "Thursday, October 16". */
+export function formatDayHeading(iso: string, locale?: string) {
+  const text = new Date(iso).toLocaleDateString(locale, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
+  return text.charAt(0).toLocaleUpperCase(locale) + text.slice(1);
+}
+
+/** Clock time, e.g. "18:30". */
+export function formatTime(iso: string, locale?: string) {
+  return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 }
 
 /**
  * Compact day/month label for dense axes (e.g. chart ticks).
  */
-export function formatShortDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
+export function formatShortDate(iso: string, locale?: string) {
+  return new Date(iso).toLocaleDateString(locale, {
     month: 'numeric',
     day: 'numeric',
   });
@@ -60,4 +77,17 @@ export function durationSecondsBetween(startIso?: string, endIso?: string) {
   }
 
   return Math.max(0, Math.round((end - start) / 1000));
+}
+
+/**
+ * Active duration: elapsed time minus paused time, never negative (spec 0011).
+ * With no paused time it equals `durationSecondsBetween`, so workouts saved
+ * before pause existed read as before.
+ */
+export function activeDurationSeconds(
+  startIso?: string,
+  endIso?: string,
+  pausedSeconds = 0,
+) {
+  return Math.max(0, durationSecondsBetween(startIso, endIso) - pausedSeconds);
 }

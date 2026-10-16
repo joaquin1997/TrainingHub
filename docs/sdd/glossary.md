@@ -18,8 +18,12 @@ production.
 | **Performed set** | A `WorkoutSet` marked done — or, in a legacy session, any set. The only sets that count as work for progress and "last time" (spec 0013). | A logged set left unmarked |
 | **Warmup set** | A `WorkoutSet` of type warmup. Counts toward training volume, never toward personal records or estimated 1RM (spec 0013). | Drop and failure sets, which are working sets |
 | **Legacy session** | A `WorkoutSession` saved before sets could be marked done, recognisable because none of its sets is. All its sets count as performed. | — |
-| **Active workout** | The single in-progress `WorkoutSession`. At most one exists at a time; it is resumable, and its routine is locked from editing until it is finished or discarded. | A saved (finished) session |
-| **WorkoutSessionDraft** | The mobile-side in-memory state of the active workout, including the display `unit` captured at session start. | `WorkoutSession`, which is the persisted record |
+| **Active workout** | The single in-progress `WorkoutSession`. At most one exists at a time; it is resumable, survives the app being closed (spec 0010), and its routine is locked from editing and deletion until it is finished or discarded (spec 0014). | A saved (finished) session |
+| **WorkoutSessionDraft** | The mobile-side state of the active workout, including the display `unit` captured at session start and the workout identity. Kept on the device, scoped to its owner, so it survives the app being closed (spec 0010). | `WorkoutSession`, which is the persisted record |
+| **Pause** | A stretch during which the active workout's clock is stopped. Sets can still be logged. Paused time is saved with the workout and never counts toward its duration (spec 0011). | Rest, which is time between sets and does count |
+| **Active duration** | A workout's elapsed time minus its paused time. What every screen shows as a workout's duration (spec 0011). | Elapsed time (end − start) |
+| **Workout identity** | An id the device gives a workout when it starts, unique per user. Saving the same identity again returns the workout saved first instead of creating a duplicate (spec 0014). | The server's own session id |
+| **Optional provenance** | A saved `WorkoutSession`'s link to the `Routine` / `RoutineExercise` it came from. Kept only when it points at the user's own existing records; the workout is saved without it otherwise (spec 0014). | A required reference |
 | **Superset** | A group of `RoutineExercise` entries performed back to back. | — |
 
 ## Progress
@@ -30,6 +34,12 @@ production.
 | **Personal record (PR)** | A session that beat the previous best for an exercise. Derived, never stored as a separate concept. |
 | **Estimated 1RM** | One-rep-max estimate (Epley) computed from a performed set. Derived. |
 | **Training volume** | Aggregated work, in kg. Derived. |
+
+## Presentation
+
+| Term | Meaning |
+|---|---|
+| **Primary action** | The one action a screen is for (start, finish, save), drawn as the filled lime button. At most one per screen (spec 0017). | 
 
 ## Identity and preferences
 
@@ -46,8 +56,10 @@ production.
 | Term | Meaning |
 |---|---|
 | **Auth provider** | A pluggable identity source. Email/password ships today; Apple is the next. |
+| **Live workout status** | The active workout shown outside the app — on iOS a Live Activity on the lock screen and Dynamic Island: routine, clock, active energy, pause, finish (spec 0012). Reached through `LiveWorkoutBridge`. |
+| **Active energy** | Calories burned as measured by the person's health data (e.g. a watch), read with permission — never estimated by formula. Unknown when there is no data or no permission, never shown as 0 (spec 0012). |
 | **HealthSyncRecord** | Sync *metadata* only. Never a place to duplicate workout data. |
-| **HealthIntegration / WorkoutSyncService / LiveWorkoutBridge** | Prepared interfaces for Apple Health, Android Health Connect and future Apple Watch mirroring. Interfaces and stubs only at this stage. |
+| **HealthIntegration / WorkoutSyncService / LiveWorkoutBridge** | Interfaces for Apple Health, Android Health Connect and live surfaces. Implemented on iOS for the live workout status and active energy (spec 0012); the rest are stubs. |
 
 `TODO(sdd): terms not yet pinned down because the product decision is open —`
 `"program" or "training plan" (a multi-week structure above Routine), "cycle",`

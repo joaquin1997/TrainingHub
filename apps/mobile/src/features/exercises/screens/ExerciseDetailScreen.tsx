@@ -1,4 +1,4 @@
-import { Link, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -8,7 +8,10 @@ import { progressClient } from '@/features/progress/api/progressClient';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { formatDate } from '@/lib/format';
 import { formatWeightValue } from '@/lib/weight';
-import { colors, commonStyles, spacing } from '@/ui/theme';
+import { Button } from '@/ui/Button';
+import { Chip } from '@/ui/Chip';
+import { StateView } from '@/ui/StateView';
+import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
 import type { Exercise, ExerciseProgressPoint } from '@workout/domain';
 
 const MAX_HISTORY = 8;
@@ -18,7 +21,8 @@ function formatHistoryValue(value?: number) {
 }
 
 export function ExerciseDetailScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const router = useRouter();
   const { exerciseId } = useLocalSearchParams<{ exerciseId?: string }>();
   const [exercise, setExercise] = useState<Exercise | null>(null);
   const [history, setHistory] = useState<ExerciseProgressPoint[]>([]);
@@ -102,19 +106,21 @@ export function ExerciseDetailScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.meta}>{t('exercises.loadingExercise')}</Text>
+      <View style={styles.screen}>
+        <StateView kind="loading" message={t('exercises.loadingExercise')} />
       </View>
     );
   }
 
   if (!exercise) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.error}>{errorMessage ?? t('exercises.notFound')}</Text>
-        <Link href="/exercises" style={styles.link}>
-          {t('exercises.backToExercises')}
-        </Link>
+      <View style={styles.screen}>
+        <StateView
+          kind="error"
+          message={errorMessage ?? t('exercises.notFound')}
+          actionLabel={t('exercises.backToExercises')}
+          onAction={() => router.replace('/exercises')}
+        />
       </View>
     );
   }
@@ -122,6 +128,11 @@ export function ExerciseDetailScreen() {
   const primary = exercise.primaryMuscleGroups ?? [];
   const secondary = exercise.secondaryMuscleGroups ?? [];
   const equipment = exercise.equipment ?? [];
+  const chipGroups: Array<{ label: string; values: string[]; tone: 'primary' | 'neutral' }> = [
+    { label: t('exercises.primaryLabel'), values: primary, tone: 'primary' },
+    { label: t('exercises.secondaryLabel'), values: secondary, tone: 'neutral' },
+    { label: t('exercises.equipmentLabel'), values: equipment, tone: 'neutral' },
+  ];
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
@@ -134,50 +145,49 @@ export function ExerciseDetailScreen() {
           accessibilityLabel={t('exercises.illustration', { name: exercise.name })}
         />
       ) : null}
+      <View style={styles.card}>
+        {chipGroups.map((group) => (
+          <View key={group.label} style={styles.chipGroup}>
+            <Text style={styles.sectionLabel}>{group.label}</Text>
+            {group.values.length > 0 ? (
+              <View style={styles.chips}>
+                {group.values.map((value) => (
+                  <Chip key={value} label={value} size="sm" tone={group.tone} />
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.meta}>–</Text>
+            )}
+          </View>
+        ))}
+      </View>
       {exercise.description ? (
         <Text style={styles.body}>{exercise.description}</Text>
       ) : null}
-      <View style={styles.card}>
-        <Text style={styles.meta}>
-          {t('exercises.primaryMuscles', {
-            value: primary.length > 0 ? primary.join(', ') : '-',
-          })}
-        </Text>
-        <Text style={styles.meta}>
-          {t('exercises.secondaryMuscles', {
-            value: secondary.length > 0 ? secondary.join(', ') : '-',
-          })}
-        </Text>
-        <Text style={styles.meta}>
-          {t('exercises.equipment', {
-            value: equipment.length > 0 ? equipment.join(', ') : '-',
-          })}
-        </Text>
-      </View>
       {history.length > 0 ? (
-        <View style={styles.history}>
-          <Text style={styles.sectionTitle}>{t('exercises.recentSessions')}</Text>
+        <View style={styles.card}>
+          <Text style={styles.sectionLabel}>{t('exercises.recentSessions')}</Text>
           {history
             .slice()
             .reverse()
             .slice(0, MAX_HISTORY)
             .map((point, index) => (
               <View key={`${point.date}-${index}`} style={styles.historyRow}>
-                <Text style={styles.historyDate}>{formatDate(point.date)}</Text>
+                <Text style={styles.historyDate}>{formatDate(point.date, i18n.language)}</Text>
                 <Text style={styles.historyValue}>
-                  {formatWeightValue(point.bestWeightKg, unit)} {unit} x{' '}
-                  {formatHistoryValue(point.bestReps)}
+                  {`${formatWeightValue(point.bestWeightKg, unit)} ${unit} × ${formatHistoryValue(point.bestReps)}`}
                 </Text>
               </View>
             ))}
-          <Link href={`/progress/exercises/${exercise.id}`} style={styles.link}>
-            {t('exercises.viewFullProgress')}
-          </Link>
+          <Button
+            label={t('exercises.viewFullProgress')}
+            icon="trending-up"
+            variant="secondary"
+            fullWidth
+            onPress={() => router.push(`/progress/exercises/${exercise.id}`)}
+          />
         </View>
       ) : null}
-      <Link href="/exercises" style={styles.link}>
-        {t('exercises.backToExercises')}
-      </Link>
     </ScrollView>
   );
 }
@@ -189,34 +199,46 @@ const styles = StyleSheet.create({
   container: {
     ...commonStyles.scrollContent,
   },
+  centered: {
+    alignSelf: 'center',
+  },
   title: {
-    ...commonStyles.title,
+    ...commonStyles.heading,
+    fontSize: 28,
+    lineHeight: 34,
   },
   body: {
     ...commonStyles.body,
   },
   image: {
     width: '100%',
-    height: 200,
-    borderRadius: 8,
-    backgroundColor: colors.surfaceMuted,
+    height: 220,
+    borderRadius: radii.lg,
+    backgroundColor: colors.imageBackdrop,
   },
   card: {
     ...commonStyles.card,
+    gap: spacing.md,
   },
-  history: {
-    ...commonStyles.card,
-    gap: spacing.sm,
+  chipGroup: {
+    gap: spacing.xs,
   },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '800',
+  chips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  sectionLabel: {
+    ...commonStyles.sectionLabel,
   },
   historyRow: {
+    minHeight: 40,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderRadius: radii.sm,
+    backgroundColor: colors.surfaceRaised,
+    paddingHorizontal: spacing.md,
   },
   historyDate: {
     color: colors.textMuted,
@@ -224,16 +246,11 @@ const styles = StyleSheet.create({
   },
   historyValue: {
     color: colors.text,
-    fontSize: 14,
-    fontWeight: '700',
+    fontFamily: fonts.displayBold,
+    fontSize: 15,
+    fontVariant: ['tabular-nums'],
   },
   meta: {
     ...commonStyles.meta,
-  },
-  error: {
-    ...commonStyles.error,
-  },
-  link: {
-    ...commonStyles.link,
   },
 });

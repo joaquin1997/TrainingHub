@@ -36,13 +36,18 @@ session for a given exercise, computed from that session's sets.
 - **Weekly volume.** Training volume bucketed into Monday-start weeks, charted
   on the progress overview.
 - **Volume by category.** Training volume summed per exercise *category*, shown
-  as horizontal bars on the overview. Category stands in for muscle group (see
-  known gaps); the on-screen label still says "muscle group", which overstates
-  what it measures.
+  as horizontal bars on the overview, labelled "by category". Category stands
+  in for muscle group (see known gaps).
 - **Training frequency.** Streak, total workouts, active weeks and best week,
   derived on the device from the weekly-volume data.
 
 ## Invariants worth protecting
+
+- **Progress reads only performed sets** (spec 0013). A set counts when it was
+  marked done, or when its session is a legacy session (no set marked done).
+  Warmups count toward volume, never toward best weight, best reps, estimated
+  1RM or records. The rule lives once, in the API, and every aggregate and
+  "last time" goes through it.
 
 - **Progress is derived, never stored.** PRs and 1RM estimates are computed, not
   persisted. Persisting them would create a second truth that can disagree with

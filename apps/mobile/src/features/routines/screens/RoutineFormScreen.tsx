@@ -1,4 +1,5 @@
-import { Link, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -16,7 +17,6 @@ import {
 } from '@/features/exercises/api/exercisesClient';
 import { CustomExerciseModal } from '@/features/routines/components/CustomExerciseModal';
 import { routinesClient } from '@/features/routines/api/routinesClient';
-import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
 import {
   effectiveRoutineSetValue,
   setFieldPlaceholder,
@@ -24,7 +24,10 @@ import {
 import { useSettings } from '@/features/settings/SettingsContext';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
 import { kgToInputString, roundWeight, toKg } from '@/lib/weight';
-import { colors, commonStyles, radii, spacing } from '@/ui/theme';
+import { Button } from '@/ui/Button';
+import { Chip } from '@/ui/Chip';
+import { StateView } from '@/ui/StateView';
+import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
 import type {
   Exercise,
   Routine,
@@ -560,132 +563,146 @@ export function RoutineFormScreen({
 
   if (isEditMode && activeWorkout?.routineId === routineId) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.body}>{t('routineForm.workoutInProgress')}</Text>
-        <Link href={`/routines/${routineId}`} style={styles.link}>
-          {t('routineForm.backToRoutine')}
-        </Link>
+      <View style={styles.screen}>
+        <StateView
+          kind="empty"
+          icon="lock-closed-outline"
+          message={t('routineForm.workoutInProgress')}
+          actionLabel={t('routineForm.backToRoutine')}
+          onAction={() => router.replace(`/routines/${routineId}`)}
+        />
       </View>
     );
   }
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.body}>{t('routineDetail.loading')}</Text>
+      <View style={styles.screen}>
+        <StateView kind="loading" message={t('routineDetail.loading')} />
       </View>
     );
   }
 
+  const retryExercises = () => {
+    setIsExercisesLoading(true);
+    setExerciseLoadError(undefined);
+    void exercisesClient
+      .list()
+      .then((nextExercises) => {
+        setAvailableExercises(toSortedExercises(nextExercises));
+      })
+      .catch((error: unknown) => {
+        setExerciseLoadError(
+          error instanceof Error
+            ? error.message
+            : t('routineForm.loadExercisesError'),
+        );
+      })
+      .finally(() => {
+        setIsExercisesLoading(false);
+      });
+  };
+
+  const totalSets = exercises.reduce((sum, exercise) => sum + exercise.sets.length, 0);
+
   return (
     <>
       <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.contentContainer}
+        style={styles.screen}
+        contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
         contentInsetAdjustmentBehavior="automatic"
       >
-        <Text style={styles.body}>
-          {isEditMode
-            ? t('routineForm.editIntro')
-            : t('routineForm.createIntro')}
-        </Text>
         {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>{t('routineForm.routineName')}</Text>
-          <TextInput
-            value={name}
-            onChangeText={setName}
-            placeholder={t('routineForm.routineNamePlaceholder')}
-            placeholderTextColor={colors.textSubtle}
-            style={styles.input}
-          />
-        </View>
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>{t('routineForm.description')}</Text>
-          <TextInput
-            value={description}
-            onChangeText={setDescription}
-            placeholder={t('routineForm.descriptionPlaceholder')}
-            placeholderTextColor={colors.textSubtle}
-            multiline
-            style={[styles.input, styles.multilineInput]}
-          />
-        </View>
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>{t('routineForm.folder')}</Text>
-          <TextInput
-            value={folder}
-            onChangeText={setFolder}
-            placeholder={t('routineForm.folderPlaceholder')}
-            placeholderTextColor={colors.textSubtle}
-            style={styles.input}
-            autoCapitalize="words"
-          />
-        </View>
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>{t('routineForm.routineExercises')}</Text>
-          <Text style={styles.meta}>{t('routineForm.exercisesHint')}</Text>
-          {isExercisesLoading ? (
-            <Text style={styles.meta}>{t('routineForm.loadingExercises')}</Text>
-          ) : null}
-          {exerciseLoadError ? (
-            <View style={styles.inlineState}>
-              <Text style={styles.error}>{exerciseLoadError}</Text>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => {
-                  setIsExercisesLoading(true);
-                  setExerciseLoadError(undefined);
-                  void exercisesClient
-                    .list()
-                    .then((nextExercises) => {
-                      setAvailableExercises(toSortedExercises(nextExercises));
-                    })
-                    .catch((error: unknown) => {
-                      setExerciseLoadError(
-                        error instanceof Error
-                          ? error.message
-                          : t('routineForm.loadExercisesError'),
-                      );
-                    })
-                    .finally(() => {
-                      setIsExercisesLoading(false);
-                    });
-                }}
-                style={({ pressed }) => [
-                  styles.secondaryButton,
-                  pressed ? styles.buttonPressed : null,
-                ]}
-              >
-                <Text style={styles.secondaryButtonText}>
-                  {t('routineForm.retryExercises')}
-                </Text>
-              </Pressable>
+        <View style={styles.card}>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>{t('routineForm.routineName')}</Text>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder={t('routineForm.routineNamePlaceholder')}
+              placeholderTextColor={colors.textSubtle}
+              style={[styles.input, styles.nameInput]}
+            />
+          </View>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>{t('routineForm.description')}</Text>
+            <TextInput
+              value={description}
+              onChangeText={setDescription}
+              placeholder={t('routineForm.descriptionPlaceholder')}
+              placeholderTextColor={colors.textSubtle}
+              multiline
+              style={[styles.input, styles.multilineInput]}
+            />
+          </View>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>{t('routineForm.folder')}</Text>
+            <View style={styles.iconInput}>
+              <Ionicons name="folder-outline" size={18} color={colors.textMuted} />
+              <TextInput
+                value={folder}
+                onChangeText={setFolder}
+                placeholder={t('routineForm.folderPlaceholder')}
+                placeholderTextColor={colors.textSubtle}
+                style={styles.iconInputField}
+                autoCapitalize="words"
+              />
             </View>
-          ) : null}
-          <View style={styles.exerciseList}>
-            {exercises.map((exercise, index) => (
-              <View key={exercise.id} style={styles.exerciseCard}>
-                <View style={styles.exerciseCardHeader}>
-                  <Text style={styles.exerciseCardTitle}>
-                    {t('routineForm.exerciseN', { number: index + 1 })}
-                  </Text>
-                  <View style={styles.exerciseReorder}>
-                    <Pressable
-                      onPress={() => moveExerciseRow(index, 'up')}
-                      hitSlop={8}
-                    >
-                      <Text style={styles.reorderArrow}>↑</Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => moveExerciseRow(index, 'down')}
-                      hitSlop={8}
-                    >
-                      <Text style={styles.reorderArrow}>↓</Text>
-                    </Pressable>
-                  </View>
+          </View>
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{t('routineForm.routineExercises')}</Text>
+          <Chip label={String(exercises.length)} size="sm" />
+        </View>
+        <Text style={styles.meta}>{t('routineForm.exercisesHint')}</Text>
+        {isExercisesLoading ? (
+          <StateView kind="loading" message={t('routineForm.loadingExercises')} />
+        ) : null}
+        {exerciseLoadError ? (
+          <StateView
+            kind="error"
+            message={exerciseLoadError}
+            actionLabel={t('routineForm.retryExercises')}
+            onAction={retryExercises}
+          />
+        ) : null}
+        {exercises.map((exercise, index) => {
+          const selectedName = exercise.exerciseId ? exercise.exerciseQuery : null;
+
+          return (
+            <View key={exercise.id} style={styles.card}>
+              <View style={styles.exerciseHeader}>
+                <View style={styles.indexBadge}>
+                  <Text style={styles.indexBadgeText}>{index + 1}</Text>
                 </View>
+                <Text style={styles.exerciseTitle}>
+                  {selectedName || t('routineForm.exerciseN', { number: index + 1 })}
+                </Text>
+                <View style={styles.reorderRow}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="↑"
+                    onPress={() => moveExerciseRow(index, 'up')}
+                    hitSlop={6}
+                    style={styles.iconButton}
+                  >
+                    <Ionicons name="arrow-up" size={18} color={colors.textMuted} />
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="↓"
+                    onPress={() => moveExerciseRow(index, 'down')}
+                    hitSlop={6}
+                    style={styles.iconButton}
+                  >
+                    <Ionicons name="arrow-down" size={18} color={colors.textMuted} />
+                  </Pressable>
+                </View>
+              </View>
+              <View style={styles.iconInput}>
+                <Ionicons name="search" size={18} color={colors.textMuted} />
                 <TextInput
                   value={exercise.exerciseQuery}
                   onChangeText={(value) => updateExerciseQuery(exercise.id, value)}
@@ -696,251 +713,200 @@ export function RoutineFormScreen({
                   }}
                   placeholder={t('routineForm.searchExercise')}
                   placeholderTextColor={colors.textSubtle}
-                  style={styles.input}
+                  style={styles.iconInputField}
                 />
-                {exercise.exerciseId ? (
-                  <Text style={styles.selectedHint}>
-                    {t('routineForm.exerciseSelected')}
-                  </Text>
-                ) : null}
-                {activeExerciseSelectorRowId === exercise.id &&
-                exercise.exerciseQuery.trim() ? (
-                  (() => {
-                    const normalizedQuery = exercise.exerciseQuery.trim().toLowerCase();
-                    const matchingExercises = availableExercises
-                      .filter((candidate) =>
-                        candidate.name.toLowerCase().includes(normalizedQuery),
-                      )
-                      .slice(0, 5);
+              </View>
+              {exercise.exerciseId ? (
+                <Chip icon="checkmark-circle" tone="done" size="sm" label={t('routineForm.exerciseSelected')} />
+              ) : null}
+              {activeExerciseSelectorRowId === exercise.id &&
+              exercise.exerciseQuery.trim() ? (
+                (() => {
+                  const normalizedQuery = exercise.exerciseQuery.trim().toLowerCase();
+                  const matchingExercises = availableExercises
+                    .filter((candidate) =>
+                      candidate.name.toLowerCase().includes(normalizedQuery),
+                    )
+                    .slice(0, 5);
 
-                    return (
-                      <View style={styles.searchResults}>
-                        {matchingExercises.map((candidate) => (
-                          <Pressable
-                            key={candidate.id}
-                            accessibilityRole="button"
-                            onPress={() => selectExercise(exercise.id, candidate)}
-                            style={({ pressed }) => [
-                              styles.searchResultButton,
-                              pressed ? styles.buttonPressed : null,
-                            ]}
-                          >
-                            <Text style={styles.searchResultTitle}>{candidate.name}</Text>
-                            <Text style={styles.meta}>
-                              {candidate.isSystemDefined
-                                ? t('routineForm.existingExercise')
-                                : t('routineForm.customExercise')}
-                            </Text>
-                          </Pressable>
-                        ))}
-                        {!isExercisesLoading &&
-                        !exerciseLoadError &&
-                        matchingExercises.length === 0 ? (
-                          <Pressable
-                            accessibilityRole="button"
-                            onPress={() => openCustomExerciseModal(exercise.id)}
-                            style={({ pressed }) => [
-                              styles.secondaryButton,
-                              pressed ? styles.buttonPressed : null,
-                            ]}
-                          >
-                            <Text style={styles.secondaryButtonText}>
-                              {t('routineForm.createCustomExercise')}
-                            </Text>
-                          </Pressable>
-                        ) : null}
-                      </View>
-                    );
-                  })()
-                ) : null}
-                <View style={styles.metaInputsRow}>
-                  <View style={styles.restRow}>
-                    <Text style={styles.meta}>{t('routineForm.restBetweenSets')}</Text>
-                    <TextInput
-                      value={exercise.restSeconds}
-                      onChangeText={(value) =>
-                        updateExerciseRest(exercise.id, value)
-                      }
-                      placeholder={t('routineForm.restPlaceholder')}
-                      placeholderTextColor={colors.textSubtle}
-                      keyboardType="number-pad"
-                      style={[styles.input, styles.restInput]}
-                    />
-                  </View>
-                  <View style={styles.restRow}>
-                    <Text style={styles.meta}>{t('routineForm.supersetGroup')}</Text>
-                    <TextInput
-                      value={exercise.supersetGroup}
-                      onChangeText={(value) =>
-                        updateExerciseSuperset(exercise.id, value)
-                      }
-                      placeholder={t('routineForm.supersetPlaceholder')}
-                      placeholderTextColor={colors.textSubtle}
-                      keyboardType="number-pad"
-                      style={[styles.input, styles.restInput]}
-                    />
-                  </View>
-                </View>
-                <View style={styles.setList}>
-                  {exercise.sets.map((set, setIndex) => (
-                    <View key={set.id} style={styles.setCard}>
-                      <Text style={styles.setCardTitle}>
-                        {t('routineForm.setN', { number: setIndex + 1 })}
-                      </Text>
-                      <View style={styles.numericRow}>
-                        <Text style={styles.numericLabel}>{t('routineForm.minReps')}</Text>
-                        <Text style={styles.numericLabel}>{t('routineForm.maxReps')}</Text>
-                        <Text style={styles.numericLabel}>
-                          {t('routineForm.weightUnit', { unit })}
-                        </Text>
-                      </View>
-                      <View style={styles.numericRow}>
-                        <TextInput
-                          value={set.minReps}
-                          onChangeText={(value) =>
-                            updateSetField(exercise.id, set.id, 'minReps', value)
-                          }
-                          placeholder={setFieldPlaceholder(
-                            exercise.sets,
-                            setIndex,
-                            'minReps',
-                          )}
-                          placeholderTextColor={colors.textSubtle}
-                          keyboardType="number-pad"
-                          style={[styles.input, styles.numericInput]}
+                  return (
+                    <View style={styles.searchResults}>
+                      {matchingExercises.map((candidate) => (
+                        <Pressable
+                          key={candidate.id}
+                          accessibilityRole="button"
+                          onPress={() => selectExercise(exercise.id, candidate)}
+                          style={({ pressed }) => [
+                            styles.searchResult,
+                            pressed ? styles.pressed : null,
+                          ]}
+                        >
+                          <Text style={styles.searchResultTitle}>{candidate.name}</Text>
+                          <Text style={styles.meta}>
+                            {candidate.isSystemDefined
+                              ? t('routineForm.existingExercise')
+                              : t('routineForm.customExercise')}
+                          </Text>
+                        </Pressable>
+                      ))}
+                      {!isExercisesLoading &&
+                      !exerciseLoadError &&
+                      matchingExercises.length === 0 ? (
+                        <Button
+                          label={t('routineForm.createCustomExercise')}
+                          icon="add-circle-outline"
+                          variant="secondary"
+                          fullWidth
+                          onPress={() => openCustomExerciseModal(exercise.id)}
                         />
-                        <TextInput
-                          value={set.maxReps}
-                          onChangeText={(value) =>
-                            updateSetField(exercise.id, set.id, 'maxReps', value)
-                          }
-                          placeholder={setFieldPlaceholder(
-                            exercise.sets,
-                            setIndex,
-                            'maxReps',
-                          )}
-                          placeholderTextColor={colors.textSubtle}
-                          keyboardType="number-pad"
-                          style={[styles.input, styles.numericInput]}
-                        />
-                        <TextInput
-                          value={set.targetWeight}
-                          onChangeText={(value) =>
-                            updateSetField(
-                              exercise.id,
-                              set.id,
-                              'targetWeight',
-                              value,
-                            )
-                          }
-                          placeholder={setFieldPlaceholder(
-                            exercise.sets,
-                            setIndex,
-                            'targetWeight',
-                          )}
-                          placeholderTextColor={colors.textSubtle}
-                          keyboardType="decimal-pad"
-                          style={[styles.input, styles.numericInput]}
-                        />
-                      </View>
-                      <Pressable
-                        accessibilityRole="button"
-                        onPress={() => removeSetRow(exercise.id, set.id)}
-                        style={({ pressed }) => [
-                          styles.secondaryButton,
-                          pressed ? styles.buttonPressed : null,
-                        ]}
-                      >
-                        <Text style={styles.secondaryButtonText}>
-                          {t('routineForm.removeSet')}
-                        </Text>
-                      </Pressable>
+                      ) : null}
                     </View>
-                  ))}
+                  );
+                })()
+              ) : null}
+              <View style={styles.metaInputsRow}>
+                <View style={styles.metaField}>
+                  <View style={styles.metaFieldLabel}>
+                    <Ionicons name="timer-outline" size={14} color={colors.textMuted} />
+                    <Text style={styles.fieldLabel}>{t('routineForm.restBetweenSets')}</Text>
+                  </View>
+                  <TextInput
+                    value={exercise.restSeconds}
+                    onChangeText={(value) => updateExerciseRest(exercise.id, value)}
+                    placeholder={t('routineForm.restPlaceholder')}
+                    placeholderTextColor={colors.textSubtle}
+                    keyboardType="number-pad"
+                    style={[styles.input, styles.cellInput]}
+                  />
                 </View>
-                <View style={styles.actionRow}>
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => addSetRow(exercise.id)}
-                    style={({ pressed }) => [
-                      styles.secondaryButton,
-                      pressed ? styles.buttonPressed : null,
-                    ]}
-                  >
-                    <Text style={styles.secondaryButtonText}>
-                      {t('routineForm.addSet')}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => removeExerciseRow(exercise.id)}
-                    style={({ pressed }) => [
-                      styles.secondaryButton,
-                      pressed ? styles.buttonPressed : null,
-                    ]}
-                  >
-                    <Text style={styles.secondaryButtonText}>
-                      {t('routineForm.removeExercise')}
-                    </Text>
-                  </Pressable>
+                <View style={styles.metaField}>
+                  <View style={styles.metaFieldLabel}>
+                    <Ionicons name="flash-outline" size={14} color={colors.textMuted} />
+                    <Text style={styles.fieldLabel}>{t('routineForm.supersetGroup')}</Text>
+                  </View>
+                  <TextInput
+                    value={exercise.supersetGroup}
+                    onChangeText={(value) => updateExerciseSuperset(exercise.id, value)}
+                    placeholder={t('routineForm.supersetPlaceholder')}
+                    placeholderTextColor={colors.textSubtle}
+                    keyboardType="number-pad"
+                    style={[styles.input, styles.cellInput]}
+                  />
                 </View>
               </View>
-            ))}
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            onPress={addExerciseRow}
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              pressed ? styles.buttonPressed : null,
-            ]}
-          >
-            <Text style={styles.secondaryButtonText}>
-              {t('routineForm.addExercise')}
-            </Text>
-          </Pressable>
-        </View>
-        {isEditMode ? (
-          routine ? (
-            <Text style={styles.meta}>
-              {t('routineForm.currentSummary', {
-                summary: getRoutineExerciseSummary(routine, 3),
-              })}
-            </Text>
-          ) : (
-            <Text style={styles.meta}>{t('routineDetail.notFoundResponse')}</Text>
-          )
+              <View style={styles.setTable}>
+                <View style={styles.setHeaderRow}>
+                  <Text style={[styles.colSet, styles.colLabel]}>{t('workouts.colSet')}</Text>
+                  <Text style={[styles.colField, styles.colLabel]}>{unit.toUpperCase()}</Text>
+                  <Text style={[styles.colField, styles.colLabel]}>{t('routineForm.colMin')}</Text>
+                  <Text style={[styles.colField, styles.colLabel]}>{t('routineForm.colMax')}</Text>
+                  <View style={styles.colRemove} />
+                </View>
+                {exercise.sets.map((set, setIndex) => (
+                  <View key={set.id} style={styles.setRow}>
+                    <Text style={[styles.colSet, styles.setNumber]}>{setIndex + 1}</Text>
+                    <TextInput
+                      value={set.targetWeight}
+                      onChangeText={(value) =>
+                        updateSetField(exercise.id, set.id, 'targetWeight', value)
+                      }
+                      placeholder={setFieldPlaceholder(exercise.sets, setIndex, 'targetWeight')}
+                      placeholderTextColor={colors.textSubtle}
+                      keyboardType="decimal-pad"
+                      style={[styles.input, styles.cellInput, styles.colField]}
+                    />
+                    <TextInput
+                      value={set.minReps}
+                      onChangeText={(value) =>
+                        updateSetField(exercise.id, set.id, 'minReps', value)
+                      }
+                      placeholder={setFieldPlaceholder(exercise.sets, setIndex, 'minReps')}
+                      placeholderTextColor={colors.textSubtle}
+                      keyboardType="number-pad"
+                      style={[styles.input, styles.cellInput, styles.colField]}
+                    />
+                    <TextInput
+                      value={set.maxReps}
+                      onChangeText={(value) =>
+                        updateSetField(exercise.id, set.id, 'maxReps', value)
+                      }
+                      placeholder={setFieldPlaceholder(exercise.sets, setIndex, 'maxReps')}
+                      placeholderTextColor={colors.textSubtle}
+                      keyboardType="number-pad"
+                      style={[styles.input, styles.cellInput, styles.colField]}
+                    />
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t('routineForm.removeSet')}
+                      onPress={() => removeSetRow(exercise.id, set.id)}
+                      hitSlop={6}
+                      style={styles.colRemove}
+                    >
+                      <Ionicons name="close" size={18} color={colors.textSubtle} />
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+              <View style={styles.cardActions}>
+                <Button
+                  label={t('routineForm.addSet')}
+                  icon="add"
+                  variant="ghost"
+                  onPress={() => addSetRow(exercise.id)}
+                  style={styles.compactButton}
+                />
+                <Button
+                  label={t('routineForm.removeExercise')}
+                  variant="ghost"
+                  destructive
+                  onPress={() => removeExerciseRow(exercise.id)}
+                  style={styles.compactButton}
+                />
+              </View>
+            </View>
+          );
+        })}
+        <Button
+          label={t('routineForm.addExercise')}
+          icon="add-circle-outline"
+          variant="secondary"
+          fullWidth
+          onPress={addExerciseRow}
+        />
+        {isEditMode && !routine ? (
+          <Text style={styles.meta}>{t('routineDetail.notFoundResponse')}</Text>
         ) : null}
-        {isSubmitting ? (
-          <Text style={styles.meta}>{t('routineForm.savingRoutine')}</Text>
-        ) : null}
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => void handleSubmit()}
-          disabled={isSubmitting}
-          style={({ pressed }) => [
-            styles.button,
-            pressed ? styles.buttonPressed : null,
-            isSubmitting ? styles.buttonDisabled : null,
-          ]}
-        >
-          <Text style={styles.buttonText}>
-            {isSubmitting
-              ? t('routineForm.saving')
-              : isEditMode
-                ? t('routineForm.saveRoutine')
-                : t('routines.createRoutine')}
+        <View style={styles.footer}>
+          <Text style={styles.meta}>
+            {`${t('routines.exerciseCount', { count: exercises.length })} · ${t('workouts.setsCount', { count: totalSets })}`}
           </Text>
-        </Pressable>
-        <View style={styles.links}>
-          <Link href="/routines" style={styles.link}>
-            {t('routineDetail.backToRoutines')}
-          </Link>
-          {isEditMode && routine ? (
-            <Link href={`/routines/${routine.id}`} style={styles.link}>
-              {t('routineForm.openDetail')}
-            </Link>
-          ) : null}
+          <Button
+            label={
+              isSubmitting
+                ? t('routineForm.saving')
+                : isEditMode
+                  ? t('routineForm.saveRoutine')
+                  : t('routines.createRoutine')
+            }
+            icon="checkmark-circle-outline"
+            disabled={isSubmitting}
+            fullWidth
+            onPress={() => void handleSubmit()}
+          />
+          <View style={styles.links}>
+            <Button
+              label={t('routineDetail.backToRoutines')}
+              variant="ghost"
+              onPress={() => router.replace('/routines')}
+            />
+            {isEditMode && routine ? (
+              <Button
+                label={t('routineForm.openDetail')}
+                variant="ghost"
+                onPress={() => router.replace(`/routines/${routine.id}`)}
+              />
+            ) : null}
+          </View>
         </View>
       </ScrollView>
       {activeCustomExerciseDraft ? (
@@ -956,161 +922,196 @@ export function RoutineFormScreen({
 }
 
 const styles = StyleSheet.create({
-  scrollView: {
+  screen: {
     ...commonStyles.screen,
   },
   container: {
-    ...commonStyles.fixedContent,
-  },
-  contentContainer: {
     ...commonStyles.scrollContent,
   },
-  title: {
-    ...commonStyles.title,
-  },
-  body: {
-    ...commonStyles.body,
-  },
-  fieldGroup: {
-    gap: spacing.sm,
-  },
-  label: {
-    ...commonStyles.label,
-  },
-  input: {
-    ...commonStyles.input,
-  },
-  multilineInput: {
-    minHeight: 96,
-    textAlignVertical: 'top',
-  },
-  exerciseList: {
-    gap: spacing.md,
-  },
-  exerciseCard: {
-    ...commonStyles.card,
-    gap: spacing.md,
-    padding: spacing.md,
-  },
-  exerciseCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  exerciseReorder: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.lg,
-  },
-  reorderArrow: {
-    color: colors.primary,
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  exerciseCardTitle: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  metaInputsRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  restRow: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  restInput: {
-    alignSelf: 'stretch',
-  },
-  setList: {
-    gap: spacing.sm,
-  },
-  inlineState: {
-    gap: spacing.sm,
-  },
-  searchResults: {
-    gap: spacing.sm,
-  },
-  searchResultButton: {
-    backgroundColor: colors.surfaceRaised,
-    gap: 4,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-  },
-  searchResultTitle: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  setCard: {
-    gap: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: 10,
-  },
-  setCardTitle: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  numericRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  numericInput: {
-    flex: 1,
-  },
-  numericLabel: {
-    flex: 1,
-    color: colors.textMuted,
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  actionRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  meta: {
-    ...commonStyles.meta,
-  },
-  selectedHint: {
-    color: colors.success,
-    fontSize: 13,
-    fontWeight: '700',
+  pressed: {
+    ...commonStyles.pressed,
   },
   error: {
     ...commonStyles.error,
   },
-  button: {
-    ...commonStyles.primaryButton,
+  meta: {
+    ...commonStyles.meta,
   },
-  buttonText: {
-    ...commonStyles.primaryButtonText,
+  card: {
+    ...commonStyles.card,
+    gap: spacing.md,
   },
-  buttonPressed: {
-    ...commonStyles.pressed,
+  fieldGroup: {
+    gap: spacing.xs,
   },
-  buttonDisabled: {
-    ...commonStyles.disabled,
+  fieldLabel: {
+    ...commonStyles.sectionLabel,
+    fontSize: 11,
   },
-  secondaryButton: {
-    ...commonStyles.secondaryButton,
+  input: {
+    ...commonStyles.input,
   },
-  secondaryButtonText: {
-    ...commonStyles.secondaryButtonText,
+  nameInput: {
+    fontFamily: fonts.displayBold,
+    fontSize: 18,
+  },
+  multilineInput: {
+    minHeight: 72,
+    textAlignVertical: 'top',
+  },
+  iconInput: {
+    ...commonStyles.input,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: 0,
+  },
+  iconInputField: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 46,
+    color: colors.text,
+    fontSize: 16,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  sectionTitle: {
+    ...commonStyles.heading,
+  },
+  exerciseHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  indexBadge: {
+    minWidth: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.sm,
+    backgroundColor: colors.surfaceRaised,
+  },
+  indexBadgeText: {
+    color: colors.text,
+    fontFamily: fonts.displayBold,
+    fontSize: 13,
+  },
+  exerciseTitle: {
+    ...commonStyles.cardTitle,
+    flex: 1,
+    paddingTop: 2,
+  },
+  reorderRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  iconButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.sm,
+    backgroundColor: colors.surfaceRaised,
+  },
+  searchResults: {
+    gap: spacing.xs,
+  },
+  searchResult: {
+    gap: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    backgroundColor: colors.surfaceRaised,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  searchResultTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  metaInputsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  metaField: {
+    flex: 1,
+    flexBasis: 0,
+    minWidth: 0,
+    gap: spacing.xs,
+  },
+  metaFieldLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  setTable: {
+    gap: spacing.xs,
+  },
+  setHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  colLabel: {
+    ...commonStyles.sectionLabel,
+    fontSize: 10,
+    textAlign: 'center',
+  },
+  colSet: {
+    width: 40,
+  },
+  colField: {
+    flex: 1,
+    flexBasis: 0,
+    minWidth: 0,
+  },
+  colRemove: {
+    width: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  setRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  setNumber: {
+    color: colors.textMuted,
+    fontFamily: fonts.displayBold,
+    fontSize: 15,
+    textAlign: 'center',
+    fontVariant: ['tabular-nums'],
+  },
+  cellInput: {
+    minHeight: 46,
+    paddingHorizontal: spacing.xs,
+    textAlign: 'center',
+    fontFamily: fonts.displayBold,
+    fontSize: 18,
+    fontVariant: ['tabular-nums'],
+  },
+  cardActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  compactButton: {
+    minHeight: 44,
+    paddingHorizontal: spacing.sm,
+  },
+  footer: {
+    gap: spacing.sm,
+    marginTop: spacing.sm,
   },
   links: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.lg,
-  },
-  link: {
-    ...commonStyles.link,
+    justifyContent: 'center',
+    gap: spacing.sm,
   },
 });

@@ -99,7 +99,7 @@ unauthenticated callers.
   another, for every operation that touches user data. This includes a write
   that *refers* to another user's records (e.g. saving a workout that points at
   someone else's routine) — closed by
-  spec 0014 for workouts and
+  spec 0014 for workouts (implemented 2026-10-16) and
   spec 0015 for custom exercises.
 - **FR-8.** A liveness check MUST remain answerable without credentials, so the
   service can be monitored. It MUST NOT expose any user data or any count

@@ -62,6 +62,12 @@ export type WorkoutExerciseDraft = {
 
 export type WorkoutSessionDraft = {
   id: string;
+  /**
+   * Workout identity sent with the save, unique per workout (spec 0014). The
+   * server returns the first save for a repeated identity, so retries never
+   * duplicate. `id` cannot serve: it repeats for the same routine.
+   */
+  clientId: string;
   routineId: string;
   routineName: string;
   startedAt: string;
@@ -72,6 +78,10 @@ export type WorkoutSessionDraft = {
    * Optional for backwards-compat — absent means kg.
    */
   unit?: WeightUnit;
+  /** When the current pause began; absent while the clock runs (spec 0011). */
+  pausedAt?: string;
+  /** Whole seconds of pauses already ended. */
+  pausedSeconds?: number;
   exercises: WorkoutExerciseDraft[];
 };
 
@@ -83,10 +93,16 @@ function draftUnit(workoutDraft: WorkoutSessionDraft): WeightUnit {
 let latestCompletedWorkout: WorkoutSessionDraft | null = null;
 let activeWorkout: WorkoutSessionDraft | null = null;
 let draftIdCounter = 0;
+/**
+ * Time-based prefix for generated ids. The counter restarts with the app, and a
+ * draft restored after a restart (spec 0010) already holds ids from the
+ * previous run; the seed keeps new ids from colliding with them.
+ */
+const draftIdSeed = Date.now().toString(36);
 
 function nextDraftId(prefix: string) {
   draftIdCounter += 1;
-  return `${prefix}-gen-${draftIdCounter}`;
+  return `${prefix}-gen-${draftIdSeed}-${draftIdCounter}`;
 }
 
 function renumberSets(entries: WorkoutSetDraft[]): WorkoutSetDraft[] {
@@ -142,12 +158,19 @@ function buildExerciseDrafts(
     }));
 }
 
+/** A per-workout identity; unique per user is enough, so no UUID dependency. */
+export function createWorkoutClientId(): string {
+  const random = Math.random().toString(36).slice(2, 10).padEnd(8, '0');
+  return `${Date.now().toString(36)}-${random}`;
+}
+
 export function buildWorkoutSessionDraft(
   routine: Routine,
   unit: WeightUnit = 'kg',
 ): WorkoutSessionDraft {
   return {
     id: `workout-session-${routine.id}`,
+    clientId: createWorkoutClientId(),
     routineId: routine.id,
     routineName: routine.name,
     startedAt: new Date().toISOString(),
@@ -445,6 +468,47 @@ export function toggleWorkoutSetDone(
   };
 }
 
+const secondsBetween = (fromIso: string, to: Date) =>
+  Math.max(0, Math.floor((to.getTime() - new Date(fromIso).getTime()) / 1000));
+
+/** Stops the workout clock; pausing a paused workout changes nothing. */
+export function pauseWorkout(
+  workoutDraft: WorkoutSessionDraft,
+  now: Date = new Date(),
+): WorkoutSessionDraft {
+  if (workoutDraft.pausedAt) {
+    return workoutDraft;
+  }
+
+  return { ...workoutDraft, pausedAt: now.toISOString() };
+}
+
+/** Restarts the clock, adding the ended pause to the paused total. */
+export function resumeWorkout(
+  workoutDraft: WorkoutSessionDraft,
+  now: Date = new Date(),
+): WorkoutSessionDraft {
+  if (!workoutDraft.pausedAt) {
+    return workoutDraft;
+  }
+
+  return {
+    ...workoutDraft,
+    pausedAt: undefined,
+    pausedSeconds:
+      (workoutDraft.pausedSeconds ?? 0) + secondsBetween(workoutDraft.pausedAt, now),
+  };
+}
+
+/** Paused seconds up to `end`, counting a pause still in progress (FR-5). */
+export function totalPausedSeconds(
+  workoutDraft: WorkoutSessionDraft,
+  end: Date = new Date(),
+): number {
+  const ongoing = workoutDraft.pausedAt ? secondsBetween(workoutDraft.pausedAt, end) : 0;
+  return (workoutDraft.pausedSeconds ?? 0) + ongoing;
+}
+
 export function countWorkoutSets(workoutDraft: WorkoutSessionDraft) {
   return workoutDraft.exercises.reduce(
     (totals, exercise) => ({
@@ -463,13 +527,21 @@ export function countWorkoutSets(workoutDraft: WorkoutSessionDraft) {
 export function toCreateWorkoutSessionInput(
   workoutDraft: WorkoutSessionDraft,
 ): CreateWorkoutSessionInput {
-  const completedAt = new Date().toISOString();
+  const finishedAt = new Date();
+  const completedAt = finishedAt.toISOString();
   const unit = draftUnit(workoutDraft);
+  // Never more than the workout lasted, which the server would refuse.
+  const pausedSeconds = Math.min(
+    totalPausedSeconds(workoutDraft, finishedAt),
+    secondsBetween(workoutDraft.startedAt, finishedAt),
+  );
 
   return {
+    clientId: workoutDraft.clientId,
     routineId: workoutDraft.routineId,
     startedAt: workoutDraft.startedAt,
     completedAt,
+    pausedSeconds,
     notes: workoutDraft.notes?.trim() ? workoutDraft.notes.trim() : undefined,
     exercises: workoutDraft.exercises.map((exercise) => ({
       exerciseId: exercise.exerciseId,
@@ -516,32 +588,97 @@ export function clearLatestCompletedWorkout() {
 }
 
 /**
- * Active (in-progress) workout. Kept in memory so a started routine can be
- * resumed when navigating away and back without losing logged sets. Only one
- * workout can be active at a time.
+ * Active (in-progress) workout. The module variable is the single source of
+ * truth; screens and the persister observe it through
+ * `subscribeActiveWorkout`. Only one workout can be active at a time.
  */
+type ActiveWorkoutListener = () => void;
+const activeWorkoutListeners = new Set<ActiveWorkoutListener>();
+
+function notifyActiveWorkout() {
+  for (const listener of activeWorkoutListeners) {
+    listener();
+  }
+}
+
+/** Calls `listener` after every change to the active workout; returns the unsubscribe. */
+export function subscribeActiveWorkout(listener: ActiveWorkoutListener) {
+  activeWorkoutListeners.add(listener);
+  return () => {
+    activeWorkoutListeners.delete(listener);
+  };
+}
+
+/** Public id of the person the active workout belongs to (spec 0010 FR-3). */
+let activeWorkoutOwnerId: string | null = null;
+
 export function startActiveWorkout(
   routine: Routine,
   unit: WeightUnit = 'kg',
+  ownerId?: string,
 ): WorkoutSessionDraft {
   if (activeWorkout && activeWorkout.routineId === routine.id) {
     return activeWorkout;
   }
 
   activeWorkout = buildWorkoutSessionDraft(routine, unit);
+  activeWorkoutOwnerId = ownerId ?? null;
+  notifyActiveWorkout();
   return activeWorkout;
+}
+
+/** Puts a draft restored from device storage back as the active workout. */
+export function hydrateActiveWorkout(
+  workoutDraft: WorkoutSessionDraft,
+  ownerId: string,
+) {
+  activeWorkout = workoutDraft;
+  activeWorkoutOwnerId = ownerId;
+  notifyActiveWorkout();
 }
 
 export function getActiveWorkout() {
   return activeWorkout;
 }
 
+export function getActiveWorkoutOwnerId() {
+  return activeWorkoutOwnerId;
+}
+
+/**
+ * Called on every sign-in (FR-8): an active workout started by someone else is
+ * discarded, so it is neither shown to nor saved under the new person. One
+ * with no recorded owner is adopted — it cannot be shown to belong to anyone
+ * else, and dropping it would lose logged sets.
+ */
+export function discardActiveWorkoutIfForeign(userId: string) {
+  if (activeWorkout === null) {
+    return;
+  }
+
+  if (activeWorkoutOwnerId === null) {
+    activeWorkoutOwnerId = userId;
+    return;
+  }
+
+  if (activeWorkoutOwnerId !== userId) {
+    clearActiveWorkout();
+  }
+}
+
 export function setActiveWorkout(workoutDraft: WorkoutSessionDraft) {
   activeWorkout = workoutDraft;
+  notifyActiveWorkout();
 }
 
 export function clearActiveWorkout() {
+  if (activeWorkout === null) {
+    return;
+  }
+
   activeWorkout = null;
+  activeWorkoutOwnerId = null;
+  notifyActiveWorkout();
 }
 
 export function hasActiveWorkout() {
@@ -565,6 +702,7 @@ export function toWorkoutSessionSkeleton(
     status: 'completed',
     startedAt: workoutDraft.startedAt,
     completedAt,
+    pausedSeconds: totalPausedSeconds(workoutDraft, new Date(completedAt)),
     exercises: workoutDraft.exercises.map((exercise) => ({
       id: exercise.id,
       workoutSessionId: workoutDraft.id,

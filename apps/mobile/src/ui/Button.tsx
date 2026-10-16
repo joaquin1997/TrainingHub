@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import {
   Pressable,
   type PressableProps,
@@ -6,19 +7,34 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { colors, commonStyles, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
 
-type ButtonVariant = 'primary' | 'secondary' | 'danger';
+/**
+ * `primary` is the screen's one primary action (spec 0017 FR-6); `ghost` is a
+ * text-only action, used for discard/delete links and minor actions.
+ */
+type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
 
 interface ButtonProps {
   label: string;
   onPress: PressableProps['onPress'];
   variant?: ButtonVariant;
+  /** Leading icon. */
+  icon?: keyof typeof Ionicons.glyphMap;
+  /** Ghost buttons only: draw the label in the destructive colour. */
+  destructive?: boolean;
   disabled?: boolean;
   /** Stretch to the container width instead of hugging the label. */
   fullWidth?: boolean;
   style?: ViewStyle;
 }
+
+const labelColor: Record<ButtonVariant, string> = {
+  primary: colors.onPrimary,
+  secondary: colors.text,
+  danger: colors.danger,
+  ghost: colors.textMuted,
+};
 
 /**
  * Shared button used across screens. Wraps a plain Pressable (not Link asChild,
@@ -29,13 +45,18 @@ export function Button({
   label,
   onPress,
   variant = 'primary',
+  icon,
+  destructive = false,
   disabled = false,
   fullWidth = false,
   style,
 }: ButtonProps) {
+  const color = destructive ? colors.danger : labelColor[variant];
+
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
@@ -47,7 +68,8 @@ export function Button({
         style,
       ]}
     >
-      <Text style={[styles.label, styles[`${variant}Label`]]}>{label}</Text>
+      {icon ? <Ionicons name={icon} size={18} color={color} /> : null}
+      <Text style={[styles.label, { color }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -55,9 +77,11 @@ export function Button({
 const styles = StyleSheet.create({
   base: {
     minHeight: 48,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'flex-start',
+    gap: spacing.sm,
     borderRadius: radii.md,
     borderWidth: 1,
     paddingHorizontal: spacing.lg,
@@ -67,28 +91,26 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   primary: {
+    minHeight: 52,
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
   secondary: {
-    backgroundColor: colors.surface,
-    borderColor: colors.borderStrong,
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.border,
   },
   danger: {
     backgroundColor: colors.dangerSoft,
     borderColor: colors.danger,
   },
+  ghost: {
+    backgroundColor: 'transparent',
+    borderColor: 'transparent',
+  },
   label: {
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  primaryLabel: {
-    color: colors.onPrimary,
-  },
-  secondaryLabel: {
-    color: colors.text,
-  },
-  dangerLabel: {
-    color: colors.danger,
+    fontFamily: fonts.displayBold,
+    fontSize: 16,
+    flexShrink: 1,
+    textAlign: 'center',
   },
 });

@@ -13,6 +13,7 @@ vi.mock('../../infrastructure/userContext.js', () => ({
 }));
 
 import { createApp } from '../../app.js';
+import { UnknownExerciseError } from './saveReferences.js';
 import {
   createWorkoutSession,
   findWorkoutSessionById,
@@ -128,8 +129,145 @@ describe('POST /workouts', () => {
     expect(createWorkoutSession).not.toHaveBeenCalled();
   });
 
+  it('returns 400 when startedAt is not a readable date', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/workouts',
+      payload: { ...validPayload, startedAt: 'yesterday-ish' },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({ message: 'Workout times must be valid dates' });
+    expect(createWorkoutSession).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when a set completion time is not a readable date', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/workouts',
+      payload: {
+        ...validPayload,
+        exercises: [
+          {
+            exerciseId: 'ex1',
+            order: 1,
+            sets: [{ order: 1, reps: 8, weightKg: 60, completedAt: 'not-a-date' }],
+          },
+        ],
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({ message: 'Workout times must be valid dates' });
+    expect(createWorkoutSession).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when the workout ends before it starts', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/workouts',
+      payload: { ...validPayload, completedAt: '2026-05-30T08:00:00.000Z' },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({ message: 'A workout cannot end before it starts' });
+    expect(createWorkoutSession).not.toHaveBeenCalled();
+  });
+
+  it('passes a valid pausedSeconds through', async () => {
+    vi.mocked(createWorkoutSession).mockResolvedValue({
+      session: { id: 'w1' },
+      created: true,
+    } as never);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/workouts',
+      payload: { ...validPayload, pausedSeconds: 600 },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(createWorkoutSession).toHaveBeenCalledWith(
+      'user-test',
+      expect.objectContaining({ pausedSeconds: 600 }),
+    );
+  });
+
+  it('accepts a save without pausedSeconds (older apps)', async () => {
+    vi.mocked(createWorkoutSession).mockResolvedValue({
+      session: { id: 'w1' },
+      created: true,
+    } as never);
+
+    const response = await app.inject({ method: 'POST', url: '/workouts', payload: validPayload });
+
+    expect(response.statusCode).toBe(201);
+    expect(createWorkoutSession).toHaveBeenCalledWith(
+      'user-test',
+      expect.objectContaining({ pausedSeconds: undefined }),
+    );
+  });
+
+  it.each([-1, 1.5, '60'])('returns 400 when pausedSeconds is %s', async (pausedSeconds) => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/workouts',
+      payload: { ...validPayload, pausedSeconds },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(createWorkoutSession).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when the workout was paused longer than it lasted', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/workouts',
+      // validPayload lasts 30 minutes.
+      payload: { ...validPayload, pausedSeconds: 30 * 60 + 1 },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      message: "Paused time cannot exceed the workout's duration",
+    });
+    expect(createWorkoutSession).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when clientId is too long', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/workouts',
+      payload: { ...validPayload, clientId: 'x'.repeat(65) },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(createWorkoutSession).not.toHaveBeenCalled();
+  });
+
+  it('passes the clientId through to the repository', async () => {
+    vi.mocked(createWorkoutSession).mockResolvedValue({
+      session: { id: 'w1' },
+      created: true,
+    } as never);
+
+    await app.inject({
+      method: 'POST',
+      url: '/workouts',
+      payload: { ...validPayload, clientId: ' lzx1-abc ' },
+    });
+
+    expect(createWorkoutSession).toHaveBeenCalledWith(
+      'user-test',
+      expect.objectContaining({ clientId: 'lzx1-abc' }),
+    );
+  });
+
   it('creates the session (201) and passes the parsed input', async () => {
-    vi.mocked(createWorkoutSession).mockResolvedValue({ id: 'w1' } as never);
+    vi.mocked(createWorkoutSession).mockResolvedValue({
+      session: { id: 'w1' },
+      created: true,
+    } as never);
 
     const response = await app.inject({
       method: 'POST',
@@ -149,6 +287,39 @@ describe('POST /workouts', () => {
         ],
       }),
     );
+  });
+
+  it('answers 200 with the stored workout when the clientId was already saved', async () => {
+    vi.mocked(createWorkoutSession).mockResolvedValue({
+      session: { id: 'w-first' },
+      created: false,
+    } as never);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/workouts',
+      payload: { ...validPayload, clientId: 'c1' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ id: 'w-first' });
+  });
+
+  it('returns 400 when an exercise does not exist', async () => {
+    vi.mocked(createWorkoutSession).mockRejectedValue(
+      new UnknownExerciseError('ex-gone'),
+    );
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/workouts',
+      payload: validPayload,
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      message: 'Workout references an unknown exercise',
+    });
   });
 
   it('returns 400 when an exercise/routine reference is unknown (Prisma P2025)', async () => {

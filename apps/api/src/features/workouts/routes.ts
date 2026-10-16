@@ -27,6 +27,7 @@ import {
   getExerciseLastPerformance,
   listWorkoutSessions,
 } from './repository.js';
+import { UnknownExerciseError } from './saveReferences.js';
 import { resolveUserPublicId } from '../../infrastructure/userContext.js';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -41,6 +42,47 @@ function parseOptionalNumber(value: unknown) {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
+function isReadableTime(value: string) {
+  return !Number.isNaN(Date.parse(value));
+}
+
+/** Why the workout's times are unacceptable, or undefined when they are fine. */
+function workoutTimesProblem(input: CreateWorkoutSessionInput) {
+  const setTimes = input.exercises.flatMap((exercise) =>
+    exercise.sets.flatMap((set) => (set.completedAt ? [set.completedAt] : [])),
+  );
+  const times = [
+    input.startedAt,
+    ...(input.completedAt ? [input.completedAt] : []),
+    ...setTimes,
+  ];
+
+  if (!times.every(isReadableTime)) {
+    return 'Workout times must be valid dates';
+  }
+
+  if (
+    input.completedAt &&
+    Date.parse(input.completedAt) < Date.parse(input.startedAt)
+  ) {
+    return 'A workout cannot end before it starts';
+  }
+
+  if (
+    input.completedAt &&
+    input.pausedSeconds !== undefined &&
+    input.pausedSeconds * 1000 >
+      Date.parse(input.completedAt) - Date.parse(input.startedAt)
+  ) {
+    return "Paused time cannot exceed the workout's duration";
+  }
+
+  return undefined;
+}
+
+/** Longest accepted `clientId` (spec 0014); the app sends far fewer. */
+const MAX_CLIENT_ID_LENGTH = 64;
+
 function parseOptionalInteger(value: unknown) {
   return typeof value === 'number' && Number.isInteger(value) ? value : undefined;
 }
@@ -53,6 +95,8 @@ function parseWorkoutSetInput(
     return null;
   }
 
+  const completedAt = parseOptionalString(value.completedAt);
+
   return {
     order: parseOptionalInteger(value.order) ?? fallbackOrder,
     type: parseWorkoutSetType(value.type),
@@ -62,7 +106,7 @@ function parseWorkoutSetInput(
     distanceMeters: parseOptionalNumber(value.distanceMeters),
     restSeconds: parseOptionalInteger(value.restSeconds),
     isWarmup: typeof value.isWarmup === 'boolean' ? value.isWarmup : undefined,
-    completedAt: parseOptionalString(value.completedAt),
+    completedAt,
   };
 }
 
@@ -107,6 +151,26 @@ function parseCreateWorkoutSessionInput(
     return null;
   }
 
+  const completedAt = parseOptionalString(body.completedAt);
+
+  // Paused time must be whole, non-negative seconds when sent (spec 0011).
+  const pausedSeconds = body.pausedSeconds;
+  if (
+    pausedSeconds !== undefined &&
+    !(
+      typeof pausedSeconds === 'number' &&
+      Number.isInteger(pausedSeconds) &&
+      pausedSeconds >= 0
+    )
+  ) {
+    return null;
+  }
+
+  const clientId = parseOptionalString(body.clientId);
+  if (clientId && clientId.length > MAX_CLIENT_ID_LENGTH) {
+    return null;
+  }
+
   const exercisesInput = Array.isArray(body.exercises) ? body.exercises : [];
   const exercises = exercisesInput
     .map((exercise, index) => parseWorkoutExerciseInput(exercise, index + 1))
@@ -117,9 +181,11 @@ function parseCreateWorkoutSessionInput(
   }
 
   return {
+    clientId,
     routineId: parseOptionalString(body.routineId),
     startedAt: body.startedAt,
-    completedAt: parseOptionalString(body.completedAt),
+    completedAt,
+    pausedSeconds,
     notes: parseOptionalString(body.notes),
     exercises,
   };
@@ -166,6 +232,11 @@ export async function registerWorkoutRoutes(app: FastifyInstance) {
       return reply.code(400).send({ message: 'Invalid workout payload' });
     }
 
+    const timesProblem = workoutTimesProblem(parsedInput);
+    if (timesProblem) {
+      return reply.code(400).send({ message: timesProblem });
+    }
+
     const hasCompletedSet = parsedInput.exercises.some((exercise) =>
       exercise.sets.some((set) => Boolean(set.completedAt)),
     );
@@ -177,14 +248,21 @@ export async function registerWorkoutRoutes(app: FastifyInstance) {
     }
 
     try {
-      const session = await createWorkoutSession(
+      const { session, created } = await createWorkoutSession(
         await resolveUserPublicId(request),
         parsedInput,
       );
 
-      return reply.code(201).send(session);
+      // A repeated clientId answers with the workout saved first (spec 0014).
+      return reply.code(created ? 201 : 200).send(session);
     } catch (error) {
-      // Prisma throws P2025 when a connected exercise/routine publicId is unknown.
+      if (error instanceof UnknownExerciseError) {
+        return reply.code(400).send({
+          message: 'Workout references an unknown exercise',
+        });
+      }
+
+      // Safety net: a reference deleted between the check and the create.
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2025'

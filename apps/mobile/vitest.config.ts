@@ -5,7 +5,8 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    // `modules/` holds plain-JS checks on native sources (not type-checked).
+    include: ['src/**/*.test.ts', 'modules/**/*.test.mjs'],
   },
   resolve: {
     alias: {

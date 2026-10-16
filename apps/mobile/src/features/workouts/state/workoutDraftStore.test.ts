@@ -1,5 +1,5 @@
 import type { Routine } from '@workout/domain';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   addExerciseToWorkout,
@@ -7,18 +7,26 @@ import {
   applyLastPerformance,
   buildWorkoutSessionDraft,
   cycleWorkoutSetType,
+  discardActiveWorkoutIfForeign,
+  getActiveWorkoutOwnerId,
+  hydrateActiveWorkout,
   removeExerciseFromWorkout,
   clearActiveWorkout,
   countWorkoutSets,
   moveWorkoutExercise,
   moveWorkoutSet,
+  pauseWorkout,
+  resumeWorkout,
+  totalPausedSeconds,
   removeSetFromWorkoutExercise,
   getActiveWorkout,
   hasActiveWorkout,
   isActiveWorkoutForRoutine,
   setActiveWorkout,
   startActiveWorkout,
+  subscribeActiveWorkout,
   toCreateWorkoutSessionInput,
+  toWorkoutSessionSkeleton,
   toggleWorkoutSetDone,
   type WorkoutSessionDraft,
 } from './workoutDraftStore';
@@ -93,10 +101,31 @@ describe('buildWorkoutSessionDraft', () => {
   });
 });
 
+describe('workout identity (spec 0014)', () => {
+  it('gives two workouts of the same routine different identities', () => {
+    const first = buildWorkoutSessionDraft(routine);
+    const second = buildWorkoutSessionDraft(routine);
+
+    expect(first.id).toBe(second.id);
+    expect(first.clientId).not.toBe(second.clientId);
+    expect(first.clientId).toMatch(/^[0-9a-z]+-[0-9a-z]{8}$/);
+  });
+
+  it('keeps the identity across edits and sends it with the save', () => {
+    const draft = buildWorkoutSessionDraft(routine);
+    const set = draft.exercises[0]!.entries[0]!;
+    const edited = toggleWorkoutSetDone(draft, draft.exercises[0]!.id, set.id);
+
+    expect(edited.clientId).toBe(draft.clientId);
+    expect(toCreateWorkoutSessionInput(edited).clientId).toBe(draft.clientId);
+  });
+});
+
 describe('toCreateWorkoutSessionInput', () => {
   it('coerces logged strings to numbers and drops empties', () => {
     const draft: WorkoutSessionDraft = {
       id: 'w1',
+      clientId: 'c1',
       routineId: 'routine-1',
       routineName: 'Push Day',
       startedAt: '2026-05-30T09:00:00.000Z',
@@ -129,6 +158,7 @@ describe('toCreateWorkoutSessionInput', () => {
   it('logs the ghosted placeholder when the actual field is left empty', () => {
     const draft: WorkoutSessionDraft = {
       id: 'w1',
+      clientId: 'c1',
       routineId: 'routine-1',
       routineName: 'Push Day',
       startedAt: '2026-05-30T09:00:00.000Z',
@@ -175,6 +205,7 @@ describe('toCreateWorkoutSessionInput', () => {
   it('converts lb input back to canonical kg on persist', () => {
     const draft: WorkoutSessionDraft = {
       id: 'w1',
+      clientId: 'c1',
       routineId: 'routine-1',
       routineName: 'Push Day',
       startedAt: '2026-05-30T09:00:00.000Z',
@@ -208,6 +239,7 @@ describe('toCreateWorkoutSessionInput', () => {
   it('stamps completedAt on sets marked done', () => {
     const draft: WorkoutSessionDraft = {
       id: 'w1',
+      clientId: 'c1',
       routineId: 'routine-1',
       routineName: 'Push Day',
       startedAt: '2026-05-30T09:00:00.000Z',
@@ -436,5 +468,199 @@ describe('set type', () => {
 
     const drop = cycleWorkoutSetType(warmup, exercise.id, setId);
     expect(drop.exercises[0]!.entries[0]!.type).toBe('drop');
+  });
+});
+
+describe('toWorkoutSessionSkeleton', () => {
+  const draftWith = (unit: 'kg' | 'lb'): WorkoutSessionDraft => ({
+    id: 'w1',
+    clientId: 'c1',
+    routineId: 'routine-1',
+    routineName: 'Push Day',
+    startedAt: '2026-05-30T09:00:00.000Z',
+    unit,
+    exercises: [
+      {
+        id: 'we-1',
+        exerciseId: 'ex-bench',
+        exerciseName: 'Bench',
+        routineExerciseId: 're-bench',
+        order: 1,
+        entries: [
+          {
+            id: 's1',
+            order: 1,
+            reps: '',
+            weightKg: '',
+            repsPlaceholder: '8',
+            weightPlaceholder: '100',
+            done: true,
+            type: 'normal',
+          },
+          { id: 's2', order: 2, reps: '', weightKg: '', done: false, type: 'normal' },
+        ],
+      },
+    ],
+  });
+
+  it('carries the values that get saved, placeholders included (spec 0013 FR-6)', () => {
+    const sets = toWorkoutSessionSkeleton(draftWith('kg')).exercises[0]?.sets;
+
+    expect(sets?.map((set) => [set.reps, set.weightKg])).toEqual([
+      [8, 100],
+      [undefined, undefined],
+    ]);
+  });
+
+  it('converts a placeholder typed in lb to canonical kg', () => {
+    const set = toWorkoutSessionSkeleton(draftWith('lb')).exercises[0]?.sets[0];
+
+    expect(set?.weightKg).toBeCloseTo(45.36, 1);
+  });
+});
+
+describe('generated draft ids (spec 0010)', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.resetModules();
+  });
+
+  async function firstGeneratedSetId(now: string) {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(now));
+    vi.resetModules();
+    const store = await import('./workoutDraftStore');
+    const draft = store.buildWorkoutSessionDraft(routine);
+    const exerciseId = draft.exercises[0]!.id;
+    const withSet = store.addSetToWorkoutExercise(draft, exerciseId);
+    return withSet.exercises[0]!.entries.at(-1)!.id;
+  }
+
+  it('do not repeat after an app restart', async () => {
+    const beforeRestart = await firstGeneratedSetId('2026-10-16T09:00:00.000Z');
+    const afterRestart = await firstGeneratedSetId('2026-10-16T09:20:00.000Z');
+
+    expect(beforeRestart).not.toBe(afterRestart);
+  });
+});
+
+describe('subscribeActiveWorkout (spec 0010)', () => {
+  beforeEach(() => {
+    clearActiveWorkout();
+  });
+
+  it('notifies on start, set and clear, and stops after unsubscribe', () => {
+    const calls: Array<string | null> = [];
+    const unsubscribe = subscribeActiveWorkout(() => {
+      calls.push(getActiveWorkout()?.routineId ?? null);
+    });
+
+    const draft = startActiveWorkout(routine);
+    setActiveWorkout({ ...draft, notes: 'heavy day' });
+    clearActiveWorkout();
+    unsubscribe();
+    startActiveWorkout(routine);
+
+    expect(calls).toEqual(['routine-1', 'routine-1', null]);
+  });
+
+  it('does not notify when resuming the same routine or clearing nothing', () => {
+    let calls = 0;
+    startActiveWorkout(routine);
+    const unsubscribe = subscribeActiveWorkout(() => {
+      calls += 1;
+    });
+
+    startActiveWorkout(routine);
+    clearActiveWorkout();
+    clearActiveWorkout();
+    unsubscribe();
+
+    expect(calls).toBe(1);
+  });
+});
+
+describe('active workout owner (spec 0010)', () => {
+  beforeEach(() => {
+    clearActiveWorkout();
+  });
+
+  it('keeps the workout when its owner signs in again', () => {
+    startActiveWorkout(routine, 'kg', 'user-a');
+    discardActiveWorkoutIfForeign('user-a');
+
+    expect(hasActiveWorkout()).toBe(true);
+  });
+
+  it('discards a workout started by someone else', () => {
+    startActiveWorkout(routine, 'kg', 'user-a');
+    discardActiveWorkoutIfForeign('user-b');
+
+    expect(hasActiveWorkout()).toBe(false);
+    expect(getActiveWorkoutOwnerId()).toBeNull();
+  });
+
+  it('adopts a workout with no recorded owner', () => {
+    startActiveWorkout(routine);
+    discardActiveWorkoutIfForeign('user-a');
+
+    expect(hasActiveWorkout()).toBe(true);
+    expect(getActiveWorkoutOwnerId()).toBe('user-a');
+  });
+
+  it('records the owner of a restored workout', () => {
+    hydrateActiveWorkout(buildWorkoutSessionDraft(routine), 'user-a');
+
+    expect(getActiveWorkoutOwnerId()).toBe('user-a');
+    discardActiveWorkoutIfForeign('user-b');
+    expect(hasActiveWorkout()).toBe(false);
+  });
+});
+
+describe('pause (spec 0011)', () => {
+  const at = (minutes: number) => new Date(Date.UTC(2026, 9, 16, 9, minutes));
+  const started = () => ({ ...buildWorkoutSessionDraft(routine), startedAt: at(0).toISOString() });
+
+  it('accumulates paused time across pause/resume cycles', () => {
+    let draft = started();
+    draft = pauseWorkout(draft, at(10));
+    draft = resumeWorkout(draft, at(15));
+    draft = pauseWorkout(draft, at(30));
+    draft = resumeWorkout(draft, at(32));
+
+    expect(draft.pausedAt).toBeUndefined();
+    expect(draft.pausedSeconds).toBe(7 * 60);
+  });
+
+  it('ignores pausing twice or resuming while running', () => {
+    const running = started();
+    const paused = pauseWorkout(running, at(5));
+
+    expect(pauseWorkout(paused, at(8))).toBe(paused);
+    expect(resumeWorkout(running, at(8))).toBe(running);
+  });
+
+  it('counts a pause still in progress', () => {
+    const draft = pauseWorkout({ ...started(), pausedSeconds: 60 }, at(20));
+
+    expect(totalPausedSeconds(draft, at(30))).toBe(60 + 10 * 60);
+  });
+
+  it('sends the paused time, an ongoing pause included, when finishing paused', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(at(60));
+    const draft = pauseWorkout(resumeWorkout(pauseWorkout(started(), at(10)), at(20)), at(50));
+
+    expect(toCreateWorkoutSessionInput(draft).pausedSeconds).toBe(20 * 60);
+    vi.useRealTimers();
+  });
+
+  it('never sends more paused time than the workout lasted', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(at(30));
+    const draft = { ...started(), pausedSeconds: 99 * 60 };
+
+    expect(toCreateWorkoutSessionInput(draft).pausedSeconds).toBe(30 * 60);
+    vi.useRealTimers();
   });
 });

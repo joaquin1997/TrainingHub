@@ -15,6 +15,11 @@ export const androidHealthConnectIntegration: HealthIntegration = {
     // TODO: Replace placeholder permission request with Health Connect authorization flow.
     return false;
   },
+  async readActiveEnergyKcal() {
+    // Unknown, never 0 (spec 0012 EF-2). TODO: read Health Connect when an
+    // Android live status is specified.
+    return null;
+  },
 };
 
 export const androidHealthConnectLiveWorkoutBridge: LiveWorkoutBridge = {

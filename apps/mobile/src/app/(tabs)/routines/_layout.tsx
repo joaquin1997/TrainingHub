@@ -8,7 +8,7 @@ export default function RoutinesStackLayout() {
 
   return (
     <Stack screenOptions={screenHeader}>
-      <Stack.Screen name="index" options={{ title: t('nav.routines') }} />
+      <Stack.Screen name="index" options={{ title: t('nav.routines'), headerShown: false }} />
       <Stack.Screen name="create" options={{ title: t('nav.createRoutine') }} />
       <Stack.Screen name="[routineId]" options={{ title: t('nav.routine') }} />
       <Stack.Screen name="edit/[routineId]" options={{ title: t('nav.editRoutine') }} />

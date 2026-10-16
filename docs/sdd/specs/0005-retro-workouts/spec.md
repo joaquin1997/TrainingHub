@@ -66,14 +66,10 @@ cannot reinterpret numbers already typed.
 
 - Background rest notification — needs `expo-notifications` (native dependency,
   full rebuild). Deferred; see roadmap area 2.
-- The active workout lives **in memory only**. It survives navigation, not an
-  app restart. This is also why spec 0001 EF-4 could only bound its guarantee
-  to the running app.
-
-`TODO(sdd): persisting the active workout draft would close both the restart`
-`gap and 0001's EF-4 limitation. It is a real piece of work with its own`
-`decisions (where it persists, what happens if the server's copy diverges) and`
-`deserves its own spec rather than being smuggled into another change.`
+- ~~The active workout lives in memory only.~~ **Closed by spec 0010
+  (2026-10-16):** the active workout is stored on the device, scoped to the
+  person who started it, and restored after the app is closed — offline too.
+  This also lifts the "running app only" bound on spec 0001 EF-4.
 
 ## Related
 

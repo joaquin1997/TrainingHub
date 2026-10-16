@@ -34,7 +34,18 @@
 - (2026-05-31) Volume distribution (`6e6a553`): `GET /progress/muscle-distribution`
   sums volume per exercise **category** (`buildMuscleGroupVolume`), rendered as
   horizontal bars. Category stands in for muscle group because wger's muscle
-  data is sparse — the UI label still says "muscle group", which overstates it.
+  data is sparse. (The label said "muscle group" until spec 0013 renamed it.)
+- (2026-09-24 → 2026-10-16) Spec 0013 — progress counts only performed work.
+  One rule in the API (`performedSets.ts`): a set is performed when marked
+  done, or when it belongs to a legacy session (no set marked done at all).
+  Progress, records, 1RM, weekly volume, volume by category and "last time"
+  read only performed sets; warmups count for volume but never for best
+  weight, best reps, 1RM or records. History and detail use the server's
+  `performed` flag; the post-workout summary shows the saved values; the
+  distribution is now labelled "by category".
+  **Figures drop on purpose** after the API is redeployed: sets that were
+  saved but never marked done stop counting. No data was changed — progress
+  is derived, so the old numbers were the bug, not the new ones.
 - (2026-05-31) Training-frequency tiles (`2cdc6c4`): streak, total workouts,
   active weeks and best week, derived on the device from the weekly-volume data
   (`summarizeTrainingFrequency`).

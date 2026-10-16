@@ -9,6 +9,8 @@ import {
 
 import { authClient } from '@/features/auth/api/authClient';
 import { tokenStorage } from '@/features/auth/tokenStorage';
+import { tokenSubject } from '@/features/auth/tokenSubject';
+import { discardActiveWorkoutIfForeign } from '@/features/workouts/state/workoutDraftStore';
 import { setAuthToken, setOnUnauthorized } from '@/lib/http';
 import type { User } from '@workout/domain';
 
@@ -45,8 +47,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((token) => {
         if (active && token) {
           setAuthToken(token);
-          // We don't have a /me endpoint yet; a stored token means logged in.
-          setUser((current) => current ?? { id: 'me', displayName: '', createdAt: '', updatedAt: '' });
+          // No /me endpoint yet (spec 0001): a stored token means signed in,
+          // and its subject is who. 'me' only for an unreadable token.
+          const id = tokenSubject(token) ?? 'me';
+          setUser((current) => current ?? { id, displayName: '', createdAt: '', updatedAt: '' });
         }
       })
       .finally(() => {
@@ -68,6 +72,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [signOut]);
 
   const persist = useCallback(async (token: string, nextUser: User) => {
+    // A workout left in memory by someone else must not carry over (FR-8).
+    discardActiveWorkoutIfForeign(nextUser.id);
     setAuthToken(token);
     await tokenStorage.set(token);
     setUser(nextUser);

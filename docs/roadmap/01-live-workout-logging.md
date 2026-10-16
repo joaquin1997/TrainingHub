@@ -12,6 +12,10 @@ previous performance, set types, and persist completion.
 - [x] Set types (warmup / drop / failure) — UI + persistence
 - [x] Ghosted previous/target values as input placeholders (Hevy-style): unedited
   sets still log their default; edited values switch to normal text
+- [x] Active workout survives the app being closed (spec 0010)
+- [x] Pause / resume the workout; durations are active time (spec 0011)
+- [x] Safe save (spec 0014): retries never duplicate, a deleted routine never
+  blocks the save, the active workout's routine is locked from deletion
 
 ## Design notes
 - Source of truth for the live session is the mobile `workoutDraftStore`
@@ -34,3 +38,26 @@ previous performance, set types, and persist completion.
   (`effectiveSetValue`), so an unedited set logs its default; typing switches the
   field to normal text. New `applyLastPerformance` seeds placeholders from the
   last-performance fetch.
+- (2026-10-16) Spec 0014 — workout save integrity. Each workout carries a
+  device-chosen `clientId`; the API returns the first save for a repeated one
+  (200), including a concurrent duplicate (unique `userId + clientId`).
+  Routine and routine-slot links are optional provenance, kept only when they
+  are the user's own; unknown exercises and unreadable or inverted times are
+  refused with a reason. The routines list and detail no longer offer edit or
+  delete for the active workout's routine, and the detail confirms deletes.
+  Needs the `add_workout_session_client_id` migration applied before the API
+  redeploy.
+- (2026-10-16) Spec 0010 — the active workout is kept on the device
+  (AsyncStorage, native → rebuild) in a versioned envelope with its owner,
+  written 300 ms after each change and on leaving the foreground, restored
+  before any screen reads it (or right after sign-in when the app starts signed
+  out). A different person signing in discards it; an expired session keeps
+  it. The store is observable (`useSyncExternalStore`), an active workout opens
+  without the network, discarding and logging out with a workout in progress
+  ask first, and a workout the server refuses can be discarded.
+- (2026-10-16) Spec 0011 — pause. The draft keeps `pausedAt` (current pause)
+  and `pausedSeconds` (ended pauses); finishing while paused counts the ongoing
+  pause. The API stores `pausedSeconds` (default 0, so older workouts read as
+  before) and refuses more paused time than the workout lasted. Every duration
+  on screen is active duration. Needs the `add_workout_session_paused_seconds`
+  migration before the API redeploy.

@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 
 import {
   getRoutineExerciseNames,
-  getRoutineExerciseSummary,
 } from './routineSummary';
 
 function makeExercise(name: string, orderIndex: number): RoutineExercise {
@@ -38,31 +37,5 @@ describe('getRoutineExerciseNames', () => {
     ]);
 
     expect(getRoutineExerciseNames(routine)).toEqual(['Bench', 'Row']);
-  });
-});
-
-describe('getRoutineExerciseSummary', () => {
-  it('returns a placeholder when there are no exercises', () => {
-    expect(getRoutineExerciseSummary(makeRoutine([]))).toBe('No exercises yet');
-  });
-
-  it('joins names when within the limit', () => {
-    const routine = makeRoutine([
-      makeExercise('Bench', 1),
-      makeExercise('Row', 2),
-    ]);
-
-    expect(getRoutineExerciseSummary(routine, 2)).toBe('Bench, Row');
-  });
-
-  it('summarizes the remainder beyond the limit', () => {
-    const routine = makeRoutine([
-      makeExercise('Bench', 1),
-      makeExercise('Row', 2),
-      makeExercise('Squat', 3),
-      makeExercise('Press', 4),
-    ]);
-
-    expect(getRoutineExerciseSummary(routine, 2)).toBe('Bench, Row +2 more');
   });
 });

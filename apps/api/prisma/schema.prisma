@@ -150,9 +150,13 @@ model WorkoutSession {
   publicId    String            @unique @default(cuid())
   userId      BigInt
   routineId   BigInt?
+  /// Device-chosen workout identity; a repeated save returns the first one (spec 0014).
+  clientId    String?
   status      String
   startedAt   DateTime
   completedAt DateTime?
+  /// Whole seconds paused; active duration = elapsed − this (spec 0011).
+  pausedSeconds Int             @default(0)
   notes       String?
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
@@ -160,6 +164,7 @@ model WorkoutSession {
   routine     Routine?          @relation(fields: [routineId], references: [id], onDelete: SetNull)
   exercises   WorkoutExercise[]
 
+  @@unique([userId, clientId])
   @@index([userId, startedAt])
 }
 

@@ -1,4 +1,5 @@
-import { Link, useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -17,11 +18,13 @@ import { progressClient } from '@/features/progress/api/progressClient';
 import { buildWeeklyVolumeSeries } from '@/features/progress/utils/chartData';
 import { summarizeTrainingFrequency } from '@/features/progress/utils/trainingFrequency';
 import { useSettings } from '@/features/settings/SettingsContext';
-import { EmptyState } from '@/ui/EmptyState';
 import { formatShortDate } from '@/lib/format';
 import { formatWeightValue, fromKg, roundWeight } from '@/lib/weight';
 import { useRefresh } from '@/lib/useRefresh';
-import { colors, commonStyles, radii, spacing } from '@/ui/theme';
+import { Chip } from '@/ui/Chip';
+import { ScreenTitle } from '@/ui/ScreenTitle';
+import { StateView } from '@/ui/StateView';
+import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
 import type {
   ExerciseProgressSummary,
   MuscleGroupVolumePoint,
@@ -33,7 +36,8 @@ function formatValue(value?: number) {
 }
 
 export function ProgressOverviewScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const router = useRouter();
   const [progress, setProgress] = useState<ExerciseProgressSummary[]>([]);
   const [weeklyVolume, setWeeklyVolume] = useState<WeeklyVolumePoint[]>([]);
   const [muscleVolume, setMuscleVolume] = useState<MuscleGroupVolumePoint[]>([]);
@@ -99,6 +103,8 @@ export function ProgressOverviewScreen() {
   const hasEmptyState = !isLoading && !errorMessage && progress.length === 0;
   const hasListState = !errorMessage && progress.length > 0;
 
+  const formatAxisDate = (date: string) => formatShortDate(date, i18n.language);
+
   return (
     <ScrollView
       style={styles.screen}
@@ -107,81 +113,103 @@ export function ProgressOverviewScreen() {
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
-      <Text style={styles.body}>{t('progress.intro')}</Text>
+      <ScreenTitle title={t('nav.progress')} />
       <FrequencySummary summary={frequency} />
       {weeklyVolumeSeries.bars.length > 0 ? (
         <ProgressChart
           title={t('progress.weeklyVolume')}
           unit={unit}
           series={weeklyVolumeSeries}
-          formatLabel={formatShortDate}
+          formatLabel={formatAxisDate}
         />
       ) : null}
-      <MuscleDistribution points={muscleVolume} />
-      {showLoading ? (
-        <View style={styles.card}>
-          <Text style={styles.meta}>{t('progress.loading')}</Text>
-        </View>
-      ) : null}
+      <MuscleDistribution points={muscleVolume} unit={unit} />
+      {showLoading ? <StateView kind="loading" message={t('progress.loading')} /> : null}
       {errorMessage ? (
-        <View style={styles.card}>
-          <Text style={styles.error}>{errorMessage}</Text>
-        </View>
+        <StateView
+          kind="error"
+          message={errorMessage}
+          actionLabel={t('common.retry')}
+          onAction={() => void onRefresh()}
+        />
       ) : null}
       {hasEmptyState ? (
-        <EmptyState
-          icon="stats-chart-outline"
+        <StateView
+          kind="empty"
+          icon="trending-up-outline"
           title={t('progress.emptyTitle')}
-          subtitle={t('progress.emptySubtitle')}
+          message={t('progress.emptySubtitle')}
         />
       ) : null}
       {hasListState ? (
         <View style={styles.list}>
+          <Text style={styles.sectionLabel}>{t('progress.byExercise')}</Text>
           {progress.map((exercise) => (
-            <Link
+            <Pressable
               key={exercise.exerciseId}
-              href={`/progress/exercises/${exercise.exerciseId}`}
-              asChild
+              accessibilityRole="button"
+              onPress={() => router.push(`/progress/exercises/${exercise.exerciseId}`)}
+              style={({ pressed }) => [styles.card, pressed ? styles.cardPressed : null]}
             >
-              <Pressable
-                style={({ pressed }) => [
-                  styles.card,
-                  pressed ? styles.cardPressed : null,
-                ]}
-              >
-                <View style={styles.cardTitleRow}>
-                  <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
-                  {exercise.isRecordSession ? (
-                    <Text style={styles.prBadge}>{t('progress.pr')}</Text>
-                  ) : null}
-                </View>
-                <Text style={styles.meta}>
-                  {t('progress.latest', {
-                    weight: formatWeightValue(exercise.latestWeightKg, unit),
-                    unit,
-                    reps: formatValue(exercise.latestReps),
-                  })}
-                </Text>
-                <Text style={styles.meta}>
-                  {t('progress.best', {
-                    weight: formatWeightValue(exercise.personalBestWeightKg, unit),
-                    unit,
-                    reps: formatValue(exercise.personalBestReps),
-                  })}
-                </Text>
-                <Text style={styles.meta}>
-                  {t('progress.est1rm', {
-                    weight: formatWeightValue(exercise.bestEstimatedOneRepMax, unit),
-                    unit,
-                    count: exercise.sessionCount,
-                  })}
-                </Text>
-              </Pressable>
-            </Link>
+              <View style={styles.cardTitleRow}>
+                <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
+                {exercise.isRecordSession ? (
+                  <Chip icon="trophy" tone="record" size="sm" label={t('progress.pr')} />
+                ) : null}
+                <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
+              </View>
+              <View style={styles.figures}>
+                <Figure
+                  label={t('progress.latestLabel')}
+                  value={formatWeightValue(exercise.latestWeightKg, unit)}
+                  unit={unit}
+                  reps={formatValue(exercise.latestReps)}
+                />
+                <Figure
+                  label={t('progress.bestLabel')}
+                  value={formatWeightValue(exercise.personalBestWeightKg, unit)}
+                  unit={unit}
+                  reps={formatValue(exercise.personalBestReps)}
+                />
+                <Figure
+                  label={t('progress.est1rmShort')}
+                  value={formatWeightValue(exercise.bestEstimatedOneRepMax, unit)}
+                  unit={unit}
+                />
+              </View>
+              <Text style={styles.meta}>
+                {t('progress.sessionsCount', { count: exercise.sessionCount })}
+              </Text>
+            </Pressable>
           ))}
         </View>
       ) : null}
     </ScrollView>
+  );
+}
+
+function Figure({
+  label,
+  value,
+  unit,
+  reps,
+}: {
+  label: string;
+  value: string;
+  unit: string;
+  reps?: string;
+}) {
+  return (
+    <View style={styles.figure}>
+      <Text style={styles.figureLabel} numberOfLines={1}>
+        {label}
+      </Text>
+      <Text style={styles.figureValue}>
+        {value}
+        <Text style={styles.figureUnit}>{` ${unit}`}</Text>
+      </Text>
+      {reps !== undefined ? <Text style={styles.figureReps}>{`× ${reps}`}</Text> : null}
+    </View>
   );
 }
 
@@ -192,46 +220,63 @@ const styles = StyleSheet.create({
   container: {
     ...commonStyles.scrollContent,
   },
-  title: {
-    ...commonStyles.title,
-  },
-  body: {
-    ...commonStyles.body,
+  sectionLabel: {
+    ...commonStyles.sectionLabel,
+    marginTop: spacing.sm,
   },
   list: {
     gap: spacing.md,
   },
   card: {
     ...commonStyles.card,
+    gap: spacing.md,
   },
   cardPressed: {
     ...commonStyles.pressed,
   },
   cardTitleRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: spacing.sm,
   },
   cardTitle: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: '700',
-    flexShrink: 1,
+    ...commonStyles.cardTitle,
+    flex: 1,
   },
-  prBadge: {
-    color: colors.onPrimary,
-    backgroundColor: colors.primary,
+  figures: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  figure: {
+    flex: 1,
+    gap: 2,
+    borderRadius: radii.md,
+    backgroundColor: colors.surfaceRaised,
+    padding: spacing.sm,
+  },
+  figureLabel: {
+    ...commonStyles.sectionLabel,
+    fontSize: 10,
+  },
+  figureValue: {
+    color: colors.text,
+    fontFamily: fonts.displayBold,
+    fontSize: 16,
+    fontVariant: ['tabular-nums'],
+  },
+  figureReps: {
+    color: colors.textMuted,
+    fontFamily: fonts.display,
     fontSize: 13,
-    fontWeight: '900',
-    borderRadius: radii.sm,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    overflow: 'hidden',
+    fontVariant: ['tabular-nums'],
+  },
+  figureUnit: {
+    color: colors.textMuted,
+    fontFamily: fonts.display,
+    fontSize: 12,
   },
   meta: {
     ...commonStyles.meta,
-  },
-  error: {
-    ...commonStyles.error,
+    fontSize: 13,
   },
 });

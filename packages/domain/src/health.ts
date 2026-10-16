@@ -12,9 +12,27 @@ export type HealthProviderId = 'apple-health' | 'android-health-connect';
 export interface HealthWorkoutPayload {
   workoutSessionId: string;
   routineId?: string;
+  routineName?: string;
   startedAt: ISODateString;
   completedAt?: ISODateString;
   exerciseCount: number;
+  /** Set while the workout is paused (spec 0011). */
+  pausedAt?: ISODateString;
+  /** Whole seconds of pauses already ended. */
+  pausedSeconds?: number;
+  /** Active energy since the start, in kcal; null when unknown (spec 0012). */
+  activeEnergyKcal?: number | null;
+}
+
+/**
+ * What a live workout surface (e.g. the iOS Live Activity) currently shows. It
+ * can change outside the app, e.g. a pause tapped on the lock screen.
+ */
+export interface LiveWorkoutState {
+  workoutSessionId: string;
+  pausedAt?: ISODateString;
+  pausedSeconds: number;
+  updatedAt: ISODateString;
 }
 
 /**
@@ -25,6 +43,16 @@ export interface HealthIntegration {
   displayName: string;
   isAvailable(): Promise<boolean>;
   requestPermissions(): Promise<boolean>;
+  /**
+   * Active energy burned between two instants, in kcal (spec 0012). Resolves
+   * null when there is no data or no permission (the provider may not tell
+   * them apart); rejects when the data cannot be read right now, so callers
+   * can keep the last known value.
+   */
+  readActiveEnergyKcal(
+    since: ISODateString,
+    until?: ISODateString,
+  ): Promise<number | null>;
 }
 
 /**
@@ -36,12 +64,17 @@ export interface WorkoutSyncService {
 }
 
 /**
- * Mobile-side boundary for future live workout mirroring to watches or native health surfaces.
+ * Mobile-side boundary for mirroring the active workout to a live surface
+ * outside the app (the iOS Live Activity today; watches later).
  */
 export interface LiveWorkoutBridge {
   providerId: HealthProviderId;
   startLiveWorkout(payload: HealthWorkoutPayload): Promise<void>;
   updateLiveWorkout(payload: HealthWorkoutPayload): Promise<void>;
   finishLiveWorkout(payload: HealthWorkoutPayload): Promise<void>;
+  /** What the surface shows now, or null when nothing is shown. Optional: no-op bridges omit it. */
+  getLiveWorkoutState?(): Promise<LiveWorkoutState | null>;
+  /** Changes made on the surface itself; returns the unsubscribe. */
+  onLiveWorkoutStateChange?(listener: (state: LiveWorkoutState) => void): () => void;
 }
 

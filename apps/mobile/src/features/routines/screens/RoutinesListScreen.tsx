@@ -1,9 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Link, useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -15,15 +14,18 @@ import {
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { buildRoutineCopyInput } from '@/features/routines/utils/duplicateRoutine';
 import { groupRoutinesByFolder } from '@/features/routines/utils/groupRoutinesByFolder';
-import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
+import { getRoutineExerciseNames } from '@/features/routines/utils/routineSummary';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
 import { ActionSheet } from '@/ui/ActionSheet';
 import { Button } from '@/ui/Button';
-import { EmptyState } from '@/ui/EmptyState';
+import { Chip } from '@/ui/Chip';
+import { confirmAction } from '@/lib/confirmAction';
 import { formatDuration } from '@/lib/format';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { useRefresh } from '@/lib/useRefresh';
-import { colors, commonStyles, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, spacing } from '@/ui/theme';
+import { ScreenTitle } from '@/ui/ScreenTitle';
+import { StateView } from '@/ui/StateView';
 import type { Routine } from '@workout/domain';
 
 export function RoutinesListScreen() {
@@ -73,7 +75,10 @@ export function RoutinesListScreen() {
 
   const router = useRouter();
   const activeWorkout = useActiveWorkout();
-  const elapsedSeconds = useElapsedSeconds(activeWorkout?.startedAt);
+  const elapsedSeconds = useElapsedSeconds(activeWorkout?.startedAt, {
+    pausedAt: activeWorkout?.pausedAt,
+    pausedSeconds: activeWorkout?.pausedSeconds,
+  });
   const { isRefreshing, onRefresh } = useRefresh(loadRoutines);
   const showLoading = isLoading && routines.length === 0;
   const hasEmptyState = !isLoading && !errorMessage && routines.length === 0;
@@ -92,33 +97,30 @@ export function RoutinesListScreen() {
     }
   };
 
-  const handleDelete = (routine: Routine) => {
-    Alert.alert(
-      t('routines.deleteTitle'),
-      t('routines.deleteConfirm', { name: routine.name }),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('common.delete'),
-          style: 'destructive',
-          onPress: () => {
-            void (async () => {
-              try {
-                await routinesClient.remove(routine.id);
-                await loadRoutines();
-              } catch (error) {
-                setErrorMessage(
-                  error instanceof Error
-                    ? error.message
-                    : t('routines.deleteError'),
-                );
-              }
-            })();
-          },
-        },
-      ],
-    );
+  const handleDelete = async (routine: Routine) => {
+    const confirmed = await confirmAction({
+      title: t('routines.deleteTitle'),
+      message: t('routines.deleteConfirm', { name: routine.name }),
+      confirmLabel: t('common.delete'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await routinesClient.remove(routine.id);
+      await loadRoutines();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : t('routines.deleteError'),
+      );
+    }
   };
+
+  const menuRoutineLocked =
+    menuRoutine !== null && activeWorkout?.routineId === menuRoutine.id;
 
   const startTarget = (routine: Routine) =>
     activeWorkout && activeWorkout.routineId !== routine.id
@@ -141,57 +143,61 @@ export function RoutinesListScreen() {
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
-      <Text style={styles.body}>{t('routines.intro')}</Text>
-      {activeWorkout ? (
-        <Link
-          href={{
-            pathname: '/workouts/active',
-            params: { routineId: activeWorkout.routineId },
-          }}
-          asChild
-        >
-          <Pressable style={styles.banner}>
-            <Text style={styles.bannerTitle}>
-              {t('routines.workoutInProgress', {
-                duration: formatDuration(elapsedSeconds),
-              })}
-            </Text>
-            <Text style={styles.bannerMeta}>
-              {t('routines.tapToResume', { name: activeWorkout.routineName })}
-            </Text>
-          </Pressable>
-        </Link>
-      ) : null}
-      <Button
-        label={t('routines.createRoutine')}
-        onPress={() => router.push('/routines/create')}
-        fullWidth
+      <ScreenTitle
+        title={t('nav.routines')}
+        action={{
+          label: t('routines.newRoutine'),
+          icon: 'add',
+          onPress: () => router.push('/routines/create'),
+        }}
       />
+      {activeWorkout ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() =>
+            router.push({
+              pathname: '/workouts/active',
+              params: { routineId: activeWorkout.routineId },
+            })
+          }
+          style={({ pressed }) => [styles.activeCard, pressed ? styles.cardPressed : null]}
+        >
+          <View style={styles.activeText}>
+            <View style={styles.activeLabelRow}>
+              <View
+                style={[
+                  styles.liveDot,
+                  activeWorkout.pausedAt ? styles.liveDotPaused : null,
+                ]}
+              />
+              <Text style={styles.sectionLabel}>
+                {t(activeWorkout.pausedAt ? 'routines.pausedLabel' : 'routines.activeLabel')}
+              </Text>
+            </View>
+            <Text style={styles.activeName}>{activeWorkout.routineName}</Text>
+            <Text style={styles.meta}>{t('routines.resumeHint')}</Text>
+          </View>
+          <Text style={styles.activeClock}>{formatDuration(elapsedSeconds)}</Text>
+          <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+        </Pressable>
+      ) : null}
       {showLoading ? (
-        <View style={styles.stateCard}>
-          <Text style={styles.meta}>{t('routines.loadingRoutines')}</Text>
-        </View>
+        <StateView kind="loading" message={t('routines.loadingRoutines')} />
       ) : null}
       {errorMessage ? (
-        <View style={styles.stateCard}>
-          <Text style={styles.error}>{errorMessage}</Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => void loadRoutines()}
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              pressed ? styles.buttonPressed : null,
-            ]}
-          >
-            <Text style={styles.secondaryButtonText}>{t('common.retry')}</Text>
-          </Pressable>
-        </View>
+        <StateView
+          kind="error"
+          message={errorMessage}
+          actionLabel={t('common.retry')}
+          onAction={() => void loadRoutines()}
+        />
       ) : null}
       {hasEmptyState ? (
-        <EmptyState
-          icon="barbell-outline"
+        <StateView
+          kind="empty"
+          icon="clipboard-outline"
           title={t('routines.emptyTitle')}
-          subtitle={t('routines.emptySubtitle')}
+          message={t('routines.emptySubtitle')}
           actionLabel={t('routines.createRoutine')}
           onAction={() => router.push('/routines/create')}
         />
@@ -204,51 +210,85 @@ export function RoutinesListScreen() {
               style={styles.folderGroup}
             >
               {showFolderHeaders ? (
-                <Text style={styles.folderTitle}>
-                  {group.folder ?? t('routines.ungrouped')}
-                </Text>
-              ) : null}
-              {group.routines.map((routine) => (
-                <Pressable
-                  key={routine.id}
-                  onPress={() => router.push(`/routines/${routine.id}`)}
-                  style={({ pressed }) => [
-                    styles.card,
-                    pressed ? styles.cardPressed : null,
-                  ]}
-                >
-                  <View style={styles.cardHeader}>
-                    <Text style={styles.cardTitle} numberOfLines={1}>
-                      {routine.name}
-                    </Text>
-                    <Pressable
-                      onPress={() => setMenuRoutine(routine)}
-                      hitSlop={10}
-                      accessibilityRole="button"
-                      style={styles.menuButton}
-                    >
-                      <Ionicons
-                        name="ellipsis-horizontal"
-                        size={20}
-                        color={colors.textMuted}
-                      />
-                    </Pressable>
-                  </View>
-                  <Text style={styles.cardMeta} numberOfLines={1}>
-                    {getRoutineExerciseSummary(routine)}
-                  </Text>
-                  <Button
-                    label={startLabel(routine)}
-                    onPress={() =>
-                      router.push({
-                        pathname: '/workouts/active',
-                        params: { routineId: startTarget(routine) },
-                      })
-                    }
-                    fullWidth
+                <View style={styles.folderHeader}>
+                  <Ionicons
+                    name={group.folder ? 'folder-outline' : 'albums-outline'}
+                    size={16}
+                    color={colors.textMuted}
                   />
-                </Pressable>
-              ))}
+                  <Text style={styles.sectionLabel}>
+                    {group.folder ?? t('routines.ungrouped')}
+                  </Text>
+                  <Text style={styles.folderCount}>{group.routines.length}</Text>
+                </View>
+              ) : null}
+              {group.routines.map((routine) => {
+                const names = getRoutineExerciseNames(routine);
+                const shown = names.slice(0, 3);
+                const isActive = activeWorkout?.routineId === routine.id;
+
+                return (
+                  <Pressable
+                    key={routine.id}
+                    onPress={() => router.push(`/routines/${routine.id}`)}
+                    style={({ pressed }) => [
+                      styles.card,
+                      isActive ? styles.cardActive : null,
+                      pressed ? styles.cardPressed : null,
+                    ]}
+                  >
+                    <View style={styles.cardHeader}>
+                      <Text style={styles.cardTitle}>{routine.name}</Text>
+                      <Pressable
+                        onPress={() => setMenuRoutine(routine)}
+                        hitSlop={10}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('common.edit')}
+                        style={styles.menuButton}
+                      >
+                        <Ionicons
+                          name="ellipsis-vertical"
+                          size={18}
+                          color={colors.textMuted}
+                        />
+                      </Pressable>
+                    </View>
+                    <View style={styles.metaRow}>
+                      <Ionicons name="barbell-outline" size={14} color={colors.textMuted} />
+                      <Text style={styles.meta}>
+                        {t('routines.exerciseCount', { count: names.length })}
+                      </Text>
+                    </View>
+                    {shown.length > 0 ? (
+                      <View style={styles.chips}>
+                        {shown.map((name, index) => (
+                          <Chip key={`${name}-${index}`} label={name} size="sm" />
+                        ))}
+                        {names.length > shown.length ? (
+                          <Chip
+                            label={t('routines.moreExercises', {
+                              count: names.length - shown.length,
+                            })}
+                            size="sm"
+                          />
+                        ) : null}
+                      </View>
+                    ) : null}
+                    <Button
+                      label={startLabel(routine)}
+                      icon="play"
+                      variant="secondary"
+                      onPress={() =>
+                        router.push({
+                          pathname: '/workouts/active',
+                          params: { routineId: startTarget(routine) },
+                        })
+                      }
+                      fullWidth
+                    />
+                  </Pressable>
+                );
+              })}
             </View>
           ))}
         </View>
@@ -257,23 +297,35 @@ export function RoutinesListScreen() {
     <ActionSheet
       visible={menuRoutine !== null}
       title={menuRoutine?.name}
+      message={menuRoutineLocked ? t('routineDetail.editLocked') : undefined}
       onClose={() => setMenuRoutine(null)}
       actions={
         menuRoutine
           ? [
-              {
-                label: t('common.edit'),
-                onPress: () => router.push(`/routines/edit/${menuRoutine.id}`),
-              },
+              // The active workout's routine can be neither edited nor deleted
+              // until the workout is finished or discarded (spec 0014).
+              ...(menuRoutineLocked
+                ? []
+                : [
+                    {
+                      label: t('common.edit'),
+                      onPress: () =>
+                        router.push(`/routines/edit/${menuRoutine.id}`),
+                    },
+                  ]),
               {
                 label: t('routines.duplicate'),
                 onPress: () => void handleDuplicate(menuRoutine),
               },
-              {
-                label: t('common.delete'),
-                destructive: true,
-                onPress: () => handleDelete(menuRoutine),
-              },
+              ...(menuRoutineLocked
+                ? []
+                : [
+                    {
+                      label: t('common.delete'),
+                      destructive: true,
+                      onPress: () => void handleDelete(menuRoutine),
+                    },
+                  ]),
             ]
           : []
       }
@@ -289,45 +341,66 @@ const styles = StyleSheet.create({
   container: {
     ...commonStyles.scrollContent,
   },
-  title: {
-    ...commonStyles.title,
+  sectionLabel: {
+    ...commonStyles.sectionLabel,
   },
-  body: {
-    ...commonStyles.body,
+  meta: {
+    ...commonStyles.meta,
   },
-  banner: {
-    borderRadius: radii.md,
-    backgroundColor: colors.primary,
-    padding: spacing.lg,
+  activeCard: {
+    ...commonStyles.card,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySoft,
+  },
+  activeText: {
+    flex: 1,
+    gap: 2,
+  },
+  activeLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.xs,
   },
-  bannerTitle: {
-    color: colors.onPrimary,
-    fontSize: 16,
-    fontWeight: '800',
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.primary,
   },
-  bannerMeta: {
-    color: colors.onPrimary,
-    fontSize: 14,
+  liveDotPaused: {
+    backgroundColor: colors.textMuted,
+  },
+  activeName: {
+    ...commonStyles.cardTitle,
+  },
+  activeClock: {
+    ...commonStyles.figure,
+    color: colors.primary,
   },
   list: {
-    gap: spacing.lg,
+    gap: spacing.xl,
   },
   folderGroup: {
+    gap: spacing.md,
+  },
+  folderHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
   },
-  folderTitle: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  stateCard: {
-    ...commonStyles.card,
+  folderCount: {
+    ...commonStyles.sectionLabel,
+    color: colors.textSubtle,
   },
   card: {
     ...commonStyles.card,
+    gap: spacing.md,
+  },
+  cardActive: {
+    borderColor: colors.primary,
   },
   cardPressed: {
     ...commonStyles.pressed,
@@ -335,34 +408,30 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacing.sm,
   },
   cardTitle: {
-    color: colors.text,
+    ...commonStyles.cardTitle,
     fontSize: 20,
-    fontWeight: '700',
+    lineHeight: 26,
     flexShrink: 1,
   },
   menuButton: {
-    padding: spacing.xs,
+    minWidth: 32,
+    minHeight: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  cardMeta: {
-    ...commonStyles.meta,
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: -spacing.xs,
   },
-  meta: {
-    ...commonStyles.meta,
-  },
-  error: {
-    ...commonStyles.error,
-  },
-  secondaryButton: {
-    ...commonStyles.secondaryButton,
-  },
-  secondaryButtonText: {
-    ...commonStyles.secondaryButtonText,
-  },
-  buttonPressed: {
-    ...commonStyles.pressed,
+  chips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
   },
 });

@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 // Avoid loading expo-constants (pulled in by @/config/api) in the node test env.
 vi.mock('@/config/api', () => ({ API_BASE_URL: 'http://test.local' }));
 
-import { apiRequest } from './http';
+import { ApiError, apiRequest, isPermanentRejection } from './http';
 
 type FakeResponse = {
   status?: number;
@@ -59,11 +59,38 @@ describe('apiRequest', () => {
     await expect(apiRequest('/things')).rejects.toThrow('Bad input');
   });
 
+  it('throws an ApiError carrying the status', async () => {
+    stubFetch({ status: 409, ok: false, jsonBody: { message: 'Conflict' } });
+
+    await expect(apiRequest('/things')).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 409,
+      message: 'Conflict',
+    });
+  });
+
   it('throws a generic message when none is provided', async () => {
     stubFetch({ status: 500, ok: false, jsonBody: null });
 
     await expect(apiRequest('/things')).rejects.toThrow(
       'Request failed with status 500',
     );
+  });
+});
+
+describe('isPermanentRejection', () => {
+  it('is true for a refusal retrying cannot fix', () => {
+    expect(isPermanentRejection(new ApiError('Invalid workout payload', 400))).toBe(true);
+    expect(isPermanentRejection(new ApiError('Not found', 404))).toBe(true);
+  });
+
+  it('is false for the session, timeouts, rate limits and server errors', () => {
+    for (const status of [401, 408, 429, 500, 503]) {
+      expect(isPermanentRejection(new ApiError('x', status))).toBe(false);
+    }
+  });
+
+  it('is false for network failures', () => {
+    expect(isPermanentRejection(new TypeError('Network request failed'))).toBe(false);
   });
 });

@@ -8,7 +8,7 @@ export default function ProgressStackLayout() {
 
   return (
     <Stack screenOptions={screenHeader}>
-      <Stack.Screen name="index" options={{ title: t('nav.progress') }} />
+      <Stack.Screen name="index" options={{ title: t('nav.progress'), headerShown: false }} />
       <Stack.Screen
         name="exercises/[exerciseId]"
         options={{ title: t('nav.exerciseProgress') }}
