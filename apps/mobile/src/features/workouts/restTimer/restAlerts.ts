@@ -1,3 +1,7 @@
+import { Platform } from 'react-native';
+
+import { RestAlert } from '../../../../modules/rest-alert';
+
 /** What the alert at the end of a rest says. */
 export interface RestAlertContent {
   title: string;
@@ -24,3 +28,24 @@ export const noopRestAlerts: RestAlerts = {
   schedule: async () => {},
   cancel: async () => {},
 };
+
+/** The iOS alert: a local notification from the `rest-alert` module. */
+function iosRestAlerts(native: NonNullable<typeof RestAlert>): RestAlerts {
+  return {
+    requestPermission: () => native.requestPermission(),
+    schedule: (at, content) => native.schedule(at.getTime(), content.title, content.body),
+    cancel: () => native.cancel(),
+  };
+}
+
+/**
+ * The rest alert for this device: iOS with the native module (after a device
+ * rebuild), otherwise none — the rest then alerts only inside the app.
+ *
+ * TODO(sdd): rest alert outside the app on Android — noopRestAlerts there
+ * (in-app vibration only); unblocked by adding expo-notifications for Android
+ * or an Android branch in modules/rest-alert, when Android is tested.
+ */
+export function restAlertsForThisDevice(): RestAlerts {
+  return Platform.OS === 'ios' && RestAlert ? iosRestAlerts(RestAlert) : noopRestAlerts;
+}
