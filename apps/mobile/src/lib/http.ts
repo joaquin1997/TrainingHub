@@ -9,6 +9,8 @@ export class ApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    /** The parsed JSON error body, for callers that need more than the message. */
+    readonly body?: unknown,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -108,7 +110,7 @@ export async function apiRequest<T>(
         ? responseBody.message
         : `Request failed with status ${response.status}`;
 
-    throw new ApiError(message, response.status);
+    throw new ApiError(message, response.status, responseBody);
   }
 
   return responseBody as T;

@@ -1,8 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/AuthContext';
+import { ProfileAvatar } from '@/features/profile/components/ProfileAvatar';
+import { useProfileData } from '@/features/profile/useProfileData';
 import { useSettings } from '@/features/settings/SettingsContext';
 import {
   clearActiveWorkout,
@@ -23,6 +26,8 @@ export function SettingsScreen() {
   const { t } = useTranslation();
   const { settings, update } = useSettings();
   const { user, signOut } = useAuth();
+  const router = useRouter();
+  const { profile } = useProfileData();
 
   // An explicit log-out ends the workout in progress, after asking (spec 0010
   // FR-5); an expired session does not (FR-7).
@@ -112,12 +117,31 @@ export function SettingsScreen() {
 
       <View style={styles.section}>
         <SectionHeader icon="person-circle-outline" title={t('settings.account')} />
-        {user?.email ? (
-          <View style={styles.emailRow}>
-            <Ionicons name="mail-outline" size={16} color={colors.textMuted} />
-            <Text style={styles.email}>{user.email}</Text>
+        {/* The profile is reached from the account card (spec 0027). */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('profile.open')}
+          onPress={() => router.push('/settings/profile')}
+          style={({ pressed }) => [styles.profileRow, pressed ? styles.pressed : null]}
+        >
+          <ProfileAvatar
+            photoDataUrl={profile?.photoDataUrl}
+            name={profile?.displayName ?? user?.displayName}
+            size={48}
+          />
+          <View style={styles.profileText}>
+            <Text style={styles.profileName} numberOfLines={1}>
+              {profile?.displayName ?? user?.displayName ?? ''}
+            </Text>
+            {(profile?.email ?? user?.email) ? (
+              <Text style={styles.email} numberOfLines={1}>
+                {profile?.email ?? user?.email}
+              </Text>
+            ) : null}
+            <Text style={styles.profileLink}>{t('profile.open')}</Text>
           </View>
-        ) : null}
+          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+        </Pressable>
         <Button
           label={t('settings.logOut')}
           icon="log-out-outline"
@@ -260,14 +284,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
-  emailRow: {
+  profileRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
+  },
+  profileText: {
+    flex: 1,
+    gap: 2,
+  },
+  profileName: {
+    ...commonStyles.label,
+    fontSize: 16,
   },
   email: {
-    color: colors.text,
-    fontSize: 15,
-    flexShrink: 1,
+    color: colors.textMuted,
+    fontSize: 14,
+  },
+  profileLink: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '700',
   },
 });
