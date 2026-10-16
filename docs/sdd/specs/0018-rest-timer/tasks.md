@@ -28,7 +28,7 @@ on its own; the order and the end state are the plan's.
 | 7 | [x] `restTimer/nextSetToDo.ts` (block first — superset alternation by `order`, ties to the exercise listed first — then after the block, then before; none when all done) + tests; refs per set row and on the scroll content; when `rest` goes present → absent while mounted, `measureLayout` the target row and scroll it to about a third of the viewport | mobile | `nextSetToDo` tests (single, superset A1 → B1 → A2, finished block, all done); web preview: 6+ exercises, tick a set of the last one, skip → the next set scrolls into view (AC-4, FR-5) | `feat(workouts): bring the next set into view when a rest ends` |
 | 8 | [x] Local module `modules/rest-alert` (`index.ts`, `expo-module.config.json`, `ios/RestAlert.podspec`, `ios/RestAlertModule.swift`: `requestPermission`, `schedule` with fixed id `rest-timer`, `cancel` pending + delivered); `iosRestAlerts` in `restAlerts.ts`, chosen on iOS when the native module is present, no-op otherwise; notification body "Next: {exercise}" from `nextSetToDo` (generic when none); i18n en/es; `TODO(sdd)` for Android and for the possible double alert in the foreground | mobile (**native — rebuild**) | typecheck + tests (runner tests unchanged, alerts are injected); web preview still runs (no-op); **iOS device after rebuild:** permission asked once at the first rest (EF-1); tick, lock → phone and paired watch buzz with "Rest over" (AC-2, FR-6); tick, skip, lock → nothing (AC-5); deny permission → rest runs, in-app vibration only (EF-1); restart after the rest ended → no countdown, no second alert (EF-3) | `feat(workouts): alert when a rest ends outside the app` |
 | 9 | [x] Lock-screen countdown: `toLiveWorkoutPayload` fills `restEndsAt`; `sameRest` next to `samePause`; `liveWorkoutController.sync` pushes on rest change; `appleHealth.ts` calls native `setRest(workoutId, restEndsAtMs \| null)`; `ContentState.restEndsAt: Date?` and computed `staleDate` in **both** `WorkoutActivityAttributes.swift` copies; `ActivityStore.update`, `setRest` and `WorkoutActivityActions.setPaused` pass `state.staleDate`; widget shows the "Rest" `Text(timerInterval:countsDown:)` on the lock screen and compact Dynamic Island while `restEndsAt != nil && !context.isStale`; `TODO(sdd)` for the suspended-app stale render | mobile (**native — rebuild**) | `sameRest` and `toLiveWorkoutPayload` tests; controller test (push on rest change); the Swift-copies-identical test; **iOS device after rebuild:** tick, lock → countdown on the lock screen; it disappears when the rest ends (FR-8) | `feat(workouts): rest countdown on the lock screen` |
-| 10 | [ ] Roadmap `02-rest-timer.md` checklist and log; backlog (0018 status; 0019's bar countdown done); spec status | docs | links resolve | `docs(sdd): close spec 0018 implementation` |
+| 10 | [x] Roadmap `02-rest-timer.md` checklist and log; backlog (0018 status; 0019's bar countdown done); spec status | docs | links resolve | `docs(sdd): close spec 0018 implementation` |
 
 **Not verifiable in CI:** tasks 8 and 9 need `expo prebuild` and a device
 build; their effect (AC-2, AC-5 on device, EF-1, FR-6, FR-8) is checked on the
@@ -66,12 +66,31 @@ the device goes in the same batch, with a Metro reload.
 
 - 2026-10-16 — Tasks written from the approved plan; self-approved (delegated gates).
 - 2026-10-16 — Task 1: plan and tasks already committed; spec → `in-progress`. Backlog status left to the coordinator (parallel agents).
+- 2026-10-17 — Tasks 2–9 implemented, one commit each, `pnpm -r typecheck` and `pnpm -r test` green after every one (mobile 189 tests, api 81).
+  - Web preview (web + local API on PGlite, 390×844): ticking the last set of a 7-exercise workout shows the pinned `RestBar` without scrolling (FR-4); ±15 s moved only the countdown (FR-3); on History the bar showed "REST" and the countdown, back on the workout the same remaining time (AC-3); a reload mid-rest kept the same end (FR-7); Squat at 2:00 in the routine, set to 3:30 from the chip, next Squat set → rest 3:30, the routine still 120 s from the API (AC-1, FR-2); from the top of the list, Skip scrolled the next set (Calf raise set 2) to about a third of the screen (AC-4, FR-5); with the no-op alerts the web still runs.
+  - Widget, shared attributes and intents type-checked with `swiftc -typecheck` against the iOS 17 simulator SDK. `RestAlertModule.swift` and `WorkoutLiveActivityModule.swift` need ExpoModulesCore and could not be compiled here.
+  - [ASSUMPTION: a rest that ends on its own does not cancel the system alert — only skip, a new rest, finish or discard do — so a phone locked just before the end still buzzes.]
+  - [ASSUMPTION: wheel rows are also tappable (`WheelPicker`); the web reports no scroll momentum, and a tap on a neighbouring value is handy on the device too.]
+  - [ASSUMPTION: the lock-screen and Dynamic Island rest row uses a timer symbol in the accent colour and no "Rest" word, so the activity attributes stay unchanged; the start payload also carries the rest end, for an activity restarted mid-rest.]
+  - [ASSUMPTION: Spanish "Off" on the rest chip reads "Sin descanso".]
+- 2026-10-17 — Task 10: this log; roadmap `02-rest-timer.md`, backlog and 0019's bar-countdown note are handed to the coordinator (parallel agents). Spec stays `in-progress`: device checks pending (below).
+
+### Pending on the owner's iOS device (after `expo prebuild` + rebuild)
+
+- [ ] [DEVICE] Permission asked once, at the first rest (EF-1)
+- [ ] [DEVICE] Tick, lock → phone and paired watch buzz with "Rest over" / "Next: {exercise}" (AC-2, FR-6)
+- [ ] [DEVICE] Tick, skip, lock → nothing buzzes (AC-5)
+- [ ] [DEVICE] Permission denied → the rest runs, in-app vibration only (EF-1)
+- [ ] [DEVICE] Restart after the rest ended → no countdown, no second alert (EF-3); restart mid-rest → same end (FR-7)
+- [ ] [DEVICE] No double alert with the app in front (TODO in `useRestTimerRunner.ts`)
+- [ ] [DEVICE] Lock screen and compact Dynamic Island show the rest countdown; it disappears when the rest ends, also with the app suspended (FR-8, TODO in the widget)
+- [ ] [DEVICE] Look of the `RestBar`, rest chip and editor sheet on iOS (Metro reload)
 
 ## Definition of done
 
-- [ ] Every functional requirement and acceptance criterion in `spec.md` is met
-      or explicitly deferred with a TODO
-- [ ] `pnpm -r typecheck` and `pnpm -r test` green
+- [x] Every functional requirement and acceptance criterion in `spec.md` is met
+      or explicitly deferred with a TODO (device checks pending above)
+- [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [ ] Relevant `docs/roadmap/NN-*.md` checklist and progress log updated
 - [ ] `spec.md` status set to `done`; `../backlog.md` updated
-- [ ] Constitution amended if this work settled a new invariant
+- [x] Constitution amended if this work settled a new invariant (none settled)
