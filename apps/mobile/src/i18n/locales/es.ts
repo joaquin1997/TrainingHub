@@ -177,6 +177,7 @@ export const es: TranslationCatalog = {
     addExercise: 'Añadir ejercicio',
     refineSearch: 'Afina tu búsqueda para ver los otros {{count}}.',
     illustration: 'Ilustración de {{name}}',
+    newExercise: 'Nuevo ejercicio',
   },
   workouts: {
     barLabel: '{{routine}}, {{clock}}. Abrir el entrenamiento en curso',

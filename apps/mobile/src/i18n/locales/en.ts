@@ -174,6 +174,7 @@ export const en = {
     addExercise: 'Add exercise',
     refineSearch: 'Refine your search to see the other {{count}}.',
     illustration: '{{name}} illustration',
+    newExercise: 'New exercise',
   },
   workouts: {
     barLabel: '{{routine}}, {{clock}}. Open the workout in progress',
