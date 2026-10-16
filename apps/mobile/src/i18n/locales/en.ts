@@ -219,6 +219,8 @@ export const en = {
     discardWorkout: 'Discard workout',
     pause: 'Pause',
     finish: 'Finish',
+    finishTitle: 'Finish this workout?',
+    finishConfirm: 'It will be saved to your history.',
     resume: 'Resume',
     paused: 'Paused',
     discardTitle: 'Discard this workout?',

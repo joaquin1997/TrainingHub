@@ -222,6 +222,8 @@ export const es: TranslationCatalog = {
     discardWorkout: 'Descartar entrenamiento',
     pause: 'Pausar',
     finish: 'Terminar',
+    finishTitle: '¿Terminar este entrenamiento?',
+    finishConfirm: 'Se guardará en tu historial.',
     resume: 'Reanudar',
     paused: 'En pausa',
     discardTitle: '¿Descartar este entrenamiento?',

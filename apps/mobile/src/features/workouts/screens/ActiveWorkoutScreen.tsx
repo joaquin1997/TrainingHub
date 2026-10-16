@@ -1,6 +1,6 @@
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import type { TFunction } from 'i18next';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -22,6 +22,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
 import { resolveActiveWorkoutEntry } from '@/features/workouts/utils/activeWorkoutEntry';
+import { parseWorkoutAction } from '@/features/workouts/utils/workoutAction';
 import { Button } from '@/ui/Button';
 import { confirmAction } from '@/lib/confirmAction';
 import { formatDuration } from '@/lib/format';
@@ -96,7 +97,13 @@ function setTypeLabel(type: WorkoutSetType, t: TFunction) {
 
 export function ActiveWorkoutScreen() {
   const { t } = useTranslation();
-  const { routineId } = useLocalSearchParams<{ routineId?: string }>();
+  const { routineId, action } = useLocalSearchParams<{
+    routineId?: string;
+    action?: string;
+  }>();
+  const linkAction = parseWorkoutAction(action);
+  // Set below, after the early returns; lets the link effect reach it.
+  const finishRef = useRef<(() => Promise<void>) | null>(null);
   const workoutDraft = useActiveWorkout();
   // An active workout already on the device opens immediately, offline too.
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(() =>
@@ -160,6 +167,28 @@ export function ActiveWorkoutScreen() {
       active = false;
     };
   }, [routineId]);
+
+  // "Finish" on the lock-screen status opens this screen with action=finish:
+  // confirm first, then finish as from the button (spec 0012 FR-5). With no
+  // set done, finishing shows the usual notice and saves nothing (EF-6).
+  useEffect(() => {
+    if (linkAction !== 'finish' || status !== 'ready' || !workoutDraft) {
+      return;
+    }
+
+    router.setParams({ action: undefined });
+    void confirmAction({
+      title: t('workouts.finishTitle'),
+      message: t('workouts.finishConfirm'),
+      confirmLabel: t('workouts.finishWorkout'),
+      cancelLabel: t('common.cancel'),
+    }).then((confirmed) => {
+      if (confirmed) {
+        void finishRef.current?.();
+      }
+    });
+    // Runs once per link; the draft is read through the ref at confirm time.
+  }, [linkAction, status, workoutDraft === null]);
 
   const elapsedSeconds = useElapsedSeconds(workoutDraft?.startedAt, {
     pausedAt: workoutDraft?.pausedAt,
@@ -271,6 +300,8 @@ export function ActiveWorkoutScreen() {
       setIsFinishing(false);
     }
   };
+
+  finishRef.current = finishWorkout;
 
   const handleSetChange = (
     workoutExerciseId: string,
