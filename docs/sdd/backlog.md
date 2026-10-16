@@ -13,7 +13,7 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0010](specs/0010-persist-active-workout/spec.md) | Persist the active workout | `planned` — tasks awaiting review; amendments pending (see below) | 1 — Live workout logging |
 | [0011](specs/0011-workout-pause/spec.md) | Pause the active workout | `planned` — tasks awaiting review | 1 — Live workout logging |
 | [0012](specs/0012-workout-live-activity/spec.md) | Live workout status on the lock screen | `planned` — spike done, tasks awaiting review; amendments pending | 8 — Integrations & platform |
-| [0013](specs/0013-progress-performed-work/spec.md) | Progress counts only performed work | `in-progress` — plan and tasks approved | 4 — Progress |
+| [0013](specs/0013-progress-performed-work/spec.md) | Progress counts only performed work | `in-progress` — code complete on `feat/sdd-0013-0012`; awaiting the owner's redeploy and device checks (task 6) | 4 — Progress |
 | 0014 | Workout save integrity (idempotent save, owned references, date validation) | `draft` — not written yet; needed before 0010 task 7 | 1 — Live workout logging |
 | 0015 | Custom exercises are private | `draft` — not written yet; ships alongside 0001 | 6 — Exercises |
 
@@ -57,6 +57,17 @@ Writing these surfaced four things nobody had recorded. Status as of the
 - **Are custom exercises private to their creator?** — *answered* (0007): no,
   every user sees every custom exercise. Decided 2026-09-24 that they should be
   private — spec 0015.
+
+## Follow-ups found while implementing
+
+Small defects noticed during a spec, outside its scope. Each becomes a task in
+a spec or a spec of its own when picked up.
+
+- **lb round-trip drift** (found in 0013, 2026-10-16). Saving rounds kg to one
+  decimal, so 100 lb is stored as 45.4 kg and reads back as 100.1 lb in the
+  summary, history, detail and "last time" placeholders. Article 4 is intact
+  (kg stays canonical); the precision is the problem. Likely fix: store kg
+  with two decimals (or round on display to the plate increment of the unit).
 
 ## Areas with no spec yet
 

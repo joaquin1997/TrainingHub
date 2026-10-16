@@ -27,7 +27,7 @@ be deployed at any point after task 5.
 | 7 | [x] `isPerformedSet` (mobile, with `completedAt` fallback); history volume and detail ✓/○, totals use it | mobile | unit test (`performedSet.test.ts`); **[DEVICE]** AC-4 | `fix(workouts): history treats legacy sessions as performed` |
 | 8 | [x] Post-workout summary renders the saved values from the skeleton, formatted in the session unit | mobile | unit test for the skeleton values if missing; **[DEVICE]** AC-6 | `fix(workouts): summary shows the values that were saved` |
 | 9 | [x] Rename `progress.volumeByMuscleGroup` → `volumeByCategory` (en/es) | mobile | typecheck (catalog shape); **[DEVICE]** AC-7 in ES and EN | `fix(progress): label the volume distribution by category` |
-| 10 | Roadmap 04 (with the "figures drop on purpose" note), retro 0006, backlog; spec status `done` | docs | links resolve | `docs(sdd): close spec 0013` |
+| 10 | [x] Roadmap 04 (with the "figures drop on purpose" note), retro 0006, backlog; spec status `done` | docs | links resolve | `docs(sdd): close spec 0013` |
 
 Tasks 6–9 need a redeploy or the phone for their acceptance checks. The mobile
 tasks need only a Metro reload, not a native rebuild.
@@ -75,13 +75,16 @@ tasks need only a Metro reload, not a native rebuild.
   summary, history and detail. Logged in `../../backlog.md` follow-ups.
 - 2026-10-16 — Task 9: key renamed to `progress.volumeByCategory` ("Volume by
   category" / "Volumen por categoría"); typecheck guards the catalog shape.
+- 2026-10-16 — Task 10: roadmap 04 (with the "figures drop on purpose" note),
+  retro 0006 invariant, backlog. Spec stays `in-progress` until task 6 (deploy
+  + AC-1…AC-7 on the phone) is done by the owner; then flip it to `done`.
 
 ## Definition of done
 
 - [ ] Every functional requirement and acceptance criterion in `spec.md` is met
       or explicitly deferred with a TODO
-- [ ] `pnpm -r typecheck` and `pnpm -r test` green
-- [ ] `docs/roadmap/04-progress-and-prs.md` checklist and progress log updated
+- [x] `pnpm -r typecheck` and `pnpm -r test` green
+- [x] `docs/roadmap/04-progress-and-prs.md` checklist and progress log updated
 - [ ] `spec.md` status set to `done`; `../backlog.md` updated
-- [ ] Retro 0006 records the invariant: progress reads only performed sets;
+- [x] Retro 0006 records the invariant: progress reads only performed sets;
       warmups count for volume, never for records
