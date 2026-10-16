@@ -20,6 +20,7 @@ import { ProgressRing } from '@/features/workouts/components/ProgressRing';
 import { WheelPicker } from '@/features/workouts/components/WheelPicker';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
+import { resolveActiveWorkoutEntry } from '@/features/workouts/utils/activeWorkoutEntry';
 import { Button } from '@/ui/Button';
 import { formatDuration } from '@/lib/format';
 import { fromKg, roundWeight } from '@/lib/weight';
@@ -96,8 +97,11 @@ export function ActiveWorkoutScreen() {
   const { t } = useTranslation();
   const { routineId } = useLocalSearchParams<{ routineId?: string }>();
   const workoutDraft = useActiveWorkout();
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
-    'loading',
+  // An active workout already on the device opens immediately, offline too.
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(() =>
+    resolveActiveWorkoutEntry(getActiveWorkout(), routineId) === 'resume'
+      ? 'ready'
+      : 'loading',
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
@@ -111,7 +115,14 @@ export function ActiveWorkoutScreen() {
   const restTimer = useRestTimer(() => Vibration.vibrate([0, 400, 200, 400]));
 
   useEffect(() => {
-    if (!routineId) {
+    const entry = resolveActiveWorkoutEntry(getActiveWorkout(), routineId);
+
+    if (entry === 'resume') {
+      setStatus('ready');
+      return;
+    }
+
+    if (entry === 'none' || !routineId) {
       setStatus('error');
       setErrorMessage(null);
       return;

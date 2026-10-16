@@ -15,7 +15,7 @@ Each task leaves the tree green (`pnpm -r typecheck` and `pnpm -r test`).
 | 1 | [x] Spec, plan and tasks; backlog entry | docs | links resolve | `docs(sdd): spec 0010 persist the active workout` |
 | 2 | [x] Draft ids that cannot collide after a restart (time-seeded) | mobile | unit test | `fix(workouts): draft ids stay unique across restarts` |
 | 3 | [x] Store subscription; `useActiveWorkout` via `useSyncExternalStore`; screen reads the draft from the store | mobile | unit test for subscribe/notify; manual smoke in app | `feat(workouts): observable active-workout store` |
-| 4 | Open an existing draft without the network; `routineId` optional (`resolveActiveWorkoutEntry`) | mobile | unit test | `feat(workouts): resume the active workout without a network round-trip` |
+| 4 | [x] Open an existing draft without the network; `routineId` optional (`resolveActiveWorkoutEntry`) | mobile | unit test | `feat(workouts): resume the active workout without a network round-trip` |
 | 5 | Stored envelope + parse; `tokenSubject`; `AuthContext` restores the real user id; owner kept in the store; `discardActiveWorkoutIfForeign` on sign-in (FR-8) | mobile | unit tests | `feat(workouts): versioned, owner-scoped active-workout envelope` |
 | 6 | AsyncStorage dependency; `ActiveWorkoutStorage` interface + implementations | mobile | typecheck; **[DEVICE: rebuild]** app launches | `chore(mobile): add active-workout storage` |
 | 7 | Hydrate before routes (or after the next sign-in, EF-6); debounced save; flush on background; clear on finish/discard; confirm sign-out while active. **Requires spec 0014 deployed.** | mobile | unit tests (fake timers); **[DEVICE]** AC-1…AC-7, AC-9 | `feat(workouts): keep the active workout across app restarts` |
@@ -43,6 +43,11 @@ rebuild.
   routines list and detail update live too; the active screen has no local
   copy. Finish now `replace`s to the summary, so Back no longer shows the
   finished workout. 2 unit tests. Manual smoke pending (device batch).
+- 2026-10-16 — Task 4: `resolveActiveWorkoutEntry` → `resume | fetch | none`;
+  the screen opens an active workout synchronously, with no fetch, so it works
+  offline and from a link without `routineId` (0012's entry point). Decided:
+  an active workout is resumed even when the link names another routine —
+  before, that path overwrote the logged sets with a fresh draft. 4 unit tests.
 
 ## Definition of done
 
