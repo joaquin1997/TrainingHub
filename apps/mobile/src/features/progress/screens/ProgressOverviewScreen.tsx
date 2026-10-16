@@ -22,6 +22,7 @@ import { formatShortDate } from '@/lib/format';
 import { formatWeightValue, fromKg, roundWeight } from '@/lib/weight';
 import { useRefresh } from '@/lib/useRefresh';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
+import { ScreenTitle } from '@/ui/ScreenTitle';
 import type {
   ExerciseProgressSummary,
   MuscleGroupVolumePoint,
@@ -107,7 +108,7 @@ export function ProgressOverviewScreen() {
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
-      <Text style={styles.body}>{t('progress.intro')}</Text>
+      <ScreenTitle title={t('nav.progress')} />
       <FrequencySummary summary={frequency} />
       {weeklyVolumeSeries.bars.length > 0 ? (
         <ProgressChart

@@ -19,6 +19,7 @@ import {
 import { useRefresh } from '@/lib/useRefresh';
 import { EmptyState } from '@/ui/EmptyState';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
+import { ScreenTitle } from '@/ui/ScreenTitle';
 import type { Exercise } from '@workout/domain';
 
 const PAGE_SIZE = 50;
@@ -145,6 +146,7 @@ export function ExercisesListScreen() {
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
+      <ScreenTitle title={t('nav.exercises')} />
       <TextInput
         value={query}
         onChangeText={setQuery}

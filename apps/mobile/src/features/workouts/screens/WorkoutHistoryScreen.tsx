@@ -23,6 +23,7 @@ import { fromKg, roundWeight } from '@/lib/weight';
 import { useRefresh } from '@/lib/useRefresh';
 import { EmptyState } from '@/ui/EmptyState';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
+import { ScreenTitle } from '@/ui/ScreenTitle';
 import type { WorkoutSession } from '@workout/domain';
 
 function countSets(session: WorkoutSession) {
@@ -121,7 +122,7 @@ export function WorkoutHistoryScreen() {
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
-      <Text style={styles.body}>{t('workouts.historyIntro')}</Text>
+      <ScreenTitle title={t('nav.history')} />
       {showLoading ? (
         <View style={styles.stateCard}>
           <Text style={styles.meta}>{t('workouts.loadingWorkouts')}</Text>

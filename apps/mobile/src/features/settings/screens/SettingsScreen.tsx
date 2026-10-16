@@ -11,6 +11,7 @@ import { confirmAction } from '@/lib/confirmAction';
 import { formatDuration } from '@/lib/format';
 import { Button } from '@/ui/Button';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
+import { ScreenTitle } from '@/ui/ScreenTitle';
 import type { AppLanguage, WeightUnit } from '@workout/domain';
 
 const UNITS: WeightUnit[] = ['kg', 'lb'];
@@ -55,6 +56,7 @@ export function SettingsScreen() {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
+      <ScreenTitle title={t('nav.settings')} />
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t('settings.language')}</Text>
         <View style={styles.segment}>

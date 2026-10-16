@@ -24,6 +24,7 @@ import { formatDuration } from '@/lib/format';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { useRefresh } from '@/lib/useRefresh';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
+import { ScreenTitle } from '@/ui/ScreenTitle';
 import type { Routine } from '@workout/domain';
 
 export function RoutinesListScreen() {
@@ -141,7 +142,7 @@ export function RoutinesListScreen() {
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
-      <Text style={styles.body}>{t('routines.intro')}</Text>
+      <ScreenTitle title={t('nav.routines')} />
       {activeWorkout ? (
         <Link
           href={{
