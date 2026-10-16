@@ -14,7 +14,7 @@ Mobile only: no domain, migration or API task. No native rebuild.
 | # | Task | Area | Verify | Commit message |
 |---|---|---|---|---|
 | 1 | [x] Plan and tasks; spec status | docs | links resolve | `docs(sdd): plan and tasks for 0020` |
-| 2 | [ ] `CustomExerciseForm` extracted; `CustomExerciseModal` moved to `features/exercises/components/` as its wrapper; routine editor import updated (no behaviour change) | mobile | typecheck + tests | `refactor(exercises): share the custom exercise form` |
+| 2 | [x] `CustomExerciseForm` extracted; `CustomExerciseModal` moved to `features/exercises/components/` as its wrapper; routine editor import updated (no behaviour change) | mobile | typecheck + tests | `refactor(exercises): share the custom exercise form` |
 | 3 | [ ] Exercises tab: "New" action in `ScreenTitle` → modal prefilled with the search; created exercise added, filters cleared, search set to its name; i18n | mobile | web preview: AC-1 | `feat(exercises): create a custom exercise from the Exercises tab` |
 | 4 | [ ] `ExercisePickerModal`: "Create exercise" row always under the search (`Create "<text>"`), create step inline, created exercise joins the list and is chosen; routine editor offers create for any typed search; i18n | mobile | web preview: AC-2 | `feat(exercises): create a custom exercise from every picker` |
 | 5 | [ ] `replaceExerciseInWorkout` + `countDoneSets` (tests); picker `title` + `confirm` step; `useExerciseReplacement`; "Replace" on each workout card; i18n | mobile | unit tests; web preview: AC-3, EF-1 | `feat(workouts): replace an exercise in the active workout` |
