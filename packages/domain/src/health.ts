@@ -22,6 +22,8 @@ export interface HealthWorkoutPayload {
   pausedSeconds?: number;
   /** Active energy since the start, in kcal; null when unknown (spec 0012). */
   activeEnergyKcal?: number | null;
+  /** End of the running rest, absent when no rest runs (spec 0018). */
+  restEndsAt?: ISODateString;
 }
 
 /**
