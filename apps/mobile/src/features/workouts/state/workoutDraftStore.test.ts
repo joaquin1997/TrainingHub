@@ -28,6 +28,7 @@ import {
   toCreateWorkoutSessionInput,
   toWorkoutSessionSkeleton,
   toggleWorkoutSetDone,
+  updateWorkoutSetDraft,
   type WorkoutSessionDraft,
 } from './workoutDraftStore';
 
@@ -662,5 +663,119 @@ describe('pause (spec 0011)', () => {
 
     expect(toCreateWorkoutSessionInput(draft).pausedSeconds).toBe(30 * 60);
     vi.useRealTimers();
+  });
+});
+
+describe('time and distance sets (spec 0021)', () => {
+  const plankRoutine: Routine = {
+    id: 'routine-core',
+    userId: 'u1',
+    name: 'Core',
+    exercises: [
+      {
+        id: 're-plank',
+        routineId: 'routine-core',
+        exerciseId: 'ex-plank',
+        exerciseName: 'Plank',
+        orderIndex: 1,
+        trackingType: 'duration',
+        sets: [1, 2, 3].map((setNumber) => ({
+          id: `s-plank-${setNumber}`,
+          routineExerciseId: 're-plank',
+          setNumber,
+          targetDurationSeconds: 45,
+          createdAt: '',
+          updatedAt: '',
+        })),
+        createdAt: '',
+        updatedAt: '',
+      },
+    ],
+    createdAt: '',
+    updatedAt: '',
+  };
+
+  const firstExercise = (draft: WorkoutSessionDraft) => draft.exercises[0]!;
+
+  it('shows a time target as m:ss on every set (AC-2)', () => {
+    const draft = buildWorkoutSessionDraft(plankRoutine);
+
+    expect(firstExercise(draft).trackingType).toBe('duration');
+    expect(firstExercise(draft).entries.map((set) => set.durationPlaceholder)).toEqual([
+      '0:45',
+      '0:45',
+      '0:45',
+    ]);
+  });
+
+  it('saves a 60 s plank as time only: no reps, no weight (AC-1)', () => {
+    const draft = buildWorkoutSessionDraft(plankRoutine);
+    const exercise = firstExercise(draft);
+    const set = exercise.entries[0]!;
+    const typed = updateWorkoutSetDraft(draft, exercise.id, set.id, 'duration', '60');
+    const done = toggleWorkoutSetDone(typed, exercise.id, set.id, 60);
+
+    const [saved, untouched] = toCreateWorkoutSessionInput(done).exercises[0]!.sets;
+
+    expect(saved).toMatchObject({ durationSeconds: 60 });
+    expect(saved?.reps).toBeUndefined();
+    expect(saved?.weightKg).toBeUndefined();
+    // An unedited set logs its target, like reps and weight do.
+    expect(untouched).toMatchObject({ durationSeconds: 45 });
+  });
+
+  it('reads a typed m:ss and keeps distance in metres', () => {
+    const draft = addExerciseToWorkout(buildWorkoutSessionDraft(plankRoutine), {
+      id: 'ex-row',
+      name: 'Rowing Machine',
+      trackingType: 'distance_duration',
+    });
+    const rower = draft.exercises[1]!;
+    const set = rower.entries[0]!;
+    let next = updateWorkoutSetDraft(draft, rower.id, set.id, 'distance', '500');
+    next = updateWorkoutSetDraft(next, rower.id, set.id, 'duration', '1:45');
+    // Values a weight & reps exercise would hold are not sent for this type.
+    next = updateWorkoutSetDraft(next, rower.id, set.id, 'reps', '12');
+
+    const saved = toCreateWorkoutSessionInput(next).exercises[1]!.sets[0]!;
+
+    expect(saved).toMatchObject({ distanceMeters: 500, durationSeconds: 105 });
+    expect(saved.reps).toBeUndefined();
+  });
+
+  it('weight & time saves the weight in kg and the time', () => {
+    const draft = addExerciseToWorkout(
+      { ...buildWorkoutSessionDraft(plankRoutine), unit: 'lb' },
+      { id: 'ex-carry', name: 'Carry', trackingType: 'weight_duration' },
+    );
+    const carry = draft.exercises[1]!;
+    const set = carry.entries[0]!;
+    let next = updateWorkoutSetDraft(draft, carry.id, set.id, 'weightKg', '100');
+    next = updateWorkoutSetDraft(next, carry.id, set.id, 'duration', '45');
+
+    const saved = toCreateWorkoutSessionInput(next).exercises[1]!.sets[0]!;
+
+    expect(saved).toMatchObject({ weightKg: 45.4, durationSeconds: 45 });
+  });
+
+  it('seeds last time’s time and carries it to a new set', () => {
+    const draft = applyLastPerformance(buildWorkoutSessionDraft(plankRoutine), 'ex-plank', {
+      performedAt: '2026-10-01T10:00:00.000Z',
+      sets: [{ order: 1, durationSeconds: 60 }],
+    });
+    const exercise = firstExercise(draft);
+
+    expect(exercise.entries[0]!.durationPlaceholder).toBe('1:00');
+
+    const typed = updateWorkoutSetDraft(
+      draft,
+      exercise.id,
+      exercise.entries[2]!.id,
+      'duration',
+      '75',
+    );
+    const withSet = addSetToWorkoutExercise(typed, exercise.id);
+
+    expect(firstExercise(withSet).entries[3]!.durationPlaceholder).toBe('1:15');
   });
 });

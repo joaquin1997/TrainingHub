@@ -1,12 +1,16 @@
 import type {
   CreateWorkoutSessionInput,
   ExerciseLastPerformance,
+  ExerciseTrackingType,
   Routine,
   WeightUnit,
   WorkoutSession,
+  WorkoutSetInput,
   WorkoutSetType,
 } from '@workout/domain';
 
+import { formatDuration } from '@/lib/format';
+import { parseDistanceInput, parseDurationInput, tracksField } from '@/lib/tracking';
 import { kgToInputString, roundWeight, toKg } from '@/lib/weight';
 
 export const WORKOUT_SET_TYPES: WorkoutSetType[] = [
@@ -34,6 +38,15 @@ export type WorkoutSetDraft = {
    */
   repsPlaceholder?: string;
   weightPlaceholder?: string;
+  /**
+   * Time and distance as typed (spec 0021): time as seconds or m:ss, distance
+   * in metres. Optional, so drafts stored before them still load; their
+   * placeholders (time as m:ss) follow the same rule as reps and weight.
+   */
+  duration?: string;
+  distance?: string;
+  durationPlaceholder?: string;
+  distancePlaceholder?: string;
   done: boolean;
   /** Rest configured when this set was marked done, in seconds. */
   restSeconds?: number;
@@ -41,7 +54,12 @@ export type WorkoutSetDraft = {
   minReps?: number;
   maxReps?: number;
   targetWeight?: number;
+  targetDurationSeconds?: number;
+  targetDistanceMeters?: number;
 };
+
+/** A set value the person types (the `Kg` field is in the display unit). */
+export type SetDraftField = 'reps' | 'weightKg' | 'duration' | 'distance';
 
 /** Trimmed actual value, falling back to the ghosted placeholder when empty. */
 export function effectiveSetValue(value: string, placeholder?: string): string {
@@ -56,6 +74,8 @@ export type WorkoutExerciseDraft = {
   routineExerciseId?: string;
   restSeconds?: number;
   supersetGroup?: number;
+  /** Captured when the exercise joined the workout; absent = weight & reps. */
+  trackingType?: ExerciseTrackingType;
   order: number;
   entries: WorkoutSetDraft[];
 };
@@ -130,6 +150,7 @@ function buildExerciseDrafts(
       routineExerciseId: routineExercise.id,
       restSeconds: routineExercise.restSeconds,
       supersetGroup: routineExercise.supersetGroup,
+      trackingType: routineExercise.trackingType,
       order: routineExercise.orderIndex,
       entries: routineExercise.sets
         .slice()
@@ -149,11 +170,21 @@ function buildExerciseDrafts(
             set.targetWeight !== undefined
               ? kgToInputString(set.targetWeight, unit)
               : undefined,
+          durationPlaceholder:
+            set.targetDurationSeconds !== undefined
+              ? formatDuration(set.targetDurationSeconds)
+              : undefined,
+          distancePlaceholder:
+            set.targetDistanceMeters !== undefined
+              ? String(set.targetDistanceMeters)
+              : undefined,
           done: false,
           type: 'normal',
           minReps: set.minReps,
           maxReps: set.maxReps,
           targetWeight: set.targetWeight,
+          targetDurationSeconds: set.targetDurationSeconds,
+          targetDistanceMeters: set.targetDistanceMeters,
         })),
     }));
 }
@@ -183,7 +214,7 @@ export function updateWorkoutSetDraft(
   workoutDraft: WorkoutSessionDraft,
   workoutExerciseId: string,
   workoutSetId: string,
-  field: 'reps' | 'weightKg',
+  field: SetDraftField,
   value: string,
 ): WorkoutSessionDraft {
   return {
@@ -205,12 +236,13 @@ export function updateWorkoutSetDraft(
 
 export function addExerciseToWorkout(
   workoutDraft: WorkoutSessionDraft,
-  exercise: { id: string; name: string },
+  exercise: { id: string; name: string; trackingType?: ExerciseTrackingType },
 ): WorkoutSessionDraft {
   const newExercise: WorkoutExerciseDraft = {
     id: nextDraftId('we'),
     exerciseId: exercise.id,
     exerciseName: exercise.name,
+    trackingType: exercise.trackingType,
     order: workoutDraft.exercises.length + 1,
     entries: [
       {
@@ -266,6 +298,11 @@ export function addSetToWorkoutExercise(
           ? effectiveSetValue(previousSet.weightKg, previousSet.weightPlaceholder) ||
             undefined
           : undefined,
+        durationPlaceholder: previousSet ? inheritedDuration(previousSet) : undefined,
+        distancePlaceholder: previousSet
+          ? effectiveSetValue(previousSet.distance ?? '', previousSet.distancePlaceholder) ||
+            undefined
+          : undefined,
         done: false,
         type: 'normal',
       };
@@ -273,6 +310,14 @@ export function addSetToWorkoutExercise(
       return { ...exercise, entries: [...exercise.entries, newSet] };
     }),
   };
+}
+
+/** The previous set's time as the next set's m:ss placeholder. */
+function inheritedDuration(set: WorkoutSetDraft): string | undefined {
+  const seconds = parseDurationInput(
+    effectiveSetValue(set.duration ?? '', set.durationPlaceholder),
+  );
+  return typeof seconds === 'number' ? formatDuration(seconds) : undefined;
 }
 
 /**
@@ -309,16 +354,32 @@ export function applyLastPerformance(
         last.weightKg !== undefined && last.weightKg !== null
           ? kgToInputString(last.weightKg, unit)
           : set.weightPlaceholder;
+      const durationPlaceholder =
+        last.durationSeconds !== undefined && last.durationSeconds !== null
+          ? formatDuration(last.durationSeconds)
+          : set.durationPlaceholder;
+      const distancePlaceholder =
+        last.distanceMeters !== undefined && last.distanceMeters !== null
+          ? String(last.distanceMeters)
+          : set.distancePlaceholder;
 
       if (
         repsPlaceholder === set.repsPlaceholder &&
-        weightPlaceholder === set.weightPlaceholder
+        weightPlaceholder === set.weightPlaceholder &&
+        durationPlaceholder === set.durationPlaceholder &&
+        distancePlaceholder === set.distancePlaceholder
       ) {
         return set;
       }
 
       changed = true;
-      return { ...set, repsPlaceholder, weightPlaceholder };
+      return {
+        ...set,
+        repsPlaceholder,
+        weightPlaceholder,
+        durationPlaceholder,
+        distancePlaceholder,
+      };
     });
 
     return { ...exercise, entries };
@@ -551,13 +612,47 @@ export function toCreateWorkoutSessionInput(
         order: set.order,
         type: set.type,
         isWarmup: set.type === 'warmup' || undefined,
-        reps: Number(effectiveSetValue(set.reps, set.repsPlaceholder)) || undefined,
-        weightKg: effectiveWeightKg(set, unit),
+        ...setValuesToSave(set, exercise.trackingType, unit),
         restSeconds: set.done ? set.restSeconds : undefined,
         completedAt: set.done ? completedAt : undefined,
       })),
     })),
   };
+}
+
+type SetValues = Pick<WorkoutSetInput, 'reps' | 'weightKg' | 'durationSeconds' | 'distanceMeters'>;
+
+/**
+ * The set's effective values for the fields its exercise tracks, and only
+ * those (spec 0021 FR-3): weight in canonical kg, time in whole seconds,
+ * distance in metres. Empty or unreadable values are left out. A weight &
+ * reps exercise saves exactly what it saved before (AC-3).
+ */
+export function setValuesToSave(
+  set: WorkoutSetDraft,
+  trackingType: ExerciseTrackingType | undefined,
+  unit: WeightUnit,
+): SetValues {
+  const values: SetValues = {};
+
+  if (tracksField(trackingType, 'reps')) {
+    values.reps = Number(effectiveSetValue(set.reps, set.repsPlaceholder)) || undefined;
+  }
+  if (tracksField(trackingType, 'weight')) {
+    values.weightKg = effectiveWeightKg(set, unit);
+  }
+  if (tracksField(trackingType, 'duration')) {
+    values.durationSeconds =
+      parseDurationInput(effectiveSetValue(set.duration ?? '', set.durationPlaceholder)) ||
+      undefined;
+  }
+  if (tracksField(trackingType, 'distance')) {
+    values.distanceMeters =
+      parseDistanceInput(effectiveSetValue(set.distance ?? '', set.distancePlaceholder)) ||
+      undefined;
+  }
+
+  return values;
 }
 
 /**
@@ -715,8 +810,7 @@ export function toWorkoutSessionSkeleton(
         workoutExerciseId: exercise.id,
         order: set.order,
         type: set.type,
-        reps: Number(effectiveSetValue(set.reps, set.repsPlaceholder)) || undefined,
-        weightKg: effectiveWeightKg(set, unit),
+        ...setValuesToSave(set, exercise.trackingType, unit),
         restSeconds: set.restSeconds,
         completedAt,
         createdAt: completedAt,
