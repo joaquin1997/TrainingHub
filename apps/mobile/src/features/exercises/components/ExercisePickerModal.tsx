@@ -10,10 +10,13 @@ import {
   View,
 } from 'react-native';
 
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
-import { colors, commonStyles, spacing } from '@/ui/theme';
+import { ExerciseThumb } from '@/features/exercises/components/ExerciseThumb';
+import { StateView } from '@/ui/StateView';
+import { colors, commonStyles, fonts, spacing } from '@/ui/theme';
 import type { Exercise } from '@workout/domain';
 
 const MAX_VISIBLE = 50;
@@ -88,45 +91,64 @@ export function ExercisePickerModal({
             onPress={onClose}
             hitSlop={12}
             accessibilityRole="button"
-            style={styles.closeButton}
+            accessibilityLabel={t('common.close')}
+            style={({ pressed }) => [styles.closeButton, pressed ? styles.rowPressed : null]}
           >
-            <Text style={styles.close}>{t('common.close')}</Text>
+            <Ionicons name="close" size={22} color={colors.text} />
           </Pressable>
         </View>
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder={t('exercises.searchPlaceholder')}
-          placeholderTextColor={colors.textSubtle}
-          style={styles.input}
-          autoCorrect={false}
-        />
-        {isLoading ? <Text style={styles.meta}>{t('exercises.loading')}</Text> : null}
-        {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
-        <ScrollView contentContainerStyle={styles.list}>
-          {filtered.slice(0, MAX_VISIBLE).map((exercise) => (
-            <Pressable
-              key={exercise.id}
-              onPress={() => {
-                onSelect(exercise);
-                onClose();
-              }}
-              style={({ pressed }) => [
-                styles.row,
-                pressed ? styles.rowPressed : null,
-              ]}
-            >
-              <Text style={styles.rowTitle}>{exercise.name}</Text>
-              {exercise.primaryMuscleGroups &&
-              exercise.primaryMuscleGroups.length > 0 ? (
-                <Text style={styles.meta}>
-                  {exercise.primaryMuscleGroups.join(', ')}
-                </Text>
-              ) : null}
-            </Pressable>
-          ))}
+        <View style={styles.search}>
+          <Ionicons name="search" size={18} color={colors.textMuted} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t('exercises.searchPlaceholder')}
+            placeholderTextColor={colors.textSubtle}
+            style={styles.searchInput}
+            autoCorrect={false}
+          />
+        </View>
+        {isLoading ? <StateView kind="loading" message={t('exercises.loading')} /> : null}
+        {errorMessage ? (
+          <StateView
+            kind="error"
+            message={errorMessage}
+            actionLabel={t('common.retry')}
+            onAction={() => void loadExercises()}
+          />
+        ) : null}
+        <ScrollView contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled">
+          {filtered.slice(0, MAX_VISIBLE).map((exercise) => {
+            const details = [
+              exercise.primaryMuscleGroups?.join(', '),
+              exercise.equipment?.join(', '),
+            ].filter(Boolean);
+
+            return (
+              <Pressable
+                key={exercise.id}
+                accessibilityRole="button"
+                onPress={() => {
+                  onSelect(exercise);
+                  onClose();
+                }}
+                style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
+              >
+                <ExerciseThumb imageUrl={exercise.imageUrl} />
+                <View style={styles.rowText}>
+                  <Text style={styles.rowTitle}>{exercise.name}</Text>
+                  {details.length > 0 ? (
+                    <Text style={styles.meta} numberOfLines={1}>
+                      {details.join(' · ')}
+                    </Text>
+                  ) : null}
+                </View>
+                <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+              </Pressable>
+            );
+          })}
           {filtered.length > MAX_VISIBLE ? (
-            <Text style={styles.meta}>
+            <Text style={styles.more}>
               {t('exercises.refineSearch', { count: filtered.length - MAX_VISIBLE })}
             </Text>
           ) : null}
@@ -139,7 +161,7 @@ export function ExercisePickerModal({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: spacing.xl,
+    padding: spacing.lg,
     gap: spacing.md,
     backgroundColor: colors.background,
   },
@@ -147,23 +169,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: spacing.md,
   },
   title: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: '800',
+    ...commonStyles.heading,
+    flexShrink: 1,
   },
   closeButton: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 22,
+    backgroundColor: colors.surfaceRaised,
   },
-  close: {
-    color: colors.primary,
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  input: {
+  search: {
     ...commonStyles.input,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: 0,
+  },
+  searchInput: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 46,
+    color: colors.text,
+    fontSize: 16,
   },
   list: {
     gap: spacing.sm,
@@ -171,22 +203,30 @@ const styles = StyleSheet.create({
   },
   row: {
     ...commonStyles.card,
-    padding: 14,
-    gap: spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
   },
   rowPressed: {
     ...commonStyles.pressed,
   },
+  rowText: {
+    flex: 1,
+    gap: 2,
+  },
   rowTitle: {
     color: colors.text,
+    fontFamily: fonts.displayBold,
     fontSize: 16,
-    fontWeight: '700',
+    lineHeight: 21,
   },
   meta: {
     color: colors.textMuted,
     fontSize: 13,
   },
-  error: {
-    ...commonStyles.error,
+  more: {
+    ...commonStyles.meta,
+    textAlign: 'center',
   },
 });

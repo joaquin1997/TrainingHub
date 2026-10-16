@@ -161,10 +161,11 @@ removed (Out of scope, last item).
   and adding an exercise are secondary actions. Saving is the single primary
   action at the bottom, next to a summary of exercises and sets. Cancel sits in
   the top bar.
-- **FR-16. Exercise picker and custom exercise.** One top bar with cancel and
-  the title. Search and filter chips as on the exercises list. Each row shows
-  the exercise name, its muscle group and equipment. Creating a custom
-  exercise appears once. The custom-exercise form uses the same cards, chips
+- **FR-16. Exercise picker and custom exercise.** One top bar with close and
+  the title. Search styled as on the exercises list (the picker has no
+  filters today; adding them is out of scope). Each row shows the exercise
+  name, its muscle group and equipment, and its image or a neutral tile.
+  Creating a custom exercise appears once where it exists. The custom-exercise form uses the same cards, chips
   and primary action as the rest of the app.
 - **FR-17. Active workout.** From top to bottom:
   1. a header card with the routine name, the workout clock (active duration,
