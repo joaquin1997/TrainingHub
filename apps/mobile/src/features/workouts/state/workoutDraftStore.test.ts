@@ -7,6 +7,9 @@ import {
   applyLastPerformance,
   buildWorkoutSessionDraft,
   cycleWorkoutSetType,
+  discardActiveWorkoutIfForeign,
+  getActiveWorkoutOwnerId,
+  hydrateActiveWorkout,
   removeExerciseFromWorkout,
   clearActiveWorkout,
   countWorkoutSets,
@@ -571,5 +574,42 @@ describe('subscribeActiveWorkout (spec 0010)', () => {
     unsubscribe();
 
     expect(calls).toBe(1);
+  });
+});
+
+describe('active workout owner (spec 0010)', () => {
+  beforeEach(() => {
+    clearActiveWorkout();
+  });
+
+  it('keeps the workout when its owner signs in again', () => {
+    startActiveWorkout(routine, 'kg', 'user-a');
+    discardActiveWorkoutIfForeign('user-a');
+
+    expect(hasActiveWorkout()).toBe(true);
+  });
+
+  it('discards a workout started by someone else', () => {
+    startActiveWorkout(routine, 'kg', 'user-a');
+    discardActiveWorkoutIfForeign('user-b');
+
+    expect(hasActiveWorkout()).toBe(false);
+    expect(getActiveWorkoutOwnerId()).toBeNull();
+  });
+
+  it('adopts a workout with no recorded owner', () => {
+    startActiveWorkout(routine);
+    discardActiveWorkoutIfForeign('user-a');
+
+    expect(hasActiveWorkout()).toBe(true);
+    expect(getActiveWorkoutOwnerId()).toBe('user-a');
+  });
+
+  it('records the owner of a restored workout', () => {
+    hydrateActiveWorkout(buildWorkoutSessionDraft(routine), 'user-a');
+
+    expect(getActiveWorkoutOwnerId()).toBe('user-a');
+    discardActiveWorkoutIfForeign('user-b');
+    expect(hasActiveWorkout()).toBe(false);
   });
 });

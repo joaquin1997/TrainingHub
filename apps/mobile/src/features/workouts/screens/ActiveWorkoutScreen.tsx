@@ -18,6 +18,7 @@ import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { ExercisePickerModal } from '@/features/exercises/components/ExercisePickerModal';
 import { ProgressRing } from '@/features/workouts/components/ProgressRing';
 import { WheelPicker } from '@/features/workouts/components/WheelPicker';
+import { useAuth } from '@/features/auth/AuthContext';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
 import { resolveActiveWorkoutEntry } from '@/features/workouts/utils/activeWorkoutEntry';
@@ -111,6 +112,7 @@ export function ActiveWorkoutScreen() {
     Record<string, ExerciseLastPerformance | null>
   >({});
   const { settings } = useSettings();
+  const { user } = useAuth();
   const [restDuration, setRestDuration] = useState(settings.defaultRestSeconds);
   const restTimer = useRestTimer(() => Vibration.vibrate([0, 400, 200, 400]));
 
@@ -138,7 +140,7 @@ export function ActiveWorkoutScreen() {
           return;
         }
 
-        startActiveWorkout(routine, settings.unit);
+        startActiveWorkout(routine, settings.unit, user?.id);
         setStatus('ready');
       })
       .catch((error: unknown) => {

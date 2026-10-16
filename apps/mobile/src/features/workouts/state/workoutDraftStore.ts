@@ -557,21 +557,61 @@ export function subscribeActiveWorkout(listener: ActiveWorkoutListener) {
   };
 }
 
+/** Public id of the person the active workout belongs to (spec 0010 FR-3). */
+let activeWorkoutOwnerId: string | null = null;
+
 export function startActiveWorkout(
   routine: Routine,
   unit: WeightUnit = 'kg',
+  ownerId?: string,
 ): WorkoutSessionDraft {
   if (activeWorkout && activeWorkout.routineId === routine.id) {
     return activeWorkout;
   }
 
   activeWorkout = buildWorkoutSessionDraft(routine, unit);
+  activeWorkoutOwnerId = ownerId ?? null;
   notifyActiveWorkout();
   return activeWorkout;
 }
 
+/** Puts a draft restored from device storage back as the active workout. */
+export function hydrateActiveWorkout(
+  workoutDraft: WorkoutSessionDraft,
+  ownerId: string,
+) {
+  activeWorkout = workoutDraft;
+  activeWorkoutOwnerId = ownerId;
+  notifyActiveWorkout();
+}
+
 export function getActiveWorkout() {
   return activeWorkout;
+}
+
+export function getActiveWorkoutOwnerId() {
+  return activeWorkoutOwnerId;
+}
+
+/**
+ * Called on every sign-in (FR-8): an active workout started by someone else is
+ * discarded, so it is neither shown to nor saved under the new person. One
+ * with no recorded owner is adopted — it cannot be shown to belong to anyone
+ * else, and dropping it would lose logged sets.
+ */
+export function discardActiveWorkoutIfForeign(userId: string) {
+  if (activeWorkout === null) {
+    return;
+  }
+
+  if (activeWorkoutOwnerId === null) {
+    activeWorkoutOwnerId = userId;
+    return;
+  }
+
+  if (activeWorkoutOwnerId !== userId) {
+    clearActiveWorkout();
+  }
 }
 
 export function setActiveWorkout(workoutDraft: WorkoutSessionDraft) {
@@ -585,6 +625,7 @@ export function clearActiveWorkout() {
   }
 
   activeWorkout = null;
+  activeWorkoutOwnerId = null;
   notifyActiveWorkout();
 }
 

@@ -16,7 +16,7 @@ Each task leaves the tree green (`pnpm -r typecheck` and `pnpm -r test`).
 | 2 | [x] Draft ids that cannot collide after a restart (time-seeded) | mobile | unit test | `fix(workouts): draft ids stay unique across restarts` |
 | 3 | [x] Store subscription; `useActiveWorkout` via `useSyncExternalStore`; screen reads the draft from the store | mobile | unit test for subscribe/notify; manual smoke in app | `feat(workouts): observable active-workout store` |
 | 4 | [x] Open an existing draft without the network; `routineId` optional (`resolveActiveWorkoutEntry`) | mobile | unit test | `feat(workouts): resume the active workout without a network round-trip` |
-| 5 | Stored envelope + parse; `tokenSubject`; `AuthContext` restores the real user id; owner kept in the store; `discardActiveWorkoutIfForeign` on sign-in (FR-8) | mobile | unit tests | `feat(workouts): versioned, owner-scoped active-workout envelope` |
+| 5 | [x] Stored envelope + parse; `tokenSubject`; `AuthContext` restores the real user id; owner kept in the store; `discardActiveWorkoutIfForeign` on sign-in (FR-8) | mobile | unit tests | `feat(workouts): versioned, owner-scoped active-workout envelope` |
 | 6 | AsyncStorage dependency; `ActiveWorkoutStorage` interface + implementations | mobile | typecheck; **[DEVICE: rebuild]** app launches | `chore(mobile): add active-workout storage` |
 | 7 | Hydrate before routes (or after the next sign-in, EF-6); debounced save; flush on background; clear on finish/discard; confirm sign-out while active. **Requires spec 0014 deployed.** | mobile | unit tests (fake timers); **[DEVICE]** AC-1…AC-7, AC-9 | `feat(workouts): keep the active workout across app restarts` |
 | 8 | `ApiError` with status in `lib/http.ts`; on a permanent rejection at finish, show the reason and offer to discard (EF-5) | mobile | unit tests; **[DEVICE]** AC-8 | `feat(workouts): let a refused workout be discarded` |
@@ -48,6 +48,13 @@ rebuild.
   offline and from a link without `routineId` (0012's entry point). Decided:
   an active workout is resumed even when the link names another routine —
   before, that path overwrote the logged sets with a fresh draft. 4 unit tests.
+- 2026-10-16 — Task 5: `activeWorkoutEnvelope.ts` (`{ v: 1, ownerId, savedAt,
+  draft }`, parse → ok/foreign/invalid/empty; 4 tests), `tokenSubject` (3
+  tests), owner kept in the store (`startActiveWorkout(..., ownerId)`,
+  `hydrateActiveWorkout`), `discardActiveWorkoutIfForeign` on every sign-in
+  (4 tests). Decided: a draft with no recorded owner is adopted by whoever
+  signs in rather than dropped — it cannot be shown to be someone else's, and
+  it only arises if a workout starts with no user known.
 
 ## Definition of done
 
