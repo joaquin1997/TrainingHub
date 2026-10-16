@@ -192,6 +192,12 @@ export const en = {
     setsDoneShort: 'Sets done',
     setsCountOf: '{{done}} / {{total}}',
     autosaveHint: 'Saved as you go · pick it up any time',
+    share: {
+      action: 'Share',
+      duration: 'Duration',
+      volume: 'Volume',
+      notes: 'Notes',
+    },
     setType: {
       warmup: 'Warmup',
       drop: 'Drop',
