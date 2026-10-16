@@ -16,7 +16,7 @@ the tree green: `pnpm -r typecheck` and `pnpm -r test` pass at every step
 |---|---|---|---|---|
 | 1 | [x] Spec, plan and tasks; glossary (workout identity, optional provenance, lock covers deletion); backlog | docs | links resolve | `docs(sdd): spec 0014 workout save integrity` |
 | 2 | [x] `CreateWorkoutSessionInput.clientId?`; schema `clientId` + `@@unique([userId, clientId])`; generated migration | domain / data | `prisma validate`; typecheck | `feat(workouts): client identity on saved workouts` |
-| 3 | Route: parse `clientId`, validate times (unreadable, end < start) | api | route tests (4 new) | `fix(workouts): refuse unreadable or inverted workout times` |
+| 3 | [x] Route: parse `clientId`, validate times (unreadable, end < start) | api | route tests (4 new) | `fix(workouts): refuse unreadable or inverted workout times` |
 | 4 | `saveReferences.ts` (`dropForeignLinks`, `findUnknownExercise`); repository resolves owned refs, throws `UnknownExerciseError`, replays by `clientId` (incl. `P2002`); route `201`/`200`/`400` | api | unit tests; route tests | `fix(workouts): idempotent save with owned references only` |
 | 5 | Draft `clientId` (generated, stable across edits) sent in the payload | mobile | unit tests | `feat(workouts): send a stable identity with each workout` |
 | 6 | Active routine: no edit/delete from the list menu or detail; detail Delete confirms; `ActionSheet` message | mobile | typecheck; **[DEVICE]** AC-6, AC-7 | `fix(routines): lock the active workout's routine and confirm deletes` |
@@ -47,6 +47,10 @@ Task 7 is the owner's (deploy and device checks are batched).
   SQL generated offline with `prisma migrate diff` (old schema from git →
   edited schema), so it mirrors `schema.prisma` exactly; not yet applied to any
   database (task 7).
+- 2026-10-16 — Task 3: `workoutTimesProblem` runs after parsing so each case
+  answers with its own reason ("must be valid dates" / "cannot end before it
+  starts"); set completion times are checked for readability only. `clientId`
+  trimmed, max 64 chars. 5 route tests.
 
 ## Definition of done
 

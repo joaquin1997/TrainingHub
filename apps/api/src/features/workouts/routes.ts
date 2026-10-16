@@ -41,6 +41,38 @@ function parseOptionalNumber(value: unknown) {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
+function isReadableTime(value: string) {
+  return !Number.isNaN(Date.parse(value));
+}
+
+/** Why the workout's times are unacceptable, or undefined when they are fine. */
+function workoutTimesProblem(input: CreateWorkoutSessionInput) {
+  const setTimes = input.exercises.flatMap((exercise) =>
+    exercise.sets.flatMap((set) => (set.completedAt ? [set.completedAt] : [])),
+  );
+  const times = [
+    input.startedAt,
+    ...(input.completedAt ? [input.completedAt] : []),
+    ...setTimes,
+  ];
+
+  if (!times.every(isReadableTime)) {
+    return 'Workout times must be valid dates';
+  }
+
+  if (
+    input.completedAt &&
+    Date.parse(input.completedAt) < Date.parse(input.startedAt)
+  ) {
+    return 'A workout cannot end before it starts';
+  }
+
+  return undefined;
+}
+
+/** Longest accepted `clientId` (spec 0014); the app sends far fewer. */
+const MAX_CLIENT_ID_LENGTH = 64;
+
 function parseOptionalInteger(value: unknown) {
   return typeof value === 'number' && Number.isInteger(value) ? value : undefined;
 }
@@ -53,6 +85,8 @@ function parseWorkoutSetInput(
     return null;
   }
 
+  const completedAt = parseOptionalString(value.completedAt);
+
   return {
     order: parseOptionalInteger(value.order) ?? fallbackOrder,
     type: parseWorkoutSetType(value.type),
@@ -62,7 +96,7 @@ function parseWorkoutSetInput(
     distanceMeters: parseOptionalNumber(value.distanceMeters),
     restSeconds: parseOptionalInteger(value.restSeconds),
     isWarmup: typeof value.isWarmup === 'boolean' ? value.isWarmup : undefined,
-    completedAt: parseOptionalString(value.completedAt),
+    completedAt,
   };
 }
 
@@ -107,6 +141,13 @@ function parseCreateWorkoutSessionInput(
     return null;
   }
 
+  const completedAt = parseOptionalString(body.completedAt);
+
+  const clientId = parseOptionalString(body.clientId);
+  if (clientId && clientId.length > MAX_CLIENT_ID_LENGTH) {
+    return null;
+  }
+
   const exercisesInput = Array.isArray(body.exercises) ? body.exercises : [];
   const exercises = exercisesInput
     .map((exercise, index) => parseWorkoutExerciseInput(exercise, index + 1))
@@ -117,9 +158,10 @@ function parseCreateWorkoutSessionInput(
   }
 
   return {
+    clientId,
     routineId: parseOptionalString(body.routineId),
     startedAt: body.startedAt,
-    completedAt: parseOptionalString(body.completedAt),
+    completedAt,
     notes: parseOptionalString(body.notes),
     exercises,
   };
@@ -164,6 +206,11 @@ export async function registerWorkoutRoutes(app: FastifyInstance) {
 
     if (!parsedInput) {
       return reply.code(400).send({ message: 'Invalid workout payload' });
+    }
+
+    const timesProblem = workoutTimesProblem(parsedInput);
+    if (timesProblem) {
+      return reply.code(400).send({ message: timesProblem });
     }
 
     const hasCompletedSet = parsedInput.exercises.some((exercise) =>
