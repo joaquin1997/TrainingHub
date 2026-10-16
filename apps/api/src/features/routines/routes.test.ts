@@ -127,6 +127,43 @@ describe('POST /routines', () => {
   });
 });
 
+describe('POST /routines time and distance targets (spec 0021)', () => {
+  it('passes time and distance targets to the repository', async () => {
+    vi.mocked(findExerciseById).mockResolvedValue({ id: 'ex2', name: 'Plank' } as never);
+    vi.mocked(createRoutine).mockResolvedValue({ id: 'r2', name: 'Core' } as never);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/routines',
+      payload: {
+        name: 'Core',
+        exercises: [
+          {
+            exerciseId: 'ex2',
+            orderIndex: 0,
+            sets: [
+              { setNumber: 1, targetDurationSeconds: 45 },
+              { setNumber: 2, targetDistanceMeters: 500, targetDurationSeconds: 1.5 },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.statusCode).toBe(201);
+    const input = vi.mocked(createRoutine).mock.calls[0]?.[1];
+    expect(input?.exercises[0]?.sets).toEqual([
+      expect.objectContaining({ setNumber: 1, targetDurationSeconds: 45 }),
+      // Time is whole seconds: a fractional value is dropped, not rounded.
+      expect.objectContaining({
+        setNumber: 2,
+        targetDistanceMeters: 500,
+        targetDurationSeconds: undefined,
+      }),
+    ]);
+  });
+});
+
 describe('DELETE /routines/:id', () => {
   it('returns 204 when the routine was deleted', async () => {
     vi.mocked(deleteRoutine).mockResolvedValue(true as never);
