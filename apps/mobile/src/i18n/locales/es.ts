@@ -199,6 +199,9 @@ export const es: TranslationCatalog = {
     illustration: 'Ilustración de {{name}}',
   },
   workouts: {
+    setsDoneShort: 'Series hechas',
+    setsCountOf: '{{done}} / {{total}}',
+    autosaveHint: 'Se guarda sola · retómala cuando quieras',
     setType: {
       warmup: 'Calentamiento',
       drop: 'Drop',
@@ -221,7 +224,7 @@ export const es: TranslationCatalog = {
     start: 'Empezar',
     imagePlaceholder: 'Marcador de imagen',
     colSet: 'SERIE',
-    colPrev: 'ANT',
+    colPrev: 'ANTERIOR',
     colReps: 'REPS',
     addSet: 'Añadir serie',
     removeExercise: 'Quitar ejercicio',

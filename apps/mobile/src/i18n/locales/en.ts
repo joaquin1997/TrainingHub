@@ -196,6 +196,9 @@ export const en = {
     illustration: '{{name}} illustration',
   },
   workouts: {
+    setsDoneShort: 'Sets done',
+    setsCountOf: '{{done}} / {{total}}',
+    autosaveHint: 'Saved as you go · pick it up any time',
     setType: {
       warmup: 'Warmup',
       drop: 'Drop',
@@ -218,7 +221,7 @@ export const en = {
     start: 'Start',
     imagePlaceholder: 'Image placeholder',
     colSet: 'SET',
-    colPrev: 'PREV',
+    colPrev: 'PREVIOUS',
     colReps: 'REPS',
     addSet: 'Add set',
     removeExercise: 'Remove exercise',

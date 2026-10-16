@@ -1,9 +1,9 @@
-import { Link, router, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { router, useLocalSearchParams } from 'expo-router';
 import type { TFunction } from 'i18next';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -23,14 +23,17 @@ import { useSettings } from '@/features/settings/SettingsContext';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
 import { resolveActiveWorkoutEntry } from '@/features/workouts/utils/activeWorkoutEntry';
 import { parseWorkoutAction } from '@/features/workouts/utils/workoutAction';
+import { exerciseBlockLabels } from '@/features/routines/utils/exerciseBlockLabels';
 import { Button } from '@/ui/Button';
+import { Chip } from '@/ui/Chip';
+import { StateView } from '@/ui/StateView';
 import { confirmAction } from '@/lib/confirmAction';
 import { formatDuration } from '@/lib/format';
 import { isPermanentRejection } from '@/lib/http';
 import { fromKg, roundWeight } from '@/lib/weight';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { useRestTimer } from '@/lib/useRestTimer';
-import { colors, commonStyles, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
 
 const REST_MINUTES = Array.from({ length: 11 }, (_, i) => i); // 0–10 min
 const REST_SECONDS = Array.from({ length: 12 }, (_, i) => i * 5); // 0,5,…,55
@@ -250,22 +253,22 @@ export function ActiveWorkoutScreen() {
 
   if (status === 'loading') {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator color={colors.primary} />
-        <Text style={styles.meta}>{t('workouts.loadingRoutine')}</Text>
+      <View style={styles.screen}>
+        <StateView kind="loading" message={t('workouts.loadingRoutine')} />
       </View>
     );
   }
 
   if (status === 'error' || !workoutDraft) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.meta}>
-          {errorMessage ?? t('workouts.startFromRoutine')}
-        </Text>
-        <Link href="/routines" style={styles.link}>
-          {t('routineDetail.backToRoutines')}
-        </Link>
+      <View style={styles.screen}>
+        <StateView
+          kind={errorMessage ? 'error' : 'empty'}
+          icon="barbell-outline"
+          message={errorMessage ?? t('workouts.startFromRoutine')}
+          actionLabel={t('routineDetail.backToRoutines')}
+          onAction={() => router.replace('/routines')}
+        />
       </View>
     );
   }
@@ -464,38 +467,309 @@ export function ActiveWorkoutScreen() {
   };
 
   const setProgress = countWorkoutSets(workoutDraft);
+  const unit = workoutDraft.unit ?? 'kg';
+  const isPaused = Boolean(workoutDraft.pausedAt);
+  const blockLabels = exerciseBlockLabels(workoutDraft.exercises);
+  const blocks: number[][] = [];
+  blockLabels.forEach((label, index) => {
+    if (label.superset === 'none' || label.superset === 'start') {
+      blocks.push([index]);
+    } else {
+      blocks[blocks.length - 1]?.push(index);
+    }
+  });
+
+  const renderExercise = (index: number, inSuperset: boolean) => {
+    const exercise = workoutDraft.exercises[index];
+    const label = blockLabels[index];
+    if (!exercise || !label) {
+      return null;
+    }
+
+    return (
+      <View key={exercise.id} style={styles.exercise}>
+        <View style={styles.exerciseHeader}>
+          <View style={[styles.blockBadge, inSuperset ? styles.blockBadgeSuperset : null]}>
+            <Text style={[styles.blockBadgeText, inSuperset ? styles.blockBadgeTextSuperset : null]}>
+              {label.label}
+            </Text>
+          </View>
+          <Text style={styles.exerciseTitle}>{exercise.exerciseName}</Text>
+          <View style={styles.reorderRow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="↑"
+              onPress={() => handleMoveExercise(exercise.id, 'up')}
+              hitSlop={6}
+              style={styles.iconButton}
+            >
+              <Ionicons name="arrow-up" size={18} color={colors.textMuted} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="↓"
+              onPress={() => handleMoveExercise(exercise.id, 'down')}
+              hitSlop={6}
+              style={styles.iconButton}
+            >
+              <Ionicons name="arrow-down" size={18} color={colors.textMuted} />
+            </Pressable>
+          </View>
+        </View>
+        <View style={[styles.setList, inSuperset ? styles.indented : null]}>
+          <View style={styles.setHeaderRow}>
+            <Text style={[styles.colSet, styles.colLabel]}>{t('workouts.colSet')}</Text>
+            <Text style={[styles.colPrev, styles.colLabel]}>{t('workouts.colPrev')}</Text>
+            <Text style={[styles.colInput, styles.colLabel, styles.colCentered]}>
+              {unit.toUpperCase()}
+            </Text>
+            <Text style={[styles.colInput, styles.colLabel, styles.colCentered]}>
+              {t('workouts.colReps')}
+            </Text>
+            <Ionicons name="checkmark" size={14} color={colors.textMuted} style={styles.colCheckIcon} />
+            <View style={styles.colRemove} />
+          </View>
+          {exercise.entries.map((set) => (
+            <View key={set.id} style={[styles.setRow, set.done ? styles.setRowDone : null]}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={setTypeLabel(set.type, t)}
+                onPress={() => handleCycleSetType(exercise.id, set.id)}
+                hitSlop={4}
+                style={[
+                  styles.setMarker,
+                  set.type === 'failure' ? styles.setMarkerFailure : null,
+                  set.type === 'warmup' || set.type === 'drop' ? styles.setMarkerTyped : null,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.setMarkerText,
+                    set.type === 'failure' ? styles.setMarkerTextFailure : null,
+                    set.type === 'warmup' || set.type === 'drop' ? styles.setMarkerTextTyped : null,
+                  ]}
+                >
+                  {set.type === 'normal' ? set.order : setTypeLabel(set.type, t)[0]}
+                </Text>
+              </Pressable>
+              <Text numberOfLines={1} style={[styles.colPrev, styles.prevText]}>
+                {prevSetLabel(lastByExercise[exercise.exerciseId], set.order, unit)}
+              </Text>
+              <TextInput
+                keyboardType="decimal-pad"
+                value={set.weightKg}
+                placeholder={set.weightPlaceholder ?? '–'}
+                placeholderTextColor={colors.textSubtle}
+                onChangeText={(value) =>
+                  handleSetChange(exercise.id, set.id, 'weightKg', value)
+                }
+                style={[styles.cellInput, styles.colInput, set.done ? styles.cellInputDone : null]}
+              />
+              <TextInput
+                keyboardType="number-pad"
+                value={set.reps}
+                placeholder={set.repsPlaceholder ?? '–'}
+                placeholderTextColor={colors.textSubtle}
+                onChangeText={(value) =>
+                  handleSetChange(exercise.id, set.id, 'reps', value)
+                }
+                style={[styles.cellInput, styles.colInput, set.done ? styles.cellInputDone : null]}
+              />
+              <Pressable
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: set.done }}
+                onPress={() => handleToggleDone(exercise.id, set.id)}
+                hitSlop={4}
+                style={[styles.checkBox, set.done ? styles.checkBoxDone : null]}
+              >
+                <Ionicons
+                  name="checkmark"
+                  size={20}
+                  color={set.done ? colors.onPrimary : colors.borderStrong}
+                />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('common.remove')}
+                onPress={() => handleRemoveSet(exercise.id, set.id)}
+                hitSlop={6}
+                style={styles.colRemove}
+              >
+                <Ionicons name="close" size={16} color={colors.textSubtle} />
+              </Pressable>
+            </View>
+          ))}
+          <View style={styles.cardActions}>
+            <Button
+              label={t('workouts.addSet')}
+              icon="add"
+              variant="ghost"
+              onPress={() => handleAddSet(exercise.id)}
+              style={styles.compactButton}
+            />
+            <Button
+              label={t('workouts.removeExercise')}
+              variant="ghost"
+              destructive
+              onPress={() => handleRemoveExercise(exercise.id)}
+              style={styles.compactButton}
+            />
+          </View>
+        </View>
+      </View>
+    );
+  };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.body}>
-        {workoutDraft.routineName}
-      </Text>
-      <View style={styles.timerRow}>
-        <Text
-          style={[styles.timer, workoutDraft.pausedAt ? styles.timerPaused : null]}
-        >
-          {formatDuration(elapsedSeconds)}
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={handleTogglePause}
-          hitSlop={8}
-          style={styles.pauseButton}
-        >
-          <Text style={styles.pauseText}>
-            {workoutDraft.pausedAt ? t('workouts.resume') : t('workouts.pause')}
+    <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
+      <View style={styles.headerCard}>
+        <View style={styles.liveRow}>
+          <View style={[styles.liveDot, isPaused ? styles.liveDotPaused : null]} />
+          <Text style={styles.sectionLabel}>
+            {isPaused ? t('workouts.paused') : t('routines.activeLabel')}
           </Text>
-        </Pressable>
+        </View>
+        <Text style={styles.routineName}>{workoutDraft.routineName}</Text>
+        <View style={styles.clockRow}>
+          <Text style={[styles.clock, isPaused ? styles.clockPaused : null]}>
+            {formatDuration(elapsedSeconds)}
+          </Text>
+          <Button
+            label={isPaused ? t('workouts.resume') : t('workouts.pause')}
+            icon={isPaused ? 'play' : 'pause'}
+            variant="secondary"
+            onPress={handleTogglePause}
+          />
+        </View>
+        <View style={styles.progressRow}>
+          <Text style={styles.meta}>{t('workouts.setsDoneShort')}</Text>
+          <Text style={styles.progressCount}>
+            {t('workouts.setsCountOf', { done: setProgress.done, total: setProgress.total })}
+          </Text>
+        </View>
+        <View style={styles.progressTrack}>
+          <View
+            style={[
+              styles.progressFill,
+              {
+                width: `${setProgress.total > 0 ? Math.round((setProgress.done / setProgress.total) * 100) : 0}%`,
+              },
+            ]}
+          />
+        </View>
+        <Text style={styles.hint}>{t('workouts.autosaveHint')}</Text>
       </View>
-      {workoutDraft.pausedAt ? (
-        <Text style={styles.pausedBadge}>{t('workouts.paused')}</Text>
-      ) : null}
-      <Text style={styles.meta}>
-        {t('workouts.setsProgress', {
-          done: setProgress.done,
-          total: setProgress.total,
-        })}
-      </Text>
+      <View style={styles.restCard}>
+        <View style={styles.liveRow}>
+          <Ionicons name="timer-outline" size={16} color={colors.textMuted} />
+          <Text style={styles.sectionLabel}>{t('workouts.restTimer')}</Text>
+        </View>
+        {restTimer.isRunning ? (
+          <View style={styles.restRingRow}>
+            <ProgressRing
+              size={124}
+              strokeWidth={9}
+              holeColor={colors.surface}
+              progress={restTimer.total > 0 ? restTimer.remaining / restTimer.total : 0}
+            >
+              <Text style={styles.ringTime}>{formatDuration(restTimer.remaining)}</Text>
+              <Text style={styles.ringLabel}>{t('workouts.rest')}</Text>
+            </ProgressRing>
+            <View style={styles.ringControls}>
+              <View style={styles.stepRow}>
+                <Button
+                  label="−15 s"
+                  variant="secondary"
+                  onPress={() => restTimer.adjust(-15)}
+                  style={styles.stepButton}
+                />
+                <Button
+                  label="+15 s"
+                  variant="secondary"
+                  onPress={() => restTimer.adjust(15)}
+                  style={styles.stepButton}
+                />
+              </View>
+              <Button
+                label={t('workouts.skip')}
+                icon="play-skip-forward"
+                variant="secondary"
+                onPress={restTimer.skip}
+                fullWidth
+              />
+            </View>
+          </View>
+        ) : (
+          <View style={styles.wheelRow}>
+            <View style={styles.wheelGroup}>
+              <WheelPicker
+                values={REST_MINUTES}
+                value={Math.floor(restDuration / 60)}
+                onChange={(m) => setRestDuration(m * 60 + (restDuration % 60))}
+                formatItem={pad2}
+              />
+              <Text style={styles.wheelUnit}>{t('workouts.min')}</Text>
+            </View>
+            <Text style={styles.wheelColon}>:</Text>
+            <View style={styles.wheelGroup}>
+              <WheelPicker
+                values={REST_SECONDS}
+                value={restDuration % 60}
+                onChange={(sec) =>
+                  setRestDuration(Math.floor(restDuration / 60) * 60 + sec)
+                }
+                formatItem={pad2}
+              />
+              <Text style={styles.wheelUnit}>{t('workouts.sec')}</Text>
+            </View>
+            <Button
+              label={t('workouts.start')}
+              icon="play"
+              variant="secondary"
+              onPress={() => restTimer.start(restDuration)}
+            />
+          </View>
+        )}
+      </View>
+      {blocks.map((members) => {
+        const first = blockLabels[members[0] ?? 0];
+        const key = workoutDraft.exercises[members[0] ?? 0]?.id ?? String(members[0]);
+        if (members.length === 1 || !first?.supersetIndex) {
+          return (
+            <View key={key} style={styles.card}>
+              {members.map((index) => renderExercise(index, false))}
+            </View>
+          );
+        }
+        return (
+          <View key={key} style={styles.card}>
+            <Chip
+              icon="flash"
+              tone="primary"
+              label={t('routineDetail.superset', { group: first.supersetIndex })}
+              size="sm"
+            />
+            <View style={styles.supersetBody}>
+              <View style={styles.rail} />
+              <View style={styles.supersetMembers}>
+                {members.map((index) => renderExercise(index, true))}
+              </View>
+            </View>
+          </View>
+        );
+      })}
+      <Button
+        label={t('workouts.addExercise')}
+        icon="add-circle-outline"
+        variant="secondary"
+        onPress={() => setIsPickerVisible(true)}
+        fullWidth
+      />
+      <ExercisePickerModal
+        visible={isPickerVisible}
+        onClose={() => setIsPickerVisible(false)}
+        onSelect={handleAddExercise}
+      />
       <TextInput
         value={workoutDraft.notes ?? ''}
         onChangeText={handleNotesChange}
@@ -504,487 +778,144 @@ export function ActiveWorkoutScreen() {
         style={styles.notesInput}
         multiline
       />
-      <View style={styles.restBar}>
-        {restTimer.isRunning ? (
-          <View style={styles.restRingRow}>
-            <ProgressRing
-              size={116}
-              strokeWidth={9}
-              progress={
-                restTimer.total > 0 ? restTimer.remaining / restTimer.total : 0
-              }
-            >
-              <Text style={styles.ringTime}>
-                {formatDuration(restTimer.remaining)}
-              </Text>
-              <Text style={styles.ringLabel}>{t('workouts.rest')}</Text>
-            </ProgressRing>
-            <View style={styles.ringControls}>
-              <Pressable
-                onPress={() => restTimer.adjust(15)}
-                hitSlop={6}
-                style={styles.stepButton}
-              >
-                <Text style={styles.stepText}>+15</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => restTimer.adjust(-15)}
-                hitSlop={6}
-                style={styles.stepButton}
-              >
-                <Text style={styles.stepText}>−15</Text>
-              </Pressable>
-              <Pressable
-                onPress={restTimer.skip}
-                hitSlop={8}
-                style={styles.skipButton}
-              >
-                <Text style={styles.skipText}>{t('workouts.skip')}</Text>
-              </Pressable>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.restColumn}>
-            <Text style={styles.meta}>{t('workouts.restTimer')}</Text>
-            <View style={styles.wheelRow}>
-              <View style={styles.wheelGroup}>
-                <WheelPicker
-                  values={REST_MINUTES}
-                  value={Math.floor(restDuration / 60)}
-                  onChange={(m) => setRestDuration(m * 60 + (restDuration % 60))}
-                  formatItem={pad2}
-                />
-                <Text style={styles.wheelUnit}>{t('workouts.min')}</Text>
-              </View>
-              <Text style={styles.wheelColon}>:</Text>
-              <View style={styles.wheelGroup}>
-                <WheelPicker
-                  values={REST_SECONDS}
-                  value={restDuration % 60}
-                  onChange={(s) =>
-                    setRestDuration(Math.floor(restDuration / 60) * 60 + s)
-                  }
-                  formatItem={pad2}
-                />
-                <Text style={styles.wheelUnit}>{t('workouts.sec')}</Text>
-              </View>
-              <Pressable
-                onPress={() => restTimer.start(restDuration)}
-                hitSlop={8}
-                style={styles.startButton}
-              >
-                <Text style={styles.startText}>{t('workouts.start')}</Text>
-              </Pressable>
-            </View>
-          </View>
-        )}
-      </View>
-      {workoutDraft.exercises.map((exercise) => (
-        <View key={exercise.id} style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={styles.cardTitleGroup}>
-              <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
-              {exercise.supersetGroup !== undefined ? (
-                <Text style={styles.supersetBadge}>
-                  {t('routineDetail.superset', { group: exercise.supersetGroup })}
-                </Text>
-              ) : null}
-            </View>
-            <View style={styles.reorderRow}>
-              <Pressable
-                onPress={() => handleMoveExercise(exercise.id, 'up')}
-                hitSlop={8}
-              >
-                <Text style={styles.reorderText}>↑</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => handleMoveExercise(exercise.id, 'down')}
-                hitSlop={8}
-              >
-                <Text style={styles.reorderText}>↓</Text>
-              </Pressable>
-            </View>
-          </View>
-          <View style={styles.imagePlaceholder}>
-            <Text style={styles.imagePlaceholderText}>
-              {exercise.imagePlaceholderText ?? t('workouts.imagePlaceholder')}
-            </Text>
-          </View>
-          <View style={styles.setList}>
-            <View style={styles.setHeaderRow}>
-              <Text style={[styles.colSet, styles.colLabel]}>{t('workouts.colSet')}</Text>
-              <Text style={[styles.colPrev, styles.colLabel]}>{t('workouts.colPrev')}</Text>
-              <Text style={[styles.colInput, styles.colLabel]}>
-                {(workoutDraft.unit ?? 'kg').toUpperCase()}
-              </Text>
-              <Text style={[styles.colInput, styles.colLabel]}>{t('workouts.colReps')}</Text>
-              <View style={styles.colCheck} />
-            </View>
-            {exercise.entries.map((set) => (
-              <View
-                key={set.id}
-                style={[styles.setRow, set.done ? styles.setRowDone : null]}
-              >
-                <Pressable
-                  onPress={() => handleCycleSetType(exercise.id, set.id)}
-                  hitSlop={6}
-                  style={styles.colSet}
-                >
-                  <Text style={styles.setNum}>{set.order}</Text>
-                  {set.type !== 'normal' ? (
-                    <Text style={styles.setTypeTag}>
-                      {setTypeLabel(set.type, t)[0]}
-                    </Text>
-                  ) : null}
-                </Pressable>
-                <Text numberOfLines={1} style={[styles.colPrev, styles.prevText]}>
-                  {prevSetLabel(
-                    lastByExercise[exercise.exerciseId],
-                    set.order,
-                    workoutDraft.unit ?? 'kg',
-                  )}
-                </Text>
-                <TextInput
-                  keyboardType="decimal-pad"
-                  value={set.weightKg}
-                  placeholder={set.weightPlaceholder ?? '–'}
-                  placeholderTextColor={colors.textSubtle}
-                  onChangeText={(value) =>
-                    handleSetChange(exercise.id, set.id, 'weightKg', value)
-                  }
-                  style={[styles.cellInput, styles.colInput]}
-                />
-                <TextInput
-                  keyboardType="number-pad"
-                  value={set.reps}
-                  placeholder={set.repsPlaceholder ?? '–'}
-                  placeholderTextColor={colors.textSubtle}
-                  onChangeText={(value) =>
-                    handleSetChange(exercise.id, set.id, 'reps', value)
-                  }
-                  style={[styles.cellInput, styles.colInput]}
-                />
-                <Pressable
-                  onPress={() => handleToggleDone(exercise.id, set.id)}
-                  hitSlop={6}
-                  style={[styles.checkBox, set.done ? styles.checkBoxDone : null]}
-                >
-                  <Text
-                    style={[
-                      styles.checkMark,
-                      set.done ? styles.checkMarkDone : null,
-                    ]}
-                  >
-                    ✓
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => handleRemoveSet(exercise.id, set.id)}
-                  hitSlop={6}
-                  style={styles.removeSet}
-                >
-                  <Text style={styles.removeSetText}>✕</Text>
-                </Pressable>
-              </View>
-            ))}
-          </View>
-          <View style={styles.cardActions}>
-            <Pressable
-              onPress={() => handleAddSet(exercise.id)}
-              style={styles.addSetButton}
-            >
-              <Text style={styles.addSetText}>{`+ ${t('workouts.addSet')}`}</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => handleRemoveExercise(exercise.id)}
-              hitSlop={8}
-            >
-              <Text style={styles.removeText}>{t('workouts.removeExercise')}</Text>
-            </Pressable>
-          </View>
-        </View>
-      ))}
-      <Pressable
-        onPress={() => setIsPickerVisible(true)}
-        style={styles.addExerciseButton}
-      >
-        <Text style={styles.addExerciseText}>{`+ ${t('workouts.addExercise')}`}</Text>
-      </Pressable>
-      <ExercisePickerModal
-        visible={isPickerVisible}
-        onClose={() => setIsPickerVisible(false)}
-        onSelect={handleAddExercise}
-      />
       {finishError ? <Text style={styles.errorText}>{finishError}</Text> : null}
       {finishRefused ? (
         <Text style={styles.meta}>{t('workouts.saveRefusedHint')}</Text>
       ) : null}
       <Button
         label={isFinishing ? t('workouts.savingWorkout') : t('workouts.finishWorkout')}
+        icon="flag"
         onPress={() => void finishWorkout()}
         disabled={isFinishing}
         fullWidth
       />
       <Button
         label={t('workouts.discardWorkout')}
-        variant="danger"
+        icon="close-circle-outline"
+        variant="ghost"
+        destructive
         onPress={() => void handleDiscard()}
         disabled={isFinishing}
-        fullWidth
+        style={styles.centered}
       />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    ...commonStyles.screen,
+  },
   container: {
     ...commonStyles.scrollContent,
   },
-  title: {
-    ...commonStyles.title,
+  centered: {
+    alignSelf: 'center',
   },
-  body: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: '800',
-  },
-  timer: {
-    color: colors.primary,
-    fontSize: 40,
-    fontWeight: '900',
-    fontVariant: ['tabular-nums'],
-  },
-  timerPaused: {
-    color: colors.textMuted,
-  },
-  timerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  pauseButton: {
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  pauseText: {
-    color: colors.primary,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  pausedBadge: {
-    alignSelf: 'flex-start',
-    color: colors.textMuted,
-    fontSize: 13,
-    fontWeight: '700',
-    textTransform: 'uppercase',
+  sectionLabel: {
+    ...commonStyles.sectionLabel,
   },
   meta: {
     ...commonStyles.meta,
   },
-  card: {
+  hint: {
+    color: colors.textSubtle,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  headerCard: {
+    ...commonStyles.card,
+    gap: spacing.sm,
+  },
+  liveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.primary,
+  },
+  liveDotPaused: {
+    backgroundColor: colors.textMuted,
+  },
+  routineName: {
+    ...commonStyles.cardTitle,
+    fontSize: 20,
+    lineHeight: 26,
+  },
+  clockRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    borderRadius: radii.md,
+    backgroundColor: colors.background,
+    paddingVertical: spacing.sm,
+    paddingLeft: spacing.lg,
+    paddingRight: spacing.sm,
+  },
+  clock: {
+    ...commonStyles.figureLarge,
+    color: colors.primary,
+    flexShrink: 1,
+  },
+  clockPaused: {
+    color: colors.textMuted,
+  },
+  progressRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    marginTop: spacing.xs,
+  },
+  progressCount: {
+    color: colors.primary,
+    fontFamily: fonts.displayBold,
+    fontSize: 15,
+    fontVariant: ['tabular-nums'],
+  },
+  progressTrack: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.surfaceRaised,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 4,
+    backgroundColor: colors.primary,
+  },
+  restCard: {
     ...commonStyles.card,
     gap: spacing.md,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  cardTitleGroup: {
-    flexShrink: 1,
-    gap: 4,
-  },
-  cardTitle: {
-    color: colors.text,
-    fontSize: 20,
-    fontWeight: '800',
-    flexShrink: 1,
-  },
-  supersetBadge: {
-    alignSelf: 'flex-start',
-    color: colors.accent,
-    backgroundColor: colors.accentSoft,
-    fontSize: 12,
-    fontWeight: '800',
-    borderRadius: radii.sm,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    overflow: 'hidden',
-  },
-  reorderRow: {
+  restRingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.lg,
   },
-  reorderText: {
-    color: colors.primary,
-    fontSize: 18,
-    fontWeight: '900',
+  ringTime: {
+    ...commonStyles.figure,
+    fontSize: 26,
   },
-  imagePlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 84,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceMuted,
+  ringLabel: {
+    ...commonStyles.sectionLabel,
+    fontSize: 10,
   },
-  imagePlaceholderText: {
-    color: colors.textSubtle,
-    fontSize: 14,
-  },
-  target: {
-    color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  setList: {
-    gap: spacing.sm,
-  },
-  setHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingBottom: 2,
-  },
-  colLabel: {
-    color: colors.textSubtle,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  setRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    borderRadius: radii.sm,
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-  },
-  setRowDone: {
-    backgroundColor: colors.successSoft,
-  },
-  colSet: {
-    width: 36,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  colPrev: {
-    width: 64,
-  },
-  colInput: {
+  ringControls: {
     flex: 1,
-  },
-  colCheck: {
-    width: 36,
-  },
-  setNum: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  setTypeTag: {
-    color: colors.accent,
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  prevText: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontVariant: ['tabular-nums'],
-  },
-  cellInput: {
-    minHeight: 40,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surfaceMuted,
-    color: colors.text,
-    textAlign: 'center',
-    fontSize: 16,
-    paddingVertical: 6,
-  },
-  checkBox: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radii.sm,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  checkBoxDone: {
-    backgroundColor: colors.success,
-    borderColor: colors.success,
-  },
-  checkMark: {
-    color: colors.borderStrong,
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  checkMarkDone: {
-    color: colors.onPrimary,
-  },
-  removeSet: {
-    width: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  removeSetText: {
-    color: colors.textSubtle,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  removeText: {
-    color: colors.danger,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  cardActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  addSetButton: {
-    alignSelf: 'flex-start',
-    paddingVertical: 6,
-  },
-  addSetText: {
-    color: colors.primary,
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  addExerciseButton: {
-    ...commonStyles.secondaryButton,
-    borderColor: colors.primary,
-  },
-  addExerciseText: {
-    color: colors.primary,
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  notesInput: {
-    ...commonStyles.input,
-    fontSize: 15,
-    minHeight: 60,
-    textAlignVertical: 'top',
-  },
-  restBar: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceRaised,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-  },
-  restColumn: {
     gap: spacing.sm,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  stepButton: {
+    flex: 1,
+    paddingHorizontal: spacing.sm,
   },
   wheelRow: {
     flexDirection: 'row',
@@ -1004,80 +935,208 @@ const styles = StyleSheet.create({
   },
   wheelColon: {
     color: colors.text,
+    fontFamily: fonts.displayBold,
     fontSize: 22,
-    fontWeight: '900',
   },
-  restRingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.lg,
-  },
-  ringTime: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: '900',
-    fontVariant: ['tabular-nums'],
-  },
-  ringLabel: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  ringControls: {
-    flex: 1,
-    gap: spacing.sm,
-  },
-  skipButton: {
-    minHeight: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radii.sm,
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.md,
-  },
-  skipText: {
-    color: colors.onPrimary,
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  restRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
+  card: {
+    ...commonStyles.card,
     gap: spacing.md,
   },
-  stepButton: {
-    minWidth: 38,
-    minHeight: 32,
+  supersetBody: {
+    position: 'relative',
+  },
+  rail: {
+    position: 'absolute',
+    left: 13,
+    top: 14,
+    bottom: 14,
+    width: 2,
+    borderRadius: 1,
+    backgroundColor: colors.primary,
+  },
+  supersetMembers: {
+    gap: spacing.lg,
+  },
+  indented: {
+    marginLeft: 36,
+  },
+  exercise: {
+    gap: spacing.sm,
+  },
+  exerciseHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  blockBadge: {
+    minWidth: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radii.sm,
+    backgroundColor: colors.surfaceRaised,
+    paddingHorizontal: 4,
+  },
+  blockBadgeSuperset: {
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+  },
+  blockBadgeText: {
+    color: colors.text,
+    fontFamily: fonts.displayBold,
+    fontSize: 13,
+  },
+  blockBadgeTextSuperset: {
+    color: colors.primary,
+    fontSize: 12,
+  },
+  exerciseTitle: {
+    ...commonStyles.cardTitle,
+    flex: 1,
+    paddingTop: 2,
+  },
+  reorderRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  iconButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.sm,
+    backgroundColor: colors.surfaceRaised,
+  },
+  setList: {
+    gap: spacing.xs,
+  },
+  setHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: 4,
+  },
+  colLabel: {
+    ...commonStyles.sectionLabel,
+    fontSize: 10,
+  },
+  colCentered: {
+    textAlign: 'center',
+  },
+  colSet: {
+    width: 36,
+  },
+  colPrev: {
+    width: 64,
+  },
+  colInput: {
+    flex: 1,
+    flexBasis: 0,
+    minWidth: 0,
+  },
+  colCheckIcon: {
+    width: 44,
+    textAlign: 'center',
+  },
+  colRemove: {
+    width: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  setRow: {
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderRadius: radii.md,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+  },
+  setRowDone: {
+    backgroundColor: colors.successSoft,
+  },
+  setMarker: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.sm,
+    backgroundColor: colors.surfaceRaised,
+  },
+  setMarkerTyped: {
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    paddingHorizontal: 8,
   },
-  stepText: {
+  setMarkerFailure: {
+    backgroundColor: colors.accentSoft,
+  },
+  setMarkerText: {
     color: colors.text,
+    fontFamily: fonts.displayBold,
     fontSize: 15,
-    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
   },
-  startButton: {
+  setMarkerTextTyped: {
+    color: colors.textMuted,
+  },
+  setMarkerTextFailure: {
+    color: colors.accent,
+  },
+  prevText: {
+    color: colors.textMuted,
+    fontFamily: fonts.display,
+    fontSize: 13,
+    fontVariant: ['tabular-nums'],
+  },
+  cellInput: {
+    minHeight: 44,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: radii.sm,
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
+    backgroundColor: colors.surfaceRaised,
+    color: colors.text,
+    textAlign: 'center',
+    fontFamily: fonts.displayBold,
+    fontSize: 18,
+    fontVariant: ['tabular-nums'],
+    paddingVertical: 6,
   },
-  startText: {
-    color: colors.onPrimary,
-    fontSize: 14,
-    fontWeight: '800',
+  cellInputDone: {
+    backgroundColor: 'transparent',
+    borderColor: 'transparent',
+  },
+  checkBox: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.sm,
+    borderWidth: 1.5,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surfaceRaised,
+  },
+  checkBoxDone: {
+    backgroundColor: colors.success,
+    borderColor: colors.success,
+  },
+  cardActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  compactButton: {
+    minHeight: 44,
+    paddingHorizontal: spacing.sm,
+  },
+  notesInput: {
+    ...commonStyles.input,
+    fontSize: 15,
+    minHeight: 72,
+    textAlignVertical: 'top',
   },
   errorText: {
     ...commonStyles.error,
-  },
-  link: {
-    ...commonStyles.link,
   },
 });
