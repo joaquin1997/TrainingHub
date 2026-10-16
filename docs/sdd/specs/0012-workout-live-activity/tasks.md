@@ -1,6 +1,6 @@
 ---
 spec: 0012
-status: draft        # awaiting review
+status: in-progress  # self-approved 2026-10-16 under the owner's delegation
 created: 2026-09-24
 ---
 
@@ -14,8 +14,8 @@ up; the spike's debug panel is not carried over.
 
 | # | Task | Area | Verify | Commit message |
 |---|---|---|---|---|
-| 1 | Spec, plan (with spike results) and tasks; glossary (active energy, live status); backlog | docs | links resolve | `docs(sdd): spec 0012 live workout status` |
-| 2 | apple-targets plugin, `appleTeamId`, `NSSupportsLiveActivities`, widget extension + `_shared`, `workout-live-activity` module, Swift-copies test | ios | Swift-copies test (CI); **[DEVICE]** builds, installs | `feat(ios): workout Live Activity extension and module` |
+| 1 | [x] Spec, plan (with spike results) and tasks; glossary (active energy, live status); backlog | docs | links resolve | `docs(sdd): spec 0012 live workout status` |
+| 2 | [x] apple-targets plugin, `appleTeamId`, `NSSupportsLiveActivities`, widget extension + `_shared`, `workout-live-activity` module, Swift-copies test | ios | Swift-copies test (CI); **[DEVICE]** builds, installs | `feat(ios): workout Live Activity extension and module` |
 | 3 | Extend `LiveWorkoutBridge` / `HealthWorkoutPayload` in domain; `appleHealthLiveWorkoutBridge` becomes the adapter over the module; Android stays no-op; pure `reconcile` | domain / mobile | unit tests | `feat(workouts): Live Activity behind LiveWorkoutBridge` |
 | 4 | Controller subscribed to the draft store, mounted after hydration; remove the per-change `notifyAppleWorkoutStarted` effect and the notify helpers | mobile | unit tests (fakes); **[DEVICE]** start, pause in app and on lock screen, finish, discard, kill + relaunch | `feat(workouts): drive the Live Activity from the active workout` |
 | 5 | Finish from the status: `action=finish` → confirm → finish (no set done → existing notice); open the workout after sign-in (EF-7) | mobile | unit test (action parsing); **[DEVICE]** EF-6, EF-7 | `feat(workouts): confirm finishing from the Live Activity` |
@@ -33,6 +33,20 @@ Tasks 2, 4–7 need a device rebuild; they are not verifiable in CI.
 - 2026-09-24 — Amended after review: reuse `LiveWorkoutBridge` instead of a new
   interface, remove the per-change notify effect, HealthKit errors vs no data,
   EF-6…EF-8.
+- 2026-10-16 — Tasks self-approved under the owner's delegation. Decisions:
+  the activity is keyed by the workout's `clientId` (spec 0014) — the draft
+  `id` repeats per routine; on reconcile a pause state that differs from the
+  draft is adopted from the activity, because every in-app change is pushed at
+  once, so a difference can only come from a lock-screen action the JS side
+  missed (EF-4); after sign-in with a workout in progress the app opens
+  Routines with the workout pushed on top, so Back works (EF-7).
+- 2026-10-16 — Task 2: `@bacons/apple-targets` 5.0.0 (dev), `appleTeamId`,
+  `NSSupportsLiveActivities`, plugin; widget target and `_shared` (attributes +
+  Pause/Resume intents) and the `workout-live-activity` module carried over
+  from the spike unchanged. The Swift-copies check is a plain-JS Vitest file
+  next to the module (`attributes.test.mjs`; the mobile tsconfig has no Node
+  types). `expo config --type prebuild` evaluates the plugin. Device build
+  pending.
 
 ## Definition of done
 

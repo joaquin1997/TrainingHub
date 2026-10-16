@@ -4,13 +4,15 @@
     "slug": "traininghub",
     "scheme": "traininghub",
     "ios": {
+      "appleTeamId": "23X2PC36Y7",
       "bundleIdentifier": "com.joaquin.traininghub",
       "supportsTablet": true,
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true,
           "NSAllowsLocalNetworking": true
-        }
+        },
+        "NSSupportsLiveActivities": true
       }
     },
     "android": {
@@ -19,7 +21,8 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-localization"
+      "expo-localization",
+      "@bacons/apple-targets"
     ]
   }
 }
