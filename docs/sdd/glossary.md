@@ -25,6 +25,10 @@ production.
 | **Workout identity** | An id the device gives a workout when it starts, unique per user. Saving the same identity again returns the workout saved first instead of creating a duplicate (spec 0014). | The server's own session id |
 | **Optional provenance** | A saved `WorkoutSession`'s link to the `Routine` / `RoutineExercise` it came from. Kept only when it points at the user's own existing records; the workout is saved without it otherwise (spec 0014). | A required reference |
 | **Superset** | A group of `RoutineExercise` entries performed back to back. | — |
+| **Rest timer** | The countdown after a set is marked done. Belongs to the active workout, so it survives leaving the screen and restarting the app, and alerts when it ends (spec 0018). | Pause, which stops the workout clock |
+| **Workout bar** | The strip shown on every screen while a workout is in progress, leading back to it (spec 0019). | — |
+| **Tracking type** | What an exercise's sets record: weight & reps, reps only, time, weight & time, or distance & time (spec 0021). | Set type (warm-up, drop, failure) |
+| **Unilateral exercise** | An exercise done one side at a time, logged per side (spec 0022). | — |
 
 ## Progress
 
@@ -34,6 +38,7 @@ production.
 | **Personal record (PR)** | A session that beat the previous best for an exercise. Derived, never stored as a separate concept. |
 | **Estimated 1RM** | One-rep-max estimate (Epley) computed from a performed set. Derived. |
 | **Training volume** | Aggregated work, in kg. Derived. |
+| **Record type** | What a personal record measures: heaviest weight, most reps, best set volume, best session volume or best estimated 1RM (spec 0023). |
 
 ## Presentation
 

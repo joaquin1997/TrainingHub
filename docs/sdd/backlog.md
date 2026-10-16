@@ -18,6 +18,17 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | 0015 | Custom exercises are private | `draft` — not written yet; ships alongside 0001 | 6 — Exercises |
 | 0016 | Claude connector (MCP) to manage training data | `draft` — not written yet; on hold until the owner has tested 0010–0014 on the device (2026-10-16). Decided: full access (log workouts, routines, custom exercises, incl. edits and deletes). Open: which Claude surface — a local MCP server for Desktop/Code (API stays tailnet-only) or a remote claude.ai connector (API exposed to the internet, OAuth; touches roadmap 9) | 8 — Integrations & platform |
 | [0017](specs/0017-visual-redesign/spec.md) | Visual redesign | `in-progress` — code complete on `feat/sdd-0017-redesign` (2026-10-16), every screen restyled and checked on the web build; awaiting the owner's device pass (AC-2, 6, 8, 12, 13) | cross-cutting |
+| [0018](specs/0018-rest-timer/spec.md) | Rest timer that keeps running | `ready` — from the owner's device test 2026-10-16; needs a native module (alerts) → device rebuild | 2 — Rest timer |
+| [0019](specs/0019-workout-always-at-hand/spec.md) | The workout in progress is always at hand | `ready` — workout bar, "finish and start another", keyboard over notes | 1 — Live workout logging |
+| [0020](specs/0020-custom-and-replace-exercise/spec.md) | Create and replace exercises where they are needed | `ready` | 6 — Exercises |
+| [0021](specs/0021-timed-and-distance-sets/spec.md) | Timed and distance sets | `ready` | 1 — Live workout logging |
+| [0022](specs/0022-unilateral-exercises/spec.md) | Unilateral exercises (left / right) | `draft` — open: one row per side or L/R in one row | 1 — Live workout logging |
+| [0023](specs/0023-records-by-type/spec.md) | Personal records by type | `ready` | 4 — Progress |
+| [0024](specs/0024-warm-up-sets/spec.md) | Warm-up sets | `draft` — open: approach-set calculator only, or also a general warm-up block | 1 — Live workout logging |
+| [0025](specs/0025-apple-watch/spec.md) | The workout on the Apple Watch | `draft` — open: Smart Stack status only, or also a watch app | 8 — Integrations & platform |
+| [0026](specs/0026-exercise-images/spec.md) | Exercise images | `draft` — open: image source | 6 — Exercises |
+| [0027](specs/0027-personal-profile/spec.md) | Personal profile | `draft` — open: body weight as one value or a history | 3 — Auth & users |
+| [0028](specs/0028-share-workout/spec.md) | Share a workout | `ready` | 7 — Social |
 
 Execution order agreed 2026-09-24: 0013 → 0014 → 0010 → 0011 → 0012 →
 visual redesign (to be specified; "functional first, then pretty") → 0001 →
@@ -26,6 +37,11 @@ and 0012 (0001: public auth routes, offline start, data reassignment as a
 one-off script; 0010: owner check on sign-in, hydration after sign-in,
 permanently rejected saves; 0012: reuse `LiveWorkoutBridge`, HealthKit errors
 vs no data, extra failure paths).
+
+Proposed order for the specs from the owner's device test (2026-10-16),
+by impact during a session: 0019 → 0018 → 0020 → 0023 → 0021 → 0024 →
+0025 → 0028 → 0026 → 0027 → 0022. 0001 and 0015 keep their place before
+distribution.
 
 Since 2026-10-16 the owner has delegated the gates: specs, plans and tasks are
 self-approved and decisions recorded as assumptions; only decisions with a
