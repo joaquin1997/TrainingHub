@@ -195,6 +195,12 @@ export const es: TranslationCatalog = {
     setsDoneShort: 'Series hechas',
     setsCountOf: '{{done}} / {{total}}',
     autosaveHint: 'Se guarda sola · retómala cuando quieras',
+    share: {
+      action: 'Compartir',
+      duration: 'Duración',
+      volume: 'Volumen',
+      notes: 'Notas',
+    },
     setType: {
       warmup: 'Calentamiento',
       drop: 'Drop',
