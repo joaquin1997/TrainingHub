@@ -3,7 +3,16 @@ import { useTranslation } from 'react-i18next';
 import { AppState, Platform } from 'react-native';
 
 import { setLiveActivityLabels } from '@/features/health/providers/appleHealth';
-import { findLiveWorkoutBridge } from '@/features/health/providers';
+import {
+  findHealthIntegration,
+  findLiveWorkoutBridge,
+} from '@/features/health/providers';
+import {
+  getActiveWorkout,
+  subscribeActiveWorkout,
+} from '@/features/workouts/state/workoutDraftStore';
+
+import { startActiveEnergyRefresher } from './activeEnergyRefresher';
 
 import { startLiveWorkoutController } from './liveWorkoutController';
 
@@ -35,14 +44,25 @@ export function useLiveWorkoutController(enabled: boolean) {
     }
 
     const controller = startLiveWorkoutController({ bridge });
+    const health = findHealthIntegration('apple-health');
+    const energy = health
+      ? startActiveEnergyRefresher({
+          health,
+          store: { get: getActiveWorkout, subscribe: subscribeActiveWorkout },
+          onKcal: (kcal) => controller.setActiveEnergyKcal(kcal),
+        })
+      : null;
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') {
+      const active = state === 'active';
+      energy?.setForeground(active);
+      if (active) {
         void controller.reconcile();
       }
     });
 
     return () => {
       subscription.remove();
+      energy?.stop();
       controller.stop();
     };
   }, [enabled]);
