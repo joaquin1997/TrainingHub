@@ -19,7 +19,7 @@ on its own; the order and the end state are the plan's.
 
 | # | Task | Area | Verify | Commit message |
 |---|---|---|---|---|
-| 1 | [ ] Plan and tasks; backlog status → `in-progress` | docs | links resolve | `docs(sdd): plan and tasks for 0018` |
+| 1 | [x] Plan and tasks; backlog status → `in-progress` | docs | links resolve | `docs(sdd): plan and tasks for 0018` |
 | 2 | [ ] `HealthWorkoutPayload.restEndsAt?: ISODateString` in `packages/domain/src/health.ts`; nothing fills or reads it yet (`apps/api` does not import the type) | domain | `pnpm -r typecheck` + tests | `feat(domain): optional rest end on the live workout payload` |
 | 3 | [ ] `RunningRest` and `WorkoutSessionDraft.rest?` in `workoutDraftStore.ts`; pure helpers `resolveRestSeconds`, `setExerciseRest`, `startRest`, `adjustRest`, `skipRest`, `restPhase`; envelope hydration drops a malformed `rest` and keeps the workout; unit tests. No screen uses them yet | mobile | unit tests: manual → routine → default (FR-1), `setExerciseRest` leaves other exercises and the running rest alone (FR-2), 0 s starts nothing, `adjustRest` never earlier than now (FR-3), `restPhase` running / ended / stale, malformed `rest` dropped | `feat(workouts): running rest and per-exercise rest in the active workout` |
 | 4 | [ ] `restTimer/restAlerts.ts` (`RestAlerts` interface + `noopRestAlerts`); `restTimerRunner.ts` (schedule / cancel / JS timeout / `AppState` foreground, in-app vibration on `'ended'`, silent clear on `'stale'`, permission asked once per run) + tests with fakes and fake timers; `useRestTimerRunner` mounted in `_layout.tsx` behind `isAuthenticated && !isRestoringWorkout`. Inert until something writes `draft.rest` | mobile | runner tests: schedule on start, reschedule on ±15 s, cancel on skip / finish / discard (EF-2, AC-5), vibrate exactly once, stale cleared silently on foreground and on startup (EF-3), restored running rest rescheduled at the same `endsAt` (FR-7), permission requested once (EF-1) | `feat(workouts): one app-wide runner for the rest timer` |
@@ -65,6 +65,7 @@ the device goes in the same batch, with a Metro reload.
 ## Progress log
 
 - 2026-10-16 — Tasks written from the approved plan; self-approved (delegated gates).
+- 2026-10-16 — Task 1: plan and tasks already committed; spec → `in-progress`. Backlog status left to the coordinator (parallel agents).
 
 ## Definition of done
 
