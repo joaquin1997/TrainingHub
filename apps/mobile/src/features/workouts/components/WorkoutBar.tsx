@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
+import { useRestRemaining } from '@/features/workouts/restTimer/useRestRemaining';
 import type { WorkoutSessionDraft } from '@/features/workouts/state/workoutDraftStore';
 import { formatDuration } from '@/lib/format';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
@@ -43,10 +44,11 @@ function ActiveWorkoutBar({
     pausedAt: workout.pausedAt,
     pausedSeconds: workout.pausedSeconds,
   });
+  const restRemaining = useRestRemaining(workout.rest);
   const isPaused = Boolean(workout.pausedAt);
-  const clock = formatDuration(elapsedSeconds);
-  // TODO(sdd): show the running rest countdown here (FR-1) — unblocked by 0018,
-  // which moves the rest timer into the active workout.
+  // While a rest runs, the clock is its countdown (spec 0018 FR-4).
+  const isResting = Boolean(workout.rest);
+  const clock = formatDuration(isResting ? restRemaining : elapsedSeconds);
 
   return (
     <Pressable
@@ -65,14 +67,24 @@ function ActiveWorkoutBar({
     >
       <View style={[styles.dot, isPaused ? styles.dotPaused : null]} />
       <View style={styles.text}>
-        <Text style={styles.label}>
-          {t(isPaused ? 'routines.pausedLabel' : 'routines.activeLabel')}
+        <Text style={[styles.label, isResting ? styles.labelResting : null]}>
+          {isResting
+            ? t('workouts.rest')
+            : t(isPaused ? 'routines.pausedLabel' : 'routines.activeLabel')}
         </Text>
         <Text style={styles.name} numberOfLines={1}>
           {workout.routineName}
         </Text>
       </View>
-      <Text style={[styles.clock, isPaused ? styles.clockPaused : null]}>{clock}</Text>
+      <Text
+        style={[
+          styles.clock,
+          isPaused ? styles.clockPaused : null,
+          isResting ? styles.clockResting : null,
+        ]}
+      >
+        {clock}
+      </Text>
       <Ionicons name="chevron-up" size={18} color={colors.primary} />
     </Pressable>
   );
@@ -122,5 +134,11 @@ const styles = StyleSheet.create({
   },
   clockPaused: {
     color: colors.textMuted,
+  },
+  labelResting: {
+    color: colors.accent,
+  },
+  clockResting: {
+    color: colors.accent,
   },
 });
