@@ -19,7 +19,7 @@ dependency is JS-only).
 | 3 | [x] `resolveRoutineStart` (start / open / ask) and `resolveSwitchOutcome` (save / discard) next to `resolveActiveWorkoutEntry`; `parseWorkoutAction` learns `'switch'`; unit tests | mobile | unit tests (FR-4, FR-5) | `feat(workouts): decide how a routine starts while another is active` |
 | 4 | [x] `useRoutineStart` hook + `ActionSheet` in `RoutinesListScreen` and `RoutineDetailScreen` (both names, save/discard message, finish-and-start / back / cancel); labels ("Start workout" for other routines, `resumeWorkout`/`resumeHint` keys removed); `ActiveWorkoutScreen` handles `action=switch&nextRoutineId`: discard or `finishWorkout` without the summary, then start the next routine; on failure stays with the finish error and scrolls to it; i18n en/es | mobile | typecheck + tests; web preview: AC-2, AC-3, FR-5 (own routine opens without asking), EF-1 (local API stopped → Torso A stays with the error) | `feat(workouts): finish the active workout and start another` |
 | 5 | [x] Active screen `ScrollView`: `automaticallyAdjustKeyboardInsets`, `keyboardShouldPersistTaps="handled"`, `keyboardDismissMode="interactive"`; notes `maxHeight` | mobile | typecheck; **iOS device (owner's batch): AC-4** | `fix(workouts): keep active workout fields above the keyboard` |
-| 6 | [ ] Roadmap 01 checklist and log; backlog; one line in retro-spec 0004 that 0019 supersedes the redirect; spec status | docs | links resolve | `docs(sdd): close spec 0019 implementation` |
+| 6 | [x] Roadmap 01 checklist and log; backlog; one line in retro-spec 0004 that 0019 supersedes the redirect; spec status | docs | links resolve | `docs(sdd): close spec 0019 implementation` |
 
 Not verifiable in CI: task 5 (AC-4) needs the owner's iOS device. The
 bar's look on the device (tasks 2 and 4) goes in the same batch. No rebuild
@@ -67,12 +67,15 @@ must add it to `WorkoutBar`.
   on the workout list; notes `maxHeight: 160`. Code only — **AC-4 pending
   on the owner's iOS device** (Metro reload, no rebuild). Android unchecked
   (plan, Risks).
+- 2026-10-16 — Task 6: roadmap 01 checklist and log, backlog, retro-spec 0004
+  (the redirect is superseded). Spec `in-progress` until AC-4 is checked on
+  the device.
 
 ## Definition of done
 
-- [ ] Every functional requirement and acceptance criterion in `spec.md` is met
+- [x] Every functional requirement and acceptance criterion in `spec.md` is met
       or explicitly deferred with a TODO (FR-1 rest → 0018; Android keyboard)
-- [ ] `pnpm -r typecheck` and `pnpm -r test` green
-- [ ] `docs/roadmap/01-live-workout-logging.md` updated
+- [x] `pnpm -r typecheck` and `pnpm -r test` green
+- [x] `docs/roadmap/01-live-workout-logging.md` updated
 - [ ] `spec.md` status set to `done`; `../backlog.md` updated
 - [ ] AC-4 checked on the owner's iOS device

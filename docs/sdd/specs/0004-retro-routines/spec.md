@@ -38,6 +38,9 @@ rest time, and may belong to a superset group.
   This mirrors how the active workout behaves, so the two feel the same.
 - While a workout started from a routine is active, that routine cannot be
   edited. The lock lifts when the workout is finished or discarded.
+- Starting another routine while a workout is active asks to finish the
+  current one first; it no longer silently opens the active workout (spec
+  0019).
 
 ## Invariants worth protecting
 

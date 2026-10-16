@@ -16,6 +16,9 @@ previous performance, set types, and persist completion.
 - [x] Pause / resume the workout; durations are active time (spec 0011)
 - [x] Safe save (spec 0014): retries never duplicate, a deleted routine never
   blocks the save, the active workout's routine is locked from deletion
+- [x] Workout bar on every screen; starting another routine asks to finish the
+  current one first; fields stay above the keyboard (spec 0019 — keyboard
+  pending the device check; the bar's rest countdown comes with 0018)
 
 ## Design notes
 - Source of truth for the live session is the mobile `workoutDraftStore`
@@ -61,3 +64,10 @@ previous performance, set types, and persist completion.
   before) and refuses more paused time than the workout lasted. Every duration
   on screen is active duration. Needs the `add_workout_session_paused_seconds`
   migration before the API redeploy.
+- (2026-10-16) Spec 0019 — always at hand. A workout bar (routine, clock,
+  paused state) sits above the tab bar and under the history detail; tapping it
+  opens the workout. Starting another routine asks, naming both: "finish and
+  start" saves the current one when a set is done (no summary) or discards it,
+  then starts the new one; a failed save leaves the current workout with the
+  finish error. The Routines card is gone (the bar replaces it). The workout
+  list insets for the keyboard on iOS; needs the owner's device check.
