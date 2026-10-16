@@ -214,6 +214,11 @@ export const en = {
     colSet: 'SET',
     colPrev: 'PREVIOUS',
     colReps: 'REPS',
+    // Time and distance sets (spec 0021).
+    colTime: 'TIME',
+    colDistance: 'METRES',
+    startSetTimer: 'Start set timer',
+    stopSetTimer: 'Stop set timer',
     addSet: 'Add set',
     removeExercise: 'Remove exercise',
     addExercise: 'Add exercise',

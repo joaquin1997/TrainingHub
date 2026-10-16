@@ -217,6 +217,11 @@ export const es: TranslationCatalog = {
     colSet: 'SERIE',
     colPrev: 'ANTERIOR',
     colReps: 'REPS',
+    // Series de tiempo y distancia (spec 0021).
+    colTime: 'TIEMPO',
+    colDistance: 'METROS',
+    startSetTimer: 'Iniciar cronómetro de la serie',
+    stopSetTimer: 'Parar cronómetro de la serie',
     addSet: 'Añadir serie',
     removeExercise: 'Quitar ejercicio',
     addExercise: 'Añadir ejercicio',
