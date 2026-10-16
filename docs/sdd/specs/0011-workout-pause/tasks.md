@@ -43,12 +43,14 @@ Task 6 includes a redeploy; not verifiable in CI.
   freezes at `pausedAt`. Routines banner says "paused"; history and detail show
   active duration. i18n en/es. Pausing persists through 0010 like any edit.
   Manual check pending (Metro reload; no rebuild).
+- 2026-10-16 — Task 6 (docs half): roadmap 01, backlog. The redeploy and AC-3
+  on the device are the owner's; spec stays `in-progress` until then.
 
 ## Definition of done
 
 - [ ] Every functional requirement and acceptance criterion in `spec.md` is met
       or explicitly deferred with a TODO
-- [ ] `pnpm -r typecheck` and `pnpm -r test` green
-- [ ] `docs/roadmap/01-live-workout-logging.md` updated
+- [x] `pnpm -r typecheck` and `pnpm -r test` green
+- [x] `docs/roadmap/01-live-workout-logging.md` updated
 - [ ] `spec.md` status set to `done`; `../backlog.md` updated
 - [ ] API redeployed with the migration applied

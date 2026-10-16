@@ -13,6 +13,7 @@ previous performance, set types, and persist completion.
 - [x] Ghosted previous/target values as input placeholders (Hevy-style): unedited
   sets still log their default; edited values switch to normal text
 - [x] Active workout survives the app being closed (spec 0010)
+- [x] Pause / resume the workout; durations are active time (spec 0011)
 - [x] Safe save (spec 0014): retries never duplicate, a deleted routine never
   blocks the save, the active workout's routine is locked from deletion
 
@@ -54,3 +55,9 @@ previous performance, set types, and persist completion.
   it. The store is observable (`useSyncExternalStore`), an active workout opens
   without the network, discarding and logging out with a workout in progress
   ask first, and a workout the server refuses can be discarded.
+- (2026-10-16) Spec 0011 — pause. The draft keeps `pausedAt` (current pause)
+  and `pausedSeconds` (ended pauses); finishing while paused counts the ongoing
+  pause. The API stores `pausedSeconds` (default 0, so older workouts read as
+  before) and refuses more paused time than the workout lasted. Every duration
+  on screen is active duration. Needs the `add_workout_session_paused_seconds`
+  migration before the API redeploy.
