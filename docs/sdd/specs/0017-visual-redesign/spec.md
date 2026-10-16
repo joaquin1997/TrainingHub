@@ -1,7 +1,7 @@
 ---
 id: 0017
 title: Visual redesign
-status: ready
+status: planned
 roadmap: "-"
 created: 2026-10-16
 decided: 2026-10-16
