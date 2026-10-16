@@ -17,7 +17,7 @@ up; the spike's debug panel is not carried over.
 | 1 | [x] Spec, plan (with spike results) and tasks; glossary (active energy, live status); backlog | docs | links resolve | `docs(sdd): spec 0012 live workout status` |
 | 2 | [x] apple-targets plugin, `appleTeamId`, `NSSupportsLiveActivities`, widget extension + `_shared`, `workout-live-activity` module, Swift-copies test | ios | Swift-copies test (CI); **[DEVICE]** builds, installs | `feat(ios): workout Live Activity extension and module` |
 | 3 | [x] Extend `LiveWorkoutBridge` / `HealthWorkoutPayload` in domain; `appleHealthLiveWorkoutBridge` becomes the adapter over the module; Android stays no-op; pure `reconcile` | domain / mobile | unit tests | `feat(workouts): Live Activity behind LiveWorkoutBridge` |
-| 4 | Controller subscribed to the draft store, mounted after hydration; remove the per-change `notifyAppleWorkoutStarted` effect and the notify helpers | mobile | unit tests (fakes); **[DEVICE]** start, pause in app and on lock screen, finish, discard, kill + relaunch | `feat(workouts): drive the Live Activity from the active workout` |
+| 4 | [x] Controller subscribed to the draft store, mounted after hydration; remove the per-change `notifyAppleWorkoutStarted` effect and the notify helpers | mobile | unit tests (fakes); **[DEVICE]** start, pause in app and on lock screen, finish, discard, kill + relaunch | `feat(workouts): drive the Live Activity from the active workout` |
 | 5 | Finish from the status: `action=finish` → confirm → finish (no set done → existing notice); open the workout after sign-in (EF-7) | mobile | unit test (action parsing); **[DEVICE]** EF-6, EF-7 | `feat(workouts): confirm finishing from the Live Activity` |
 | 6 | HealthKit entitlement + usage string, `health-energy` module (`null` for no data/permission, reject on error), `readActiveEnergyKcal` in domain, Apple impl, Android `null` | health | typecheck; **[DEVICE]** permission prompt, kcal vs Fitness | `feat(health): read active energy from Apple Health` |
 | 7 | kcal refresh (start, app active, every 60 s in foreground unless paused; keep last value on error) and permission request | mobile | unit tests (fake clock); **[DEVICE]** AC-5, AC-6, EF-5 | `feat(workouts): show active calories on the Live Activity` |
@@ -55,6 +55,14 @@ Tasks 2, 4–7 need a device rebuild; they are not verifiable in CI.
   `toLiveWorkoutPayload` and `reconcile` (none/end/start/adoptPause, 2 s
   tolerance for fractional vs whole seconds); 8 tests. `readActiveEnergyKcal`
   moved to task 6 with its implementation rather than landing as a stub.
+- 2026-10-16 — Task 4: `startLiveWorkoutController` (store → bridge: start on a
+  new workout identity, update only on pause changes, finish on clear; adopts
+  surface pauses without echoing them; reconcile on mount and on app active;
+  one ordered queue; a pending-start mark stops the first reconcile from
+  starting twice). `useLiveWorkoutController` in `RootNavigator`, enabled once
+  signed in and restored; labels from i18n. The per-change
+  `notifyAppleWorkoutStarted` effect and both notify helpers are gone. 9 tests
+  with a fake bridge. Device checks pending.
 
 ## Definition of done
 

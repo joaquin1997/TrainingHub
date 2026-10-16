@@ -40,11 +40,7 @@ import type {
   WeightUnit,
   WorkoutSetType,
 } from '@workout/domain';
-import {
-  notifyAppleWorkoutFinished,
-  notifyAppleWorkoutStarted,
-  syncWorkoutCompletionToAppleHealth,
-} from '@/features/health/integrations/appleWorkoutIntegration';
+import { syncWorkoutCompletionToAppleHealth } from '@/features/health/integrations/appleWorkoutIntegration';
 import {
   addExerciseToWorkout,
   addSetToWorkoutExercise,
@@ -165,12 +161,6 @@ export function ActiveWorkoutScreen() {
     };
   }, [routineId]);
 
-  useEffect(() => {
-    if (workoutDraft) {
-      void notifyAppleWorkoutStarted(workoutDraft);
-    }
-  }, [workoutDraft]);
-
   const elapsedSeconds = useElapsedSeconds(workoutDraft?.startedAt, {
     pausedAt: workoutDraft?.pausedAt,
     pausedSeconds: workoutDraft?.pausedSeconds,
@@ -269,10 +259,6 @@ export function ActiveWorkoutScreen() {
       saveCompletedWorkout(workoutDraft);
       clearActiveWorkout();
 
-      void notifyAppleWorkoutFinished(
-        workoutDraft,
-        workoutSession.completedAt ?? workoutSession.updatedAt,
-      );
       void syncWorkoutCompletionToAppleHealth(workoutSession);
       // Replace, so Back from the summary does not land on a finished workout.
       router.replace('/workouts/summary');

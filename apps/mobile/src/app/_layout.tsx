@@ -6,6 +6,7 @@ import { ActivityIndicator, View } from 'react-native';
 
 import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
 import { SettingsProvider } from '@/features/settings/SettingsContext';
+import { useLiveWorkoutController } from '@/features/workouts/liveActivity/useLiveWorkoutController';
 import { useActiveWorkoutPersistence } from '@/features/workouts/persistence/useActiveWorkoutPersistence';
 import { I18nProvider } from '@/i18n/I18nProvider';
 import { colors, screenHeader } from '@/ui/theme';
@@ -14,6 +15,8 @@ function RootNavigator() {
   const { user, isAuthenticated, isLoading } = useAuth();
   // The stored workout is restored before any screen can read it (spec 0010).
   const isRestoringWorkout = useActiveWorkoutPersistence(user?.id ?? null);
+  // The lock-screen status follows the active workout once it is restored.
+  useLiveWorkoutController(isAuthenticated && !isRestoringWorkout);
   const segments = useSegments();
   const router = useRouter();
   const { t } = useTranslation();

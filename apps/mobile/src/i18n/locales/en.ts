@@ -218,6 +218,7 @@ export const en = {
     finishWorkout: 'Finish workout',
     discardWorkout: 'Discard workout',
     pause: 'Pause',
+    finish: 'Finish',
     resume: 'Resume',
     paused: 'Paused',
     discardTitle: 'Discard this workout?',
