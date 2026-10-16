@@ -167,6 +167,10 @@ export const es: TranslationCatalog = {
     nameRequired: 'Escribe un nombre.',
     invalidNumber: '{{name}}: escribe un número.',
     outOfRange: '{{name}} debe estar entre {{min}} y {{max}}.',
+    changePhoto: 'Editar foto',
+    choosePhoto: 'Elegir una foto',
+    removePhoto: 'Quitar foto',
+    photoError: 'No se pudo actualizar la foto.',
   },
   exercises: {
     primaryLabel: 'Músculos primarios',

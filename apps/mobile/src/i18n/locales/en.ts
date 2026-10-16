@@ -164,6 +164,10 @@ export const en = {
     nameRequired: 'Enter a name.',
     invalidNumber: '{{name}}: enter a number.',
     outOfRange: '{{name}} must be between {{min}} and {{max}}.',
+    changePhoto: 'Edit photo',
+    choosePhoto: 'Choose a photo',
+    removePhoto: 'Remove photo',
+    photoError: 'Unable to update the photo.',
   },
   exercises: {
     primaryLabel: 'Primary muscles',

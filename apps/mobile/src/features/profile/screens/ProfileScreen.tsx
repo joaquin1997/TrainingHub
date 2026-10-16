@@ -1,11 +1,15 @@
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { profileClient } from '@/features/profile/api/profileClient';
 import { ProfileAvatar } from '@/features/profile/components/ProfileAvatar';
+import { pickProfilePhoto } from '@/features/profile/photo/pickProfilePhoto';
 import { useProfileData } from '@/features/profile/useProfileData';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { formatHeight } from '@/lib/length';
+import { ActionSheet, type SheetAction } from '@/ui/ActionSheet';
 import { Button } from '@/ui/Button';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, spacing } from '@/ui/theme';
@@ -16,7 +20,37 @@ export function ProfileScreen() {
   const router = useRouter();
   const { settings } = useSettings();
   const unit = settings.unit;
-  const { profile, isLoading, error, reload } = useProfileData();
+  const { profile, setProfile, isLoading, error, reload } = useProfileData();
+  const [photoSheetOpen, setPhotoSheetOpen] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState<string>();
+
+  const changePhoto = async (action: 'choose' | 'remove') => {
+    setPhotoSheetOpen(false);
+    setPhotoError(undefined);
+    try {
+      let next;
+      if (action === 'remove') {
+        setPhotoBusy(true);
+        next = await profileClient.removePhoto();
+      } else {
+        // Let the sheet finish closing: iOS cannot present the picker over a
+        // modal that is still dismissing.
+        await new Promise((resolve) => setTimeout(resolve, 350));
+        const imageBase64 = await pickProfilePhoto();
+        if (!imageBase64) {
+          return;
+        }
+        setPhotoBusy(true);
+        next = await profileClient.setPhoto(imageBase64);
+      }
+      setProfile(next);
+    } catch {
+      setPhotoError(t('profile.photoError'));
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
 
   if (!profile) {
     return (
@@ -38,7 +72,19 @@ export function ProfileScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
       <View style={styles.identity}>
-        <ProfileAvatar photoDataUrl={profile.photoDataUrl} name={profile.displayName} size={96} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('profile.changePhoto')}
+          onPress={() => setPhotoSheetOpen(true)}
+          disabled={photoBusy}
+          style={({ pressed }) => [styles.photo, pressed || photoBusy ? commonStyles.pressed : null]}
+        >
+          <ProfileAvatar photoDataUrl={profile.photoDataUrl} name={profile.displayName} size={96} />
+          <Text style={styles.photoLink}>
+            {photoBusy ? t('common.pleaseWait') : t('profile.changePhoto')}
+          </Text>
+        </Pressable>
+        {photoError ? <Text style={commonStyles.error}>{photoError}</Text> : null}
         <Text style={styles.name}>{profile.displayName}</Text>
         {profile.bio ? <Text style={styles.bio}>{profile.bio}</Text> : null}
         <View style={styles.factRow}>
@@ -55,6 +101,23 @@ export function ProfileScreen() {
           fullWidth
         />
       </View>
+      <ActionSheet
+        visible={photoSheetOpen}
+        title={t('profile.changePhoto')}
+        actions={[
+          { label: t('profile.choosePhoto'), onPress: () => void changePhoto('choose') },
+          ...(profile.photoDataUrl
+            ? [
+                {
+                  label: t('profile.removePhoto'),
+                  destructive: true,
+                  onPress: () => void changePhoto('remove'),
+                } satisfies SheetAction,
+              ]
+            : []),
+        ]}
+        onClose={() => setPhotoSheetOpen(false)}
+      />
     </ScrollView>
   );
 }
@@ -70,6 +133,14 @@ const styles = StyleSheet.create({
     ...commonStyles.card,
     alignItems: 'center',
     gap: spacing.md,
+  },
+  photo: {
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  photoLink: {
+    ...commonStyles.link,
+    fontSize: 13,
   },
   name: {
     ...commonStyles.heading,
