@@ -18,7 +18,7 @@ dependency is JS-only).
 | 2 | [x] `@react-navigation/bottom-tabs` as a direct dependency (`npx expo install`, same version as expo-router's); `WorkoutBar` (dot, routine, clock, paused state, tap → `/workouts/active`); mounted in the tabs' `tabBar` above `BottomTabBar` and under `workouts/[workoutId]` and `workouts/summary` with the bottom inset; Routines active card removed; i18n en/es for the bar's accessibility label | mobile | typecheck + tests; web preview: AC-1, EF-2 (last History row reachable, tab bar uncovered) | `feat(workouts): workout bar on every screen` |
 | 3 | [x] `resolveRoutineStart` (start / open / ask) and `resolveSwitchOutcome` (save / discard) next to `resolveActiveWorkoutEntry`; `parseWorkoutAction` learns `'switch'`; unit tests | mobile | unit tests (FR-4, FR-5) | `feat(workouts): decide how a routine starts while another is active` |
 | 4 | [x] `useRoutineStart` hook + `ActionSheet` in `RoutinesListScreen` and `RoutineDetailScreen` (both names, save/discard message, finish-and-start / back / cancel); labels ("Start workout" for other routines, `resumeWorkout`/`resumeHint` keys removed); `ActiveWorkoutScreen` handles `action=switch&nextRoutineId`: discard or `finishWorkout` without the summary, then start the next routine; on failure stays with the finish error and scrolls to it; i18n en/es | mobile | typecheck + tests; web preview: AC-2, AC-3, FR-5 (own routine opens without asking), EF-1 (local API stopped → Torso A stays with the error) | `feat(workouts): finish the active workout and start another` |
-| 5 | [ ] Active screen `ScrollView`: `automaticallyAdjustKeyboardInsets`, `keyboardShouldPersistTaps="handled"`, `keyboardDismissMode="interactive"`; notes `maxHeight` | mobile | typecheck; **iOS device (owner's batch): AC-4** | `fix(workouts): keep active workout fields above the keyboard` |
+| 5 | [x] Active screen `ScrollView`: `automaticallyAdjustKeyboardInsets`, `keyboardShouldPersistTaps="handled"`, `keyboardDismissMode="interactive"`; notes `maxHeight` | mobile | typecheck; **iOS device (owner's batch): AC-4** | `fix(workouts): keep active workout fields above the keyboard` |
 | 6 | [ ] Roadmap 01 checklist and log; backlog; one line in retro-spec 0004 that 0019 supersedes the redirect; spec status | docs | links resolve | `docs(sdd): close spec 0019 implementation` |
 
 Not verifiable in CI: task 5 (AC-4) needs the owner's iOS device. The
@@ -62,6 +62,11 @@ must add it to `WorkoutBar`.
   active, 0 sessions saved; AC-3 Pierna A (3 done) → saved with 3 done, no
   summary, Torso A active; EF-1 API stopped → Torso A stays, "Failed to
   fetch" shown, scrolled to the bottom; the bar shows on a history detail.
+- 2026-10-16 — Task 5: `automaticallyAdjustKeyboardInsets`,
+  `keyboardShouldPersistTaps="handled"`, `keyboardDismissMode="interactive"`
+  on the workout list; notes `maxHeight: 160`. Code only — **AC-4 pending
+  on the owner's iOS device** (Metro reload, no rebuild). Android unchecked
+  (plan, Risks).
 
 ## Definition of done
 

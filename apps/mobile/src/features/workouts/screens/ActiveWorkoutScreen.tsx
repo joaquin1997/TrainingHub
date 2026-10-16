@@ -680,6 +680,12 @@ export function ActiveWorkoutScreen() {
       ref={scrollRef}
       style={styles.screen}
       contentContainerStyle={styles.container}
+      // The field being typed in stays above the keyboard (spec 0019 FR-6):
+      // iOS insets the list by the keyboard and scrolls the field into view.
+      automaticallyAdjustKeyboardInsets
+      // A tap on ✓ or another field while typing acts on the first tap.
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="interactive"
     >
       <View style={styles.headerCard}>
         <View style={styles.liveRow}>
@@ -1213,6 +1219,8 @@ const styles = StyleSheet.create({
     ...commonStyles.input,
     fontSize: 15,
     minHeight: 72,
+    // Long notes scroll inside the field, which keeps the caret in view.
+    maxHeight: 160,
     textAlignVertical: 'top',
   },
   errorText: {
