@@ -16,6 +16,7 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0013](specs/0013-progress-performed-work/spec.md) | Progress counts only performed work | `in-progress` — code complete on `feat/sdd-0013-0012`; awaiting the owner's redeploy and device checks (task 6) | 4 — Progress |
 | [0014](specs/0014-workout-save-integrity/spec.md) | Workout save integrity | `in-progress` — code complete on `feat/sdd-0013-0012`; awaiting the migration, redeploy and device checks (task 7); needed before 0010 task 7 | 1 — Live workout logging |
 | 0015 | Custom exercises are private | `draft` — not written yet; ships alongside 0001 | 6 — Exercises |
+| 0016 | Claude connector (MCP) to manage training data | `draft` — not written yet; on hold until the owner has tested 0010–0014 on the device (2026-10-16). Decided: full access (log workouts, routines, custom exercises, incl. edits and deletes). Open: which Claude surface — a local MCP server for Desktop/Code (API stays tailnet-only) or a remote claude.ai connector (API exposed to the internet, OAuth; touches roadmap 9) | 8 — Integrations & platform |
 
 Execution order agreed 2026-09-24: 0013 → 0014 → 0010 → 0011 → 0012 →
 visual redesign (to be specified; "functional first, then pretty") → 0001 →
