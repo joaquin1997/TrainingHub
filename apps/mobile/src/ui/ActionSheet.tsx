@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, radii, spacing } from '@/ui/theme';
+import { colors, fonts, radii, spacing } from '@/ui/theme';
 
 export interface SheetAction {
   label: string;
@@ -42,6 +42,7 @@ export function ActionSheet({
           style={[styles.sheet, { paddingBottom: insets.bottom + spacing.sm }]}
           onPress={(event) => event.stopPropagation()}
         >
+          <View style={styles.grabber} />
           {title ? <Text style={styles.title}>{title}</Text> : null}
           {message ? <Text style={styles.message}>{message}</Text> : null}
           {actions.map((action) => (
@@ -88,17 +89,27 @@ const styles = StyleSheet.create({
     backgroundColor: colors.overlay,
   },
   sheet: {
-    backgroundColor: colors.surfaceRaised,
-    borderTopLeftRadius: radii.lg,
-    borderTopRightRadius: radii.lg,
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderColor: colors.border,
+    borderTopLeftRadius: radii.lg + 8,
+    borderTopRightRadius: radii.lg + 8,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
+    paddingTop: spacing.sm,
     gap: spacing.xs,
   },
+  grabber: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.borderStrong,
+    marginBottom: spacing.sm,
+  },
   title: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontWeight: '700',
+    color: colors.text,
+    fontFamily: fonts.displayBold,
+    fontSize: 17,
     paddingVertical: spacing.sm,
   },
   message: {
@@ -113,12 +124,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   actionPressed: {
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.surfaceRaised,
   },
   actionText: {
     color: colors.text,
-    fontSize: 16,
-    fontWeight: '700',
+    fontFamily: fonts.display,
+    fontSize: 17,
   },
   destructive: {
     color: colors.danger,
@@ -133,7 +144,7 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     color: colors.textMuted,
+    fontFamily: fonts.displayBold,
     fontSize: 16,
-    fontWeight: '800',
   },
 });

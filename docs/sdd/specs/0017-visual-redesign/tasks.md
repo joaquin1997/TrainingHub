@@ -20,7 +20,7 @@ and data the screen shows, so AC-11 (nothing lost) can be reviewed.
 |---|---|---|---|---|
 | 1 | [x] Spec, plan, tasks, reference mockups; glossary (primary action); backlog | docs | links resolve | `docs(sdd): spec 0017 visual redesign` |
 | 2 | [x] Vendored Space Grotesk (Medium, Bold, OFL); font loading in the root layout with system-font fallback; typography tokens, `radii.pill`, restyled `commonStyles` and `screenHeader` | mobile | typecheck; app starts on web | `feat(ui): display typeface and typography tokens` |
-| 3 | [ ] `ScreenTitle`, `Chip`, `StatTile`, `StateView`; `Button` ghost variant + icon; `ActionSheet` restyle | mobile | typecheck | `feat(ui): shared redesign primitives` |
+| 3 | [x] `ScreenTitle`, `Chip`, `StatTile`, `StateView`; `Button` ghost variant + icon; `ActionSheet` restyle | mobile | typecheck | `feat(ui): shared redesign primitives` |
 | 4 | [ ] Tab bar icons and labels; tab roots without native header, `ScreenTitle` on Routines, Exercises, Progress, History, Settings; intro paragraphs removed | mobile | typecheck; visual (AC-3) | `feat(ui): redesigned tab bar and screen titles` |
 | 5 | [ ] `exerciseBlockLabels` (1 / 2A / 2B / 3, run start/end) + tests | mobile | unit tests (AC-5) | `feat(routines): superset block labels` |
 | 6 | [ ] Routines list (FR-13): active-workout card, folder sections, routine cards with chips, `StateView` | mobile | visual | `feat(routines): redesigned routines list` |
