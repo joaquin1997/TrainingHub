@@ -3,7 +3,6 @@ import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -20,6 +19,7 @@ import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
 import { ActionSheet } from '@/ui/ActionSheet';
 import { Button } from '@/ui/Button';
 import { EmptyState } from '@/ui/EmptyState';
+import { confirmAction } from '@/lib/confirmAction';
 import { formatDuration } from '@/lib/format';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { useRefresh } from '@/lib/useRefresh';
@@ -92,32 +92,26 @@ export function RoutinesListScreen() {
     }
   };
 
-  const handleDelete = (routine: Routine) => {
-    Alert.alert(
-      t('routines.deleteTitle'),
-      t('routines.deleteConfirm', { name: routine.name }),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('common.delete'),
-          style: 'destructive',
-          onPress: () => {
-            void (async () => {
-              try {
-                await routinesClient.remove(routine.id);
-                await loadRoutines();
-              } catch (error) {
-                setErrorMessage(
-                  error instanceof Error
-                    ? error.message
-                    : t('routines.deleteError'),
-                );
-              }
-            })();
-          },
-        },
-      ],
-    );
+  const handleDelete = async (routine: Routine) => {
+    const confirmed = await confirmAction({
+      title: t('routines.deleteTitle'),
+      message: t('routines.deleteConfirm', { name: routine.name }),
+      confirmLabel: t('common.delete'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await routinesClient.remove(routine.id);
+      await loadRoutines();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : t('routines.deleteError'),
+      );
+    }
   };
 
   const menuRoutineLocked =
@@ -286,7 +280,7 @@ export function RoutinesListScreen() {
                     {
                       label: t('common.delete'),
                       destructive: true,
-                      onPress: () => handleDelete(menuRoutine),
+                      onPress: () => void handleDelete(menuRoutine),
                     },
                   ]),
             ]

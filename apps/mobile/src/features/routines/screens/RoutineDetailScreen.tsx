@@ -2,13 +2,14 @@ import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import type { TFunction } from 'i18next';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
 import { buildRoutineCopyInput } from '@/features/routines/utils/duplicateRoutine';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
+import { confirmAction } from '@/lib/confirmAction';
 import { formatWeight } from '@/lib/weight';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
 import type { RoutineExerciseSet, Routine, WeightUnit } from '@workout/domain';
@@ -94,19 +95,17 @@ export function RoutineDetailScreen() {
     };
   }, [loadRoutine]);
 
-  function confirmDelete(name: string) {
-    Alert.alert(
-      t('routines.deleteTitle'),
-      t('routines.deleteConfirm', { name }),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('common.delete'),
-          style: 'destructive',
-          onPress: () => void handleDelete(),
-        },
-      ],
-    );
+  async function confirmDelete(name: string) {
+    const confirmed = await confirmAction({
+      title: t('routines.deleteTitle'),
+      message: t('routines.deleteConfirm', { name }),
+      confirmLabel: t('common.delete'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (confirmed) {
+      await handleDelete();
+    }
   }
 
   async function handleDelete() {
@@ -294,7 +293,7 @@ export function RoutineDetailScreen() {
       {activeWorkout?.routineId === routine.id ? null : (
         <Pressable
           accessibilityRole="button"
-          onPress={() => confirmDelete(routine.name)}
+          onPress={() => void confirmDelete(routine.name)}
           disabled={isDeleting}
           style={({ pressed }) => [
             styles.deleteButton,
