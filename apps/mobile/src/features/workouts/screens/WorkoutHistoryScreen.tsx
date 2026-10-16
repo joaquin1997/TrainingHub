@@ -13,6 +13,7 @@ import {
 
 import { useSettings } from '@/features/settings/SettingsContext';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
+import { isPerformedSet } from '@/features/workouts/utils/performedSet';
 import {
   durationSecondsBetween,
   formatDate,
@@ -52,7 +53,8 @@ function sessionVolume(session: WorkoutSession) {
         total +
         exercise.sets.reduce(
           (sum, set) =>
-            sum + (set.completedAt ? (set.reps ?? 0) * (set.weightKg ?? 0) : 0),
+            sum +
+            (isPerformedSet(set) ? (set.reps ?? 0) * (set.weightKg ?? 0) : 0),
           0,
         ),
       0,

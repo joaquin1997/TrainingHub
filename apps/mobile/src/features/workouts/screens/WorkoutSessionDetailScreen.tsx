@@ -6,6 +6,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useSettings } from '@/features/settings/SettingsContext';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
+import { isPerformedSet } from '@/features/workouts/utils/performedSet';
 import {
   durationSecondsBetween,
   formatDateTime,
@@ -28,7 +29,6 @@ function setTypeLabel(type: WorkoutSet['type'], t: TFunction) {
   }
 }
 
-const isDone = (set: WorkoutSet) => Boolean(set.completedAt);
 const setVolume = (set: WorkoutSet) => (set.reps ?? 0) * (set.weightKg ?? 0);
 
 function summarize(session: WorkoutSession) {
@@ -40,7 +40,7 @@ function summarize(session: WorkoutSession) {
   for (const exercise of session.exercises) {
     for (const set of exercise.sets) {
       totalSets += 1;
-      if (isDone(set)) {
+      if (isPerformedSet(set)) {
         doneSets += 1;
         volume += setVolume(set);
         restSeconds += set.restSeconds ?? 0;
@@ -54,7 +54,7 @@ function summarize(session: WorkoutSession) {
 const exerciseVolume = (exercise: WorkoutSession['exercises'][number]) =>
   Math.round(
     exercise.sets.reduce(
-      (sum, set) => sum + (isDone(set) ? setVolume(set) : 0),
+      (sum, set) => sum + (isPerformedSet(set) ? setVolume(set) : 0),
       0,
     ),
   );
@@ -196,7 +196,7 @@ export function WorkoutSessionDetailScreen() {
           </View>
           {exercise.sets.map((set) => {
             const type = setTypeLabel(set.type, t);
-            const done = isDone(set);
+            const done = isPerformedSet(set);
             return (
               <View key={set.id} style={styles.setRow}>
                 <Text style={[styles.setCheck, done ? styles.setCheckDone : null]}>
