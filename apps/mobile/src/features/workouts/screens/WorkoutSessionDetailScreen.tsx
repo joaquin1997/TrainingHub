@@ -8,6 +8,8 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { isPerformedSet } from '@/features/workouts/utils/performedSet';
+import { formatWorkoutShareText } from '@/features/workouts/utils/shareText';
+import { shareWorkoutText } from '@/features/workouts/utils/shareWorkout';
 import { exerciseVolumeKg, summarizeSession } from '@/features/workouts/utils/sessionStats';
 import {
   activeDurationSeconds,
@@ -184,6 +186,32 @@ export function WorkoutSessionDetailScreen() {
           <Text style={styles.notes}>{session.notes}</Text>
         </View>
       ) : null}
+
+      <Button
+        label={t('workouts.share.action')}
+        icon="share-outline"
+        variant="secondary"
+        fullWidth
+        onPress={() =>
+          void shareWorkoutText(
+            formatWorkoutShareText({
+              when,
+              durationSeconds: session.completedAt
+                ? activeDurationSeconds(session.startedAt, session.completedAt, session.pausedSeconds)
+                : null,
+              volumeKg: totals.volumeKg,
+              unit,
+              language: i18n.language,
+              exercises: session.exercises.map((exercise) => ({
+                name: exercise.exerciseName,
+                sets: exercise.sets.map((set) => ({ ...set, performed: isPerformedSet(set) })),
+              })),
+              notes: session.notes,
+              t,
+            }),
+          )
+        }
+      />
 
       <Text style={styles.sectionLabel}>{t('workouts.exercisesDone')}</Text>
       {session.exercises.map((exercise) => (

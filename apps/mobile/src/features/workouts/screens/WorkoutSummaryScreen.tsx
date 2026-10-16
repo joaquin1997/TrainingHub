@@ -9,6 +9,8 @@ import {
   getLatestCompletedWorkout,
   toWorkoutSessionSkeleton,
 } from '@/features/workouts/state/workoutDraftStore';
+import { formatWorkoutShareText } from '@/features/workouts/utils/shareText';
+import { shareWorkoutText } from '@/features/workouts/utils/shareWorkout';
 import { summarizeSession } from '@/features/workouts/utils/sessionStats';
 import { activeDurationSeconds, formatDuration } from '@/lib/format';
 import { formatWeightValue } from '@/lib/weight';
@@ -33,7 +35,7 @@ function setTypeLabel(type: WorkoutSetType, t: TFunction) {
 }
 
 export function WorkoutSummaryScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const workoutDraft = getLatestCompletedWorkout();
 
@@ -131,6 +133,33 @@ export function WorkoutSummaryScreen() {
         icon="checkmark-done"
         fullWidth
         onPress={() => leaveTo('/routines')}
+      />
+      <Button
+        label={t('workouts.share.action')}
+        icon="share-outline"
+        variant="secondary"
+        fullWidth
+        onPress={() =>
+          void shareWorkoutText(
+            formatWorkoutShareText({
+              title: workoutDraft.routineName,
+              when: workoutSession.completedAt ?? workoutSession.startedAt,
+              durationSeconds: duration,
+              volumeKg: stats.volumeKg,
+              unit,
+              language: i18n.language,
+              exercises: workoutSession.exercises.map((exercise, exerciseIndex) => ({
+                name: exercise.exerciseName,
+                sets: exercise.sets.map((set, setIndex) => ({
+                  ...set,
+                  performed: isDone(exerciseIndex, setIndex),
+                })),
+              })),
+              notes: workoutSession.notes,
+              t,
+            }),
+          )
+        }
       />
       <Button
         label={t('workouts.viewHistory')}

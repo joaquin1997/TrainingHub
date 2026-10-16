@@ -15,13 +15,15 @@ Each task leaves `pnpm -r typecheck` and `pnpm -r test` green (Article 8).
 | 1 | `formatWorkoutShareText` pure formatter, i18n keys, unit tests | mobile | vitest, both languages and units | `feat(mobile): share text for a finished workout` |
 | 2 | Share button on summary and detail | mobile | typecheck, web preview; the sheet is a device check | `feat(mobile): share a workout from summary and detail` |
 
-- [ ] 1
-- [ ] 2
+- [x] 1
+- [x] 2
 
 ## Progress log
 
+- 2026-10-16 — Task 1: formatter and 3 unit tests (both languages, both units). Task 2: Share button on both screens; web preview of the detail shows the button and the text handed to the share API (AC-1 on web). The native sheet to Notes is a pending device check.
+
 ## Definition of done
 
-- [ ] Every FR and AC met or deferred with a TODO (FR-3 waits for 0023)
-- [ ] `pnpm -r typecheck` and `pnpm -r test` green
+- [x] Every FR and AC met or deferred with a TODO (FR-3 waits for 0023)
+- [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [ ] Device check: share sheet to Notes
