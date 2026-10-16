@@ -16,22 +16,41 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
 import { CustomExerciseForm } from '@/features/exercises/components/CustomExerciseForm';
 import { ExerciseThumb } from '@/features/exercises/components/ExerciseThumb';
+import { Button } from '@/ui/Button';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, fonts, spacing } from '@/ui/theme';
 import type { Exercise } from '@workout/domain';
 
 const MAX_VISIBLE = 50;
 
+/** A question asked inside the picker before a choice is applied. */
+export type PickerConfirmation = {
+  title: string;
+  message: string;
+  /** The first action is the default and is drawn as the primary button. */
+  actions: { label: string; destructive?: boolean; onPress: () => void }[];
+};
+
 type ExercisePickerModalProps = {
   visible: boolean;
   onClose: () => void;
   onSelect: (exercise: Exercise) => void;
+  /** Header title; "Add exercise" by default. */
+  title?: string;
+  /**
+   * Asked after an exercise is chosen (or created); `null` applies the choice
+   * at once. The question stays inside this modal, so nothing has to open
+   * while the picker is closing (spec 0020 EF-1).
+   */
+  confirm?: (exercise: Exercise) => PickerConfirmation | null;
 };
 
 export function ExercisePickerModal({
   visible,
   onClose,
   onSelect,
+  title,
+  confirm,
 }: ExercisePickerModalProps) {
   const { t } = useTranslation();
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -42,11 +61,15 @@ export function ExercisePickerModal({
   // 'create' swaps the list for the create form, inside this same modal: a
   // modal over a modal is unreliable on iOS (spec 0020).
   const [step, setStep] = useState<'list' | 'create'>('list');
+  const [confirmation, setConfirmation] = useState<PickerConfirmation | null>(null);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
+    // Each opening starts clean: add and replace share one picker.
     if (visible) {
+      setQuery('');
       setStep('list');
+      setConfirmation(null);
     }
   }, [visible]);
 
@@ -76,6 +99,14 @@ export function ExercisePickerModal({
   }, [visible, hasLoaded, isLoading, loadExercises]);
 
   const choose = (exercise: Exercise) => {
+    const question = confirm?.(exercise) ?? null;
+
+    if (question) {
+      setStep('list');
+      setConfirmation(question);
+      return;
+    }
+
     onSelect(exercise);
     onClose();
   };
@@ -113,7 +144,9 @@ export function ExercisePickerModal({
       >
         <View style={styles.header}>
           <Text style={styles.title}>
-            {step === 'create' ? t('customExercise.title') : t('exercises.addExercise')}
+            {step === 'create'
+              ? t('customExercise.title')
+              : (title ?? t('exercises.addExercise'))}
           </Text>
           <Pressable
             onPress={onClose}
@@ -125,7 +158,30 @@ export function ExercisePickerModal({
             <Ionicons name="close" size={22} color={colors.text} />
           </Pressable>
         </View>
-        {step === 'create' ? (
+        {confirmation ? (
+          <View style={styles.confirm}>
+            <Text style={styles.confirmTitle}>{confirmation.title}</Text>
+            <Text style={styles.meta}>{confirmation.message}</Text>
+            {confirmation.actions.map((action, index) => (
+              <Button
+                key={action.label}
+                label={action.label}
+                variant={index === 0 ? 'primary' : action.destructive ? 'danger' : 'secondary'}
+                fullWidth
+                onPress={() => {
+                  action.onPress();
+                  onClose();
+                }}
+              />
+            ))}
+            <Button
+              label={t('common.cancel')}
+              variant="ghost"
+              onPress={() => setConfirmation(null)}
+              style={styles.centered}
+            />
+          </View>
+        ) : step === 'create' ? (
           <CustomExerciseForm
             initialName={trimmedQuery}
             showTitle={false}
@@ -244,6 +300,18 @@ const styles = StyleSheet.create({
     minHeight: 46,
     color: colors.text,
     fontSize: 16,
+  },
+  confirm: {
+    gap: spacing.md,
+  },
+  confirmTitle: {
+    color: colors.text,
+    fontFamily: fonts.displayBold,
+    fontSize: 18,
+    lineHeight: 24,
+  },
+  centered: {
+    alignSelf: 'center',
   },
   createRow: {
     minHeight: 44,
