@@ -19,7 +19,7 @@ and data the screen shows, so AC-11 (nothing lost) can be reviewed.
 | # | Task | Area | Verify | Commit message |
 |---|---|---|---|---|
 | 1 | [x] Spec, plan, tasks, reference mockups; glossary (primary action); backlog | docs | links resolve | `docs(sdd): spec 0017 visual redesign` |
-| 2 | [ ] Vendored Space Grotesk (Medium, Bold, OFL); font loading in the root layout with system-font fallback; typography tokens, `radii.pill`, restyled `commonStyles` and `screenHeader` | mobile | typecheck; app starts on web | `feat(ui): display typeface and typography tokens` |
+| 2 | [x] Vendored Space Grotesk (Medium, Bold, OFL); font loading in the root layout with system-font fallback; typography tokens, `radii.pill`, restyled `commonStyles` and `screenHeader` | mobile | typecheck; app starts on web | `feat(ui): display typeface and typography tokens` |
 | 3 | [ ] `ScreenTitle`, `Chip`, `StatTile`, `StateView`; `Button` ghost variant + icon; `ActionSheet` restyle | mobile | typecheck | `feat(ui): shared redesign primitives` |
 | 4 | [ ] Tab bar icons and labels; tab roots without native header, `ScreenTitle` on Routines, Exercises, Progress, History, Settings; intro paragraphs removed | mobile | typecheck; visual (AC-3) | `feat(ui): redesigned tab bar and screen titles` |
 | 5 | [ ] `exerciseBlockLabels` (1 / 2A / 2B / 3, run start/end) + tests | mobile | unit tests (AC-5) | `feat(routines): superset block labels` |
@@ -62,6 +62,13 @@ largest text size, and the workout flow of task 8.
   delegation. Decided by the assistant (reviewable): keep the current palette
   (it *is* the Stitch canvas design system), adopt Space Grotesk for titles and
   figures only, done sets stay green.
+- 2026-10-16 — Task 2. Fonts are the static Medium/Bold instances from the
+  Space Grotesk project (OFL, copied from the `@expo-google-fonts` tarball, no
+  dependency added). Visual checks run on the web build against a **local**
+  API on a throwaway PGlite database seeded with the wger catalog and a
+  preview account — nothing touches the home server. Found while looking:
+  routine cards say "+2 more" in Spanish and History dates are English-style
+  (FR-8, fixed in their screen tasks).
 
 ## Definition of done
 

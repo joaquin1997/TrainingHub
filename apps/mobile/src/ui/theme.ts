@@ -1,5 +1,11 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, type TextStyle } from 'react-native';
 
+/**
+ * Accent colours carry one meaning each (spec 0017 FR-1): `primary` (lime) is
+ * the primary action and the active/selected state, `accent` (orange) a
+ * personal record or a failure set, `success` (green) a done set, `danger`
+ * (red) destructive actions and errors.
+ */
 export const colors = {
   background: '#101418',
   surface: '#151A21',
@@ -7,6 +13,7 @@ export const colors = {
   surfaceMuted: '#101820',
   primary: '#C8FF2E',
   primaryPressed: '#A9E51F',
+  primarySoft: 'rgba(200, 255, 46, 0.12)',
   onPrimary: '#10140D',
   accent: '#FF8A3D',
   accentSoft: 'rgba(255, 138, 61, 0.16)',
@@ -22,6 +29,22 @@ export const colors = {
   overlay: 'rgba(4, 8, 13, 0.76)',
 };
 
+/**
+ * Display typeface for titles and figures (spec 0017 FR-2), loaded at start-up
+ * by the root layout from `assets/fonts`. Body text stays in the system face.
+ * Custom faces carry their weight in the file, so styles using them set no
+ * `fontWeight` (Android would otherwise fall back to the system face).
+ */
+export const fonts = {
+  display: 'SpaceGrotesk-Medium',
+  displayBold: 'SpaceGrotesk-Bold',
+};
+
+export const fontAssets = {
+  [fonts.display]: require('../../assets/fonts/SpaceGrotesk-Medium.ttf'),
+  [fonts.displayBold]: require('../../assets/fonts/SpaceGrotesk-Bold.ttf'),
+};
+
 export const spacing = {
   xs: 4,
   sm: 8,
@@ -35,14 +58,18 @@ export const radii = {
   sm: 8,
   md: 12,
   lg: 16,
+  pill: 999,
 };
+
+/** Fixed-width digits, so a running clock or a changing weight never shifts. */
+const tabular: TextStyle['fontVariant'] = ['tabular-nums'];
 
 /** Shared navigation header styling so every stack matches the dark theme. */
 export const screenHeader = {
   headerStyle: { backgroundColor: colors.background },
   headerShadowVisible: false,
   headerTintColor: colors.text,
-  headerTitleStyle: { color: colors.text, fontWeight: '800' as const },
+  headerTitleStyle: { color: colors.text, fontFamily: fonts.displayBold, fontSize: 17 },
 };
 
 export const commonStyles = StyleSheet.create({
@@ -52,27 +79,66 @@ export const commonStyles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: spacing.xl,
+    padding: spacing.lg,
     paddingBottom: 96,
     gap: spacing.lg,
   },
   fixedContent: {
     flex: 1,
-    padding: spacing.xl,
+    padding: spacing.lg,
     gap: spacing.lg,
     backgroundColor: colors.background,
   },
+  /** Large title of a tab's root screen. */
   title: {
     color: colors.text,
+    fontFamily: fonts.displayBold,
     fontSize: 32,
-    fontWeight: '800',
-    letterSpacing: 0,
+    lineHeight: 38,
+    letterSpacing: -0.5,
   },
   heading: {
     color: colors.text,
+    fontFamily: fonts.displayBold,
     fontSize: 22,
+    lineHeight: 28,
+    letterSpacing: -0.2,
+  },
+  /** Title of a card or a block inside a screen. */
+  cardTitle: {
+    color: colors.text,
+    fontFamily: fonts.displayBold,
+    fontSize: 18,
+    lineHeight: 24,
+  },
+  /** Small uppercase label above a section or a figure. */
+  sectionLabel: {
+    color: colors.textMuted,
+    fontSize: 12,
     fontWeight: '700',
-    letterSpacing: 0,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  figure: {
+    color: colors.text,
+    fontFamily: fonts.displayBold,
+    fontSize: 22,
+    lineHeight: 28,
+    fontVariant: tabular,
+  },
+  figureLarge: {
+    color: colors.text,
+    fontFamily: fonts.displayBold,
+    fontSize: 40,
+    lineHeight: 46,
+    letterSpacing: -0.5,
+    fontVariant: tabular,
+  },
+  /** Unit or small text set next to a figure ("kg", "reps"). */
+  figureUnit: {
+    color: colors.textMuted,
+    fontFamily: fonts.display,
+    fontSize: 14,
   },
   body: {
     color: colors.textMuted,
@@ -92,24 +158,24 @@ export const commonStyles = StyleSheet.create({
   card: {
     gap: spacing.sm,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: colors.border,
     borderRadius: radii.lg,
-    backgroundColor: colors.surfaceRaised,
+    backgroundColor: colors.surface,
     padding: spacing.lg,
   },
   input: {
-    minHeight: 44,
+    minHeight: 48,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: colors.border,
     borderRadius: radii.md,
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.surfaceRaised,
     color: colors.text,
     paddingHorizontal: spacing.md,
-    paddingVertical: 10,
+    paddingVertical: 12,
     fontSize: 16,
   },
   primaryButton: {
-    minHeight: 44,
+    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'flex-start',
@@ -120,25 +186,25 @@ export const commonStyles = StyleSheet.create({
   },
   primaryButtonText: {
     color: colors.onPrimary,
-    fontSize: 15,
-    fontWeight: '800',
+    fontFamily: fonts.displayBold,
+    fontSize: 16,
   },
   secondaryButton: {
-    minHeight: 44,
+    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'flex-start',
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: colors.border,
     borderRadius: radii.md,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
   secondaryButtonText: {
     color: colors.text,
-    fontSize: 14,
-    fontWeight: '700',
+    fontFamily: fonts.displayBold,
+    fontSize: 15,
   },
   link: {
     color: colors.primary,

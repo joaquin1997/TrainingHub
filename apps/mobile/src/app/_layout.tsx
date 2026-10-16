@@ -1,3 +1,4 @@
+import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -10,7 +11,7 @@ import { useLiveWorkoutController } from '@/features/workouts/liveActivity/useLi
 import { useActiveWorkoutPersistence } from '@/features/workouts/persistence/useActiveWorkoutPersistence';
 import { getActiveWorkout } from '@/features/workouts/state/workoutDraftStore';
 import { I18nProvider } from '@/i18n/I18nProvider';
-import { colors, screenHeader } from '@/ui/theme';
+import { colors, fontAssets, screenHeader } from '@/ui/theme';
 
 function RootNavigator() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -46,18 +47,7 @@ function RootNavigator() {
 
   // On the auth screen the navigator stays mounted while the workout restores.
   if (isLoading || (isRestoringWorkout && !inAuthGroup)) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: colors.background,
-        }}
-      >
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <StartupSpinner />;
   }
 
   return (
@@ -78,7 +68,35 @@ function RootNavigator() {
   );
 }
 
+function StartupSpinner() {
+  return (
+    <View
+      style={{
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.background,
+      }}
+    >
+      <ActivityIndicator color={colors.primary} />
+    </View>
+  );
+}
+
 export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts(fontAssets);
+
+  useEffect(() => {
+    if (fontError) {
+      // The app keeps working in the system typeface (spec 0017 EF-4).
+      console.warn('[fonts] display typeface failed to load', fontError);
+    }
+  }, [fontError]);
+
+  if (!fontsLoaded && !fontError) {
+    return <StartupSpinner />;
+  }
+
   return (
     <AuthProvider>
       <SettingsProvider>
