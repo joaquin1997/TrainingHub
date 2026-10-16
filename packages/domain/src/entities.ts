@@ -287,8 +287,53 @@ export interface ExerciseProgressSummary {
   personalBestWeightKg?: number;
   personalBestReps?: number;
   bestEstimatedOneRepMax?: number;
-  /** True when the most recent session set a new max-weight record. */
+  /** True when the most recent session beat a record of any type (spec 0023). */
   isRecordSession: boolean;
+}
+
+/**
+ * The kinds of personal record (spec 0023). Records are derived from performed
+ * working sets on every read, never stored.
+ */
+export type RecordType =
+  | 'heaviestWeight'
+  | 'mostReps'
+  | 'repsAtWeight'
+  | 'bestSetVolume'
+  | 'bestSessionVolume'
+  | 'bestEstimatedOneRepMax';
+
+/**
+ * One record of an exercise: its current best, or a best a session beat.
+ */
+export interface ExerciseRecord {
+  type: RecordType;
+  /** kg for weight, volume and 1RM types; a rep count for mostReps / repsAtWeight. */
+  value: number;
+  /** The set behind the record when one set made it; for repsAtWeight, the weight. */
+  weightKg?: number;
+  reps?: number;
+  /** When the session that reached it was performed. */
+  date: ISODateString;
+}
+
+/**
+ * A record a workout beat, naming its exercise.
+ */
+export interface SessionRecord extends ExerciseRecord {
+  exerciseId: EntityId;
+  exerciseName: string;
+}
+
+/**
+ * The records one saved workout beat. Only workouts that beat at least one
+ * are listed.
+ */
+export interface SessionRecords {
+  workoutId: EntityId;
+  /** The workout identity chosen on the device (spec 0014), when it had one. */
+  clientId?: string;
+  records: SessionRecord[];
 }
 
 /**
@@ -296,6 +341,11 @@ export interface ExerciseProgressSummary {
  */
 export interface ExerciseProgressDetail extends ExerciseProgressSummary {
   points: ExerciseProgressPoint[];
+  /**
+   * Current best of each record type, then most reps at the three heaviest
+   * weights (spec 0023). Absent from older servers.
+   */
+  records?: ExerciseRecord[];
 }
 
 /**

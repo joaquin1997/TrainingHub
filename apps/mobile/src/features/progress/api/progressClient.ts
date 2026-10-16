@@ -2,6 +2,7 @@ import type {
   ExerciseProgressDetail,
   ExerciseProgressSummary,
   MuscleGroupVolumePoint,
+  SessionRecords,
   WeeklyVolumePoint,
 } from '@workout/domain';
 
@@ -22,5 +23,9 @@ export const progressClient = {
   },
   muscleDistribution() {
     return apiRequest<MuscleGroupVolumePoint[]>('/progress/muscle-distribution');
+  },
+  /** The records each saved workout beat, newest first (spec 0023). */
+  sessionRecords() {
+    return apiRequest<SessionRecords[]>('/progress/session-records');
   },
 };

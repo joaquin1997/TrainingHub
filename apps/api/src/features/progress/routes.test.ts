@@ -5,6 +5,7 @@ vi.mock('./repository.js', () => ({
   getExerciseProgress: vi.fn(),
   listWeeklyVolume: vi.fn(),
   listMuscleGroupVolume: vi.fn(),
+  listSessionRecords: vi.fn(),
 }));
 vi.mock('../../infrastructure/userContext.js', () => ({
   resolveUserPublicId: vi.fn(async () => 'user-test'),
@@ -15,6 +16,7 @@ import {
   getExerciseProgress,
   listExerciseProgress,
   listMuscleGroupVolume,
+  listSessionRecords,
   listWeeklyVolume,
 } from './repository.js';
 
@@ -104,5 +106,32 @@ describe('GET /progress/exercises/:exerciseId', () => {
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ exerciseId: 'e1', points: [{ totalVolume: 480 }] });
     expect(getExerciseProgress).toHaveBeenCalledWith('user-test', 'e1');
+  });
+});
+
+describe('GET /progress/session-records', () => {
+  it('returns the records each workout beat for the signed-in user', async () => {
+    const records = [
+      {
+        workoutId: 'w2',
+        clientId: 'c2',
+        records: [
+          {
+            type: 'bestSessionVolume',
+            value: 1500,
+            date: '2026-05-08T09:00:00.000Z',
+            exerciseId: 'bench',
+            exerciseName: 'Bench Press',
+          },
+        ],
+      },
+    ];
+    vi.mocked(listSessionRecords).mockResolvedValue(records as never);
+
+    const response = await app.inject({ method: 'GET', url: '/progress/session-records' });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual(records);
+    expect(listSessionRecords).toHaveBeenCalledWith('user-test');
   });
 });

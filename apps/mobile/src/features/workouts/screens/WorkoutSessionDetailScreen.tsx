@@ -5,6 +5,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { progressClient } from '@/features/progress/api/progressClient';
+import { RecordsCard } from '@/features/progress/components/RecordsCard';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { isPerformedSet } from '@/features/workouts/utils/performedSet';
@@ -23,7 +25,7 @@ import { Chip } from '@/ui/Chip';
 import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
-import type { WorkoutSession, WorkoutSet } from '@workout/domain';
+import type { SessionRecord, WorkoutSession, WorkoutSet } from '@workout/domain';
 
 function setTypeLabel(type: WorkoutSet['type'], t: TFunction) {
   switch (type) {
@@ -43,6 +45,7 @@ export function WorkoutSessionDetailScreen() {
   const router = useRouter();
   const { workoutId } = useLocalSearchParams<{ workoutId?: string }>();
   const [session, setSession] = useState<WorkoutSession | null>(null);
+  const [records, setRecords] = useState<SessionRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
   const { settings } = useSettings();
@@ -54,6 +57,7 @@ export function WorkoutSessionDetailScreen() {
         setIsLoading(true);
         setErrorMessage(undefined);
         setSession(null);
+        setRecords([]);
       }
 
       if (!workoutId) {
@@ -65,7 +69,11 @@ export function WorkoutSessionDetailScreen() {
       }
 
       try {
-        const nextSession = await workoutsClient.getById(workoutId);
+        // The records it beat (spec 0023); failing to load them hides only the card.
+        const [nextSession, sessionRecords] = await Promise.all([
+          workoutsClient.getById(workoutId),
+          progressClient.sessionRecords().catch(() => []),
+        ]);
 
         if (shouldUpdate()) {
           if (!nextSession) {
@@ -74,6 +82,9 @@ export function WorkoutSessionDetailScreen() {
           }
 
           setSession(nextSession);
+          setRecords(
+            sessionRecords.find((entry) => entry.workoutId === nextSession.id)?.records ?? [],
+          );
         }
       } catch (error) {
         if (shouldUpdate()) {
@@ -176,6 +187,16 @@ export function WorkoutSessionDetailScreen() {
           value={totals.restSeconds > 0 ? formatDuration(totals.restSeconds) : '–'}
         />
       </View>
+
+      <RecordsCard
+        title={t('progress.records.beaten')}
+        unit={unit}
+        items={records.map((record, index) => ({
+          key: `${record.exerciseId}-${record.type}-${index}`,
+          record,
+          meta: record.exerciseName,
+        }))}
+      />
 
       {session.notes ? (
         <View style={styles.notesCard}>
