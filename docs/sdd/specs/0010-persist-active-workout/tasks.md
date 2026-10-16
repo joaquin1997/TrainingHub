@@ -17,7 +17,7 @@ Each task leaves the tree green (`pnpm -r typecheck` and `pnpm -r test`).
 | 3 | [x] Store subscription; `useActiveWorkout` via `useSyncExternalStore`; screen reads the draft from the store | mobile | unit test for subscribe/notify; manual smoke in app | `feat(workouts): observable active-workout store` |
 | 4 | [x] Open an existing draft without the network; `routineId` optional (`resolveActiveWorkoutEntry`) | mobile | unit test | `feat(workouts): resume the active workout without a network round-trip` |
 | 5 | [x] Stored envelope + parse; `tokenSubject`; `AuthContext` restores the real user id; owner kept in the store; `discardActiveWorkoutIfForeign` on sign-in (FR-8) | mobile | unit tests | `feat(workouts): versioned, owner-scoped active-workout envelope` |
-| 6 | AsyncStorage dependency; `ActiveWorkoutStorage` interface + implementations | mobile | typecheck; **[DEVICE: rebuild]** app launches | `chore(mobile): add active-workout storage` |
+| 6 | [x] AsyncStorage dependency; `ActiveWorkoutStorage` interface + implementations | mobile | typecheck; **[DEVICE: rebuild]** app launches | `chore(mobile): add active-workout storage` |
 | 7 | Hydrate before routes (or after the next sign-in, EF-6); debounced save; flush on background; clear on finish/discard; confirm sign-out while active. **Requires spec 0014 deployed.** | mobile | unit tests (fake timers); **[DEVICE]** AC-1…AC-7, AC-9 | `feat(workouts): keep the active workout across app restarts` |
 | 8 | `ApiError` with status in `lib/http.ts`; on a permanent rejection at finish, show the reason and offer to discard (EF-5) | mobile | unit tests; **[DEVICE]** AC-8 | `feat(workouts): let a refused workout be discarded` |
 | 9 | Close the 0005 gap; glossary (`WorkoutSessionDraft`, active workout); roadmap; backlog; spec status | docs | links resolve | `docs(sdd): close spec 0010` |
@@ -55,6 +55,10 @@ rebuild.
   (4 tests). Decided: a draft with no recorded owner is adopted by whoever
   signs in rather than dropped — it cannot be shown to be someone else's, and
   it only arises if a workout starts with no user known.
+- 2026-10-16 — Task 6: `@react-native-async-storage/async-storage` 2.2.0 via
+  `expo install` (SDK 55 pin; native → rebuild, batched with 0012's).
+  `ActiveWorkoutStorage` interface + in-memory impl (node-testable) and the
+  AsyncStorage impl in its own file. Not wired yet.
 
 ## Definition of done
 
