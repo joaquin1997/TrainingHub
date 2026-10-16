@@ -60,6 +60,13 @@ export const en = {
     deleteTitle: 'Delete routine',
     deleteConfirm: 'Delete "{{name}}"? This can\'t be undone.',
     duplicate: 'Duplicate',
+    newRoutine: 'New',
+    exerciseCount_one: '{{count}} exercise',
+    exerciseCount_other: '{{count}} exercises',
+    moreExercises: '+{{count}}',
+    activeLabel: 'Workout in progress',
+    pausedLabel: 'Workout paused',
+    resumeHint: 'Tap to resume',
   },
   routineDetail: {
     missingId: 'Missing routine id.',

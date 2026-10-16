@@ -62,6 +62,13 @@ export const es: TranslationCatalog = {
     deleteTitle: 'Eliminar rutina',
     deleteConfirm: '¿Eliminar "{{name}}"? No se puede deshacer.',
     duplicate: 'Duplicar',
+    newRoutine: 'Nueva',
+    exerciseCount_one: '{{count}} ejercicio',
+    exerciseCount_other: '{{count}} ejercicios',
+    moreExercises: '+{{count}}',
+    activeLabel: 'Entrenamiento en curso',
+    pausedLabel: 'Entrenamiento en pausa',
+    resumeHint: 'Toca para retomar',
   },
   routineDetail: {
     missingId: 'Falta el id de la rutina.',
