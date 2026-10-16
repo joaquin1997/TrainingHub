@@ -18,8 +18,10 @@ production.
 | **Performed set** | A `WorkoutSet` marked done — or, in a legacy session, any set. The only sets that count as work for progress and "last time" (spec 0013). | A logged set left unmarked |
 | **Warmup set** | A `WorkoutSet` of type warmup. Counts toward training volume, never toward personal records or estimated 1RM (spec 0013). | Drop and failure sets, which are working sets |
 | **Legacy session** | A `WorkoutSession` saved before sets could be marked done, recognisable because none of its sets is. All its sets count as performed. | — |
-| **Active workout** | The single in-progress `WorkoutSession`. At most one exists at a time; it is resumable, and its routine is locked from editing until it is finished or discarded. | A saved (finished) session |
+| **Active workout** | The single in-progress `WorkoutSession`. At most one exists at a time; it is resumable, and its routine is locked from editing and deletion until it is finished or discarded (spec 0014). | A saved (finished) session |
 | **WorkoutSessionDraft** | The mobile-side in-memory state of the active workout, including the display `unit` captured at session start. | `WorkoutSession`, which is the persisted record |
+| **Workout identity** | An id the device gives a workout when it starts, unique per user. Saving the same identity again returns the workout saved first instead of creating a duplicate (spec 0014). | The server's own session id |
+| **Optional provenance** | A saved `WorkoutSession`'s link to the `Routine` / `RoutineExercise` it came from. Kept only when it points at the user's own existing records; the workout is saved without it otherwise (spec 0014). | A required reference |
 | **Superset** | A group of `RoutineExercise` entries performed back to back. | — |
 
 ## Progress

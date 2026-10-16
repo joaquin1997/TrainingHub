@@ -10,20 +10,25 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0001](specs/0001-auth-session-hardening/spec.md) | Auth session hardening | `ready` — plan written, awaiting review | 3 — Auth & users |
 | [0002](specs/0002-apple-sign-in/spec.md) | Sign in with Apple | `draft` — blocked on open decisions | 3 — Auth & users |
 | [0003](specs/0003-session-revocation/spec.md) | Session revocation | `draft` — deferred from 0001, before distribution | 3 — Auth & users |
-| [0010](specs/0010-persist-active-workout/spec.md) | Persist the active workout | `planned` — tasks awaiting review; amendments pending (see below) | 1 — Live workout logging |
+| [0010](specs/0010-persist-active-workout/spec.md) | Persist the active workout | `planned` — amended 2026-09-24; tasks awaiting review | 1 — Live workout logging |
 | [0011](specs/0011-workout-pause/spec.md) | Pause the active workout | `planned` — tasks awaiting review | 1 — Live workout logging |
-| [0012](specs/0012-workout-live-activity/spec.md) | Live workout status on the lock screen | `planned` — spike done, tasks awaiting review; amendments pending | 8 — Integrations & platform |
+| [0012](specs/0012-workout-live-activity/spec.md) | Live workout status on the lock screen | `planned` — spike done; amended 2026-09-24; tasks awaiting review | 8 — Integrations & platform |
 | [0013](specs/0013-progress-performed-work/spec.md) | Progress counts only performed work | `in-progress` — code complete on `feat/sdd-0013-0012`; awaiting the owner's redeploy and device checks (task 6) | 4 — Progress |
-| 0014 | Workout save integrity (idempotent save, owned references, date validation) | `draft` — not written yet; needed before 0010 task 7 | 1 — Live workout logging |
+| [0014](specs/0014-workout-save-integrity/spec.md) | Workout save integrity | `in-progress` — spec, plan, tasks self-approved 2026-10-16 (owner's delegation); needed before 0010 task 7 | 1 — Live workout logging |
 | 0015 | Custom exercises are private | `draft` — not written yet; ships alongside 0001 | 6 — Exercises |
 
 Execution order agreed 2026-09-24: 0013 → 0014 → 0010 → 0011 → 0012 →
 visual redesign (to be specified; "functional first, then pretty") → 0001 →
-0015. Before implementing 0001, 0010 and 0012, their specs get the amendments
-found in the 2026-09-24 review (0001: public auth routes, offline start, data
-reassignment as a one-off script; 0010: owner check on sign-in, hydration after
-sign-in, permanently rejected saves; 0012: reuse `LiveWorkoutBridge`, HealthKit
-errors vs no data, extra failure paths).
+0015. The amendments found in the 2026-09-24 review are applied to 0001, 0010
+and 0012 (0001: public auth routes, offline start, data reassignment as a
+one-off script; 0010: owner check on sign-in, hydration after sign-in,
+permanently rejected saves; 0012: reuse `LiveWorkoutBridge`, HealthKit errors
+vs no data, extra failure paths).
+
+Since 2026-10-16 the owner has delegated the gates: specs, plans and tasks are
+self-approved and decisions recorded as assumptions; only decisions with a
+large product impact are left open. Device checks and deploys are batched for
+the owner after several specs.
 
 ## Retro-specs
 
