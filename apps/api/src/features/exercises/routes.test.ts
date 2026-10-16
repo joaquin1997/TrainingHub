@@ -116,6 +116,33 @@ describe('POST /exercises', () => {
     );
   });
 
+  it('passes the tracking type through (spec 0021 FR-2)', async () => {
+    vi.mocked(createExercise).mockResolvedValue({ id: 'e2', name: 'Plank' } as never);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/exercises',
+      payload: { ...validPayload, name: 'Plank', trackingType: 'duration' },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(createExercise).toHaveBeenCalledWith(
+      'user-test',
+      expect.objectContaining({ name: 'Plank', trackingType: 'duration' }),
+    );
+  });
+
+  it('returns 400 on an unknown tracking type', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/exercises',
+      payload: { ...validPayload, trackingType: 'pace' },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(createExercise).not.toHaveBeenCalled();
+  });
+
   it('returns 400 on invalid muscle group selection', async () => {
     vi.mocked(createExercise).mockRejectedValue(
       new InvalidMuscleGroupSelectionError('Invalid muscle group selection'),
