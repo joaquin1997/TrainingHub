@@ -59,7 +59,6 @@ export const en = {
     moreExercises: '+{{count}}',
     activeLabel: 'Workout in progress',
     pausedLabel: 'Workout paused',
-    resumeHint: 'Tap to resume',
   },
   routineDetail: {
     missingId: 'Missing routine id.',
@@ -178,6 +177,7 @@ export const en = {
     illustration: '{{name}} illustration',
   },
   workouts: {
+    barLabel: '{{routine}}, {{clock}}. Open the workout in progress',
     notesLabel: 'Notes',
     setsLabel: 'Sets',
     volumeLabel: 'Volume',

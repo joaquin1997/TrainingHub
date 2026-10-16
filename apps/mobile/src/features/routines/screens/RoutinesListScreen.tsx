@@ -20,8 +20,6 @@ import { ActionSheet } from '@/ui/ActionSheet';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { confirmAction } from '@/lib/confirmAction';
-import { formatDuration } from '@/lib/format';
-import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { useRefresh } from '@/lib/useRefresh';
 import { colors, commonStyles, spacing } from '@/ui/theme';
 import { ScreenTitle } from '@/ui/ScreenTitle';
@@ -75,10 +73,6 @@ export function RoutinesListScreen() {
 
   const router = useRouter();
   const activeWorkout = useActiveWorkout();
-  const elapsedSeconds = useElapsedSeconds(activeWorkout?.startedAt, {
-    pausedAt: activeWorkout?.pausedAt,
-    pausedSeconds: activeWorkout?.pausedSeconds,
-  });
   const { isRefreshing, onRefresh } = useRefresh(loadRoutines);
   const showLoading = isLoading && routines.length === 0;
   const hasEmptyState = !isLoading && !errorMessage && routines.length === 0;
@@ -151,36 +145,6 @@ export function RoutinesListScreen() {
           onPress: () => router.push('/routines/create'),
         }}
       />
-      {activeWorkout ? (
-        <Pressable
-          accessibilityRole="button"
-          onPress={() =>
-            router.push({
-              pathname: '/workouts/active',
-              params: { routineId: activeWorkout.routineId },
-            })
-          }
-          style={({ pressed }) => [styles.activeCard, pressed ? styles.cardPressed : null]}
-        >
-          <View style={styles.activeText}>
-            <View style={styles.activeLabelRow}>
-              <View
-                style={[
-                  styles.liveDot,
-                  activeWorkout.pausedAt ? styles.liveDotPaused : null,
-                ]}
-              />
-              <Text style={styles.sectionLabel}>
-                {t(activeWorkout.pausedAt ? 'routines.pausedLabel' : 'routines.activeLabel')}
-              </Text>
-            </View>
-            <Text style={styles.activeName}>{activeWorkout.routineName}</Text>
-            <Text style={styles.meta}>{t('routines.resumeHint')}</Text>
-          </View>
-          <Text style={styles.activeClock}>{formatDuration(elapsedSeconds)}</Text>
-          <Ionicons name="chevron-forward" size={20} color={colors.primary} />
-        </Pressable>
-      ) : null}
       {showLoading ? (
         <StateView kind="loading" message={t('routines.loadingRoutines')} />
       ) : null}
@@ -346,39 +310,6 @@ const styles = StyleSheet.create({
   },
   meta: {
     ...commonStyles.meta,
-  },
-  activeCard: {
-    ...commonStyles.card,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySoft,
-  },
-  activeText: {
-    flex: 1,
-    gap: 2,
-  },
-  activeLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  liveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.primary,
-  },
-  liveDotPaused: {
-    backgroundColor: colors.textMuted,
-  },
-  activeName: {
-    ...commonStyles.cardTitle,
-  },
-  activeClock: {
-    ...commonStyles.figure,
-    color: colors.primary,
   },
   list: {
     gap: spacing.xl,

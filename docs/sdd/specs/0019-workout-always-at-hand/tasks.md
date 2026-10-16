@@ -15,7 +15,7 @@ dependency is JS-only).
 | # | Task | Area | Verify | Commit message |
 |---|---|---|---|---|
 | 1 | [x] Plan and tasks; backlog status | docs | links resolve | `docs(sdd): plan and tasks for 0019` |
-| 2 | [ ] `@react-navigation/bottom-tabs` as a direct dependency (`npx expo install`, same version as expo-router's); `WorkoutBar` (dot, routine, clock, paused state, tap → `/workouts/active`); mounted in the tabs' `tabBar` above `BottomTabBar` and under `workouts/[workoutId]` and `workouts/summary` with the bottom inset; Routines active card removed; i18n en/es for the bar's accessibility label | mobile | typecheck + tests; web preview: AC-1, EF-2 (last History row reachable, tab bar uncovered) | `feat(workouts): workout bar on every screen` |
+| 2 | [x] `@react-navigation/bottom-tabs` as a direct dependency (`npx expo install`, same version as expo-router's); `WorkoutBar` (dot, routine, clock, paused state, tap → `/workouts/active`); mounted in the tabs' `tabBar` above `BottomTabBar` and under `workouts/[workoutId]` and `workouts/summary` with the bottom inset; Routines active card removed; i18n en/es for the bar's accessibility label | mobile | typecheck + tests; web preview: AC-1, EF-2 (last History row reachable, tab bar uncovered) | `feat(workouts): workout bar on every screen` |
 | 3 | [ ] `resolveRoutineStart` (start / open / ask) and `resolveSwitchOutcome` (save / discard) next to `resolveActiveWorkoutEntry`; `parseWorkoutAction` learns `'switch'`; unit tests | mobile | unit tests (FR-4, FR-5) | `feat(workouts): decide how a routine starts while another is active` |
 | 4 | [ ] `useRoutineStart` hook + `ActionSheet` in `RoutinesListScreen` and `RoutineDetailScreen` (both names, save/discard message, finish-and-start / back / cancel); labels ("Start workout" for other routines, `resumeWorkout`/`resumeHint` keys removed); `ActiveWorkoutScreen` handles `action=switch&nextRoutineId`: discard or `finishWorkout` without the summary, then start the next routine; on failure stays with the finish error and scrolls to it; i18n en/es | mobile | typecheck + tests; web preview: AC-2, AC-3, FR-5 (own routine opens without asking), EF-1 (local API stopped → Torso A stays with the error) | `feat(workouts): finish the active workout and start another` |
 | 5 | [ ] Active screen `ScrollView`: `automaticallyAdjustKeyboardInsets`, `keyboardShouldPersistTaps="handled"`, `keyboardDismissMode="interactive"`; notes `maxHeight` | mobile | typecheck; **iOS device (owner's batch): AC-4** | `fix(workouts): keep active workout fields above the keyboard` |
@@ -40,6 +40,15 @@ must add it to `WorkoutBar`.
 ## Progress log
 
 - 2026-10-16 — Tasks written and self-approved under the owner's delegation.
+- 2026-10-16 — Task 1: plan and tasks committed on `feat/sdd-0019`.
+- 2026-10-16 — Task 2: `npx expo install` picked bottom-tabs 7.21.0 (latest,
+  not the SDK's) and moved expo-router's own copy onto it with unmet peers;
+  reverted and pinned `7.15.5` exactly with `pnpm add`, so app and
+  expo-router share one copy (checked in `node_modules/.pnpm`). `WorkoutBar`
+  in the tabs' `tabBar` and under the history detail and summary routes; the
+  Routines card and its `resumeHint` key removed. Web preview: the bar shows
+  on Routines and History above the tab bar, the clock ticks (0:10 → 0:12),
+  tapping opens `/workouts/active` (AC-1).
 
 ## Definition of done
 

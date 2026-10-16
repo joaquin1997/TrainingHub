@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
+import { BottomTabBar } from '@react-navigation/bottom-tabs';
 import { Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { WorkoutBar } from '@/features/workouts/components/WorkoutBar';
 import { colors, fonts } from '@/ui/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -17,6 +19,14 @@ export default function TabsLayout() {
 
   return (
     <Tabs
+      // The workout bar sits just above the tabs, in the layout flow, so every
+      // tab screen shrinks to make room for it (spec 0019).
+      tabBar={(props) => (
+        <>
+          <WorkoutBar />
+          <BottomTabBar {...props} />
+        </>
+      )}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,

@@ -61,7 +61,6 @@ export const es: TranslationCatalog = {
     moreExercises: '+{{count}}',
     activeLabel: 'Entrenamiento en curso',
     pausedLabel: 'Entrenamiento en pausa',
-    resumeHint: 'Toca para retomar',
   },
   routineDetail: {
     missingId: 'Falta el id de la rutina.',
@@ -181,6 +180,7 @@ export const es: TranslationCatalog = {
     illustration: 'Ilustración de {{name}}',
   },
   workouts: {
+    barLabel: '{{routine}}, {{clock}}. Abrir el entrenamiento en curso',
     notesLabel: 'Notas',
     setsLabel: 'Series',
     volumeLabel: 'Volumen',
