@@ -3,6 +3,8 @@ import type {
   ExerciseProgressPoint,
   ExerciseProgressSummary,
   MuscleGroupVolumePoint,
+  SessionRecord,
+  SessionRecords,
   WeeklyVolumePoint,
 } from '@workout/domain';
 
@@ -32,6 +34,9 @@ type ProgressSetInput = {
  */
 export type ProgressSessionInput = {
   date: string;
+  /** The workout's public id; needed only to list the records it beat. */
+  workoutId?: string;
+  clientId?: string | null;
   exercises: Array<{
     exerciseId: string;
     exerciseName: string;
@@ -221,6 +226,56 @@ export function buildExerciseProgressDetail(
     points: accumulator.points,
     records: records?.history.bests ?? [],
   };
+}
+
+/**
+ * The records each workout beat (spec 0023), newest workout first. Workouts
+ * that beat none, or carry no id, are left out.
+ */
+export function buildSessionRecords(
+  sessions: ProgressSessionInput[],
+): SessionRecords[] {
+  const ordered = chronological(sessions);
+  const histories = buildRecordHistories(ordered);
+  const hitsBySession = new Map<number, Map<string, SessionRecord[]>>();
+
+  for (const [exerciseId, { sessionIndexes, history }] of histories) {
+    sessionIndexes.forEach((sessionIndex, position) => {
+      const hits = history.hits[position] ?? [];
+      if (hits.length === 0) {
+        return;
+      }
+
+      const exerciseName =
+        ordered[sessionIndex]!.exercises.find((exercise) => exercise.exerciseId === exerciseId)
+          ?.exerciseName ?? '';
+      const byExercise = hitsBySession.get(sessionIndex) ?? new Map();
+      byExercise.set(
+        exerciseId,
+        hits.map((hit) => ({ ...hit, exerciseId, exerciseName })),
+      );
+      hitsBySession.set(sessionIndex, byExercise);
+    });
+  }
+
+  const result: SessionRecords[] = [];
+
+  ordered.forEach((session, sessionIndex) => {
+    const byExercise = hitsBySession.get(sessionIndex);
+    if (!byExercise || !session.workoutId) {
+      return;
+    }
+
+    // In the order the exercises were done in the workout.
+    const exerciseIds = [...new Set(session.exercises.map((exercise) => exercise.exerciseId))];
+    result.push({
+      workoutId: session.workoutId,
+      ...(session.clientId ? { clientId: session.clientId } : {}),
+      records: exerciseIds.flatMap((exerciseId) => byExercise.get(exerciseId) ?? []),
+    });
+  });
+
+  return result.reverse();
 }
 
 /** Total volume (reps × weight) for one session across all its exercises. */

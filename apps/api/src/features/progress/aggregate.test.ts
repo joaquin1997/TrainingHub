@@ -4,6 +4,7 @@ import {
   buildExerciseProgressDetail,
   buildExerciseProgressSummaries,
   buildMuscleGroupVolume,
+  buildSessionRecords,
   buildWeeklyVolume,
   selectPerformedWork,
   type ProgressSessionInput,
@@ -493,5 +494,61 @@ describe('records by type (spec 0023)', () => {
       value: 1000,
       date: '2026-05-08T09:00:00.000Z',
     });
+  });
+});
+
+describe('buildSessionRecords (spec 0023)', () => {
+  const workout = (
+    workoutId: string,
+    date: string,
+    exercises: ProgressSessionInput['exercises'],
+  ): ProgressSessionInput => ({ workoutId, clientId: `client-${workoutId}`, date, exercises });
+
+  it('lists the records each workout beat, newest first (AC-2)', () => {
+    const result = buildSessionRecords([
+      workout('w1', '2026-05-01T09:00:00.000Z', [
+        { exerciseId: 'bench', exerciseName: 'Bench', sets: [{ reps: 5, weightKg: 100 }] },
+      ]),
+      workout('w2', '2026-05-08T09:00:00.000Z', [
+        { exerciseId: 'squat', exerciseName: 'Squat', sets: [{ reps: 5, weightKg: 120 }] },
+        {
+          exerciseId: 'bench',
+          exerciseName: 'Bench',
+          sets: [
+            { reps: 5, weightKg: 100 },
+            { reps: 5, weightKg: 100 },
+          ],
+        },
+      ]),
+      workout('w3', '2026-05-15T09:00:00.000Z', [
+        { exerciseId: 'bench', exerciseName: 'Bench', sets: [{ reps: 5, weightKg: 100 }] },
+      ]),
+    ]);
+
+    expect(result).toEqual([
+      {
+        workoutId: 'w2',
+        clientId: 'client-w2',
+        records: [
+          {
+            type: 'bestSessionVolume',
+            value: 1000,
+            date: '2026-05-08T09:00:00.000Z',
+            exerciseId: 'bench',
+            exerciseName: 'Bench',
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('announces nothing for a first workout (EF-1)', () => {
+    expect(
+      buildSessionRecords([
+        workout('w1', '2026-05-01T09:00:00.000Z', [
+          { exerciseId: 'bench', exerciseName: 'Bench', sets: [{ reps: 5, weightKg: 100 }] },
+        ]),
+      ]),
+    ).toEqual([]);
   });
 });
