@@ -78,6 +78,10 @@ export type WorkoutSessionDraft = {
    * Optional for backwards-compat — absent means kg.
    */
   unit?: WeightUnit;
+  /** When the current pause began; absent while the clock runs (spec 0011). */
+  pausedAt?: string;
+  /** Whole seconds of pauses already ended. */
+  pausedSeconds?: number;
   exercises: WorkoutExerciseDraft[];
 };
 
@@ -464,6 +468,47 @@ export function toggleWorkoutSetDone(
   };
 }
 
+const secondsBetween = (fromIso: string, to: Date) =>
+  Math.max(0, Math.floor((to.getTime() - new Date(fromIso).getTime()) / 1000));
+
+/** Stops the workout clock; pausing a paused workout changes nothing. */
+export function pauseWorkout(
+  workoutDraft: WorkoutSessionDraft,
+  now: Date = new Date(),
+): WorkoutSessionDraft {
+  if (workoutDraft.pausedAt) {
+    return workoutDraft;
+  }
+
+  return { ...workoutDraft, pausedAt: now.toISOString() };
+}
+
+/** Restarts the clock, adding the ended pause to the paused total. */
+export function resumeWorkout(
+  workoutDraft: WorkoutSessionDraft,
+  now: Date = new Date(),
+): WorkoutSessionDraft {
+  if (!workoutDraft.pausedAt) {
+    return workoutDraft;
+  }
+
+  return {
+    ...workoutDraft,
+    pausedAt: undefined,
+    pausedSeconds:
+      (workoutDraft.pausedSeconds ?? 0) + secondsBetween(workoutDraft.pausedAt, now),
+  };
+}
+
+/** Paused seconds up to `end`, counting a pause still in progress (FR-5). */
+export function totalPausedSeconds(
+  workoutDraft: WorkoutSessionDraft,
+  end: Date = new Date(),
+): number {
+  const ongoing = workoutDraft.pausedAt ? secondsBetween(workoutDraft.pausedAt, end) : 0;
+  return (workoutDraft.pausedSeconds ?? 0) + ongoing;
+}
+
 export function countWorkoutSets(workoutDraft: WorkoutSessionDraft) {
   return workoutDraft.exercises.reduce(
     (totals, exercise) => ({
@@ -482,14 +527,21 @@ export function countWorkoutSets(workoutDraft: WorkoutSessionDraft) {
 export function toCreateWorkoutSessionInput(
   workoutDraft: WorkoutSessionDraft,
 ): CreateWorkoutSessionInput {
-  const completedAt = new Date().toISOString();
+  const finishedAt = new Date();
+  const completedAt = finishedAt.toISOString();
   const unit = draftUnit(workoutDraft);
+  // Never more than the workout lasted, which the server would refuse.
+  const pausedSeconds = Math.min(
+    totalPausedSeconds(workoutDraft, finishedAt),
+    secondsBetween(workoutDraft.startedAt, finishedAt),
+  );
 
   return {
     clientId: workoutDraft.clientId,
     routineId: workoutDraft.routineId,
     startedAt: workoutDraft.startedAt,
     completedAt,
+    pausedSeconds,
     notes: workoutDraft.notes?.trim() ? workoutDraft.notes.trim() : undefined,
     exercises: workoutDraft.exercises.map((exercise) => ({
       exerciseId: exercise.exerciseId,
@@ -650,6 +702,7 @@ export function toWorkoutSessionSkeleton(
     status: 'completed',
     startedAt: workoutDraft.startedAt,
     completedAt,
+    pausedSeconds: totalPausedSeconds(workoutDraft, new Date(completedAt)),
     exercises: workoutDraft.exercises.map((exercise) => ({
       id: exercise.id,
       workoutSessionId: workoutDraft.id,

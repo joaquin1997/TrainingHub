@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { durationSecondsBetween, formatDuration } from './format';
+import { activeDurationSeconds, durationSecondsBetween, formatDuration } from './format';
 
 describe('formatDuration', () => {
   it('formats sub-hour durations as m:ss', () => {
@@ -31,5 +31,22 @@ describe('durationSecondsBetween', () => {
   it('returns 0 when a timestamp is missing or invalid', () => {
     expect(durationSecondsBetween(undefined, '2026-05-30T09:00:00.000Z')).toBe(0);
     expect(durationSecondsBetween('nope', 'also-nope')).toBe(0);
+  });
+});
+
+describe('activeDurationSeconds (spec 0011)', () => {
+  const start = '2026-10-16T09:00:00.000Z';
+  const end = '2026-10-16T10:00:00.000Z';
+
+  it('subtracts paused time: 60 min with 10 paused is 50', () => {
+    expect(activeDurationSeconds(start, end, 600)).toBe(50 * 60);
+  });
+
+  it('equals the elapsed time without paused time (older workouts)', () => {
+    expect(activeDurationSeconds(start, end)).toBe(durationSecondsBetween(start, end));
+  });
+
+  it('never goes negative', () => {
+    expect(activeDurationSeconds(start, end, 99_999)).toBe(0);
   });
 });

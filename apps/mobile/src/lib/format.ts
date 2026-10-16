@@ -61,3 +61,16 @@ export function durationSecondsBetween(startIso?: string, endIso?: string) {
 
   return Math.max(0, Math.round((end - start) / 1000));
 }
+
+/**
+ * Active duration: elapsed time minus paused time, never negative (spec 0011).
+ * With no paused time it equals `durationSecondsBetween`, so workouts saved
+ * before pause existed read as before.
+ */
+export function activeDurationSeconds(
+  startIso?: string,
+  endIso?: string,
+  pausedSeconds = 0,
+) {
+  return Math.max(0, durationSecondsBetween(startIso, endIso) - pausedSeconds);
+}

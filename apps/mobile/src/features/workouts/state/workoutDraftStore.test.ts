@@ -15,6 +15,9 @@ import {
   countWorkoutSets,
   moveWorkoutExercise,
   moveWorkoutSet,
+  pauseWorkout,
+  resumeWorkout,
+  totalPausedSeconds,
   removeSetFromWorkoutExercise,
   getActiveWorkout,
   hasActiveWorkout,
@@ -611,5 +614,53 @@ describe('active workout owner (spec 0010)', () => {
     expect(getActiveWorkoutOwnerId()).toBe('user-a');
     discardActiveWorkoutIfForeign('user-b');
     expect(hasActiveWorkout()).toBe(false);
+  });
+});
+
+describe('pause (spec 0011)', () => {
+  const at = (minutes: number) => new Date(Date.UTC(2026, 9, 16, 9, minutes));
+  const started = () => ({ ...buildWorkoutSessionDraft(routine), startedAt: at(0).toISOString() });
+
+  it('accumulates paused time across pause/resume cycles', () => {
+    let draft = started();
+    draft = pauseWorkout(draft, at(10));
+    draft = resumeWorkout(draft, at(15));
+    draft = pauseWorkout(draft, at(30));
+    draft = resumeWorkout(draft, at(32));
+
+    expect(draft.pausedAt).toBeUndefined();
+    expect(draft.pausedSeconds).toBe(7 * 60);
+  });
+
+  it('ignores pausing twice or resuming while running', () => {
+    const running = started();
+    const paused = pauseWorkout(running, at(5));
+
+    expect(pauseWorkout(paused, at(8))).toBe(paused);
+    expect(resumeWorkout(running, at(8))).toBe(running);
+  });
+
+  it('counts a pause still in progress', () => {
+    const draft = pauseWorkout({ ...started(), pausedSeconds: 60 }, at(20));
+
+    expect(totalPausedSeconds(draft, at(30))).toBe(60 + 10 * 60);
+  });
+
+  it('sends the paused time, an ongoing pause included, when finishing paused', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(at(60));
+    const draft = pauseWorkout(resumeWorkout(pauseWorkout(started(), at(10)), at(20)), at(50));
+
+    expect(toCreateWorkoutSessionInput(draft).pausedSeconds).toBe(20 * 60);
+    vi.useRealTimers();
+  });
+
+  it('never sends more paused time than the workout lasted', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(at(30));
+    const draft = { ...started(), pausedSeconds: 99 * 60 };
+
+    expect(toCreateWorkoutSessionInput(draft).pausedSeconds).toBe(30 * 60);
+    vi.useRealTimers();
   });
 });
