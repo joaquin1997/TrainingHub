@@ -13,6 +13,7 @@ import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
 import { useRoutineStart } from '@/features/workouts/hooks/useRoutineStart';
 import { confirmAction } from '@/lib/confirmAction';
 import { formatDuration } from '@/lib/format';
+import { formatDistance, tracksField } from '@/lib/tracking';
 import { formatWeightValue } from '@/lib/weight';
 import { ActionSheet } from '@/ui/ActionSheet';
 import { Button } from '@/ui/Button';
@@ -34,6 +35,15 @@ function formatReps(set: RoutineExerciseSet, t: TFunction) {
     return t('routineDetail.repsUpTo', { max: set.maxReps });
   }
   return t('routineDetail.repsNone');
+}
+
+/** A time and/or distance target, e.g. "500 m · 1:45" (spec 0021). */
+function formatTimedTarget(set: RoutineExerciseSet) {
+  const parts = [
+    set.targetDistanceMeters !== undefined ? formatDistance(set.targetDistanceMeters) : null,
+    set.targetDurationSeconds !== undefined ? formatDuration(set.targetDurationSeconds) : null,
+  ].filter((part): part is string => part !== null);
+  return parts.length > 0 ? parts.join(' · ') : '–';
 }
 
 export function RoutineDetailScreen() {
@@ -240,7 +250,7 @@ export function RoutineDetailScreen() {
               <View key={set.id} style={styles.setRow}>
                 <Text style={styles.setNumber}>{set.setNumber}</Text>
                 <Text style={styles.setTarget}>
-                  {set.targetWeight !== undefined ? (
+                  {set.targetWeight !== undefined && tracksField(exercise.trackingType, 'weight') ? (
                     <>
                       <Text style={styles.setFigure}>
                         {formatWeightValue(set.targetWeight, settings.unit)}
@@ -248,7 +258,11 @@ export function RoutineDetailScreen() {
                       <Text style={styles.setUnit}>{` ${settings.unit}  ·  `}</Text>
                     </>
                   ) : null}
-                  <Text style={styles.setFigure}>{formatReps(set, t)}</Text>
+                  <Text style={styles.setFigure}>
+                    {tracksField(exercise.trackingType, 'reps')
+                      ? formatReps(set, t)
+                      : formatTimedTarget(set)}
+                  </Text>
                 </Text>
               </View>
             ))}

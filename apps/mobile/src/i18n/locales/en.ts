@@ -135,6 +135,15 @@ export const en = {
     loadError: 'Unable to load muscle groups.',
     validation: 'Name and at least one primary muscle group are required.',
     createError: 'Unable to create exercise.',
+    // Tracking type (spec 0021).
+    trackingTitle: 'What each set records',
+    trackingTypes: {
+      weight_reps: 'Weight & reps',
+      reps: 'Reps only',
+      duration: 'Time',
+      weight_duration: 'Weight & time',
+      distance_duration: 'Distance & time',
+    },
   },
   settings: {
     language: 'Language',

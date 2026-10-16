@@ -9,9 +9,10 @@ import {
   View,
 } from 'react-native';
 
-import type { Exercise, MuscleGroup } from '@workout/domain';
+import type { Exercise, ExerciseTrackingType, MuscleGroup } from '@workout/domain';
 
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
+import { TRACKING_TYPES } from '@/lib/tracking';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StateView } from '@/ui/StateView';
@@ -35,6 +36,7 @@ export function CustomExerciseModal({
   const [muscleGroups, setMuscleGroups] = useState<MuscleGroup[]>([]);
   const [primaryMuscleGroupIds, setPrimaryMuscleGroupIds] = useState<string[]>([]);
   const [secondaryMuscleGroupIds, setSecondaryMuscleGroupIds] = useState<string[]>([]);
+  const [trackingType, setTrackingType] = useState<ExerciseTrackingType>('weight_reps');
   const [errorMessage, setErrorMessage] = useState<string>();
   const [isLoadingMuscleGroups, setIsLoadingMuscleGroups] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,6 +51,7 @@ export function CustomExerciseModal({
     setName(initialName);
     setPrimaryMuscleGroupIds([]);
     setSecondaryMuscleGroupIds([]);
+    setTrackingType('weight_reps');
     setErrorMessage(undefined);
     setIsLoadingMuscleGroups(true);
     setIsSubmitting(false);
@@ -123,6 +126,7 @@ export function CustomExerciseModal({
         name: trimmedName,
         primaryMuscleGroupIds,
         secondaryMuscleGroupIds,
+        trackingType,
       });
       onCreated(createdExercise);
       onClose();
@@ -177,6 +181,19 @@ export function CustomExerciseModal({
               placeholderTextColor={colors.textSubtle}
               style={styles.input}
             />
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>{t('customExercise.trackingTitle')}</Text>
+              <View style={styles.optionList}>
+                {TRACKING_TYPES.map((type) => (
+                  <Chip
+                    key={type}
+                    label={t(`customExercise.trackingTypes.${type}`)}
+                    selected={trackingType === type}
+                    onPress={() => setTrackingType(type)}
+                  />
+                ))}
+              </View>
+            </View>
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>{t('customExercise.primaryTitle')}</Text>
               <Text style={styles.sectionHint}>{t('customExercise.selectOneOrMore')}</Text>

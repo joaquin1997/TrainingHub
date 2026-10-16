@@ -135,6 +135,15 @@ export const es: TranslationCatalog = {
     optional: 'Opcional.',
     loadingMuscleGroups: 'Cargando grupos musculares…',
     saveExercise: 'Guardar ejercicio',
+    // Tipo de registro (spec 0021).
+    trackingTitle: 'Qué registra cada serie',
+    trackingTypes: {
+      weight_reps: 'Peso y repeticiones',
+      reps: 'Solo repeticiones',
+      duration: 'Tiempo',
+      weight_duration: 'Peso y tiempo',
+      distance_duration: 'Distancia y tiempo',
+    },
     loadError: 'No se han podido cargar los grupos musculares.',
     validation: 'El nombre y al menos un grupo muscular primario son obligatorios.',
     createError: 'No se ha podido crear el ejercicio.',
