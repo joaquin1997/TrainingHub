@@ -172,6 +172,9 @@ export const en = {
     logOutActiveMessage: 'Logging out discards the workout in progress and everything logged in it.',
   },
   exercises: {
+    primaryLabel: 'Primary muscles',
+    secondaryLabel: 'Secondary muscles',
+    equipmentLabel: 'Equipment',
     loadError: 'Unable to load exercises.',
     searchPlaceholder: 'Search exercises',
     favorites: 'Favorites',

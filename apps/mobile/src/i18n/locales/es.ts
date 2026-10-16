@@ -175,6 +175,9 @@ export const es: TranslationCatalog = {
     logOutActiveMessage: 'Al cerrar sesión se descarta el entrenamiento en curso y todo lo registrado en él.',
   },
   exercises: {
+    primaryLabel: 'Músculos primarios',
+    secondaryLabel: 'Músculos secundarios',
+    equipmentLabel: 'Equipo',
     loadError: 'No se han podido cargar los ejercicios.',
     searchPlaceholder: 'Buscar ejercicios',
     favorites: 'Favoritos',
