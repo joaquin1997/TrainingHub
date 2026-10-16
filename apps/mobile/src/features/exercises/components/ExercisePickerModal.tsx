@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
+import { CustomExerciseForm } from '@/features/exercises/components/CustomExerciseForm';
 import { ExerciseThumb } from '@/features/exercises/components/ExerciseThumb';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, fonts, spacing } from '@/ui/theme';
@@ -38,7 +39,16 @@ export function ExercisePickerModal({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>();
   const [hasLoaded, setHasLoaded] = useState(false);
+  // 'create' swaps the list for the create form, inside this same modal: a
+  // modal over a modal is unreliable on iOS (spec 0020).
+  const [step, setStep] = useState<'list' | 'create'>('list');
   const insets = useSafeAreaInsets();
+
+  useEffect(() => {
+    if (visible) {
+      setStep('list');
+    }
+  }, [visible]);
 
   const loadExercises = useCallback(async () => {
     setIsLoading(true);
@@ -65,6 +75,22 @@ export function ExercisePickerModal({
     }
   }, [visible, hasLoaded, isLoading, loadExercises]);
 
+  const choose = (exercise: Exercise) => {
+    onSelect(exercise);
+    onClose();
+  };
+
+  const handleCreated = (created: Exercise) => {
+    setExercises((current) =>
+      [...current.filter((exercise) => exercise.id !== created.id), created].sort(
+        (left, right) => left.name.localeCompare(right.name),
+      ),
+    );
+    choose(created);
+  };
+
+  const trimmedQuery = query.trim();
+
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) {
@@ -86,7 +112,9 @@ export function ExercisePickerModal({
         style={[styles.container, { paddingTop: Math.max(insets.top, spacing.md) }]}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>{t('exercises.addExercise')}</Text>
+          <Text style={styles.title}>
+            {step === 'create' ? t('customExercise.title') : t('exercises.addExercise')}
+          </Text>
           <Pressable
             onPress={onClose}
             hitSlop={12}
@@ -97,62 +125,82 @@ export function ExercisePickerModal({
             <Ionicons name="close" size={22} color={colors.text} />
           </Pressable>
         </View>
-        <View style={styles.search}>
-          <Ionicons name="search" size={18} color={colors.textMuted} />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder={t('exercises.searchPlaceholder')}
-            placeholderTextColor={colors.textSubtle}
-            style={styles.searchInput}
-            autoCorrect={false}
+        {step === 'create' ? (
+          <CustomExerciseForm
+            initialName={trimmedQuery}
+            showTitle={false}
+            onCancel={() => setStep('list')}
+            onCreated={handleCreated}
           />
-        </View>
-        {isLoading ? <StateView kind="loading" message={t('exercises.loading')} /> : null}
-        {errorMessage ? (
-          <StateView
-            kind="error"
-            message={errorMessage}
-            actionLabel={t('common.retry')}
-            onAction={() => void loadExercises()}
-          />
-        ) : null}
-        <ScrollView contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled">
-          {filtered.slice(0, MAX_VISIBLE).map((exercise) => {
-            const details = [
-              exercise.primaryMuscleGroups?.join(', '),
-              exercise.equipment?.join(', '),
-            ].filter(Boolean);
+        ) : (
+          <>
+            <View style={styles.search}>
+              <Ionicons name="search" size={18} color={colors.textMuted} />
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder={t('exercises.searchPlaceholder')}
+                placeholderTextColor={colors.textSubtle}
+                style={styles.searchInput}
+                autoCorrect={false}
+              />
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setStep('create')}
+              style={({ pressed }) => [styles.createRow, pressed ? styles.rowPressed : null]}
+            >
+              <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
+              <Text style={styles.createLabel} numberOfLines={1}>
+                {trimmedQuery
+                  ? t('exercises.createNamed', { name: trimmedQuery })
+                  : t('exercises.createExercise')}
+              </Text>
+            </Pressable>
+            {isLoading ? <StateView kind="loading" message={t('exercises.loading')} /> : null}
+            {errorMessage ? (
+              <StateView
+                kind="error"
+                message={errorMessage}
+                actionLabel={t('common.retry')}
+                onAction={() => void loadExercises()}
+              />
+            ) : null}
+            <ScrollView contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled">
+              {filtered.slice(0, MAX_VISIBLE).map((exercise) => {
+                const details = [
+                  exercise.primaryMuscleGroups?.join(', '),
+                  exercise.equipment?.join(', '),
+                ].filter(Boolean);
 
-            return (
-              <Pressable
-                key={exercise.id}
-                accessibilityRole="button"
-                onPress={() => {
-                  onSelect(exercise);
-                  onClose();
-                }}
-                style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
-              >
-                <ExerciseThumb imageUrl={exercise.imageUrl} />
-                <View style={styles.rowText}>
-                  <Text style={styles.rowTitle}>{exercise.name}</Text>
-                  {details.length > 0 ? (
-                    <Text style={styles.meta} numberOfLines={1}>
-                      {details.join(' · ')}
-                    </Text>
-                  ) : null}
-                </View>
-                <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
-              </Pressable>
-            );
-          })}
-          {filtered.length > MAX_VISIBLE ? (
-            <Text style={styles.more}>
-              {t('exercises.refineSearch', { count: filtered.length - MAX_VISIBLE })}
-            </Text>
-          ) : null}
-        </ScrollView>
+                return (
+                  <Pressable
+                    key={exercise.id}
+                    accessibilityRole="button"
+                    onPress={() => choose(exercise)}
+                    style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
+                  >
+                    <ExerciseThumb imageUrl={exercise.imageUrl} />
+                    <View style={styles.rowText}>
+                      <Text style={styles.rowTitle}>{exercise.name}</Text>
+                      {details.length > 0 ? (
+                        <Text style={styles.meta} numberOfLines={1}>
+                          {details.join(' · ')}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+                  </Pressable>
+                );
+              })}
+              {filtered.length > MAX_VISIBLE ? (
+                <Text style={styles.more}>
+                  {t('exercises.refineSearch', { count: filtered.length - MAX_VISIBLE })}
+                </Text>
+              ) : null}
+            </ScrollView>
+          </>
+        )}
       </View>
     </Modal>
   );
@@ -196,6 +244,19 @@ const styles = StyleSheet.create({
     minHeight: 46,
     color: colors.text,
     fontSize: 16,
+  },
+  createRow: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xs,
+  },
+  createLabel: {
+    flex: 1,
+    color: colors.primary,
+    fontFamily: fonts.displayBold,
+    fontSize: 15,
   },
   list: {
     gap: spacing.sm,

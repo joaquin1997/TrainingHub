@@ -749,9 +749,8 @@ export function RoutineFormScreen({
                           </Text>
                         </Pressable>
                       ))}
-                      {!isExercisesLoading &&
-                      !exerciseLoadError &&
-                      matchingExercises.length === 0 ? (
+                      {/* Offered for any search, not only an empty one (spec 0020 FR-2). */}
+                      {!isExercisesLoading && !exerciseLoadError ? (
                         <Button
                           label={t('routineForm.createCustomExercise')}
                           icon="add-circle-outline"
