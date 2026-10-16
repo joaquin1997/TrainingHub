@@ -20,7 +20,7 @@ Each task leaves the tree green (`pnpm -r typecheck` and `pnpm -r test`).
 | 6 | [x] AsyncStorage dependency; `ActiveWorkoutStorage` interface + implementations | mobile | typecheck; **[DEVICE: rebuild]** app launches | `chore(mobile): add active-workout storage` |
 | 7 | [x] Hydrate before routes (or after the next sign-in, EF-6); debounced save; flush on background; clear on finish/discard; confirm sign-out while active. **Requires spec 0014 deployed.** | mobile | unit tests (fake timers); **[DEVICE]** AC-1…AC-7, AC-9 | `feat(workouts): keep the active workout across app restarts` |
 | 8 | [x] `ApiError` with status in `lib/http.ts`; on a permanent rejection at finish, show the reason and offer to discard (EF-5) | mobile | unit tests; **[DEVICE]** AC-8 | `feat(workouts): let a refused workout be discarded` |
-| 9 | Close the 0005 gap; glossary (`WorkoutSessionDraft`, active workout); roadmap; backlog; spec status | docs | links resolve | `docs(sdd): close spec 0010` |
+| 9 | [x] Close the 0005 gap; glossary (`WorkoutSessionDraft`, active workout); roadmap; backlog; spec status | docs | links resolve | `docs(sdd): close spec 0010` |
 
 Tasks 6 and 7 need a device rebuild; they are not verifiable in CI. If spec
 0012's native work lands first, the dependency from task 6 rides along with that
@@ -77,13 +77,15 @@ rebuild.
   workout can be discarded. Found and fixed here: "Discard workout" acted on a
   single tap; it now always confirms (with persistence, an accidental discard
   would have been just as final). Device check pending: AC-8.
+- 2026-10-16 — Task 9: 0005 gap closed, glossary, roadmap 01, backlog. Spec
+  stays `in-progress` until the owner's rebuild and device checks (AC-1…AC-9).
 
 ## Definition of done
 
 - [ ] Every functional requirement and acceptance criterion in `spec.md` is met
       or explicitly deferred with a TODO
-- [ ] `pnpm -r typecheck` and `pnpm -r test` green
-- [ ] `docs/roadmap/01-live-workout-logging.md` checklist and progress log updated
+- [x] `pnpm -r typecheck` and `pnpm -r test` green
+- [x] `docs/roadmap/01-live-workout-logging.md` checklist and progress log updated
 - [ ] `spec.md` status set to `done`; `../backlog.md` updated
-- [ ] 0005's known gap marked closed
-- [ ] Glossary updated
+- [x] 0005's known gap marked closed
+- [x] Glossary updated

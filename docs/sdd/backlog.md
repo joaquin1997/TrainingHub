@@ -10,7 +10,7 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0001](specs/0001-auth-session-hardening/spec.md) | Auth session hardening | `ready` — plan written, awaiting review | 3 — Auth & users |
 | [0002](specs/0002-apple-sign-in/spec.md) | Sign in with Apple | `draft` — blocked on open decisions | 3 — Auth & users |
 | [0003](specs/0003-session-revocation/spec.md) | Session revocation | `draft` — deferred from 0001, before distribution | 3 — Auth & users |
-| [0010](specs/0010-persist-active-workout/spec.md) | Persist the active workout | `planned` — amended 2026-09-24; tasks awaiting review | 1 — Live workout logging |
+| [0010](specs/0010-persist-active-workout/spec.md) | Persist the active workout | `in-progress` — code complete on `feat/sdd-0013-0012`; awaiting a device rebuild (new native dependency) and device checks | 1 — Live workout logging |
 | [0011](specs/0011-workout-pause/spec.md) | Pause the active workout | `planned` — tasks awaiting review | 1 — Live workout logging |
 | [0012](specs/0012-workout-live-activity/spec.md) | Live workout status on the lock screen | `planned` — spike done; amended 2026-09-24; tasks awaiting review | 8 — Integrations & platform |
 | [0013](specs/0013-progress-performed-work/spec.md) | Progress counts only performed work | `in-progress` — code complete on `feat/sdd-0013-0012`; awaiting the owner's redeploy and device checks (task 6) | 4 — Progress |
@@ -54,8 +54,8 @@ Writing these surfaced four things nobody had recorded. Status as of the
   the history is kept and loses only its link to the routine. Deleting the
   routine of the *active* workout made that workout unsaveable — closed by
   spec 0014.
-- **Active workout is in-memory only** — *specified* as 0010, which also lifts
-  the bound on spec 0001's EF-4.
+- **Active workout is in-memory only** — closed by 0010 (code complete
+  2026-10-16), which also lifts the bound on spec 0001's EF-4.
 - **Muscle-group data is sparse from wger** — blocks both muscle-group
   distribution (0006) and any muscle-based filtering (0007). The decision on
   where muscle data comes from *is* the spec.

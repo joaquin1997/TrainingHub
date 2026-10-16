@@ -1,7 +1,7 @@
 ---
 id: 0010
 title: Persist the active workout
-status: planned
+status: in-progress
 roadmap: docs/roadmap/01-live-workout-logging.md
 created: 2026-09-24
 decided: 2026-09-24

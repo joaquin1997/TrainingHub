@@ -12,6 +12,7 @@ previous performance, set types, and persist completion.
 - [x] Set types (warmup / drop / failure) — UI + persistence
 - [x] Ghosted previous/target values as input placeholders (Hevy-style): unedited
   sets still log their default; edited values switch to normal text
+- [x] Active workout survives the app being closed (spec 0010)
 - [x] Safe save (spec 0014): retries never duplicate, a deleted routine never
   blocks the save, the active workout's routine is locked from deletion
 
@@ -45,3 +46,11 @@ previous performance, set types, and persist completion.
   delete for the active workout's routine, and the detail confirms deletes.
   Needs the `add_workout_session_client_id` migration applied before the API
   redeploy.
+- (2026-10-16) Spec 0010 — the active workout is kept on the device
+  (AsyncStorage, native → rebuild) in a versioned envelope with its owner,
+  written 300 ms after each change and on leaving the foreground, restored
+  before any screen reads it (or right after sign-in when the app starts signed
+  out). A different person signing in discards it; an expired session keeps
+  it. The store is observable (`useSyncExternalStore`), an active workout opens
+  without the network, discarding and logging out with a workout in progress
+  ask first, and a workout the server refuses can be discarded.
