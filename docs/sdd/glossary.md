@@ -54,6 +54,7 @@ production.
 | **User** | An account. Identified across API boundaries by `publicId`, which is what a token's subject carries. |
 | **Dev user** | The legacy `user-development` account that unauthenticated requests currently fall back to. Transitional; being removed (spec 0001). |
 | **Settings** | Per-user preferences: display unit (`kg`/`lb`), default rest, language (ES/EN). |
+| **Measurement entry** | A dated record of body measurements (weight, body-fat %, muscle %, circumferences) owned by a user. BMI and waist-to-height are derived from the latest entries and the height, never stored (spec 0027). |
 | **Display unit** | A *presentation* preference only. Storage is always kilograms — constitution Article 4. |
 | **TokenStorage** | The interface behind which the auth token is kept (get/set/clear), so platform specifics stay isolated. |
 

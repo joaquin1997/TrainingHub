@@ -27,7 +27,7 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0024](specs/0024-warm-up-sets/spec.md) | Warm-up sets | `ready` — decided 2026-10-16: approach-set calculator + general warm-up block | 1 — Live workout logging |
 | [0025](specs/0025-apple-watch/spec.md) | The workout on the Apple Watch | `ready` — decided 2026-10-16: Level 1 (Smart Stack) now, Level 2 (watch app) next | 8 — Integrations & platform |
 | [0026](specs/0026-exercise-images/spec.md) | Exercise images | `ready` — decided 2026-10-16: free-exercise-db matched by name + own photos | 6 — Exercises |
-| [0027](specs/0027-personal-profile/spec.md) | Personal profile | `draft` — open: body weight as one value or a history | 3 — Auth & users |
+| [0027](specs/0027-personal-profile/spec.md) | Personal profile and body measurements | `ready` — decided 2026-10-16: weigh-in history + chest, waist, body-fat %, muscle %…; BMI and waist-to-height derived | 3 — Auth & users |
 | [0028](specs/0028-share-workout/spec.md) | Share a workout | `ready` | 7 — Social |
 
 Execution order agreed 2026-09-24: 0013 → 0014 → 0010 → 0011 → 0012 →
