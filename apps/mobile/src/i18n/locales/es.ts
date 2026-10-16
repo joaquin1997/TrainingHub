@@ -159,6 +159,8 @@ export const es: TranslationCatalog = {
     restHint: 'Rellena el temporizador de descanso al empezar un entrenamiento.',
     account: 'Cuenta',
     logOut: 'Cerrar sesión',
+    logOutActiveTitle: 'Entrenamiento en curso',
+    logOutActiveMessage: 'Al cerrar sesión se descarta el entrenamiento en curso y todo lo registrado en él.',
   },
   exercises: {
     loadError: 'No se han podido cargar los ejercicios.',

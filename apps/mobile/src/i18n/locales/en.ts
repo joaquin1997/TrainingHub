@@ -156,6 +156,8 @@ export const en = {
     restHint: 'Pre-fills the rest timer when you start a workout.',
     account: 'Account',
     logOut: 'Log out',
+    logOutActiveTitle: 'Workout in progress',
+    logOutActiveMessage: 'Logging out discards the workout in progress and everything logged in it.',
   },
   exercises: {
     loadError: 'Unable to load exercises.',

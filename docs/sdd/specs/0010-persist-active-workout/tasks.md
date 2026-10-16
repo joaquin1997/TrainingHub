@@ -18,7 +18,7 @@ Each task leaves the tree green (`pnpm -r typecheck` and `pnpm -r test`).
 | 4 | [x] Open an existing draft without the network; `routineId` optional (`resolveActiveWorkoutEntry`) | mobile | unit test | `feat(workouts): resume the active workout without a network round-trip` |
 | 5 | [x] Stored envelope + parse; `tokenSubject`; `AuthContext` restores the real user id; owner kept in the store; `discardActiveWorkoutIfForeign` on sign-in (FR-8) | mobile | unit tests | `feat(workouts): versioned, owner-scoped active-workout envelope` |
 | 6 | [x] AsyncStorage dependency; `ActiveWorkoutStorage` interface + implementations | mobile | typecheck; **[DEVICE: rebuild]** app launches | `chore(mobile): add active-workout storage` |
-| 7 | Hydrate before routes (or after the next sign-in, EF-6); debounced save; flush on background; clear on finish/discard; confirm sign-out while active. **Requires spec 0014 deployed.** | mobile | unit tests (fake timers); **[DEVICE]** AC-1…AC-7, AC-9 | `feat(workouts): keep the active workout across app restarts` |
+| 7 | [x] Hydrate before routes (or after the next sign-in, EF-6); debounced save; flush on background; clear on finish/discard; confirm sign-out while active. **Requires spec 0014 deployed.** | mobile | unit tests (fake timers); **[DEVICE]** AC-1…AC-7, AC-9 | `feat(workouts): keep the active workout across app restarts` |
 | 8 | `ApiError` with status in `lib/http.ts`; on a permanent rejection at finish, show the reason and offer to discard (EF-5) | mobile | unit tests; **[DEVICE]** AC-8 | `feat(workouts): let a refused workout be discarded` |
 | 9 | Close the 0005 gap; glossary (`WorkoutSessionDraft`, active workout); roadmap; backlog; spec status | docs | links resolve | `docs(sdd): close spec 0010` |
 
@@ -59,6 +59,18 @@ rebuild.
   `expo install` (SDK 55 pin; native → rebuild, batched with 0012's).
   `ActiveWorkoutStorage` interface + in-memory impl (node-testable) and the
   AsyncStorage impl in its own file. Not wired yet.
+- 2026-10-16 — Task 7: `startActiveWorkoutPersister` (300 ms debounce, reads
+  the draft at write time, one ordered queue so a late write cannot resurrect
+  a cleared workout; flush on leaving the foreground) and
+  `hydrateActiveWorkoutFromStorage` (ok → restore, foreign/invalid → remove,
+  memory wins, unreadable storage = empty); 9 tests with fake timers and
+  in-memory storage. `useActiveWorkoutPersistence` in `RootNavigator`: the
+  spinner covers the app while restoring at launch; after a sign-in the auth
+  screen stays mounted and the redirect waits for the restore (EF-6), so the
+  navigator is never unmounted under a pending `router.replace`. Log-out with
+  a workout in progress asks first (new `confirmAction`, which falls back to
+  the browser's confirm on web where `Alert` is a no-op). Device checks
+  pending: AC-1…AC-7, AC-9.
 
 ## Definition of done
 

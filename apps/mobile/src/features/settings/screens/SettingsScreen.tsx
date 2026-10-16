@@ -3,6 +3,11 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/AuthContext';
 import { useSettings } from '@/features/settings/SettingsContext';
+import {
+  clearActiveWorkout,
+  hasActiveWorkout,
+} from '@/features/workouts/state/workoutDraftStore';
+import { confirmAction } from '@/lib/confirmAction';
 import { formatDuration } from '@/lib/format';
 import { Button } from '@/ui/Button';
 import { colors, commonStyles, radii, spacing } from '@/ui/theme';
@@ -16,6 +21,26 @@ export function SettingsScreen() {
   const { t } = useTranslation();
   const { settings, update } = useSettings();
   const { user, signOut } = useAuth();
+
+  // An explicit log-out ends the workout in progress, after asking (spec 0010
+  // FR-5); an expired session does not (FR-7).
+  const handleLogOut = async () => {
+    if (hasActiveWorkout()) {
+      const confirmed = await confirmAction({
+        title: t('settings.logOutActiveTitle'),
+        message: t('settings.logOutActiveMessage'),
+        confirmLabel: t('settings.logOut'),
+        cancelLabel: t('common.cancel'),
+        destructive: true,
+      });
+      if (!confirmed) {
+        return;
+      }
+      clearActiveWorkout();
+    }
+
+    await signOut();
+  };
 
   const changeRest = (delta: number) =>
     update({
@@ -112,7 +137,7 @@ export function SettingsScreen() {
         <Button
           label={t('settings.logOut')}
           variant="danger"
-          onPress={() => void signOut()}
+          onPress={() => void handleLogOut()}
           fullWidth
         />
       </View>

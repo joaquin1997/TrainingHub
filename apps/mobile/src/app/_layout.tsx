@@ -6,30 +6,36 @@ import { ActivityIndicator, View } from 'react-native';
 
 import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
 import { SettingsProvider } from '@/features/settings/SettingsContext';
+import { useActiveWorkoutPersistence } from '@/features/workouts/persistence/useActiveWorkoutPersistence';
 import { I18nProvider } from '@/i18n/I18nProvider';
 import { colors, screenHeader } from '@/ui/theme';
 
 function RootNavigator() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
+  // The stored workout is restored before any screen can read it (spec 0010).
+  const isRestoringWorkout = useActiveWorkoutPersistence(user?.id ?? null);
   const segments = useSegments();
   const router = useRouter();
   const { t } = useTranslation();
 
+  const inAuthGroup = segments[0] === 'auth';
+
   useEffect(() => {
-    if (isLoading) {
+    // Wait for the stored workout too: after sign-in the app only leaves the
+    // auth screen once it is restored (spec 0010 EF-6).
+    if (isLoading || isRestoringWorkout) {
       return;
     }
-
-    const inAuthGroup = segments[0] === 'auth';
 
     if (!isAuthenticated && !inAuthGroup) {
       router.replace('/auth');
     } else if (isAuthenticated && inAuthGroup) {
       router.replace('/routines');
     }
-  }, [isAuthenticated, isLoading, segments, router]);
+  }, [inAuthGroup, isAuthenticated, isLoading, isRestoringWorkout, router]);
 
-  if (isLoading) {
+  // On the auth screen the navigator stays mounted while the workout restores.
+  if (isLoading || (isRestoringWorkout && !inAuthGroup)) {
     return (
       <View
         style={{
