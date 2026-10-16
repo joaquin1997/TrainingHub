@@ -1,7 +1,8 @@
 ---
 id: 0026
 title: Exercise images
-status: draft
+status: ready
+decided: 2026-10-16
 roadmap: docs/roadmap/06-exercises-advanced.md
 created: 2026-10-16
 ---
@@ -73,11 +74,10 @@ a person-supplied image (stored with their owner's data).
 
 ## Open decisions
 
-- **[NEEDS DECISION: where do catalog images come from — (a) an open dataset
-  with photos (e.g. the public-domain "free-exercise-db", ~800 exercises),
-  matched to the current catalog by name; (b) only wger, as today; (c) only
-  photos the person adds; (d) a paid exercise API?]** (a) is free and broad but
-  needs a matching pass and some manual review.
+None. Decided by the owner 2026-10-16: **an open dataset with photos
+(public-domain "free-exercise-db") matched to the catalog by name and reviewed
+by hand, plus photos the person adds to custom exercises.** wger images stay
+where they exist.
 
 ## Related
 

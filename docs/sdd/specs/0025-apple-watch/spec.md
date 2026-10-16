@@ -1,7 +1,8 @@
 ---
 id: 0025
 title: The workout on the Apple Watch
-status: draft
+status: ready
+decided: 2026-10-16
 roadmap: docs/roadmap/08-integrations-and-platform.md
 created: 2026-10-16
 ---
@@ -104,9 +105,8 @@ record is written (the existing `HealthSyncRecord` metadata).
 
 ## Open decisions
 
-- **[NEEDS DECISION: Level 1 only, or Level 1 now and Level 2 next?]** Level 1
-  is days; Level 2 is the largest piece of work in the backlog and the only
-  way to make the calories match the watch and to add heart rate.
+None. Decided by the owner 2026-10-16: **Level 1 now, Level 2 next** — plan
+and tasks deliver Level 1 first as its own shippable slice; Level 2 follows.
 
 ## Related
 

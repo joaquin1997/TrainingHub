@@ -1,7 +1,8 @@
 ---
 id: 0022
 title: Unilateral exercises (left / right)
-status: draft
+status: ready
+decided: 2026-10-16
 roadmap: docs/roadmap/01-live-workout-logging.md
 created: 2026-10-16
 ---
@@ -34,13 +35,13 @@ side.
 - Volume and records counting both sides.
 
 ### Out of scope
-- Different weights per side within one set — see open decision.
+- Different weights per side within one set — same weight for both sides; follow-up if needed.
 
 ## Functional requirements
 
 - **FR-1.** An exercise MAY be marked unilateral.
-- **FR-2.** Sets of a unilateral exercise MUST record left and right
-  separately.
+- **FR-2.** Each set of a unilateral exercise MUST show left and right side by
+  side in one row and record them separately.
 - **FR-3.** Training volume MUST count both sides.
 - **FR-4.** "Last time" placeholders MUST be per side.
 
@@ -51,7 +52,7 @@ side.
 ## Domain impact
 
 New glossary term **unilateral exercise** on **Exercise**; **WorkoutSet** gains
-a side, or per-side values (open decision). Migration.
+per-side values (left and right in the same set). Migration.
 
 ## Acceptance criteria
 
@@ -64,10 +65,8 @@ a side, or per-side values (open decision). Migration.
 
 ## Open decisions
 
-- **[NEEDS DECISION: how is a unilateral set logged — (a) one row per side
-  (a set becomes two rows, L and R), or (b) one row with left and right
-  values side by side?]** (a) fits the current data shape; (b) reads better on
-  screen.
+None. Decided by the owner 2026-10-16: **one row per set with left and right
+values side by side.**
 
 ## Related
 

@@ -28,6 +28,7 @@ production.
 | **Rest timer** | The countdown after a set is marked done. Belongs to the active workout, so it survives leaving the screen and restarting the app, and alerts when it ends (spec 0018). | Pause, which stops the workout clock |
 | **Workout bar** | The strip shown on every screen while a workout is in progress, leading back to it (spec 0019). | — |
 | **Tracking type** | What an exercise's sets record: weight & reps, reps only, time, weight & time, or distance & time (spec 0021). | Set type (warm-up, drop, failure) |
+| **Warm-up block** | A checklist of non-lifting warm-up items (mobility, cardio, activation) at the start of a routine; ticked in the workout, never counted as sets, volume or records (spec 0024). | Warm-up set |
 | **Unilateral exercise** | An exercise done one side at a time, logged per side (spec 0022). | — |
 
 ## Progress

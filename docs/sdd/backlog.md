@@ -22,11 +22,11 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0019](specs/0019-workout-always-at-hand/spec.md) | The workout in progress is always at hand | `ready` — workout bar, "finish and start another", keyboard over notes | 1 — Live workout logging |
 | [0020](specs/0020-custom-and-replace-exercise/spec.md) | Create and replace exercises where they are needed | `ready` | 6 — Exercises |
 | [0021](specs/0021-timed-and-distance-sets/spec.md) | Timed and distance sets | `ready` | 1 — Live workout logging |
-| [0022](specs/0022-unilateral-exercises/spec.md) | Unilateral exercises (left / right) | `draft` — open: one row per side or L/R in one row | 1 — Live workout logging |
+| [0022](specs/0022-unilateral-exercises/spec.md) | Unilateral exercises (left / right) | `ready` — decided 2026-10-16: L/R side by side in one row | 1 — Live workout logging |
 | [0023](specs/0023-records-by-type/spec.md) | Personal records by type | `ready` | 4 — Progress |
-| [0024](specs/0024-warm-up-sets/spec.md) | Warm-up sets | `draft` — open: approach-set calculator only, or also a general warm-up block | 1 — Live workout logging |
-| [0025](specs/0025-apple-watch/spec.md) | The workout on the Apple Watch | `draft` — open: Smart Stack status only, or also a watch app | 8 — Integrations & platform |
-| [0026](specs/0026-exercise-images/spec.md) | Exercise images | `draft` — open: image source | 6 — Exercises |
+| [0024](specs/0024-warm-up-sets/spec.md) | Warm-up sets | `ready` — decided 2026-10-16: approach-set calculator + general warm-up block | 1 — Live workout logging |
+| [0025](specs/0025-apple-watch/spec.md) | The workout on the Apple Watch | `ready` — decided 2026-10-16: Level 1 (Smart Stack) now, Level 2 (watch app) next | 8 — Integrations & platform |
+| [0026](specs/0026-exercise-images/spec.md) | Exercise images | `ready` — decided 2026-10-16: free-exercise-db matched by name + own photos | 6 — Exercises |
 | [0027](specs/0027-personal-profile/spec.md) | Personal profile | `draft` — open: body weight as one value or a history | 3 — Auth & users |
 | [0028](specs/0028-share-workout/spec.md) | Share a workout | `ready` | 7 — Social |
 

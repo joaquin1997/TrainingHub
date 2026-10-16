@@ -1,7 +1,8 @@
 ---
 id: 0024
 title: Warm-up sets
-status: draft
+status: ready
+decided: 2026-10-16
 roadmap: docs/roadmap/01-live-workout-logging.md
 created: 2026-10-16
 ---
@@ -32,10 +33,12 @@ mid-session is friction.
 - Generating approach (warm-up) sets for an exercise from its first working
   set's weight, in the active workout and in the routine editor.
 - Rounding to loadable weights.
+- A general **warm-up block** at the start of a routine: mobility, cardio or
+  activation items (e.g. "5 min bike", "band pull-aparts × 15") that are
+  ticked off, not logged as lifting.
 
 ### Out of scope
 - Plate calculator (which plates to load) — follow-up.
-- A general warm-up block — depends on the open decision.
 
 ## Functional requirements
 
@@ -47,6 +50,12 @@ mid-session is friction.
   person's unit and never be below the empty bar.
 - **FR-4.** The person MUST be able to edit or remove generated sets like any
   other.
+- **FR-5.** A routine MAY have a warm-up block: an ordered list of items, each
+  a name and an optional time or reps target.
+- **FR-6.** In the active workout the warm-up block MUST appear first, as a
+  checklist; ticking items MUST NOT start the rest timer, count toward volume,
+  records or the sets-done progress.
+- **FR-7.** A saved workout MUST record which warm-up items were done.
 
 ## Behaviour when things go wrong
 
@@ -58,7 +67,9 @@ mid-session is friction.
 ## Domain impact
 
 Creates **warm-up sets** — no new concept. Rounding works in the **display
-unit** and stores kg (Article 4).
+unit** and stores kg (Article 4). New concept **warm-up block** on **Routine**
+(template) and its done items on **WorkoutSession** (performed) — separate,
+per Article 2. Migration.
 
 ## Acceptance criteria
 
@@ -66,6 +77,9 @@ unit** and stores kg (Article 4).
   are added, then they appear before it, typed warm-up, ascending, all below
   140 kg and multiples of 2.5 kg.
 - **AC-2.** Given lb, the same yields multiples of 5 lb.
+- **AC-3.** Given a routine with a warm-up block "5 min bike, 15 band
+  pull-aparts", when the workout starts, then both appear first as a checklist,
+  and ticking them changes neither the sets-done count nor the volume.
 
 ## Assumptions
 
@@ -75,10 +89,8 @@ unit** and stores kg (Article 4).
 
 ## Open decisions
 
-- **[NEEDS DECISION: does "warm-up section" mean (a) only the approach-set
-  calculator above, or also (b) a general warm-up block at the start of a
-  routine (mobility, cardio, activation exercises) that is not logged as
-  lifting?]** (b) is a separate, larger feature.
+None. Decided by the owner 2026-10-16: **both** — the approach-set calculator
+and a general warm-up block. Plan them as two slices (calculator first).
 
 ## Related
 
