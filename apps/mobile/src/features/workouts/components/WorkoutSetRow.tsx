@@ -85,6 +85,14 @@ export function previousSetLabel(
   return parts.map((part) => part ?? '–').join(fields.includes('reps') ? '×' : '·');
 }
 
+/**
+ * Two fields plus the timer do not fit the usual columns on a phone: the
+ * previous column narrows, the time column widens and the figures shrink.
+ */
+function isCompact(fields: readonly SetValueField[]) {
+  return fields.length > 1 && fields.includes('duration');
+}
+
 function columnLabel(field: SetValueField, unit: WeightUnit, t: TFunction) {
   switch (field) {
     case 'weight':
@@ -103,17 +111,26 @@ type HeaderProps = { trackingType?: ExerciseTrackingType; unit: WeightUnit };
 /** Column labels above an exercise's sets, for its tracking type (spec 0021 FR-3). */
 export function WorkoutSetHeader({ trackingType, unit }: HeaderProps) {
   const { t } = useTranslation();
+  const fields = trackingFields(trackingType);
+  const compact = isCompact(fields);
 
   return (
     <View style={styles.headerRow}>
       <Text style={[styles.colSet, styles.colLabel]}>{t('workouts.colSet')}</Text>
-      <Text style={[styles.colPrev, styles.colLabel]}>{t('workouts.colPrev')}</Text>
-      {trackingFields(trackingType).map((field) => (
+      <Text
+        numberOfLines={1}
+        style={[styles.colPrev, compact ? styles.colPrevCompact : null, styles.colLabel]}
+      >
+        {t('workouts.colPrev')}
+      </Text>
+      {fields.map((field) => (
         <Text
           key={field}
+          numberOfLines={1}
           style={[
             styles.colInput,
             field === 'duration' ? styles.colTimeLabel : null,
+            field === 'duration' && compact ? styles.colTimeWide : null,
             styles.colLabel,
             styles.colCentered,
           ]}
@@ -156,6 +173,8 @@ export function WorkoutSetRow({
   const { t } = useTranslation();
   const timer = useSetTimer((seconds) => onChange('duration', formatDuration(seconds)));
   const typed = set.type === 'warmup' || set.type === 'drop';
+  const fields = trackingFields(trackingType);
+  const compact = isCompact(fields);
 
   const startOrStopTimer = () => {
     if (timer.isRunning) {
@@ -176,7 +195,12 @@ export function WorkoutSetRow({
   };
 
   const renderInput = (field: SetValueField) => {
-    const inputStyle = [styles.cellInput, styles.colInput, set.done ? styles.cellInputDone : null];
+    const inputStyle = [
+      styles.cellInput,
+      compact ? styles.cellInputCompact : null,
+      styles.colInput,
+      set.done ? styles.cellInputDone : null,
+    ];
 
     switch (field) {
       case 'weight':
@@ -209,7 +233,7 @@ export function WorkoutSetRow({
             key={field}
             keyboardType="decimal-pad"
             value={set.distance ?? ''}
-            placeholder={set.distancePlaceholder ?? '–'}
+            placeholder={set.distancePlaceholder ?? 'm'}
             placeholderTextColor={colors.textSubtle}
             onChangeText={(value) => onChange(DRAFT_FIELD[field], value)}
             style={inputStyle}
@@ -217,7 +241,10 @@ export function WorkoutSetRow({
         );
       case 'duration':
         return (
-          <View key={field} style={[styles.colInput, styles.timeCell]}>
+          <View
+            key={field}
+            style={[styles.colInput, compact ? styles.colTimeWide : null, styles.timeCell]}
+          >
             <TextInput
               keyboardType="numbers-and-punctuation"
               editable={!timer.isRunning}
@@ -228,6 +255,7 @@ export function WorkoutSetRow({
               onBlur={normaliseDuration}
               style={[
                 styles.cellInput,
+                compact ? styles.cellInputCompact : null,
                 styles.timeInput,
                 set.done ? styles.cellInputDone : null,
                 timer.isRunning ? styles.timeInputRunning : null,
@@ -274,10 +302,13 @@ export function WorkoutSetRow({
           {set.type === 'normal' ? set.order : setTypeLabel(set.type, t)[0]}
         </Text>
       </Pressable>
-      <Text numberOfLines={1} style={[styles.colPrev, styles.prevText]}>
+      <Text
+        numberOfLines={1}
+        style={[styles.colPrev, compact ? styles.colPrevCompact : null, styles.prevText]}
+      >
         {previousLabel}
       </Text>
-      {trackingFields(trackingType).map(renderInput)}
+      {fields.map(renderInput)}
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: set.done }}
@@ -320,10 +351,16 @@ const styles = StyleSheet.create({
   colPrev: {
     width: 64,
   },
+  colPrevCompact: {
+    width: 48,
+  },
   colInput: {
     flex: 1,
     flexBasis: 0,
     minWidth: 0,
+  },
+  colTimeWide: {
+    flex: 1.5,
   },
   // The time column also holds the timer button; centre its label on the input.
   colTimeLabel: {
@@ -395,6 +432,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontVariant: ['tabular-nums'],
     paddingVertical: 6,
+  },
+  cellInputCompact: {
+    fontSize: 16,
+    paddingHorizontal: 0,
   },
   cellInputDone: {
     backgroundColor: 'transparent',
