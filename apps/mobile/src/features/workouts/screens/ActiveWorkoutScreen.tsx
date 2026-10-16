@@ -17,6 +17,7 @@ import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { ExercisePickerModal } from '@/features/exercises/components/ExercisePickerModal';
 import { RestBar } from '@/features/workouts/components/RestBar';
 import { RestEditorSheet } from '@/features/workouts/components/RestEditorSheet';
+import { nextSetToDo } from '@/features/workouts/restTimer/nextSetToDo';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { useActiveEnergyKcal } from '@/features/workouts/hooks/useActiveEnergyKcal';
@@ -68,6 +69,7 @@ import {
   toggleWorkoutSetDone,
   toWorkoutSessionSkeleton,
   updateWorkoutSetDraft,
+  type RunningRest,
   type WorkoutSessionDraft,
 } from '@/features/workouts/state/workoutDraftStore';
 
@@ -119,7 +121,12 @@ export function ActiveWorkoutScreen() {
   const finishRef = useRef<(() => Promise<boolean>) | null>(null);
   const switchRef = useRef<((nextId: string) => Promise<void>) | null>(null);
   const scrollRef = useRef<ScrollView>(null);
+  // For bringing the next set into view when a rest ends (spec 0018 FR-5).
+  const contentRef = useRef<View>(null);
+  const setRowRefs = useRef(new Map<string, View>());
+  const viewportHeightRef = useRef(0);
   const workoutDraft = useActiveWorkout();
+  const lastRestRef = useRef<RunningRest | undefined>(workoutDraft?.rest);
   // An active workout already on the device opens immediately, offline too.
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(() =>
     resolveActiveWorkoutEntry(getActiveWorkout(), routineId) === 'resume'
@@ -277,6 +284,42 @@ export function ActiveWorkoutScreen() {
       active = false;
     };
   }, [exerciseIdsKey]);
+
+  // A rest that ended or was skipped while this screen is open brings the
+  // next set to do to about a third of the screen (FR-5). A new rest replacing
+  // a running one, a finish or a discard do not scroll.
+  useEffect(() => {
+    const previous = lastRestRef.current;
+    lastRestRef.current = workoutDraft?.rest;
+    if (!previous || !workoutDraft || workoutDraft.rest) {
+      return;
+    }
+
+    const target = nextSetToDo(workoutDraft, previous.workoutExerciseId);
+    if (!target) {
+      return;
+    }
+
+    // After the frame that removes the rest bar, so the viewport is final.
+    requestAnimationFrame(() => {
+      const row = setRowRefs.current.get(target.workoutSetId);
+      const content = contentRef.current;
+      if (!row || !content) {
+        return;
+      }
+
+      row.measureLayout(
+        content,
+        (_x, y) => {
+          scrollRef.current?.scrollTo({
+            y: Math.max(0, y - viewportHeightRef.current / 3),
+            animated: true,
+          });
+        },
+        () => {},
+      );
+    });
+  }, [workoutDraft]);
 
   if (status === 'loading') {
     return (
@@ -605,7 +648,17 @@ export function ActiveWorkoutScreen() {
             <View style={styles.colRemove} />
           </View>
           {exercise.entries.map((set) => (
-            <View key={set.id} style={[styles.setRow, set.done ? styles.setRowDone : null]}>
+            <View
+              key={set.id}
+              ref={(node) => {
+                if (node) {
+                  setRowRefs.current.set(set.id, node);
+                } else {
+                  setRowRefs.current.delete(set.id);
+                }
+              }}
+              style={[styles.setRow, set.done ? styles.setRowDone : null]}
+            >
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={setTypeLabel(set.type, t)}
@@ -701,6 +754,9 @@ export function ActiveWorkoutScreen() {
         ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={styles.container}
+        onLayout={(event) => {
+          viewportHeightRef.current = event.nativeEvent.layout.height;
+        }}
         // The field being typed in stays above the keyboard (spec 0019 FR-6):
         // iOS insets the list by the keyboard and scrolls the field into view.
         automaticallyAdjustKeyboardInsets
@@ -708,116 +764,118 @@ export function ActiveWorkoutScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
-        <View style={styles.headerCard}>
-          <View style={styles.liveRow}>
-            <View style={[styles.liveDot, isPaused ? styles.liveDotPaused : null]} />
-            <Text style={styles.sectionLabel}>
-              {isPaused ? t('workouts.paused') : t('routines.activeLabel')}
-            </Text>
-          </View>
-          <Text style={styles.routineName}>{workoutDraft.routineName}</Text>
-          <View style={styles.clockRow}>
-            <Text style={[styles.clock, isPaused ? styles.clockPaused : null]}>
-              {formatDuration(elapsedSeconds)}
-            </Text>
-            <Button
-              label={isPaused ? t('workouts.resume') : t('workouts.pause')}
-              icon={isPaused ? 'play' : 'pause'}
-              variant="secondary"
-              onPress={handleTogglePause}
-            />
-          </View>
-          {activeKcal !== null ? (
-            <View style={styles.energyRow}>
-              <Ionicons name="flame-outline" size={16} color={colors.textMuted} />
-              <Text style={styles.energyValue}>{Math.round(activeKcal)}</Text>
-              <Text style={styles.energyUnit}>{t('workouts.kcalActive')}</Text>
+        <View ref={contentRef} collapsable={false} style={styles.content}>
+          <View style={styles.headerCard}>
+            <View style={styles.liveRow}>
+              <View style={[styles.liveDot, isPaused ? styles.liveDotPaused : null]} />
+              <Text style={styles.sectionLabel}>
+                {isPaused ? t('workouts.paused') : t('routines.activeLabel')}
+              </Text>
             </View>
-          ) : null}
-          <View style={styles.progressRow}>
-            <Text style={styles.meta}>{t('workouts.setsDoneShort')}</Text>
-            <Text style={styles.progressCount}>
-              {t('workouts.setsCountOf', { done: setProgress.done, total: setProgress.total })}
-            </Text>
+            <Text style={styles.routineName}>{workoutDraft.routineName}</Text>
+            <View style={styles.clockRow}>
+              <Text style={[styles.clock, isPaused ? styles.clockPaused : null]}>
+                {formatDuration(elapsedSeconds)}
+              </Text>
+              <Button
+                label={isPaused ? t('workouts.resume') : t('workouts.pause')}
+                icon={isPaused ? 'play' : 'pause'}
+                variant="secondary"
+                onPress={handleTogglePause}
+              />
+            </View>
+            {activeKcal !== null ? (
+              <View style={styles.energyRow}>
+                <Ionicons name="flame-outline" size={16} color={colors.textMuted} />
+                <Text style={styles.energyValue}>{Math.round(activeKcal)}</Text>
+                <Text style={styles.energyUnit}>{t('workouts.kcalActive')}</Text>
+              </View>
+            ) : null}
+            <View style={styles.progressRow}>
+              <Text style={styles.meta}>{t('workouts.setsDoneShort')}</Text>
+              <Text style={styles.progressCount}>
+                {t('workouts.setsCountOf', { done: setProgress.done, total: setProgress.total })}
+              </Text>
+            </View>
+            <View style={styles.progressTrack}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${setProgress.total > 0 ? Math.round((setProgress.done / setProgress.total) * 100) : 0}%`,
+                  },
+                ]}
+              />
+            </View>
+            <Text style={styles.hint}>{t('workouts.autosaveHint')}</Text>
           </View>
-          <View style={styles.progressTrack}>
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  width: `${setProgress.total > 0 ? Math.round((setProgress.done / setProgress.total) * 100) : 0}%`,
-                },
-              ]}
-            />
-          </View>
-          <Text style={styles.hint}>{t('workouts.autosaveHint')}</Text>
-        </View>
-        {blocks.map((members) => {
-          const first = blockLabels[members[0] ?? 0];
-          const key = workoutDraft.exercises[members[0] ?? 0]?.id ?? String(members[0]);
-          if (members.length === 1 || !first?.supersetIndex) {
+          {blocks.map((members) => {
+            const first = blockLabels[members[0] ?? 0];
+            const key = workoutDraft.exercises[members[0] ?? 0]?.id ?? String(members[0]);
+            if (members.length === 1 || !first?.supersetIndex) {
+              return (
+                <View key={key} style={styles.card}>
+                  {members.map((index) => renderExercise(index, false))}
+                </View>
+              );
+            }
             return (
               <View key={key} style={styles.card}>
-                {members.map((index) => renderExercise(index, false))}
-              </View>
-            );
-          }
-          return (
-            <View key={key} style={styles.card}>
-              <Chip
-                icon="flash"
-                label={t('routineDetail.superset', { group: first.supersetIndex })}
-                size="sm"
-              />
-              <View style={styles.supersetBody}>
-                <View style={styles.rail} />
-                <View style={styles.supersetMembers}>
-                  {members.map((index) => renderExercise(index, true))}
+                <Chip
+                  icon="flash"
+                  label={t('routineDetail.superset', { group: first.supersetIndex })}
+                  size="sm"
+                />
+                <View style={styles.supersetBody}>
+                  <View style={styles.rail} />
+                  <View style={styles.supersetMembers}>
+                    {members.map((index) => renderExercise(index, true))}
+                  </View>
                 </View>
               </View>
-            </View>
-          );
-        })}
-        <Button
-          label={t('workouts.addExercise')}
-          icon="add-circle-outline"
-          variant="secondary"
-          onPress={() => setIsPickerVisible(true)}
-          fullWidth
-        />
-        <ExercisePickerModal
-          visible={isPickerVisible}
-          onClose={() => setIsPickerVisible(false)}
-          onSelect={handleAddExercise}
-        />
-        <TextInput
-          value={workoutDraft.notes ?? ''}
-          onChangeText={handleNotesChange}
-          placeholder={t('workouts.notesPlaceholder')}
-          placeholderTextColor={colors.textSubtle}
-          style={styles.notesInput}
-          multiline
-        />
-        {finishError ? <Text style={styles.errorText}>{finishError}</Text> : null}
-        {finishRefused ? (
-          <Text style={styles.meta}>{t('workouts.saveRefusedHint')}</Text>
-        ) : null}
-        <Button
-          label={isFinishing ? t('workouts.savingWorkout') : t('workouts.finishWorkout')}
-          icon="flag"
-          onPress={() => void finishWorkout()}
-          disabled={isFinishing}
-          fullWidth
-        />
-        <Button
-          label={t('workouts.discardWorkout')}
-          icon="close-circle-outline"
-          variant="ghost"
-          destructive
-          onPress={() => void handleDiscard()}
-          disabled={isFinishing}
-          style={styles.centered}
-        />
+            );
+          })}
+          <Button
+            label={t('workouts.addExercise')}
+            icon="add-circle-outline"
+            variant="secondary"
+            onPress={() => setIsPickerVisible(true)}
+            fullWidth
+          />
+          <ExercisePickerModal
+            visible={isPickerVisible}
+            onClose={() => setIsPickerVisible(false)}
+            onSelect={handleAddExercise}
+          />
+          <TextInput
+            value={workoutDraft.notes ?? ''}
+            onChangeText={handleNotesChange}
+            placeholder={t('workouts.notesPlaceholder')}
+            placeholderTextColor={colors.textSubtle}
+            style={styles.notesInput}
+            multiline
+          />
+          {finishError ? <Text style={styles.errorText}>{finishError}</Text> : null}
+          {finishRefused ? (
+            <Text style={styles.meta}>{t('workouts.saveRefusedHint')}</Text>
+          ) : null}
+          <Button
+            label={isFinishing ? t('workouts.savingWorkout') : t('workouts.finishWorkout')}
+            icon="flag"
+            onPress={() => void finishWorkout()}
+            disabled={isFinishing}
+            fullWidth
+          />
+          <Button
+            label={t('workouts.discardWorkout')}
+            icon="close-circle-outline"
+            variant="ghost"
+            destructive
+            onPress={() => void handleDiscard()}
+            disabled={isFinishing}
+            style={styles.centered}
+          />
+        </View>
       </ScrollView>
       {workoutDraft.rest ? (
         <RestBar
@@ -863,6 +921,9 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flex: 1,
+  },
+  content: {
+    gap: spacing.lg,
   },
   container: {
     ...commonStyles.scrollContent,
