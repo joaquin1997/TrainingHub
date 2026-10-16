@@ -262,7 +262,7 @@ export const es: TranslationCatalog = {
     recordLine: '{{weight}} {{unit}}{{reps}} - {{date}}',
     sessionBest:
       'Mejor: {{bestWeight}} {{unit}} x {{bestReps}} - Volumen {{volume}} {{unit}} - 1RM {{oneRepMax}}',
-    volumeByMuscleGroup: 'Volumen por grupo muscular',
+    volumeByCategory: 'Volumen por categoría',
     freqWeekStreak: 'Racha semanal',
     freqWorkouts: 'Entrenamientos',
     freqActiveWeeks: 'Semanas activas',

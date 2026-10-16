@@ -26,7 +26,7 @@ be deployed at any point after task 5.
 | 6 | Redeploy the API; check progress and "last time" on the phone | ops | **[DEPLOY]** `/health` ok; **[DEVICE]** AC-1, AC-2, AC-3, AC-5 | — (no commit) |
 | 7 | [x] `isPerformedSet` (mobile, with `completedAt` fallback); history volume and detail ✓/○, totals use it | mobile | unit test (`performedSet.test.ts`); **[DEVICE]** AC-4 | `fix(workouts): history treats legacy sessions as performed` |
 | 8 | [x] Post-workout summary renders the saved values from the skeleton, formatted in the session unit | mobile | unit test for the skeleton values if missing; **[DEVICE]** AC-6 | `fix(workouts): summary shows the values that were saved` |
-| 9 | Rename `progress.volumeByMuscleGroup` → `volumeByCategory` (en/es) | mobile | typecheck (catalog shape); **[DEVICE]** AC-7 in ES and EN | `fix(progress): label the volume distribution by category` |
+| 9 | [x] Rename `progress.volumeByMuscleGroup` → `volumeByCategory` (en/es) | mobile | typecheck (catalog shape); **[DEVICE]** AC-7 in ES and EN | `fix(progress): label the volume distribution by category` |
 | 10 | Roadmap 04 (with the "figures drop on purpose" note), retro 0006, backlog; spec status `done` | docs | links resolve | `docs(sdd): close spec 0013` |
 
 Tasks 6–9 need a redeploy or the phone for their acceptance checks. The mobile
@@ -73,6 +73,8 @@ tasks need only a Metro reload, not a native rebuild.
   Found, not fixed (pre-existing, out of scope): saving rounds kg to one
   decimal, so 100 lb is stored as 45.4 kg and reads back as 100.1 lb in the
   summary, history and detail. Logged in `../../backlog.md` follow-ups.
+- 2026-10-16 — Task 9: key renamed to `progress.volumeByCategory` ("Volume by
+  category" / "Volumen por categoría"); typecheck guards the catalog shape.
 
 ## Definition of done
 

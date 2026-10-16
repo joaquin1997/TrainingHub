@@ -259,7 +259,7 @@ export const en = {
     recordLine: '{{weight}} {{unit}}{{reps}} - {{date}}',
     sessionBest:
       'Best: {{bestWeight}} {{unit}} x {{bestReps}} - Volume {{volume}} {{unit}} - 1RM {{oneRepMax}}',
-    volumeByMuscleGroup: 'Volume by muscle group',
+    volumeByCategory: 'Volume by category',
     freqWeekStreak: 'Week streak',
     freqWorkouts: 'Workouts',
     freqActiveWeeks: 'Active weeks',
