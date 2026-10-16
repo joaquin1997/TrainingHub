@@ -13,7 +13,7 @@ Each task leaves the tree green (`pnpm -r typecheck` and `pnpm -r test`).
 | # | Task | Area | Verify | Commit message |
 |---|---|---|---|---|
 | 1 | [x] Plan and tasks | docs | links resolve | `docs(sdd): plan and tasks for 0026` |
-| 2 | [ ] `CreateExerciseInput` moved to `packages/domain`; API and mobile import it | domain, api, mobile | typecheck + tests | `refactor(exercises): share the create exercise contract` |
+| 2 | [x] `CreateExerciseInput` moved to `packages/domain`; API and mobile import it | domain, api, mobile | typecheck + tests | `refactor(exercises): share the create exercise contract` |
 | 3 | [ ] `ExercisePhoto` model + migration; `PUT/GET/DELETE /exercises/:id/photo`; `imageUrl` from photo | api, data | API tests; `migrate deploy` on PGlite | `feat(exercises): photos for custom exercises` |
 | 4 | [ ] Matching script, matcher tests, alias file, npm scripts | api | unit tests; run on PGlite | `feat(exercises): match catalog images from free-exercise-db` |
 | 5 | [ ] `expo-image-picker` pinned + `app.json`; `resolveImageSource`; `exercisesClient` upload; `ExerciseThumb`/detail fallback on error | mobile | unit tests | `feat(exercises): load images with auth and fall back to the tile` |

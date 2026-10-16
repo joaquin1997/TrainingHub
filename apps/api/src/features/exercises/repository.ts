@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import type { Exercise, MuscleGroup } from '@workout/domain';
+import type { CreateExerciseInput, Exercise, MuscleGroup } from '@workout/domain';
 
 import { prisma } from '../../infrastructure/prisma.js';
 
@@ -30,12 +30,6 @@ const exerciseInclude = {
 type ExerciseRecord = Prisma.ExerciseGetPayload<{
   include: typeof exerciseInclude;
 }>;
-
-type CreateExerciseInput = {
-  name: string;
-  primaryMuscleGroupIds: string[];
-  secondaryMuscleGroupIds: string[];
-};
 
 export class InvalidMuscleGroupSelectionError extends Error {
   constructor(message = 'Invalid muscle group selection') {
