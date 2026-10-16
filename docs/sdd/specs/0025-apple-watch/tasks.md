@@ -19,7 +19,7 @@ follows in separate commits; its JS reaches native code through
 | **L1** | | | | |
 | 2 | [x] `supplementalActivityFamilies([.small])` behind `if #available(iOS 18.0, *)`; `FamilyAwareView` → `WatchSmallView` (routine, paused, clock, rest countdown, kcal when known; no buttons) | ios (**native — rebuild**) | `swiftc -typecheck` of the extension at iOS 17.0 against the iOS 26.5 simulator SDK; Swift-copies test unchanged; **[DEVICE]** AC-1 | `feat(ios): the Live Activity on the Apple Watch Smart Stack` |
 | **L2** | | | | |
-| 3 | [ ] `WatchWorkoutSnapshot`, `WatchWorkoutEvent`, `WatchWorkoutBridge` in `packages/domain/src/health.ts` | domain | `pnpm -r typecheck` | `feat(domain): watch workout contract` |
+| 3 | [x] `WatchWorkoutSnapshot`, `WatchWorkoutEvent`, `WatchWorkoutBridge` in `packages/domain/src/health.ts` | domain | `pnpm -r typecheck` | `feat(domain): watch workout contract` |
 | 4 | [ ] `completeSet` in `workoutDraftStore.ts` (done + rest from an instant; no-op when done or unknown) used by `handleToggleDone`; `watch/watchProtocol.ts`: `currentSetToDo`, `toWatchSnapshot`, `parseWatchEvent`, `applyWatchEvent` + tests | mobile | unit tests: tick → done + rest from the tick's instant (AC-3), replay is a no-op (EF-1), events for another workout dropped, unknown/malformed JSON ignored, target text in the session unit (Art. 4), superset order | `feat(workouts): apply watch requests to the active workout` |
 | 5 | [ ] `watch/watchWorkoutController.ts` (start / update / end finished-or-discarded; events → store; kcal and finish callbacks) + tests with a fake bridge | mobile | controller tests: start once per workout (FR-2), update only on snapshot change, end `finished` vs `discarded`, ordered apply of queued ticks (EF-1), kcal callback only for the current workout | `feat(workouts): mirror the active workout to a watch` |
 | 6 | [ ] Local module `modules/watch-workout` (WCSession, `startWatchApp`, `sendContext`, buffered `onMessage`); Apple `WatchWorkoutBridge` adapter + labels; `findWatchWorkoutBridge`; wiring in `useLiveWorkoutController` (watch kcal wins, finish request → `action=finish`); i18n en/es | mobile (**native — rebuild**) | typecheck + tests (wire-format and labels); **[DEVICE]** FR-2, FR-3 | `feat(ios): talk to the watch app from the phone` |
@@ -62,6 +62,9 @@ Ultra 2.
   attributes (both copies) and the JS. `swiftc -typecheck` of the extension
   (index, widget, `_shared`) at `arm64-apple-ios17.0-simulator` against the
   iOS 26.5 simulator SDK passes. Device check pending (AC-1).
+- 2026-10-17 — Task 3: `WatchWorkoutSnapshot` / `WatchWorkoutSet`,
+  `WatchWorkoutEvent`, `WatchWorkoutOutcome` and `WatchWorkoutBridge` in
+  `packages/domain/src/health.ts`; nothing uses them yet.
 
 ## Definition of done
 
