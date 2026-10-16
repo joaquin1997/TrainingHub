@@ -16,7 +16,7 @@ up; the spike's debug panel is not carried over.
 |---|---|---|---|---|
 | 1 | [x] Spec, plan (with spike results) and tasks; glossary (active energy, live status); backlog | docs | links resolve | `docs(sdd): spec 0012 live workout status` |
 | 2 | [x] apple-targets plugin, `appleTeamId`, `NSSupportsLiveActivities`, widget extension + `_shared`, `workout-live-activity` module, Swift-copies test | ios | Swift-copies test (CI); **[DEVICE]** builds, installs | `feat(ios): workout Live Activity extension and module` |
-| 3 | Extend `LiveWorkoutBridge` / `HealthWorkoutPayload` in domain; `appleHealthLiveWorkoutBridge` becomes the adapter over the module; Android stays no-op; pure `reconcile` | domain / mobile | unit tests | `feat(workouts): Live Activity behind LiveWorkoutBridge` |
+| 3 | [x] Extend `LiveWorkoutBridge` / `HealthWorkoutPayload` in domain; `appleHealthLiveWorkoutBridge` becomes the adapter over the module; Android stays no-op; pure `reconcile` | domain / mobile | unit tests | `feat(workouts): Live Activity behind LiveWorkoutBridge` |
 | 4 | Controller subscribed to the draft store, mounted after hydration; remove the per-change `notifyAppleWorkoutStarted` effect and the notify helpers | mobile | unit tests (fakes); **[DEVICE]** start, pause in app and on lock screen, finish, discard, kill + relaunch | `feat(workouts): drive the Live Activity from the active workout` |
 | 5 | Finish from the status: `action=finish` → confirm → finish (no set done → existing notice); open the workout after sign-in (EF-7) | mobile | unit test (action parsing); **[DEVICE]** EF-6, EF-7 | `feat(workouts): confirm finishing from the Live Activity` |
 | 6 | HealthKit entitlement + usage string, `health-energy` module (`null` for no data/permission, reject on error), `readActiveEnergyKcal` in domain, Apple impl, Android `null` | health | typecheck; **[DEVICE]** permission prompt, kcal vs Fitness | `feat(health): read active energy from Apple Health` |
@@ -47,6 +47,14 @@ Tasks 2, 4–7 need a device rebuild; they are not verifiable in CI.
   next to the module (`attributes.test.mjs`; the mobile tsconfig has no Node
   types). `expo config --type prebuild` evaluates the plugin. Device build
   pending.
+- 2026-10-16 — Task 3: `HealthWorkoutPayload` gains routine name, pause and
+  kcal; `LiveWorkoutState`; optional `getLiveWorkoutState` /
+  `onLiveWorkoutStateChange` on `LiveWorkoutBridge` (Android stub untouched).
+  `appleHealthLiveWorkoutBridge` adapts the module (only when Live Activities
+  are enabled, EF-1; labels set from the app language). Pure
+  `toLiveWorkoutPayload` and `reconcile` (none/end/start/adoptPause, 2 s
+  tolerance for fractional vs whole seconds); 8 tests. `readActiveEnergyKcal`
+  moved to task 6 with its implementation rather than landing as a stub.
 
 ## Definition of done
 
