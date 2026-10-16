@@ -62,6 +62,12 @@ export type WorkoutExerciseDraft = {
 
 export type WorkoutSessionDraft = {
   id: string;
+  /**
+   * Workout identity sent with the save, unique per workout (spec 0014). The
+   * server returns the first save for a repeated identity, so retries never
+   * duplicate. `id` cannot serve: it repeats for the same routine.
+   */
+  clientId: string;
   routineId: string;
   routineName: string;
   startedAt: string;
@@ -142,12 +148,19 @@ function buildExerciseDrafts(
     }));
 }
 
+/** A per-workout identity; unique per user is enough, so no UUID dependency. */
+export function createWorkoutClientId(): string {
+  const random = Math.random().toString(36).slice(2, 10).padEnd(8, '0');
+  return `${Date.now().toString(36)}-${random}`;
+}
+
 export function buildWorkoutSessionDraft(
   routine: Routine,
   unit: WeightUnit = 'kg',
 ): WorkoutSessionDraft {
   return {
     id: `workout-session-${routine.id}`,
+    clientId: createWorkoutClientId(),
     routineId: routine.id,
     routineName: routine.name,
     startedAt: new Date().toISOString(),
@@ -467,6 +480,7 @@ export function toCreateWorkoutSessionInput(
   const unit = draftUnit(workoutDraft);
 
   return {
+    clientId: workoutDraft.clientId,
     routineId: workoutDraft.routineId,
     startedAt: workoutDraft.startedAt,
     completedAt,

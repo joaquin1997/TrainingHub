@@ -94,10 +94,31 @@ describe('buildWorkoutSessionDraft', () => {
   });
 });
 
+describe('workout identity (spec 0014)', () => {
+  it('gives two workouts of the same routine different identities', () => {
+    const first = buildWorkoutSessionDraft(routine);
+    const second = buildWorkoutSessionDraft(routine);
+
+    expect(first.id).toBe(second.id);
+    expect(first.clientId).not.toBe(second.clientId);
+    expect(first.clientId).toMatch(/^[0-9a-z]+-[0-9a-z]{8}$/);
+  });
+
+  it('keeps the identity across edits and sends it with the save', () => {
+    const draft = buildWorkoutSessionDraft(routine);
+    const set = draft.exercises[0]!.entries[0]!;
+    const edited = toggleWorkoutSetDone(draft, draft.exercises[0]!.id, set.id);
+
+    expect(edited.clientId).toBe(draft.clientId);
+    expect(toCreateWorkoutSessionInput(edited).clientId).toBe(draft.clientId);
+  });
+});
+
 describe('toCreateWorkoutSessionInput', () => {
   it('coerces logged strings to numbers and drops empties', () => {
     const draft: WorkoutSessionDraft = {
       id: 'w1',
+      clientId: 'c1',
       routineId: 'routine-1',
       routineName: 'Push Day',
       startedAt: '2026-05-30T09:00:00.000Z',
@@ -130,6 +151,7 @@ describe('toCreateWorkoutSessionInput', () => {
   it('logs the ghosted placeholder when the actual field is left empty', () => {
     const draft: WorkoutSessionDraft = {
       id: 'w1',
+      clientId: 'c1',
       routineId: 'routine-1',
       routineName: 'Push Day',
       startedAt: '2026-05-30T09:00:00.000Z',
@@ -176,6 +198,7 @@ describe('toCreateWorkoutSessionInput', () => {
   it('converts lb input back to canonical kg on persist', () => {
     const draft: WorkoutSessionDraft = {
       id: 'w1',
+      clientId: 'c1',
       routineId: 'routine-1',
       routineName: 'Push Day',
       startedAt: '2026-05-30T09:00:00.000Z',
@@ -209,6 +232,7 @@ describe('toCreateWorkoutSessionInput', () => {
   it('stamps completedAt on sets marked done', () => {
     const draft: WorkoutSessionDraft = {
       id: 'w1',
+      clientId: 'c1',
       routineId: 'routine-1',
       routineName: 'Push Day',
       startedAt: '2026-05-30T09:00:00.000Z',
@@ -443,6 +467,7 @@ describe('set type', () => {
 describe('toWorkoutSessionSkeleton', () => {
   const draftWith = (unit: 'kg' | 'lb'): WorkoutSessionDraft => ({
     id: 'w1',
+    clientId: 'c1',
     routineId: 'routine-1',
     routineName: 'Push Day',
     startedAt: '2026-05-30T09:00:00.000Z',

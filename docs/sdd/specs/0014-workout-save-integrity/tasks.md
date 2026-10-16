@@ -18,7 +18,7 @@ the tree green: `pnpm -r typecheck` and `pnpm -r test` pass at every step
 | 2 | [x] `CreateWorkoutSessionInput.clientId?`; schema `clientId` + `@@unique([userId, clientId])`; generated migration | domain / data | `prisma validate`; typecheck | `feat(workouts): client identity on saved workouts` |
 | 3 | [x] Route: parse `clientId`, validate times (unreadable, end < start) | api | route tests (4 new) | `fix(workouts): refuse unreadable or inverted workout times` |
 | 4 | [x] `saveReferences.ts` (`dropForeignLinks`, `findUnknownExercise`); repository resolves owned refs, throws `UnknownExerciseError`, replays by `clientId` (incl. `P2002`); route `201`/`200`/`400` | api | unit tests; route tests | `fix(workouts): idempotent save with owned references only` |
-| 5 | Draft `clientId` (generated, stable across edits) sent in the payload | mobile | unit tests | `feat(workouts): send a stable identity with each workout` |
+| 5 | [x] Draft `clientId` (generated, stable across edits) sent in the payload | mobile | unit tests | `feat(workouts): send a stable identity with each workout` |
 | 6 | Active routine: no edit/delete from the list menu or detail; detail Delete confirms; `ActionSheet` message | mobile | typecheck; **[DEVICE]** AC-6, AC-7 | `fix(routines): lock the active workout's routine and confirm deletes` |
 | 7 | Apply migration + redeploy; `curl` replay and parallel saves; device AC-2 | ops | **[DEPLOY]** AC-1, EF-2; **[DEVICE]** AC-2 | — (no commit) |
 | 8 | Roadmap 01, retro 0004 (gap closed), 0001 FR-7 note, backlog; spec status | docs | links resolve | `docs(sdd): close spec 0014` |
@@ -58,6 +58,10 @@ Task 7 is the owner's (deploy and device checks are batched).
   the route tests (which mock the repository) can use it. Route: 201 created,
   200 replay, 400 unknown exercise (+2 route tests). The `P2002` path is only
   exercised against a real database (task 7).
+- 2026-10-16 — Task 5: `clientId` (`<time36>-<8 random>`) created in
+  `buildWorkoutSessionDraft`, carried by every spread, sent by
+  `toCreateWorkoutSessionInput`. 2 unit tests (distinct per workout of the same
+  routine; stable across edits and present in the payload).
 
 ## Definition of done
 
