@@ -82,7 +82,22 @@ export type WorkoutSessionDraft = {
   pausedAt?: string;
   /** Whole seconds of pauses already ended. */
   pausedSeconds?: number;
+  /** The rest counting down now; absent when none runs (spec 0018). */
+  rest?: RunningRest;
   exercises: WorkoutExerciseDraft[];
+};
+
+/**
+ * A rest started by ticking a set (spec 0018). The end is absolute, so it
+ * survives leaving the screen and restarting the app.
+ */
+export type RunningRest = {
+  /** ISO instant the rest ends. */
+  endsAt: string;
+  /** Length of the rest, grown by extra time; for the progress line. */
+  totalSeconds: number;
+  /** The exercise whose set started it. */
+  workoutExerciseId: string;
 };
 
 /** The session's display unit, defaulting to kg when unset. */
@@ -507,6 +522,122 @@ export function totalPausedSeconds(
 ): number {
   const ongoing = workoutDraft.pausedAt ? secondsBetween(workoutDraft.pausedAt, end) : 0;
   return (workoutDraft.pausedSeconds ?? 0) + ongoing;
+}
+
+/**
+ * The rest a ticked set starts (FR-1): the exercise's own rest — the one set
+ * in this workout, otherwise the routine's — or the Settings default.
+ */
+export function resolveRestSeconds(
+  exercise: Pick<WorkoutExerciseDraft, 'restSeconds'>,
+  defaultRestSeconds: number,
+): number {
+  return exercise.restSeconds ?? defaultRestSeconds;
+}
+
+/**
+ * Changes one exercise's rest for the rest of this workout (FR-2). The routine
+ * is never written, and a rest already running is left as it is.
+ */
+export function setExerciseRest(
+  workoutDraft: WorkoutSessionDraft,
+  workoutExerciseId: string,
+  seconds: number,
+): WorkoutSessionDraft {
+  const restSeconds = Math.max(0, Math.round(seconds));
+
+  return {
+    ...workoutDraft,
+    exercises: workoutDraft.exercises.map((exercise) =>
+      exercise.id === workoutExerciseId ? { ...exercise, restSeconds } : exercise,
+    ),
+  };
+}
+
+/** Starts a rest, replacing any running one; 0 seconds or less starts nothing. */
+export function startRest(
+  workoutDraft: WorkoutSessionDraft,
+  workoutExerciseId: string,
+  seconds: number,
+  now: Date = new Date(),
+): WorkoutSessionDraft {
+  if (!(seconds > 0)) {
+    return workoutDraft;
+  }
+
+  return {
+    ...workoutDraft,
+    rest: {
+      endsAt: new Date(now.getTime() + seconds * 1000).toISOString(),
+      totalSeconds: seconds,
+      workoutExerciseId,
+    },
+  };
+}
+
+/** Whole seconds left in a rest at `now`, never below 0. */
+export function restRemainingSeconds(rest: RunningRest, now: Date = new Date()): number {
+  return Math.max(0, Math.round((new Date(rest.endsAt).getTime() - now.getTime()) / 1000));
+}
+
+/**
+ * Moves the end of the running rest by `deltaSeconds` (FR-3), never earlier
+ * than now. The total grows with extra time so the progress stays proportional.
+ */
+export function adjustRest(
+  workoutDraft: WorkoutSessionDraft,
+  deltaSeconds: number,
+  now: Date = new Date(),
+): WorkoutSessionDraft {
+  const rest = workoutDraft.rest;
+
+  if (!rest) {
+    return workoutDraft;
+  }
+
+  const endsAtMs = Math.max(
+    now.getTime(),
+    new Date(rest.endsAt).getTime() + deltaSeconds * 1000,
+  );
+  const left = Math.max(0, Math.round((endsAtMs - now.getTime()) / 1000));
+
+  return {
+    ...workoutDraft,
+    rest: {
+      ...rest,
+      endsAt: new Date(endsAtMs).toISOString(),
+      totalSeconds: Math.max(left, rest.totalSeconds + deltaSeconds),
+    },
+  };
+}
+
+/** Ends the running rest now, without an alert. */
+export function skipRest(workoutDraft: WorkoutSessionDraft): WorkoutSessionDraft {
+  if (!workoutDraft.rest) {
+    return workoutDraft;
+  }
+
+  return { ...workoutDraft, rest: undefined };
+}
+
+/** How long past its end a rest still counts as just ended, not stale. */
+export const REST_ENDED_GRACE_MS = 2000;
+
+/**
+ * `running` before the end; `ended` up to {@link REST_ENDED_GRACE_MS} after it
+ * (alert in the app); `stale` later — cleared without an alert (EF-2, EF-3).
+ */
+export function restPhase(
+  rest: RunningRest,
+  now: Date = new Date(),
+): 'running' | 'ended' | 'stale' {
+  const pastEnd = now.getTime() - new Date(rest.endsAt).getTime();
+
+  if (pastEnd < 0) {
+    return 'running';
+  }
+
+  return pastEnd <= REST_ENDED_GRACE_MS ? 'ended' : 'stale';
 }
 
 export function countWorkoutSets(workoutDraft: WorkoutSessionDraft) {
