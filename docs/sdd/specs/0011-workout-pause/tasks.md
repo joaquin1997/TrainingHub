@@ -14,7 +14,7 @@ Each task leaves the tree green (`pnpm -r typecheck` and `pnpm -r test`).
 |---|---|---|---|---|
 | 1 | [x] Spec, plan and tasks; glossary (pause, active duration); backlog | docs | links resolve | `docs(sdd): spec 0011 pause the active workout` |
 | 2 | [x] Optional `pausedSeconds` on the create input and the session | domain | `pnpm -r typecheck` | `feat(domain): paused time on workout sessions` |
-| 3 | Prisma field + migration; repository; validation | api | route tests (valid, negative, over duration, missing) | `feat(api): store paused time on workout sessions` |
+| 3 | [x] Prisma field + migration; repository; validation | api | route tests (valid, negative, over duration, missing) | `feat(api): store paused time on workout sessions` |
 | 4 | Pause/resume helpers, `activeDurationSeconds`, send `pausedSeconds` | mobile | unit tests | `feat(workouts): pause model and active duration` |
 | 5 | Pause/Resume button, paused state, active duration in banner/history/detail, i18n en/es | mobile | manual in app (Metro reload) | `feat(workouts): pause and resume the active workout` |
 | 6 | Roadmap, backlog, spec status; redeploy the API | docs / ops | `/health` ok; AC-3 on device | `docs(sdd): close spec 0011` |
@@ -27,6 +27,11 @@ Task 6 includes a redeploy; not verifiable in CI.
 - 2026-10-16 — Tasks self-approved under the owner's delegation. Tasks 1–2:
   glossary (pause, active duration), backlog; optional `pausedSeconds` on
   `WorkoutSession` and `CreateWorkoutSessionInput`.
+- 2026-10-16 — Task 3: `pausedSeconds Int @default(0)`, migration generated
+  offline with `prisma migrate diff` (not applied yet). Route: non-integer,
+  negative or non-number → 400 invalid payload; more than `completedAt −
+  startedAt` → 400 with its own reason; absent → stored as 0. Responses carry
+  `pausedSeconds`. 6 route tests.
 
 ## Definition of done
 

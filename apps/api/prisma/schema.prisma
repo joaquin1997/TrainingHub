@@ -155,6 +155,8 @@ model WorkoutSession {
   status      String
   startedAt   DateTime
   completedAt DateTime?
+  /// Whole seconds paused; active duration = elapsed − this (spec 0011).
+  pausedSeconds Int             @default(0)
   notes       String?
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt

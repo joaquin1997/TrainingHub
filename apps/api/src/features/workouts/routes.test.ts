@@ -174,6 +174,66 @@ describe('POST /workouts', () => {
     expect(createWorkoutSession).not.toHaveBeenCalled();
   });
 
+  it('passes a valid pausedSeconds through', async () => {
+    vi.mocked(createWorkoutSession).mockResolvedValue({
+      session: { id: 'w1' },
+      created: true,
+    } as never);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/workouts',
+      payload: { ...validPayload, pausedSeconds: 600 },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(createWorkoutSession).toHaveBeenCalledWith(
+      'user-test',
+      expect.objectContaining({ pausedSeconds: 600 }),
+    );
+  });
+
+  it('accepts a save without pausedSeconds (older apps)', async () => {
+    vi.mocked(createWorkoutSession).mockResolvedValue({
+      session: { id: 'w1' },
+      created: true,
+    } as never);
+
+    const response = await app.inject({ method: 'POST', url: '/workouts', payload: validPayload });
+
+    expect(response.statusCode).toBe(201);
+    expect(createWorkoutSession).toHaveBeenCalledWith(
+      'user-test',
+      expect.objectContaining({ pausedSeconds: undefined }),
+    );
+  });
+
+  it.each([-1, 1.5, '60'])('returns 400 when pausedSeconds is %s', async (pausedSeconds) => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/workouts',
+      payload: { ...validPayload, pausedSeconds },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(createWorkoutSession).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when the workout was paused longer than it lasted', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/workouts',
+      // validPayload lasts 30 minutes.
+      payload: { ...validPayload, pausedSeconds: 30 * 60 + 1 },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      message: "Paused time cannot exceed the workout's duration",
+    });
+    expect(createWorkoutSession).not.toHaveBeenCalled();
+  });
+
   it('returns 400 when clientId is too long', async () => {
     const response = await app.inject({
       method: 'POST',

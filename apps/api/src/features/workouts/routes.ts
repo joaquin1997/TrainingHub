@@ -68,6 +68,15 @@ function workoutTimesProblem(input: CreateWorkoutSessionInput) {
     return 'A workout cannot end before it starts';
   }
 
+  if (
+    input.completedAt &&
+    input.pausedSeconds !== undefined &&
+    input.pausedSeconds * 1000 >
+      Date.parse(input.completedAt) - Date.parse(input.startedAt)
+  ) {
+    return "Paused time cannot exceed the workout's duration";
+  }
+
   return undefined;
 }
 
@@ -144,6 +153,19 @@ function parseCreateWorkoutSessionInput(
 
   const completedAt = parseOptionalString(body.completedAt);
 
+  // Paused time must be whole, non-negative seconds when sent (spec 0011).
+  const pausedSeconds = body.pausedSeconds;
+  if (
+    pausedSeconds !== undefined &&
+    !(
+      typeof pausedSeconds === 'number' &&
+      Number.isInteger(pausedSeconds) &&
+      pausedSeconds >= 0
+    )
+  ) {
+    return null;
+  }
+
   const clientId = parseOptionalString(body.clientId);
   if (clientId && clientId.length > MAX_CLIENT_ID_LENGTH) {
     return null;
@@ -163,6 +185,7 @@ function parseCreateWorkoutSessionInput(
     routineId: parseOptionalString(body.routineId),
     startedAt: body.startedAt,
     completedAt,
+    pausedSeconds,
     notes: parseOptionalString(body.notes),
     exercises,
   };

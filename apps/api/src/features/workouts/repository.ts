@@ -70,6 +70,7 @@ function mapWorkoutSession(
     status: record.status as WorkoutSession['status'],
     startedAt: record.startedAt.toISOString(),
     completedAt: record.completedAt?.toISOString() ?? undefined,
+    pausedSeconds: record.pausedSeconds,
     notes: record.notes ?? undefined,
     exercises: record.exercises
       .slice()
@@ -321,6 +322,7 @@ export async function createWorkoutSession(
         status: 'completed',
         startedAt: new Date(linked.startedAt),
         completedAt: linked.completedAt ? new Date(linked.completedAt) : undefined,
+        pausedSeconds: linked.pausedSeconds ?? 0,
         notes: linked.notes,
         exercises: {
           create: linked.exercises.map(toWorkoutExerciseCreateInput),
