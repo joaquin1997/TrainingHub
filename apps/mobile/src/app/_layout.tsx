@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
 import { SettingsProvider } from '@/features/settings/SettingsContext';
 import { useLiveWorkoutController } from '@/features/workouts/liveActivity/useLiveWorkoutController';
 import { useActiveWorkoutPersistence } from '@/features/workouts/persistence/useActiveWorkoutPersistence';
+import { useRestTimerRunner } from '@/features/workouts/restTimer/useRestTimerRunner';
 import { getActiveWorkout } from '@/features/workouts/state/workoutDraftStore';
 import { I18nProvider } from '@/i18n/I18nProvider';
 import { colors, fontAssets, screenHeader } from '@/ui/theme';
@@ -19,6 +20,8 @@ function RootNavigator() {
   const isRestoringWorkout = useActiveWorkoutPersistence(user?.id ?? null);
   // The lock-screen status follows the active workout once it is restored.
   useLiveWorkoutController(isAuthenticated && !isRestoringWorkout);
+  // The rest timer keeps counting and alerting on every screen (spec 0018).
+  useRestTimerRunner(isAuthenticated && !isRestoringWorkout);
   const segments = useSegments();
   const router = useRouter();
   const { t } = useTranslation();
