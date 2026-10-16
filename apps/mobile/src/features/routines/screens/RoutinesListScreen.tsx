@@ -120,6 +120,9 @@ export function RoutinesListScreen() {
     );
   };
 
+  const menuRoutineLocked =
+    menuRoutine !== null && activeWorkout?.routineId === menuRoutine.id;
+
   const startTarget = (routine: Routine) =>
     activeWorkout && activeWorkout.routineId !== routine.id
       ? activeWorkout.routineId
@@ -257,23 +260,35 @@ export function RoutinesListScreen() {
     <ActionSheet
       visible={menuRoutine !== null}
       title={menuRoutine?.name}
+      message={menuRoutineLocked ? t('routineDetail.editLocked') : undefined}
       onClose={() => setMenuRoutine(null)}
       actions={
         menuRoutine
           ? [
-              {
-                label: t('common.edit'),
-                onPress: () => router.push(`/routines/edit/${menuRoutine.id}`),
-              },
+              // The active workout's routine can be neither edited nor deleted
+              // until the workout is finished or discarded (spec 0014).
+              ...(menuRoutineLocked
+                ? []
+                : [
+                    {
+                      label: t('common.edit'),
+                      onPress: () =>
+                        router.push(`/routines/edit/${menuRoutine.id}`),
+                    },
+                  ]),
               {
                 label: t('routines.duplicate'),
                 onPress: () => void handleDuplicate(menuRoutine),
               },
-              {
-                label: t('common.delete'),
-                destructive: true,
-                onPress: () => handleDelete(menuRoutine),
-              },
+              ...(menuRoutineLocked
+                ? []
+                : [
+                    {
+                      label: t('common.delete'),
+                      destructive: true,
+                      onPress: () => handleDelete(menuRoutine),
+                    },
+                  ]),
             ]
           : []
       }

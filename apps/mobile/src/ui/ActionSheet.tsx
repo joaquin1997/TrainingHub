@@ -13,6 +13,8 @@ export interface SheetAction {
 interface ActionSheetProps {
   visible: boolean;
   title?: string;
+  /** Explanatory line under the title, e.g. why an action is withheld. */
+  message?: string;
   actions: SheetAction[];
   onClose: () => void;
 }
@@ -21,6 +23,7 @@ interface ActionSheetProps {
 export function ActionSheet({
   visible,
   title,
+  message,
   actions,
   onClose,
 }: ActionSheetProps) {
@@ -40,6 +43,7 @@ export function ActionSheet({
           onPress={(event) => event.stopPropagation()}
         >
           {title ? <Text style={styles.title}>{title}</Text> : null}
+          {message ? <Text style={styles.message}>{message}</Text> : null}
           {actions.map((action) => (
             <Pressable
               key={action.label}
@@ -96,6 +100,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     paddingVertical: spacing.sm,
+  },
+  message: {
+    color: colors.textMuted,
+    fontSize: 13,
+    paddingBottom: spacing.sm,
   },
   action: {
     minHeight: 48,

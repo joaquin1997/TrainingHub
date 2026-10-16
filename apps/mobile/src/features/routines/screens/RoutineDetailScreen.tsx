@@ -2,7 +2,7 @@ import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import type { TFunction } from 'i18next';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
@@ -93,6 +93,21 @@ export function RoutineDetailScreen() {
       isActive = false;
     };
   }, [loadRoutine]);
+
+  function confirmDelete(name: string) {
+    Alert.alert(
+      t('routines.deleteTitle'),
+      t('routines.deleteConfirm', { name }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: () => void handleDelete(),
+        },
+      ],
+    );
+  }
 
   async function handleDelete() {
     if (!routineId) {
@@ -275,20 +290,23 @@ export function RoutineDetailScreen() {
           </View>
         )}
       </View>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => void handleDelete()}
-        disabled={isDeleting}
-            style={({ pressed }) => [
-              styles.deleteButton,
-              pressed ? styles.buttonPressed : null,
-              isDeleting ? styles.buttonDisabled : null,
-            ]}
-      >
-        <Text style={styles.deleteButtonText}>
-          {isDeleting ? t('routineDetail.deleting') : t('routines.deleteTitle')}
-        </Text>
-      </Pressable>
+      {/* Locked with editing while this routine's workout is in progress (spec 0014). */}
+      {activeWorkout?.routineId === routine.id ? null : (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => confirmDelete(routine.name)}
+          disabled={isDeleting}
+          style={({ pressed }) => [
+            styles.deleteButton,
+            pressed ? styles.buttonPressed : null,
+            isDeleting ? styles.buttonDisabled : null,
+          ]}
+        >
+          <Text style={styles.deleteButtonText}>
+            {isDeleting ? t('routineDetail.deleting') : t('routines.deleteTitle')}
+          </Text>
+        </Pressable>
+      )}
     </ScrollView>
   );
 }

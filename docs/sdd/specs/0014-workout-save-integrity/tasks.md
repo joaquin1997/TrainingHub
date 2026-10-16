@@ -19,7 +19,7 @@ the tree green: `pnpm -r typecheck` and `pnpm -r test` pass at every step
 | 3 | [x] Route: parse `clientId`, validate times (unreadable, end < start) | api | route tests (4 new) | `fix(workouts): refuse unreadable or inverted workout times` |
 | 4 | [x] `saveReferences.ts` (`dropForeignLinks`, `findUnknownExercise`); repository resolves owned refs, throws `UnknownExerciseError`, replays by `clientId` (incl. `P2002`); route `201`/`200`/`400` | api | unit tests; route tests | `fix(workouts): idempotent save with owned references only` |
 | 5 | [x] Draft `clientId` (generated, stable across edits) sent in the payload | mobile | unit tests | `feat(workouts): send a stable identity with each workout` |
-| 6 | Active routine: no edit/delete from the list menu or detail; detail Delete confirms; `ActionSheet` message | mobile | typecheck; **[DEVICE]** AC-6, AC-7 | `fix(routines): lock the active workout's routine and confirm deletes` |
+| 6 | [x] Active routine: no edit/delete from the list menu or detail; detail Delete confirms; `ActionSheet` message | mobile | typecheck; **[DEVICE]** AC-6, AC-7 | `fix(routines): lock the active workout's routine and confirm deletes` |
 | 7 | Apply migration + redeploy; `curl` replay and parallel saves; device AC-2 | ops | **[DEPLOY]** AC-1, EF-2; **[DEVICE]** AC-2 | — (no commit) |
 | 8 | Roadmap 01, retro 0004 (gap closed), 0001 FR-7 note, backlog; spec status | docs | links resolve | `docs(sdd): close spec 0014` |
 
@@ -62,6 +62,12 @@ Task 7 is the owner's (deploy and device checks are batched).
   `buildWorkoutSessionDraft`, carried by every spread, sent by
   `toCreateWorkoutSessionInput`. 2 unit tests (distinct per workout of the same
   routine; stable across edits and present in the payload).
+- 2026-10-16 — Task 6: list ⋯ sheet offers only Duplicate for the active
+  workout's routine, with the lock message (new optional `ActionSheet.message`);
+  detail hides Delete while locked and confirms Delete through `Alert` like the
+  list. Not guarded: the edit screen reached by a typed URL — no screen or menu
+  leads there for a locked routine. `Alert` is a no-op on web (as for the
+  list's existing confirm). Device checks pending (AC-6, AC-7).
 
 ## Definition of done
 
