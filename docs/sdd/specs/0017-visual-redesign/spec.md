@@ -196,12 +196,14 @@ removed (Out of scope, last item).
   per exercise listing its sets with the set type marker, weight × reps, and
   rest.
 - **FR-21. Progress overview.** The training-frequency figures as tiles, the
-  existing charts in cards, the muscle distribution as bars, and the per-
-  exercise list with best lift and record markers (orange). Period and metric
-  controls that exist keep working; none is added.
-- **FR-22. Exercise progress.** Tiles for best lift, estimated 1RM and
-  volume; the chart with the metric switch it already has; personal records
-  as a list with the newest first, records marked orange.
+  existing charts in cards (the latest bar highlighted), the muscle
+  distribution as bars in the display unit, and the per-exercise list with
+  latest and best lift, estimated 1RM and record markers (orange). No period
+  or metric control is added.
+- **FR-22. Exercise progress.** Tiles for latest and best lift, estimated
+  1RM and sessions; the chart it already has (estimated 1RM, or volume when
+  there is no 1RM — no metric switch is added); personal records as a list
+  with the newest first, records marked orange; the per-session list.
 - **FR-23. Exercises list and detail.** Large title, search, the favourites
   filter as the first chip after "all", category and equipment chips, rows
   with the existing image or a neutral tile when there is none, and the

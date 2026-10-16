@@ -1,15 +1,18 @@
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, radii, spacing } from '@/ui/theme';
-import type { MuscleGroupVolumePoint } from '@workout/domain';
+import { formatWeightValue } from '@/lib/weight';
+import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import type { MuscleGroupVolumePoint, WeightUnit } from '@workout/domain';
 
 interface MuscleDistributionProps {
   points: MuscleGroupVolumePoint[];
+  /** Display unit; volumes arrive in kg (Article 4). */
+  unit: WeightUnit;
 }
 
 /** Horizontal volume-by-muscle-group bars (proportional to the top group). */
-export function MuscleDistribution({ points }: MuscleDistributionProps) {
+export function MuscleDistribution({ points, unit }: MuscleDistributionProps) {
   const { t } = useTranslation();
 
   if (points.length === 0) {
@@ -34,7 +37,7 @@ export function MuscleDistribution({ points }: MuscleDistributionProps) {
               ]}
             />
           </View>
-          <Text style={styles.value}>{point.totalVolume}</Text>
+          <Text style={styles.value}>{`${formatWeightValue(point.totalVolume, unit)} ${unit}`}</Text>
         </View>
       ))}
     </View>
@@ -43,17 +46,11 @@ export function MuscleDistribution({ points }: MuscleDistributionProps) {
 
 const styles = StyleSheet.create({
   container: {
-    gap: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    padding: spacing.lg,
+    ...commonStyles.card,
+    gap: spacing.md,
   },
   title: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '700',
+    ...commonStyles.cardTitle,
   },
   row: {
     flexDirection: 'row',
@@ -61,27 +58,27 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   label: {
-    width: 72,
-    color: colors.textMuted,
+    width: 88,
+    color: colors.text,
     fontSize: 13,
-    fontWeight: '600',
   },
   track: {
     flex: 1,
-    height: 10,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surfaceMuted,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.surfaceRaised,
     overflow: 'hidden',
   },
   bar: {
     height: '100%',
-    borderRadius: radii.sm,
+    borderRadius: 4,
     backgroundColor: colors.primary,
   },
   value: {
-    width: 56,
+    width: 80,
     textAlign: 'right',
     color: colors.textMuted,
+    fontFamily: fonts.display,
     fontSize: 12,
     fontVariant: ['tabular-nums'],
   },

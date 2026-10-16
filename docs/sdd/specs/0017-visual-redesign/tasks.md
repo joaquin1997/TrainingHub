@@ -32,7 +32,7 @@ and data the screen shows, so AC-11 (nothing lost) can be reviewed.
 | 11 | [x] Routine create / edit (FR-15): details card, numbered exercise cards, full-width set fields, single save with summary | mobile | visual (AC-10) | `feat(routines): redesigned routine editor` |
 | 12 | [x] Exercise picker and custom exercise (FR-16) | mobile | visual | `feat(exercises): redesigned exercise picker` |
 | 13 | [x] Exercises list and detail (FR-23) | mobile | visual | `feat(exercises): redesigned exercises list and detail` |
-| 14 | [ ] Progress overview (FR-21) and exercise progress (FR-22), incl. chart, distribution and frequency components | mobile | visual | `feat(progress): redesigned progress screens` |
+| 14 | [x] Progress overview (FR-21) and exercise progress (FR-22), incl. chart, distribution and frequency components | mobile | visual | `feat(progress): redesigned progress screens` |
 | 15 | [ ] Settings (FR-24) and sign-in (FR-25) | mobile | visual | `feat(settings): redesigned settings and sign-in` |
 | 16 | [ ] Sweep: remove `EmptyState` and unused i18n keys; grep for hard-coded strings, stray colours and tonnes; spec status, backlog, progress log | mobile / docs | typecheck, tests, greps (AC-1, AC-2, AC-9) | `docs(sdd): close spec 0017 implementation` |
 
