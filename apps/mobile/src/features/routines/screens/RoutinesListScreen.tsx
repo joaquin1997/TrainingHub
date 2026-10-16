@@ -73,7 +73,10 @@ export function RoutinesListScreen() {
 
   const router = useRouter();
   const activeWorkout = useActiveWorkout();
-  const elapsedSeconds = useElapsedSeconds(activeWorkout?.startedAt);
+  const elapsedSeconds = useElapsedSeconds(activeWorkout?.startedAt, {
+    pausedAt: activeWorkout?.pausedAt,
+    pausedSeconds: activeWorkout?.pausedSeconds,
+  });
   const { isRefreshing, onRefresh } = useRefresh(loadRoutines);
   const showLoading = isLoading && routines.length === 0;
   const hasEmptyState = !isLoading && !errorMessage && routines.length === 0;
@@ -149,9 +152,12 @@ export function RoutinesListScreen() {
         >
           <Pressable style={styles.banner}>
             <Text style={styles.bannerTitle}>
-              {t('routines.workoutInProgress', {
-                duration: formatDuration(elapsedSeconds),
-              })}
+              {t(
+                activeWorkout.pausedAt
+                  ? 'routines.workoutPaused'
+                  : 'routines.workoutInProgress',
+                { duration: formatDuration(elapsedSeconds) },
+              )}
             </Text>
             <Text style={styles.bannerMeta}>
               {t('routines.tapToResume', { name: activeWorkout.routineName })}

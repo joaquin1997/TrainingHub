@@ -8,7 +8,7 @@ import { useSettings } from '@/features/settings/SettingsContext';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { isPerformedSet } from '@/features/workouts/utils/performedSet';
 import {
-  durationSecondsBetween,
+  activeDurationSeconds,
   formatDateTime,
   formatDuration,
 } from '@/lib/format';
@@ -158,7 +158,11 @@ export function WorkoutSessionDetailScreen() {
           <Text style={styles.summaryValue}>
             {session.completedAt
               ? formatDuration(
-                  durationSecondsBetween(session.startedAt, session.completedAt),
+                  activeDurationSeconds(
+                    session.startedAt,
+                    session.completedAt,
+                    session.pausedSeconds,
+                  ),
                 )
               : '–'}
           </Text>

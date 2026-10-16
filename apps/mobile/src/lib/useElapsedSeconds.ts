@@ -1,30 +1,43 @@
 import { useEffect, useState } from 'react';
 
-import { durationSecondsBetween } from '@/lib/format';
+import { activeDurationSeconds } from '@/lib/format';
+
+interface PauseState {
+  /** When the current pause began; the clock is frozen there while set. */
+  pausedAt?: string;
+  /** Seconds of pauses already ended, subtracted from the elapsed time. */
+  pausedSeconds?: number;
+}
 
 /**
- * Seconds elapsed since `startIso`, updated every second. Returns 0 when no
- * start is provided.
+ * Active seconds since `startIso` (spec 0011): elapsed time minus paused time,
+ * updated every second and frozen while paused. Returns 0 when no start is
+ * provided.
  */
-export function useElapsedSeconds(startIso?: string) {
-  const [elapsed, setElapsed] = useState(() =>
-    startIso ? durationSecondsBetween(startIso, new Date().toISOString()) : 0,
-  );
+export function useElapsedSeconds(startIso?: string, pause: PauseState = {}) {
+  const { pausedAt, pausedSeconds = 0 } = pause;
+  const compute = () =>
+    startIso
+      ? activeDurationSeconds(
+          startIso,
+          pausedAt ?? new Date().toISOString(),
+          pausedSeconds,
+        )
+      : 0;
+  const [elapsed, setElapsed] = useState(compute);
 
   useEffect(() => {
-    if (!startIso) {
-      setElapsed(0);
+    const update = () => setElapsed(compute());
+
+    update();
+    if (!startIso || pausedAt) {
       return;
     }
 
-    const update = () =>
-      setElapsed(durationSecondsBetween(startIso, new Date().toISOString()));
-
-    update();
     const interval = setInterval(update, 1000);
-
     return () => clearInterval(interval);
-  }, [startIso]);
+    // `compute` reads only these three values.
+  }, [startIso, pausedAt, pausedSeconds]);
 
   return elapsed;
 }

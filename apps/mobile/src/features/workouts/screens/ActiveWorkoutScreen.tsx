@@ -54,8 +54,10 @@ import {
   cycleWorkoutSetType,
   getActiveWorkout,
   moveWorkoutExercise,
+  pauseWorkout,
   removeExerciseFromWorkout,
   removeSetFromWorkoutExercise,
+  resumeWorkout,
   saveCompletedWorkout,
   setActiveWorkout,
   startActiveWorkout,
@@ -169,7 +171,10 @@ export function ActiveWorkoutScreen() {
     }
   }, [workoutDraft]);
 
-  const elapsedSeconds = useElapsedSeconds(workoutDraft?.startedAt);
+  const elapsedSeconds = useElapsedSeconds(workoutDraft?.startedAt, {
+    pausedAt: workoutDraft?.pausedAt,
+    pausedSeconds: workoutDraft?.pausedSeconds,
+  });
 
   const exerciseIdsKey = workoutDraft
     ? [...new Set(workoutDraft.exercises.map((exercise) => exercise.exerciseId))].join(
@@ -406,6 +411,15 @@ export function ActiveWorkoutScreen() {
     setActiveWorkout(nextDraft);
   };
 
+  // Sets can still be logged while paused (FR-6); only the clock stops.
+  const handleTogglePause = () => {
+    applyDraft(
+      workoutDraft.pausedAt
+        ? resumeWorkout(workoutDraft)
+        : pauseWorkout(workoutDraft),
+    );
+  };
+
   const handleNotesChange = (value: string) => {
     if (!workoutDraft) {
       return;
@@ -439,7 +453,26 @@ export function ActiveWorkoutScreen() {
       <Text style={styles.body}>
         {workoutDraft.routineName}
       </Text>
-      <Text style={styles.timer}>{formatDuration(elapsedSeconds)}</Text>
+      <View style={styles.timerRow}>
+        <Text
+          style={[styles.timer, workoutDraft.pausedAt ? styles.timerPaused : null]}
+        >
+          {formatDuration(elapsedSeconds)}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={handleTogglePause}
+          hitSlop={8}
+          style={styles.pauseButton}
+        >
+          <Text style={styles.pauseText}>
+            {workoutDraft.pausedAt ? t('workouts.resume') : t('workouts.pause')}
+          </Text>
+        </Pressable>
+      </View>
+      {workoutDraft.pausedAt ? (
+        <Text style={styles.pausedBadge}>{t('workouts.paused')}</Text>
+      ) : null}
       <Text style={styles.meta}>
         {t('workouts.setsProgress', {
           done: setProgress.done,
@@ -703,6 +736,34 @@ const styles = StyleSheet.create({
     fontSize: 40,
     fontWeight: '900',
     fontVariant: ['tabular-nums'],
+  },
+  timerPaused: {
+    color: colors.textMuted,
+  },
+  timerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  pauseButton: {
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  pauseText: {
+    color: colors.primary,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  pausedBadge: {
+    alignSelf: 'flex-start',
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '700',
+    textTransform: 'uppercase',
   },
   meta: {
     ...commonStyles.meta,

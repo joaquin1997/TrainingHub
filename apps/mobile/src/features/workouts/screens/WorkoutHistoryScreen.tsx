@@ -15,7 +15,7 @@ import { useSettings } from '@/features/settings/SettingsContext';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { isPerformedSet } from '@/features/workouts/utils/performedSet';
 import {
-  durationSecondsBetween,
+  activeDurationSeconds,
   formatDate,
   formatDuration,
 } from '@/lib/format';
@@ -167,9 +167,10 @@ export function WorkoutHistoryScreen() {
                   {session.completedAt ? (
                     <Text style={styles.stat}>
                       {formatDuration(
-                        durationSecondsBetween(
+                        activeDurationSeconds(
                           session.startedAt,
                           session.completedAt,
+                          session.pausedSeconds,
                         ),
                       )}
                     </Text>

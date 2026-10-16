@@ -16,7 +16,7 @@ Each task leaves the tree green (`pnpm -r typecheck` and `pnpm -r test`).
 | 2 | [x] Optional `pausedSeconds` on the create input and the session | domain | `pnpm -r typecheck` | `feat(domain): paused time on workout sessions` |
 | 3 | [x] Prisma field + migration; repository; validation | api | route tests (valid, negative, over duration, missing) | `feat(api): store paused time on workout sessions` |
 | 4 | [x] Pause/resume helpers, `activeDurationSeconds`, send `pausedSeconds` | mobile | unit tests | `feat(workouts): pause model and active duration` |
-| 5 | Pause/Resume button, paused state, active duration in banner/history/detail, i18n en/es | mobile | manual in app (Metro reload) | `feat(workouts): pause and resume the active workout` |
+| 5 | [x] Pause/Resume button, paused state, active duration in banner/history/detail, i18n en/es | mobile | manual in app (Metro reload) | `feat(workouts): pause and resume the active workout` |
 | 6 | Roadmap, backlog, spec status; redeploy the API | docs / ops | `/health` ok; AC-3 on device | `docs(sdd): close spec 0011` |
 
 Task 6 includes a redeploy; not verifiable in CI.
@@ -38,6 +38,11 @@ Task 6 includes a redeploy; not verifiable in CI.
   save sends `min(paused, elapsed)` computed at the same instant as
   `completedAt`; the skeleton carries it too. 8 unit tests. Both fields ride in
   the stored envelope unchanged (optional, so v1 stays valid).
+- 2026-10-16 — Task 5: Pause/Resume next to the clock, muted clock and
+  "Paused" badge while paused; `useElapsedSeconds` takes the pause state and
+  freezes at `pausedAt`. Routines banner says "paused"; history and detail show
+  active duration. i18n en/es. Pausing persists through 0010 like any edit.
+  Manual check pending (Metro reload; no rebuild).
 
 ## Definition of done
 
