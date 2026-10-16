@@ -196,6 +196,7 @@ export const en = {
     illustration: '{{name}} illustration',
   },
   workouts: {
+    notesLabel: 'Notes',
     setsLabel: 'Sets',
     volumeLabel: 'Volume',
     setsOfTotal: 'of {{total}}',

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { activeDurationSeconds, durationSecondsBetween, formatDuration } from './format';
+import {
+  activeDurationSeconds,
+  durationSecondsBetween,
+  formatDate,
+  formatDayHeading,
+  formatDuration,
+} from './format';
 
 describe('formatDuration', () => {
   it('formats sub-hour durations as m:ss', () => {
@@ -48,5 +54,15 @@ describe('activeDurationSeconds (spec 0011)', () => {
 
   it('never goes negative', () => {
     expect(activeDurationSeconds(start, end, 99_999)).toBe(0);
+  });
+});
+
+describe('locale-aware dates', () => {
+  const iso = '2026-10-15T10:00:00.000Z';
+
+  it('follows the language it is given, not the device', () => {
+    expect(formatDayHeading(iso, 'es')).toMatch(/^Jueves/);
+    expect(formatDayHeading(iso, 'en')).toMatch(/^Thursday/);
+    expect(formatDate(iso, 'es')).toContain('oct');
   });
 });

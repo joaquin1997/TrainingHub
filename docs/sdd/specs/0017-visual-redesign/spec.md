@@ -185,11 +185,13 @@ removed (Out of scope, last item).
 - **FR-18. Workout summary.** A hero block confirms the workout was saved and
   names it, followed by tiles for duration, volume and sets, the exercises
   with their sets, and the existing actions (view history, start again).
-- **FR-19. History.** Each session is a card: date, routine name, duration and
-  volume as chips, and the first exercises with their sets; tapping opens the
-  detail. The most recent session is not singled out by colour.
-- **FR-20. Workout detail.** A header with date, time range and routine name,
-  tiles for duration, sets done and volume, the notes if any, then one block
+- **FR-19. History.** Each session is a card: weekday and date in the chosen
+  language, start time, duration, volume and sets as chips, and the first
+  exercises with their sets; tapping opens the detail. The most recent session
+  is not singled out by colour. (A saved session does not carry its routine's
+  name, so the mockups' routine title is out of scope — it is new data.)
+- **FR-20. Workout detail.** A header with date and time range, tiles for
+  duration, sets done, volume and rest, the notes if any, then one block
   per exercise listing its sets with the set type marker, weight × reps, and
   rest.
 - **FR-21. Progress overview.** The training-frequency figures as tiles, the

@@ -199,6 +199,7 @@ export const es: TranslationCatalog = {
     illustration: 'Ilustración de {{name}}',
   },
   workouts: {
+    notesLabel: 'Notas',
     setsLabel: 'Series',
     volumeLabel: 'Volumen',
     setsOfTotal: 'de {{total}}',

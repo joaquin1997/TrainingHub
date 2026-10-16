@@ -1,5 +1,5 @@
-import { Link, useFocusEffect } from 'expo-router';
-import type { TFunction } from 'i18next';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -13,58 +13,24 @@ import {
 
 import { useSettings } from '@/features/settings/SettingsContext';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
-import { isPerformedSet } from '@/features/workouts/utils/performedSet';
+import { summarizeSession } from '@/features/workouts/utils/sessionStats';
 import {
   activeDurationSeconds,
-  formatDate,
+  formatDayHeading,
   formatDuration,
+  formatTime,
 } from '@/lib/format';
-import { fromKg, roundWeight } from '@/lib/weight';
+import { formatWeightValue } from '@/lib/weight';
 import { useRefresh } from '@/lib/useRefresh';
-import { EmptyState } from '@/ui/EmptyState';
-import { colors, commonStyles, radii, spacing } from '@/ui/theme';
+import { Chip } from '@/ui/Chip';
 import { ScreenTitle } from '@/ui/ScreenTitle';
+import { StateView } from '@/ui/StateView';
+import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
 import type { WorkoutSession } from '@workout/domain';
 
-function countSets(session: WorkoutSession) {
-  return session.exercises.reduce(
-    (total, exercise) => total + exercise.sets.length,
-    0,
-  );
-}
-
-function exerciseSummary(session: WorkoutSession, t: TFunction) {
-  const names = session.exercises
-    .slice()
-    .sort((left, right) => left.order - right.order)
-    .map((exercise) => exercise.exerciseName);
-
-  if (names.length === 0) {
-    return t('workouts.noExercises');
-  }
-
-  const shown = names.slice(0, 3).join(', ');
-  return names.length > 3 ? `${shown} +${names.length - 3}` : shown;
-}
-
-function sessionVolume(session: WorkoutSession) {
-  return Math.round(
-    session.exercises.reduce(
-      (total, exercise) =>
-        total +
-        exercise.sets.reduce(
-          (sum, set) =>
-            sum +
-            (isPerformedSet(set) ? (set.reps ?? 0) * (set.weightKg ?? 0) : 0),
-          0,
-        ),
-      0,
-    ),
-  );
-}
-
 export function WorkoutHistoryScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const router = useRouter();
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
@@ -124,62 +90,97 @@ export function WorkoutHistoryScreen() {
     >
       <ScreenTitle title={t('nav.history')} />
       {showLoading ? (
-        <View style={styles.stateCard}>
-          <Text style={styles.meta}>{t('workouts.loadingWorkouts')}</Text>
-        </View>
+        <StateView kind="loading" message={t('workouts.loadingWorkouts')} />
       ) : null}
       {errorMessage ? (
-        <View style={styles.stateCard}>
-          <Text style={styles.error}>{errorMessage}</Text>
-        </View>
+        <StateView
+          kind="error"
+          message={errorMessage}
+          actionLabel={t('common.retry')}
+          onAction={() => void loadSessions()}
+        />
       ) : null}
       {hasEmptyState ? (
-        <EmptyState
+        <StateView
+          kind="empty"
           icon="time-outline"
           title={t('workouts.emptyTitle')}
-          subtitle={t('workouts.emptySubtitle')}
+          message={t('workouts.emptySubtitle')}
         />
       ) : null}
       {hasListState ? (
         <View style={styles.list}>
-          {sessions.map((session) => (
-            <Link key={session.id} href={`/workouts/${session.id}`} asChild>
+          {sessions.map((session) => {
+            const when = session.completedAt ?? session.startedAt;
+            const totals = summarizeSession(session);
+            const exercises = session.exercises
+              .slice()
+              .sort((left, right) => left.order - right.order);
+            const shown = exercises.slice(0, 3);
+
+            return (
               <Pressable
-                style={({ pressed }) => [
-                  styles.card,
-                  pressed ? styles.cardPressed : null,
-                ]}
+                key={session.id}
+                accessibilityRole="button"
+                onPress={() => router.push(`/workouts/${session.id}`)}
+                style={({ pressed }) => [styles.card, pressed ? styles.cardPressed : null]}
               >
-                <Text style={styles.cardTitle}>
-                  {formatDate(session.completedAt ?? session.startedAt)}
-                </Text>
-                <Text style={styles.cardSummary} numberOfLines={1}>
-                  {exerciseSummary(session, t)}
-                </Text>
-                <View style={styles.statsRow}>
-                  <Text style={styles.stat}>
-                    {t('workouts.setsCount', { count: countSets(session) })}
-                  </Text>
-                  {sessionVolume(session) > 0 ? (
-                    <Text style={[styles.stat, styles.statStrong]}>
-                      {roundWeight(fromKg(sessionVolume(session), unit))} {unit}
-                    </Text>
-                  ) : null}
+                <View style={styles.cardHeader}>
+                  <View style={styles.cardHeading}>
+                    <Text style={styles.cardTitle}>{formatDayHeading(when, i18n.language)}</Text>
+                    <Text style={styles.meta}>{formatTime(session.startedAt, i18n.language)}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
+                </View>
+                <View style={styles.chips}>
                   {session.completedAt ? (
-                    <Text style={styles.stat}>
-                      {formatDuration(
+                    <Chip
+                      icon="time-outline"
+                      size="sm"
+                      label={formatDuration(
                         activeDurationSeconds(
                           session.startedAt,
                           session.completedAt,
                           session.pausedSeconds,
                         ),
                       )}
-                    </Text>
+                    />
                   ) : null}
+                  {totals.volumeKg > 0 ? (
+                    <Chip
+                      icon="barbell-outline"
+                      size="sm"
+                      label={`${formatWeightValue(totals.volumeKg, unit)} ${unit}`}
+                    />
+                  ) : null}
+                  <Chip
+                    icon="layers-outline"
+                    size="sm"
+                    label={t('workouts.setsCount', { count: totals.totalSets })}
+                  />
                 </View>
+                {shown.length === 0 ? (
+                  <Text style={styles.meta}>{t('workouts.noExercises')}</Text>
+                ) : (
+                  <View style={styles.exerciseList}>
+                    {shown.map((exercise) => (
+                      <View key={exercise.id} style={styles.exerciseRow}>
+                        <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
+                        <Text style={styles.exerciseSets}>
+                          {t('workouts.setsCount', { count: exercise.sets.length })}
+                        </Text>
+                      </View>
+                    ))}
+                    {exercises.length > shown.length ? (
+                      <Text style={styles.more}>
+                        {t('routines.moreExercises', { count: exercises.length - shown.length })}
+                      </Text>
+                    ) : null}
+                  </View>
+                )}
               </Pressable>
-            </Link>
-          ))}
+            );
+          })}
         </View>
       ) : null}
     </ScrollView>
@@ -193,57 +194,62 @@ const styles = StyleSheet.create({
   container: {
     ...commonStyles.scrollContent,
   },
-  title: {
-    ...commonStyles.title,
-  },
-  body: {
-    ...commonStyles.body,
-  },
   list: {
     gap: spacing.md,
   },
-  stateCard: {
-    ...commonStyles.card,
-  },
   card: {
     ...commonStyles.card,
+    gap: spacing.md,
   },
   cardPressed: {
     ...commonStyles.pressed,
   },
-  cardTitle: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  cardSummary: {
-    color: colors.textMuted,
-    fontSize: 14,
-  },
-  statsRow: {
+  cardHeader: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
     gap: spacing.sm,
-    marginTop: 2,
   },
-  stat: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: '700',
-    borderRadius: radii.sm,
-    backgroundColor: colors.surfaceMuted,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    overflow: 'hidden',
+  cardHeading: {
+    flex: 1,
+    gap: 2,
   },
-  statStrong: {
-    color: colors.onPrimary,
-    backgroundColor: colors.primary,
+  cardTitle: {
+    ...commonStyles.cardTitle,
   },
   meta: {
     ...commonStyles.meta,
   },
-  error: {
-    ...commonStyles.error,
+  chips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  exerciseList: {
+    gap: spacing.xs,
+    borderRadius: radii.md,
+    backgroundColor: colors.surfaceRaised,
+    padding: spacing.md,
+  },
+  exerciseRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  exerciseName: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  exerciseSets: {
+    color: colors.textMuted,
+    fontFamily: fonts.display,
+    fontSize: 13,
+    lineHeight: 20,
+    fontVariant: ['tabular-nums'],
+  },
+  more: {
+    color: colors.textSubtle,
+    fontSize: 13,
   },
 });
