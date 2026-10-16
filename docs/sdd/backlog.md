@@ -14,7 +14,7 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0011](specs/0011-workout-pause/spec.md) | Pause the active workout | `planned` — tasks awaiting review | 1 — Live workout logging |
 | [0012](specs/0012-workout-live-activity/spec.md) | Live workout status on the lock screen | `planned` — spike done; amended 2026-09-24; tasks awaiting review | 8 — Integrations & platform |
 | [0013](specs/0013-progress-performed-work/spec.md) | Progress counts only performed work | `in-progress` — code complete on `feat/sdd-0013-0012`; awaiting the owner's redeploy and device checks (task 6) | 4 — Progress |
-| [0014](specs/0014-workout-save-integrity/spec.md) | Workout save integrity | `in-progress` — spec, plan, tasks self-approved 2026-10-16 (owner's delegation); needed before 0010 task 7 | 1 — Live workout logging |
+| [0014](specs/0014-workout-save-integrity/spec.md) | Workout save integrity | `in-progress` — code complete on `feat/sdd-0013-0012`; awaiting the migration, redeploy and device checks (task 7); needed before 0010 task 7 | 1 — Live workout logging |
 | 0015 | Custom exercises are private | `draft` — not written yet; ships alongside 0001 | 6 — Exercises |
 
 Execution order agreed 2026-09-24: 0013 → 0014 → 0010 → 0011 → 0012 →
@@ -52,7 +52,7 @@ Writing these surfaced four things nobody had recorded. Status as of the
 
 - **Routine deletion with performed workouts attached** — *answered* (0004):
   the history is kept and loses only its link to the routine. Deleting the
-  routine of the *active* workout, however, makes that workout unsaveable —
+  routine of the *active* workout made that workout unsaveable — closed by
   spec 0014.
 - **Active workout is in-memory only** — *specified* as 0010, which also lifts
   the bound on spec 0001's EF-4.

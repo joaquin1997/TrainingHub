@@ -63,11 +63,11 @@ of writing.
 a hard delete, and performed workouts survive with their link to the routine
 (and to its exercise slots) cleared. They stay in history and in progress.
 
-**Gap:** the edit-lock does not cover deletion. Deleting the routine of the
-*active* workout is allowed, after which saving that workout is rejected
-because it references a routine that no longer exists. Decided 2026-09-24:
-block the deletion in the app and treat the routine link as optional provenance
-when saving — spec 0014.
+**Closed by spec 0014 (2026-10-16):** the lock now covers deletion too — the
+routines list and detail offer neither edit nor delete for the active
+workout's routine — and the save treats the routine link as optional
+provenance, so a routine deleted by any other path no longer blocks saving.
+Deleting a routine asks for confirmation from every entry point.
 
 ## Related
 

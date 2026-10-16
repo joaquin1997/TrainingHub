@@ -21,7 +21,7 @@ the tree green: `pnpm -r typecheck` and `pnpm -r test` pass at every step
 | 5 | [x] Draft `clientId` (generated, stable across edits) sent in the payload | mobile | unit tests | `feat(workouts): send a stable identity with each workout` |
 | 6 | [x] Active routine: no edit/delete from the list menu or detail; detail Delete confirms; `ActionSheet` message | mobile | typecheck; **[DEVICE]** AC-6, AC-7 | `fix(routines): lock the active workout's routine and confirm deletes` |
 | 7 | Apply migration + redeploy; `curl` replay and parallel saves; device AC-2 | ops | **[DEPLOY]** AC-1, EF-2; **[DEVICE]** AC-2 | — (no commit) |
-| 8 | Roadmap 01, retro 0004 (gap closed), 0001 FR-7 note, backlog; spec status | docs | links resolve | `docs(sdd): close spec 0014` |
+| 8 | [x] Roadmap 01, retro 0004 (gap closed), 0001 FR-7 note, backlog; spec status | docs | links resolve | `docs(sdd): close spec 0014` |
 
 Task 7 is the owner's (deploy and device checks are batched).
 
@@ -68,12 +68,15 @@ Task 7 is the owner's (deploy and device checks are batched).
   list. Not guarded: the edit screen reached by a typed URL — no screen or menu
   leads there for a locked routine. `Alert` is a no-op on web (as for the
   list's existing confirm). Device checks pending (AC-6, AC-7).
+- 2026-10-16 — Task 8: roadmap 01, retro 0004 (gap closed), 0001 FR-7,
+  backlog. Spec stays `in-progress` until task 7 (migration, redeploy, `curl`
+  and device checks) is done by the owner; then flip it to `done`.
 
 ## Definition of done
 
 - [ ] Every functional requirement and acceptance criterion in `spec.md` is met
       or explicitly deferred with a TODO
-- [ ] `pnpm -r typecheck` and `pnpm -r test` green
-- [ ] `docs/roadmap/01-live-workout-logging.md` updated
+- [x] `pnpm -r typecheck` and `pnpm -r test` green
+- [x] `docs/roadmap/01-live-workout-logging.md` updated
 - [ ] `spec.md` status set to `done`; `../backlog.md` updated
 - [ ] API redeployed with the migration applied
