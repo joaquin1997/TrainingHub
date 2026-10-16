@@ -15,8 +15,15 @@ import {
   countWorkoutSets,
   moveWorkoutExercise,
   moveWorkoutSet,
+  adjustRest,
   pauseWorkout,
+  resolveRestSeconds,
+  restPhase,
+  restRemainingSeconds,
   resumeWorkout,
+  setExerciseRest,
+  skipRest,
+  startRest,
   totalPausedSeconds,
   removeSetFromWorkoutExercise,
   getActiveWorkout,
@@ -662,5 +669,79 @@ describe('pause (spec 0011)', () => {
 
     expect(toCreateWorkoutSessionInput(draft).pausedSeconds).toBe(30 * 60);
     vi.useRealTimers();
+  });
+});
+
+describe('rest timer (spec 0018)', () => {
+  const at = (seconds: number) => new Date(Date.UTC(2026, 9, 16, 9, 0, seconds));
+  const fresh = () => buildWorkoutSessionDraft(routine);
+
+  it('resolves the rest: set in the workout, else the routine, else the default (FR-1)', () => {
+    expect(resolveRestSeconds({ restSeconds: 210 }, 90)).toBe(210);
+    expect(resolveRestSeconds({ restSeconds: 0 }, 90)).toBe(0);
+    expect(resolveRestSeconds({}, 90)).toBe(90);
+  });
+
+  it('changes one exercise rest without touching others, the routine or a running rest (FR-2, AC-1)', () => {
+    const base = fresh();
+    const [first, second] = base.exercises;
+    const resting = startRest(
+      { ...base, exercises: [{ ...first!, restSeconds: 120 }, second!] },
+      first!.id,
+      120,
+      at(0),
+    );
+
+    const changed = setExerciseRest(resting, first!.id, 210);
+
+    expect(changed.exercises[0]!.restSeconds).toBe(210);
+    expect(changed.exercises[1]).toBe(resting.exercises[1]);
+    expect(changed.rest).toEqual(resting.rest);
+    expect(resolveRestSeconds(changed.exercises[0]!, 90)).toBe(210);
+    expect(routine.exercises.every((exercise) => exercise.restSeconds === undefined)).toBe(true);
+  });
+
+  it('starts a rest with an absolute end, replacing a running one', () => {
+    const first = startRest(fresh(), 'we-a', 90, at(0));
+    const second = startRest(first, 'we-b', 60, at(10));
+
+    expect(first.rest).toEqual({ endsAt: at(90).toISOString(), totalSeconds: 90, workoutExerciseId: 'we-a' });
+    expect(second.rest).toEqual({ endsAt: at(70).toISOString(), totalSeconds: 60, workoutExerciseId: 'we-b' });
+  });
+
+  it('starts nothing for a rest of 0 seconds', () => {
+    const draft = fresh();
+
+    expect(startRest(draft, 'we-a', 0, at(0))).toBe(draft);
+  });
+
+  it('adjusts only the running rest, never earlier than now (FR-3)', () => {
+    const draft = startRest(fresh(), 'we-a', 60, at(0));
+
+    const longer = adjustRest(draft, 15, at(10));
+    expect(longer.rest).toEqual({ endsAt: at(75).toISOString(), totalSeconds: 75, workoutExerciseId: 'we-a' });
+    expect(longer.exercises).toBe(draft.exercises);
+
+    const shorter = adjustRest(draft, -15, at(50));
+    expect(shorter.rest?.endsAt).toBe(at(50).toISOString());
+    expect(restRemainingSeconds(shorter.rest!, at(50))).toBe(0);
+    expect(adjustRest(fresh(), 15, at(0)).rest).toBeUndefined();
+  });
+
+  it('skips the running rest', () => {
+    const draft = startRest(fresh(), 'we-a', 60, at(0));
+
+    expect(skipRest(draft).rest).toBeUndefined();
+    expect(skipRest(draft).exercises).toBe(draft.exercises);
+  });
+
+  it('tells running, just ended and stale apart', () => {
+    const rest = startRest(fresh(), 'we-a', 60, at(0)).rest!;
+
+    expect(restPhase(rest, at(59))).toBe('running');
+    expect(restPhase(rest, at(60))).toBe('ended');
+    expect(restPhase(rest, at(62))).toBe('ended');
+    expect(restPhase(rest, at(63))).toBe('stale');
+    expect(restRemainingSeconds(rest, at(15))).toBe(45);
   });
 });

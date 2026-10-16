@@ -65,7 +65,7 @@ enum WorkoutActivityActions {
         state.pausedSeconds += now.timeIntervalSince(pausedAt)
         state.pausedAt = nil
       }
-      await activity.update(ActivityContent(state: state, staleDate: nil))
+      await activity.update(ActivityContent(state: state, staleDate: state.staleDate))
     }
     NotificationCenter.default.post(
       name: didChangeNotification,

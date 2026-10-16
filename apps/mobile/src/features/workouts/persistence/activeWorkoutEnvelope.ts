@@ -57,6 +57,17 @@ function looksLikeDraft(value: unknown): value is WorkoutSessionDraft {
   );
 }
 
+/** A stored running rest with a readable end and length (spec 0018). */
+function looksLikeRest(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.endsAt === 'string' &&
+    !Number.isNaN(new Date(value.endsAt).getTime()) &&
+    typeof value.totalSeconds === 'number' &&
+    typeof value.workoutExerciseId === 'string'
+  );
+}
+
 /**
  * Reads a stored envelope for `ownerId`: `ok` with the draft, `foreign` when it
  * belongs to someone else (EF-2), `invalid` when unreadable or from another
@@ -90,5 +101,12 @@ export function parsePersistedActiveWorkout(
     return { kind: 'foreign' };
   }
 
-  return { kind: 'ok', draft: parsed.draft };
+  const draft = parsed.draft;
+
+  // A malformed rest is dropped; the workout itself is kept.
+  if (draft.rest !== undefined && !looksLikeRest(draft.rest)) {
+    return { kind: 'ok', draft: { ...draft, rest: undefined } };
+  }
+
+  return { kind: 'ok', draft };
 }

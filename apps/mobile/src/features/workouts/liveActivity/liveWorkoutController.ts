@@ -7,7 +7,7 @@ import {
   type WorkoutSessionDraft,
 } from '@/features/workouts/state/workoutDraftStore';
 
-import { reconcile, samePause, toLiveWorkoutPayload } from './liveWorkoutPayload';
+import { reconcile, samePause, sameRest, toLiveWorkoutPayload } from './liveWorkoutPayload';
 
 export interface ActiveWorkoutStore {
   get(): WorkoutSessionDraft | null;
@@ -30,7 +30,7 @@ type ShownPause = { pausedAt?: string; pausedSeconds: number };
 
 /**
  * Drives the live workout surface from the active workout (spec 0012): starts
- * it when a workout starts, pushes pause changes, ends it when the workout is
+ * it when a workout starts, pushes pause and rest (spec 0018) changes, ends it when the workout is
  * finished or discarded, and applies pauses made on the surface itself. Only
  * the clock-relevant state is pushed; logging sets does not touch the surface.
  * Bridge calls run in order through one queue.
@@ -46,6 +46,7 @@ export function startLiveWorkoutController({
 }) {
   let shownId: string | null = null;
   let shownPause: ShownPause | null = null;
+  let shownRestEndsAt: string | undefined;
   // A start already queued for this workout; reconcile must not add another.
   let pendingStartId: string | null = null;
   let lastPayload: HealthWorkoutPayload | null = null;
@@ -65,6 +66,7 @@ export function startLiveWorkoutController({
   const markShown = (draft: WorkoutSessionDraft) => {
     shownId = draft.clientId;
     shownPause = { pausedAt: draft.pausedAt, pausedSeconds: draft.pausedSeconds ?? 0 };
+    shownRestEndsAt = draft.rest?.endsAt;
   };
 
   const show = (draft: WorkoutSessionDraft) => {
@@ -108,7 +110,7 @@ export function startLiveWorkoutController({
       return;
     }
 
-    if (!shownPause || !samePause(draft, shownPause)) {
+    if (!shownPause || !samePause(draft, shownPause) || !sameRest(draft, shownRestEndsAt)) {
       markShown(draft);
       const payload = payloadFor(draft);
       void run(() => bridge.updateLiveWorkout(payload));
