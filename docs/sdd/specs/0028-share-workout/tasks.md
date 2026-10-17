@@ -24,6 +24,6 @@ Each task leaves `pnpm -r typecheck` and `pnpm -r test` green (Article 8).
 
 ## Definition of done
 
-- [x] Every FR and AC met or deferred with a TODO (FR-3 waits for 0023)
+- [x] Every FR and AC met or deferred with a TODO (FR-3 done after 0023 merged, 2026-10-17)
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [ ] Device check: share sheet to Notes

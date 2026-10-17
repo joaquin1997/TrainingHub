@@ -1,6 +1,7 @@
+import { describeRecord } from '@/features/progress/utils/recordLabels';
 import { formatDayHeading, formatDuration } from '@/lib/format';
 import { formatWeightValue } from '@/lib/weight';
-import type { WeightUnit, WorkoutSetType } from '@workout/domain';
+import type { SessionRecord, WeightUnit, WorkoutSetType } from '@workout/domain';
 
 export interface ShareSet {
   weightKg?: number | null;
@@ -19,14 +20,28 @@ export interface ShareWorkoutInput {
   language: string;
   exercises: { name: string; sets: ShareSet[] }[];
   notes?: string;
+  /** Records the workout beat (spec 0023), already described for display. */
+  records?: { exerciseName: string; title: string; value: string }[];
   t: (key: string) => string;
+}
+
+/** The records a workout beat, described for {@link formatWorkoutShareText}. */
+export function shareRecords(
+  records: SessionRecord[],
+  unit: WeightUnit,
+  t: Parameters<typeof describeRecord>[2],
+): NonNullable<ShareWorkoutInput['records']> {
+  return records.map((record) => {
+    const { title, value } = describeRecord(record, unit, t);
+    return { exerciseName: record.exerciseName, title, value };
+  });
 }
 
 /**
  * Plain text of a finished workout for the share sheet (spec 0028): date,
  * routine, duration, volume and each exercise's performed sets, in the app's
- * language and the person's weight unit. Unticked sets are left out.
- * TODO(0023): mark the records beaten once records are exposed (FR-3).
+ * language and the person's weight unit. Unticked sets are left out. Records
+ * beaten are listed when known (FR-3).
  */
 export function formatWorkoutShareText(input: ShareWorkoutInput): string {
   const { t, unit } = input;
@@ -51,6 +66,13 @@ export function formatWorkoutShareText(input: ShareWorkoutInput): string {
         `${index + 1}. ${formatWeightValue(set.weightKg, unit)} ${unit} × ${set.reps ?? '–'}${label}`,
       );
     });
+  }
+
+  if (input.records && input.records.length > 0) {
+    lines.push('', t('workouts.share.records'));
+    for (const record of input.records) {
+      lines.push(`${record.exerciseName}: ${record.title} · ${record.value}`);
+    }
   }
 
   if (input.notes) lines.push('', `${t('workouts.share.notes')}: ${input.notes}`);
