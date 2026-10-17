@@ -80,3 +80,71 @@ export interface LiveWorkoutBridge {
   onLiveWorkoutStateChange?(listener: (state: LiveWorkoutState) => void): () => void;
 }
 
+/**
+ * The active workout as the watch shows it (spec 0025). Display-ready: the
+ * current set's target is the text the phone shows, already in the workout's
+ * display unit, so no weight number reaches the watch (constitution Art. 4).
+ */
+export interface WatchWorkoutSnapshot {
+  workoutSessionId: string;
+  routineName: string;
+  startedAt: ISODateString;
+  /** Set while the workout is paused. */
+  pausedAt?: ISODateString;
+  /** Whole seconds of pauses already ended. */
+  pausedSeconds: number;
+  /** End of the running rest, absent when none runs. */
+  restEndsAt?: ISODateString;
+  /** The set to do now; absent when every set is done. */
+  currentSet?: WatchWorkoutSet;
+}
+
+export interface WatchWorkoutSet {
+  workoutExerciseId: string;
+  workoutSetId: string;
+  exerciseName: string;
+  /** 1-based position of the set in its exercise. */
+  setNumber: number;
+  setCount: number;
+  /** Planned values as shown on the phone, e.g. "60 kg × 8"; empty when none. */
+  target: string;
+  /** The rest that ticking this set starts, in seconds; 0 starts none. */
+  restSeconds: number;
+}
+
+/**
+ * What the watch sends back (spec 0025). Requests carry a unique `id` and are
+ * applied in the order sent; applying one twice changes nothing (EF-1).
+ * `activeEnergy` is the kcal the watch measured for the workout so far (FR-3).
+ */
+export type WatchWorkoutEvent =
+  | {
+      kind: 'setDone';
+      id: string;
+      workoutSessionId: string;
+      workoutExerciseId: string;
+      workoutSetId: string;
+      at: ISODateString;
+    }
+  | { kind: 'pause' | 'resume'; id: string; workoutSessionId: string; at: ISODateString }
+  | { kind: 'finishRequested'; id: string; workoutSessionId: string }
+  | { kind: 'activeEnergy'; workoutSessionId: string; kcal: number };
+
+export type WatchWorkoutOutcome = 'finished' | 'discarded';
+
+/**
+ * Mobile-side boundary for running the active workout on a watch (spec 0025).
+ * The phone stays the source of the logged data: the watch mirrors snapshots
+ * and sends requests back as events.
+ */
+export interface WatchWorkoutBridge {
+  providerId: HealthProviderId;
+  /** Starts the workout on the watch, when its app is installed (FR-2). */
+  startWatchWorkout(snapshot: WatchWorkoutSnapshot): Promise<void>;
+  updateWatchWorkout(snapshot: WatchWorkoutSnapshot): Promise<void>;
+  /** Ends it on the watch: saved to Health when finished, dropped when discarded. */
+  endWatchWorkout(workoutSessionId: string, outcome: WatchWorkoutOutcome): Promise<void>;
+  /** Events from the watch, in the order sent; returns the unsubscribe. */
+  onWatchWorkoutEvent(listener: (event: WatchWorkoutEvent) => void): () => void;
+}
+

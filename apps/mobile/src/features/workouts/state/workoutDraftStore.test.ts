@@ -12,6 +12,7 @@ import {
   hydrateActiveWorkout,
   removeExerciseFromWorkout,
   clearActiveWorkout,
+  completeSet,
   countWorkoutSets,
   moveWorkoutExercise,
   moveWorkoutSet,
@@ -858,5 +859,43 @@ describe('time and distance sets (spec 0021)', () => {
     const withSet = addSetToWorkoutExercise(typed, exercise.id);
 
     expect(firstExercise(withSet).entries[3]!.durationPlaceholder).toBe('1:15');
+  });
+});
+
+describe('completeSet (spec 0018 FR-1, spec 0025)', () => {
+  const at = (seconds: number) => new Date(Date.UTC(2026, 9, 17, 9, 0, seconds));
+
+  it('ticks the set and starts the exercise rest from the given instant', () => {
+    const base = buildWorkoutSessionDraft(routine);
+    const bench = base.exercises[0]!;
+    const draft = { ...base, exercises: [{ ...bench, restSeconds: 120 }, base.exercises[1]!] };
+
+    const next = completeSet(draft, bench.id, bench.entries[0]!.id, 90, at(10));
+
+    expect(next.exercises[0]!.entries[0]).toMatchObject({ done: true, restSeconds: 120 });
+    expect(next.rest).toEqual({
+      endsAt: at(130).toISOString(),
+      totalSeconds: 120,
+      workoutExerciseId: bench.id,
+    });
+  });
+
+  it('falls back to the default rest', () => {
+    const base = buildWorkoutSessionDraft(routine);
+    const bench = base.exercises[0]!;
+
+    const next = completeSet(base, bench.id, bench.entries[0]!.id, 90, at(0));
+
+    expect(next.rest?.totalSeconds).toBe(90);
+  });
+
+  it('leaves a done or unknown set as it is (EF-1)', () => {
+    const base = buildWorkoutSessionDraft(routine);
+    const bench = base.exercises[0]!;
+    const once = completeSet(base, bench.id, bench.entries[0]!.id, 90, at(0));
+
+    expect(completeSet(once, bench.id, bench.entries[0]!.id, 90, at(30))).toBe(once);
+    expect(completeSet(base, bench.id, 'nope', 90, at(0))).toBe(base);
+    expect(completeSet(base, 'nope', bench.entries[0]!.id, 90, at(0))).toBe(base);
   });
 });

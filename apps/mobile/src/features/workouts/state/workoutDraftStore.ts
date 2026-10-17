@@ -636,6 +636,34 @@ export function startRest(
   };
 }
 
+/**
+ * Ticks a set done and starts its exercise's rest from `now` (spec 0018
+ * FR-1) — the one rule for the phone and the watch (spec 0025). A set already
+ * done, or not found, leaves the workout as it is, so a repeated tick is
+ * harmless (EF-1).
+ */
+export function completeSet(
+  workoutDraft: WorkoutSessionDraft,
+  workoutExerciseId: string,
+  workoutSetId: string,
+  defaultRestSeconds: number,
+  now: Date = new Date(),
+): WorkoutSessionDraft {
+  const exercise = workoutDraft.exercises.find((item) => item.id === workoutExerciseId);
+  const set = exercise?.entries.find((item) => item.id === workoutSetId);
+  if (!exercise || !set || set.done) {
+    return workoutDraft;
+  }
+
+  const rest = resolveRestSeconds(exercise, defaultRestSeconds);
+  return startRest(
+    toggleWorkoutSetDone(workoutDraft, workoutExerciseId, workoutSetId, rest),
+    workoutExerciseId,
+    rest,
+    now,
+  );
+}
+
 /** Whole seconds left in a rest at `now`, never below 0. */
 export function restRemainingSeconds(rest: RunningRest, now: Date = new Date()): number {
   return Math.max(0, Math.round((new Date(rest.endsAt).getTime() - now.getTime()) / 1000));

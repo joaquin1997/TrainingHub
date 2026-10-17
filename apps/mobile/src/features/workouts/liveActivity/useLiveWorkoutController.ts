@@ -1,12 +1,17 @@
-import { useEffect } from 'react';
+import { useRouter } from 'expo-router';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppState, Platform } from 'react-native';
 
 import { setLiveActivityLabels } from '@/features/health/providers/appleHealth';
+import { setWatchLabels } from '@/features/health/providers/appleWatch';
 import {
   findHealthIntegration,
   findLiveWorkoutBridge,
+  findWatchWorkoutBridge,
 } from '@/features/health/providers';
+import { useSettings } from '@/features/settings/SettingsContext';
+import { startWatchWorkoutController } from '@/features/workouts/watch/watchWorkoutController';
 import {
   getActiveWorkout,
   subscribeActiveWorkout,
@@ -14,16 +19,25 @@ import {
 
 import { startActiveEnergyRefresher } from './activeEnergyRefresher';
 import { publishActiveEnergy } from './activeEnergyStore';
+import { createKcalSources } from './kcalSources';
 
 import { startLiveWorkoutController } from './liveWorkoutController';
 
 /**
- * Runs the live workout status for the whole app (spec 0012). Enabled once the
- * stored workout has been restored (spec 0010), so the first reconcile sees
- * the real active workout. iOS only; elsewhere the bridge is a no-op.
+ * Runs the live workout status for the whole app (spec 0012) and the workout
+ * on the watch (spec 0025). Enabled once the stored workout has been restored
+ * (spec 0010), so the first reconcile sees the real active workout. iOS only;
+ * elsewhere the bridges are no-ops.
  */
 export function useLiveWorkoutController(enabled: boolean) {
   const { t, i18n } = useTranslation();
+  const router = useRouter();
+  const { settings } = useSettings();
+  // Read when a set is ticked on the watch, without restarting the controllers.
+  const defaultRestRef = useRef(settings.defaultRestSeconds);
+  defaultRestRef.current = settings.defaultRestSeconds;
+  const routerRef = useRef(router);
+  routerRef.current = router;
 
   useEffect(() => {
     setLiveActivityLabels({
@@ -31,6 +45,18 @@ export function useLiveWorkoutController(enabled: boolean) {
       pause: t('workouts.pause'),
       resume: t('workouts.resume'),
       finish: t('workouts.finish'),
+    });
+    setWatchLabels({
+      done: t('workouts.watchDone'),
+      pause: t('workouts.pause'),
+      resume: t('workouts.resume'),
+      finish: t('workouts.finish'),
+      rest: t('workouts.watchRest'),
+      paused: t('workouts.paused'),
+      finishOnPhone: t('workouts.watchFinishOnPhone'),
+      allDone: t('workouts.watchAllDone'),
+      waiting: t('workouts.watchWaiting'),
+      setOf: (number, count) => t('workouts.watchSetOf', { number, count }),
     });
   }, [t, i18n.language]);
 
@@ -45,15 +71,29 @@ export function useLiveWorkoutController(enabled: boolean) {
     }
 
     const controller = startLiveWorkoutController({ bridge });
+    // The phone's Health reading until the watch measures the workout (0025).
+    const kcal = createKcalSources((clientId, value) => {
+      controller.setActiveEnergyKcal(value);
+      // The same reading, for the active workout screen (spec 0017).
+      publishActiveEnergy(clientId, value);
+    });
     const health = findHealthIntegration('apple-health');
     const energy = health
       ? startActiveEnergyRefresher({
           health,
           store: { get: getActiveWorkout, subscribe: subscribeActiveWorkout },
-          onKcal: (kcal) => {
-            controller.setActiveEnergyKcal(kcal);
-            // The same reading, for the active workout screen (spec 0017).
-            publishActiveEnergy(getActiveWorkout()?.clientId, kcal);
+          onKcal: (value) => kcal.fromPhone(getActiveWorkout()?.clientId, value),
+        })
+      : null;
+    const watchBridge = findWatchWorkoutBridge('apple-health');
+    const watch = watchBridge
+      ? startWatchWorkoutController({
+          bridge: watchBridge,
+          defaultRestSeconds: () => defaultRestRef.current,
+          onActiveEnergy: kcal.fromWatch,
+          // Finishing is confirmed on the phone, as from the lock screen.
+          onFinishRequested: () => {
+            routerRef.current.navigate('/workouts/active?action=finish');
           },
         })
       : null;
@@ -67,6 +107,7 @@ export function useLiveWorkoutController(enabled: boolean) {
 
     return () => {
       subscription.remove();
+      watch?.stop();
       energy?.stop();
       controller.stop();
     };
