@@ -10,14 +10,14 @@ vi.mock('./repository.js', () => ({
   deleteRoutine: vi.fn(),
 }));
 vi.mock('../exercises/repository.js', () => ({
-  findExerciseById: vi.fn(),
+  findUsableExercises: vi.fn(),
 }));
 vi.mock('../../infrastructure/userContext.js', () => ({
   resolveUserPublicId: vi.fn(async () => 'user-test'),
 }));
 
 import { createApp } from '../../app.js';
-import { findExerciseById } from '../exercises/repository.js';
+import { findUsableExercises } from '../exercises/repository.js';
 import {
   createRoutine,
   deleteRoutine,
@@ -27,6 +27,10 @@ import {
 } from './repository.js';
 
 const app = createApp({ logger: false });
+
+/** What `findUsableExercises` answers: the usable exercises by public id. */
+const usable = (...exercises: Array<{ id: string; name: string }>) =>
+  new Map(exercises.map((exercise) => [exercise.id, exercise]));
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -83,7 +87,7 @@ describe('POST /routines', () => {
   });
 
   it('returns 400 when an exercise reference is unknown', async () => {
-    vi.mocked(findExerciseById).mockResolvedValue(null as never);
+    vi.mocked(findUsableExercises).mockResolvedValue(new Map());
 
     const response = await app.inject({
       method: 'POST',
@@ -100,7 +104,7 @@ describe('POST /routines', () => {
   });
 
   it('creates the routine and hydrates the exercise name (201)', async () => {
-    vi.mocked(findExerciseById).mockResolvedValue({ id: 'ex1', name: 'Bench Press' } as never);
+    vi.mocked(findUsableExercises).mockResolvedValue(usable({ id: 'ex1', name: 'Bench Press' }));
     vi.mocked(createRoutine).mockResolvedValue({ id: 'r1', name: 'Push Day' } as never);
 
     const response = await app.inject({
@@ -129,7 +133,7 @@ describe('POST /routines', () => {
 
 describe('POST /routines time and distance targets (spec 0021)', () => {
   it('passes time and distance targets to the repository', async () => {
-    vi.mocked(findExerciseById).mockResolvedValue({ id: 'ex2', name: 'Plank' } as never);
+    vi.mocked(findUsableExercises).mockResolvedValue(usable({ id: 'ex2', name: 'Plank' }));
     vi.mocked(createRoutine).mockResolvedValue({ id: 'r2', name: 'Core' } as never);
 
     const response = await app.inject({
@@ -166,7 +170,7 @@ describe('POST /routines time and distance targets (spec 0021)', () => {
 
 describe('POST /routines warm-up sets (spec 0024)', () => {
   it('passes isWarmup only for warm-up sets', async () => {
-    vi.mocked(findExerciseById).mockResolvedValue({ id: 'ex1', name: 'Squat' } as never);
+    vi.mocked(findUsableExercises).mockResolvedValue(usable({ id: 'ex1', name: 'Squat' }));
     vi.mocked(createRoutine).mockResolvedValue({ id: 'r3', name: 'Legs' } as never);
 
     const response = await app.inject({
@@ -198,7 +202,7 @@ describe('routine warm-up block (spec 0024)', () => {
   const exercises = [{ exerciseId: 'ex1', orderIndex: 1, sets: [{ setNumber: 1 }] }];
 
   beforeEach(() => {
-    vi.mocked(findExerciseById).mockResolvedValue({ id: 'ex1', name: 'Squat' } as never);
+    vi.mocked(findUsableExercises).mockResolvedValue(usable({ id: 'ex1', name: 'Squat' }));
     vi.mocked(createRoutine).mockResolvedValue({ id: 'r4', name: 'Legs' } as never);
     vi.mocked(updateRoutine).mockResolvedValue({ id: 'r4', name: 'Legs' } as never);
   });
@@ -281,5 +285,69 @@ describe('DELETE /routines/:id', () => {
 
     expect(response.statusCode).toBe(404);
     expect(response.json()).toEqual({ message: 'Routine not found' });
+  });
+});
+
+describe('routine exercises the person may use (spec 0015)', () => {
+  const payload = (exerciseIds: string[]) => ({
+    name: 'Glutes',
+    exercises: exerciseIds.map((exerciseId, index) => ({
+      exerciseId,
+      orderIndex: index + 1,
+      sets: [{ setNumber: 1 }],
+    })),
+  });
+
+  it('looks the exercises up for the acting person, once', async () => {
+    vi.mocked(findUsableExercises).mockResolvedValue(usable({ id: 'ex1', name: 'Squat' }));
+    vi.mocked(createRoutine).mockResolvedValue({ id: 'r5', name: 'Glutes' } as never);
+
+    await app.inject({ method: 'POST', url: '/routines', payload: payload(['ex1']) });
+
+    expect(findUsableExercises).toHaveBeenCalledTimes(1);
+    expect(findUsableExercises).toHaveBeenCalledWith('user-test', ['ex1']);
+  });
+
+  it("refuses someone else's exercise that is not held, as unknown (AC-6)", async () => {
+    // The repository leaves out exercises the person may not use.
+    vi.mocked(findUsableExercises).mockResolvedValue(usable({ id: 'ex1', name: 'Squat' }));
+
+    for (const method of ['POST', 'PUT'] as const) {
+      const response = await app.inject({
+        method,
+        url: method === 'POST' ? '/routines' : '/routines/r1',
+        payload: payload(['ex1', 'ex-ana']),
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json()).toEqual({ message: 'Routine references unknown exercises' });
+    }
+    expect(createRoutine).not.toHaveBeenCalled();
+    expect(updateRoutine).not.toHaveBeenCalled();
+  });
+
+  it('saves an edited routine that holds someone else exercise, by its name (AC-5)', async () => {
+    vi.mocked(findUsableExercises).mockResolvedValue(
+      usable({ id: 'ex1', name: 'Squat' }, { id: 'ex-ana', name: 'Hip thrust (máquina gym)' }),
+    );
+    vi.mocked(updateRoutine).mockResolvedValue({ id: 'r1', name: 'Glutes' } as never);
+
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/routines/r1',
+      payload: payload(['ex-ana', 'ex1']),
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(updateRoutine).toHaveBeenCalledWith(
+      'user-test',
+      'r1',
+      expect.objectContaining({
+        exercises: [
+          expect.objectContaining({ exerciseId: 'ex-ana', exerciseName: 'Hip thrust (máquina gym)' }),
+          expect.objectContaining({ exerciseId: 'ex1', exerciseName: 'Squat' }),
+        ],
+      }),
+    );
   });
 });

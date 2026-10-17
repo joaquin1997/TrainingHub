@@ -18,7 +18,7 @@ older apps (fewer rows, 404 instead of 403 on paths they cannot reach).
 | 1 | [x] Plan and tasks; spec status `in-progress` | docs | — | `docs(sdd): plan and tasks for 0015` |
 | 2 | [x] `exercises/visibility.ts`: `visibleExerciseWhere`, `usableExerciseWhere`, `classifyExerciseAccess`; tests | api | unit tests | `feat(exercises): visibility rule for custom exercises` |
 | 3 | [x] Exercises API scoped to the person: list, detail, same-name dedupe (catalog first), favourites (add, list), photo read; photo writes and unilateral answer 404 for someone else's custom exercise; route tests incl. "no existence leak" | api | route tests (AC-1, 2, 7, 8, 9) | `feat(exercises): custom exercises visible only to their creator` |
-| 4 | [ ] `findUsableExercises`; routines create/update and workout save accept catalog, own and held exercises only; route tests | api | route tests (AC-5, AC-6, EF-1, EF-2) | `feat(exercises): routines and workouts keep held exercises only` |
+| 4 | [x] `findUsableExercises`; routines create/update and workout save accept catalog, own and held exercises only; route tests | api | route tests (AC-5, AC-6, EF-1, EF-2) | `feat(exercises): routines and workouts keep held exercises only` |
 | 5 | [ ] Mobile EF-4: `isExerciseGone`; picker checks a custom exercise before choosing (notice + reload); routine form message + catalog reload on unknown exercises; i18n en/es | mobile | unit test; typecheck | `feat(exercises): handle exercises that are no longer available` |
 | 6 | [ ] Local end-to-end check on PGlite (two users, curl through AC-1…AC-9); progress log; definition of done | docs | log | `docs(sdd): record 0015 implementation` |
 | 7 | [ ] [DEVICE] Ben's app: held exercise in a routine and its workout show the neutral tile and the name; not in pickers; a stale picker shows the notice | mobile | device | — |
@@ -62,6 +62,12 @@ device pass (task 7), the redeploy (task 8).
   status, content type and body of Ana's id against an unknown id for detail,
   photo read/write/delete, favourite and unilateral. Interim: the routines
   route looks exercises up as visible-only until task 4 widens it to held.
+- 2026-10-17 — Task 4: `findUsableExercises` (one query per save instead of
+  one per row) for routine create/update; the workout save's exercise lookup
+  uses `usableExerciseWhere` (the `TODO(sdd)` for 0015 there is closed). Route
+  tests: acting person passed once, a foreign not-held id → 400 on POST and
+  PUT, a held one saved under its name. The DB side of "held" is checked end
+  to end in task 6.
 
 ## Definition of done
 

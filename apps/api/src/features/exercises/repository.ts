@@ -4,7 +4,11 @@ import type { CreateExerciseInput, Exercise, MuscleGroup } from '@workout/domain
 import { prisma } from '../../infrastructure/prisma.js';
 import { photoImageUrl } from './photo.js';
 import { toExerciseTrackingType } from './trackingTypes.js';
-import { classifyExerciseAccess, visibleExerciseWhere } from './visibility.js';
+import {
+  classifyExerciseAccess,
+  usableExerciseWhere,
+  visibleExerciseWhere,
+} from './visibility.js';
 
 const exerciseInclude = {
   createdByUser: {
@@ -133,6 +137,32 @@ export async function findExerciseById(userPublicId: string, id: string) {
   });
 
   return exercise ? mapExercise(exercise) : null;
+}
+
+/**
+ * The exercises among `publicIds` the person may put in a routine: catalog,
+ * own, or held — already in one of their routines or saved workouts (spec
+ * 0015 FR-6, FR-7). Missing ids are not in the map.
+ */
+export async function findUsableExercises(
+  userPublicId: string,
+  publicIds: string[],
+): Promise<Map<string, { id: string; name: string }>> {
+  if (publicIds.length === 0) {
+    return new Map();
+  }
+
+  const exercises = await prisma.exercise.findMany({
+    where: { publicId: { in: [...new Set(publicIds)] }, ...usableExerciseWhere(userPublicId) },
+    select: { publicId: true, name: true },
+  });
+
+  return new Map(
+    exercises.map((exercise) => [
+      exercise.publicId,
+      { id: exercise.publicId, name: exercise.name },
+    ]),
+  );
 }
 
 export async function listFavoriteExerciseIds(
