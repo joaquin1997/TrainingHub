@@ -1,7 +1,7 @@
 ---
 id: 0024
 title: Warm-up sets
-status: ready
+status: in-progress
 decided: 2026-10-16
 roadmap: docs/roadmap/01-live-workout-logging.md
 created: 2026-10-16
@@ -86,6 +86,14 @@ per Article 2. Migration.
 - **[ASSUMPTION: the scheme is empty bar × 10, 40 % × 5, 60 % × 3, 75 % × 2,
   90 % × 1, dropping steps closer than one loadable step; bar 20 kg / 45 lb.]**
   A configurable scheme and bar weight are a follow-up.
+- **[ASSUMPTION: the heavy-squat scenario's numbers are illustrative; the
+  scheme above is what is built (140 kg → 20 × 10, 55 × 5, 85 × 3, 105 × 2,
+  125 × 1).]** (Recorded 2026-10-17, planning.)
+- **[ASSUMPTION: approach sets are offered for weight-and-reps exercises
+  only.]** Other kinds of exercise have no rep scheme to ramp.
+- **[ASSUMPTION: adding approach sets again replaces the warm-up sets ahead of
+  the first working set that are not done yet]**, so changing the working
+  weight and tapping again regenerates instead of doubling.
 
 ## Open decisions
 
