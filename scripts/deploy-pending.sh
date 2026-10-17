@@ -11,7 +11,8 @@
 #                   locally (what the image build does), .env, ssh, docker
 #   2. migrate    — `prisma migrate deploy` through an SSH tunnel. The new
 #                   columns are additive, so the running API keeps working.
-#   3. scripts    — catalog tracking types (0021), image matching (0026)
+#   3. scripts    — tracking type sweep report (0030; apply with APPLY_SWEEP=1),
+#                   image matching (0026, only with IMAGES=1: already run)
 #   4. ios        — expo prebuild
 #   5. backend    — rebuild the image on the server and replace the container
 #
@@ -21,8 +22,11 @@
 # Overrides (env vars):
 #   BRANCH=claude/task-l7band     branch to deploy (default)
 #   DOCKER_CONTEXT=docker-ts      passed to run.sh (default there: docker-lan)
-#   APPLY_IMAGES=1                also run import:images:db (default: dry run only,
-#                                 so the CSV can be reviewed first)
+#   APPLY_SWEEP=1                 apply the tracking type sweep after its report
+#                                 (default: report only, so the CSV can be reviewed;
+#                                 corrections go in src/scripts/data/tracking-type-corrections.json)
+#   IMAGES=1                      run the image matching dry run again (0026)
+#   APPLY_IMAGES=1                with IMAGES=1, also write the matched images
 #   IOS_DEVICE=1                  at the end, build onto the connected iPhone
 #   WATCH_APP=1                   prebuild with TRAININGHUB_WATCH_APP=1 (0025 Level 2)
 #   SKIP_BACKEND=1                skip the image rebuild
@@ -131,32 +135,49 @@ fi
 # --- 3. scripts --------------------------------------------------------------
 cd "$ROOT/apps/api"
 
-if is_done catalog; then
-  step "0021: catalog tracking types already done for $COMMIT"
+if is_done sweep-report; then
+  step "0030: tracking type sweep report already done for $COMMIT"
 else
-  step "0021: catalog tracking types"
-  pnpm run catalog:tracking-types
-  mark_done catalog
+  step "0030: tracking type sweep report (no write → tmp/tracking-type-sweep.csv)"
+  pnpm run catalog:tracking-sweep
+  mark_done sweep-report
 fi
 
-if is_done images-dry; then
-  step "0026: image matching dry run already done for $COMMIT"
-else
-  step "0026: match exercise images (dry run → tmp/free-exercise-db-matches.csv)"
-  pnpm run import:images
-  mark_done images-dry
-fi
-
-if [ "${APPLY_IMAGES:-0}" = "1" ]; then
-  if is_done images-db; then
-    step "0026: images already written for $COMMIT"
+if [ "${APPLY_SWEEP:-0}" = "1" ]; then
+  if is_done sweep-apply; then
+    step "0030: tracking type sweep already applied for $COMMIT"
   else
-    step "0026: write matched images to the database"
-    pnpm run import:images:db
-    mark_done images-db
+    step "0030: apply the tracking type sweep"
+    pnpm run catalog:tracking-sweep:apply
+    # A second run must change nothing (idempotent, spec 0030).
+    step "0030: apply again — must report 0 changed"
+    pnpm run catalog:tracking-sweep:apply | tee "$LOG_DIR/sweep-second-run.txt"
+    grep -Eq "(^|[^0-9])0 changed" "$LOG_DIR/sweep-second-run.txt" \
+      || fail "second sweep run changed exercises; check $LOG_DIR/sweep-second-run.txt"
+    mark_done sweep-apply
   fi
 else
-  echo "    skipped import:images:db — review the CSV, then: cd apps/api && pnpm run import:images:db"
+  echo "    sweep not applied — review tmp/tracking-type-sweep.csv, then re-run with APPLY_SWEEP=1"
+fi
+
+if [ "${IMAGES:-0}" = "1" ]; then
+  if is_done images-dry; then
+    step "0026: image matching dry run already done for $COMMIT"
+  else
+    step "0026: match exercise images (dry run → tmp/free-exercise-db-matches.csv)"
+    pnpm run import:images
+    mark_done images-dry
+  fi
+
+  if [ "${APPLY_IMAGES:-0}" = "1" ]; then
+    if is_done images-db; then
+      step "0026: images already written for $COMMIT"
+    else
+      step "0026: write matched images to the database"
+      pnpm run import:images:db
+      mark_done images-db
+    fi
+  fi
 fi
 
 close_tunnel
