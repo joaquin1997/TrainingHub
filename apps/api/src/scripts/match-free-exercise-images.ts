@@ -83,6 +83,16 @@ async function main() {
     );
   }
 
+  const withTranslations = candidates.filter(
+    (candidate) => (altNamesBySourceId.get(candidate.sourceId)?.length ?? 0) > 0,
+  ).length;
+  console.log(
+    `Dataset: ${dataset.length} entries. wger: ${altNamesBySourceId.size} exercises, translations found for ${withTranslations} of ${candidates.length} candidates. Sample catalog names: ${candidates
+      .slice(0, 5)
+      .map((candidate) => `${candidate.name} [${candidate.sourceId}]`)
+      .join('; ')}`,
+  );
+
   const { matched, unmatched } = matchImages(
     candidates.map((candidate) => ({
       id: candidate.id,
