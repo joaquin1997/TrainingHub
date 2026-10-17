@@ -9,6 +9,7 @@ production.
 | Term | Meaning | Not to be confused with |
 |---|---|---|
 | **Exercise** | A movement in the catalog (e.g. "Back Squat"). System-defined (seeded from wger) or user-defined. | `RoutineExercise`, `WorkoutExercise` |
+| **Generated warm-up set** | A warm-up set the warm-up action added and nobody changed since (ticking it done is fine); editing a value or its type makes it the person's own. Only generated sets are removed by the action's remove toggle (spec 0031). | Warm-up set typed by the person |
 | **Routine** | A reusable *template* describing intended training. | `WorkoutSession` — a routine is never a record of anything performed |
 | **RoutineExercise** | An exercise slot inside a routine template, with intended sets, target values and rest. May belong to a superset group. | `WorkoutExercise` |
 | **Routine folder** | Grouping of routines for organisation. | — |
@@ -43,6 +44,8 @@ production.
 | **Estimated 1RM** | One-rep-max estimate (Epley) computed from a performed set. Derived. |
 | **Training volume** | Aggregated work, in kg. Derived. |
 | **Record type** | What a personal record measures: heaviest weight, most reps, best set volume, best session volume or best estimated 1RM (spec 0023). |
+| **Starting records** | An exercise's best of each record type as it stood when the exercise entered the active workout. Kept with the active workout, never changed by it (spec 0032). |
+| **Record badge** | A mark on a performed working set (or, for session volume, an exercise) of the active workout saying it beats a starting record. A notice only, never a stored record; the saved workout's records are authoritative (spec 0032). |
 
 ## Presentation
 
