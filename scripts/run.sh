@@ -52,7 +52,7 @@ deploy_backend() {
     "$IMAGE" >/dev/null
 
   echo "==> [backend] waiting for health at $API_URL/health"
-  for _ in $(seq 1 20); do
+  for _ in $(seq 1 "${HEALTH_TRIES:-20}"); do
     if curl -fsS "$API_URL/health" >/dev/null 2>&1; then
       echo "    [backend] healthy: $(curl -fsS "$API_URL/health")"
       return 0
