@@ -11,7 +11,11 @@ interface ProgressChartProps {
   series: ChartSeries;
   /** Formats a bar's ISO date into a short axis label. */
   formatLabel: (date: string) => string;
+  /** Formats bar values and the range; whole numbers by default. */
+  formatValue?: (value: number) => string;
 }
+
+const roundValue = (value: number) => String(Math.round(value));
 
 /**
  * Minimal bar chart built from plain views (no native chart dependency) so it
@@ -22,6 +26,7 @@ export function ProgressChart({
   unit,
   series,
   formatLabel,
+  formatValue = roundValue,
 }: ProgressChartProps) {
   if (series.bars.length === 0) {
     return null;
@@ -32,8 +37,8 @@ export function ProgressChart({
       <View style={styles.header}>
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.range}>
-          {Math.round(series.min)}
-          {series.min !== series.max ? `-${Math.round(series.max)}` : ''}
+          {formatValue(series.min)}
+          {series.min !== series.max ? `-${formatValue(series.max)}` : ''}
           {unit ? ` ${unit}` : ''}
         </Text>
       </View>
@@ -44,7 +49,7 @@ export function ProgressChart({
           return (
             <View key={`${bar.date}-${index}`} style={styles.column}>
               <Text numberOfLines={1} style={[styles.value, isLatest ? styles.valueLatest : null]}>
-                {Math.round(bar.value)}
+                {formatValue(bar.value)}
               </Text>
               <View style={styles.track}>
                 <View
