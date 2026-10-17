@@ -9,25 +9,29 @@
 # fail is checked first, and the slow image rebuild goes last.
 #   1. preflight  — pull, install, Prisma client, typecheck + build the API
 #                   locally (what the image build does), .env, ssh, docker
-#   2. migrate    — `prisma migrate deploy` through an SSH tunnel. The new
+#   2. migrate    — pg_dump of the database on the server, then
+#                   `prisma migrate deploy` through an SSH tunnel. The new
 #                   columns are additive, so the running API keeps working.
-#   3. scripts    — tracking type sweep report (0030; apply with APPLY_SWEEP=1),
-#                   image matching (0026, only with IMAGES=1: already run)
+#   3. scripts    — tracking type sweep report (0030); asks before applying it
+#                   (or APPLY_SWEEP=1), image matching (0026, only with IMAGES=1)
 #   4. ios        — expo prebuild
 #   5. backend    — rebuild the image on the server and replace the container
+#   6. iphone     — build, sign and install on the connected iPhone (after the
+#                   API: the new app needs its endpoints), then Metro + launch
 #
 # Steps that finished are recorded in tmp/deploy-pending.done (per commit), so a
 # re-run after a failure skips them. FORCE=1 runs everything again.
 #
 # Overrides (env vars):
-#   BRANCH=claude/task-l7band     branch to deploy (default)
+#   BRANCH=<name>                 branch to deploy (default: the current one)
 #   DOCKER_CONTEXT=docker-ts      passed to run.sh (default there: docker-lan)
-#   APPLY_SWEEP=1                 apply the tracking type sweep after its report
-#                                 (default: report only, so the CSV can be reviewed;
+#   APPLY_SWEEP=1|0               apply the tracking type sweep after its report, or
+#                                 not (default: ask on a terminal, report only otherwise;
 #                                 corrections go in src/scripts/data/tracking-type-corrections.json)
 #   IMAGES=1                      run the image matching dry run again (0026)
 #   APPLY_IMAGES=1                with IMAGES=1, also write the matched images
-#   IOS_DEVICE=1                  at the end, build onto the connected iPhone
+#   IOS_DEVICE=0                  skip the iPhone build, install and Metro
+#   IOS_DEVICE_ID=<udid>          iPhone to build for (default: the paired iPhone)
 #   WATCH_APP=1                   prebuild with TRAININGHUB_WATCH_APP=1 (0025 Level 2)
 #   SKIP_BACKEND=1                skip the image rebuild
 #
@@ -36,8 +40,10 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BRANCH="${BRANCH:-claude/task-l7band}"
+BRANCH="${BRANCH:-$(git -C "$ROOT" branch --show-current)}"
 SSH_TARGET="${SSH_TARGET:-joaquin@joaquinserver.tail644a1a.ts.net}"
+API_URL="${EXPO_PUBLIC_API_URL:-https://joaquinserver.tail644a1a.ts.net:8443}"
+BUNDLE_ID="com.joaquin.traininghub"
 DOCKER_CONTEXT="${DOCKER_CONTEXT:-docker-lan}"
 export DOCKER_CONTEXT
 LOG_DIR="$ROOT/tmp"
@@ -90,11 +96,18 @@ cd "$ROOT"
 
 # --- 1. preflight ------------------------------------------------------------
 step "preflight: checkout and pull $BRANCH"
-git fetch origin "$BRANCH"
 git checkout "$BRANCH"
-git pull --ff-only origin "$BRANCH"
+# A local-only branch (not pushed yet) has nothing to pull.
+if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+  git pull --ff-only origin "$BRANCH"
+fi
 COMMIT="$(git rev-parse --short HEAD)"
 echo "    commit $COMMIT, last migration: $(ls apps/api/prisma/migrations | grep -v migration_lock | tail -1)"
+
+step "preflight: Node $(node -v)"
+# Expo SDK 58 (React Native 0.88) needs Node 22.13+.
+node -e 'const [major, minor] = process.versions.node.split(".").map(Number); process.exit(major > 22 || (major === 22 && minor >= 13) ? 0 : 1)' \
+  || fail "Node $(node -v) is too old for Expo SDK 58: use Node 22.13+ (e.g. PATH=/opt/homebrew/bin:\$PATH)"
 
 step "preflight: apps/api/.env"
 [ -f apps/api/.env ] || fail "missing apps/api/.env (copy apps/api/.env.example)"
@@ -124,6 +137,24 @@ fi
 step "SSH tunnel to the database (127.0.0.1:5434)"
 open_tunnel
 
+if is_done backup; then
+  step "backup: already done for $COMMIT"
+else
+  step "backup: pg_dump on the server → ~/backups/traininghub/"
+  ssh "$SSH_TARGET" bash -s -- "$COMMIT" <<'EOF'
+set -euo pipefail
+dir="$HOME/backups/traininghub"
+mkdir -p "$dir"
+file="$dir/pre-deploy-$1-$(date +%Y%m%d-%H%M%S).sql.gz"
+docker exec postgresql-postgres-1 sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' | gzip > "$file"
+# pg_dump ends a full dump with this line; without it the dump was cut short.
+gzip -dc "$file" | tail -5 | grep -q 'PostgreSQL database dump complete' \
+  || { echo "!! incomplete dump: $file" >&2; exit 1; }
+ls -lh "$file"
+EOF
+  mark_done backup
+fi
+
 if is_done migrate; then
   step "migrate: already done for $COMMIT"
 else
@@ -135,18 +166,27 @@ fi
 # --- 3. scripts --------------------------------------------------------------
 cd "$ROOT/apps/api"
 
-if is_done sweep-report; then
-  step "0030: tracking type sweep report already done for $COMMIT"
+# The report is not recorded as done: after editing the corrections file (not
+# committed yet, same commit) a re-run must report again.
+if is_done sweep-apply; then
+  step "0030: tracking type sweep already applied for $COMMIT"
 else
   step "0030: tracking type sweep report (no write → tmp/tracking-type-sweep.csv)"
   pnpm run catalog:tracking-sweep
-  mark_done sweep-report
-fi
 
-if [ "${APPLY_SWEEP:-0}" = "1" ]; then
-  if is_done sweep-apply; then
-    step "0030: tracking type sweep already applied for $COMMIT"
-  else
+  if [ -z "${APPLY_SWEEP:-}" ]; then
+    APPLY_SWEEP=0
+    if [ -t 0 ]; then
+      echo
+      echo "    Review apps/api/tmp/tracking-type-sweep.csv (start with certainty = uncertain)."
+      echo "    To correct a call: edit src/scripts/data/tracking-type-corrections.json, answer n"
+      echo "    and re-run. The apply can be undone (catalog:tracking-sweep:undo)."
+      read -r -p "    Apply the tracking type sweep now? [y/N] " answer || answer=""
+      case "$answer" in [yYsS]*) APPLY_SWEEP=1 ;; esac
+    fi
+  fi
+
+  if [ "$APPLY_SWEEP" = "1" ]; then
     step "0030: apply the tracking type sweep"
     pnpm run catalog:tracking-sweep:apply
     # A second run must change nothing (idempotent, spec 0030).
@@ -155,9 +195,9 @@ if [ "${APPLY_SWEEP:-0}" = "1" ]; then
     grep -Eq "(^|[^0-9])0 changed" "$LOG_DIR/sweep-second-run.txt" \
       || fail "second sweep run changed exercises; check $LOG_DIR/sweep-second-run.txt"
     mark_done sweep-apply
+  else
+    echo "    sweep not applied — review tmp/tracking-type-sweep.csv, then re-run (or APPLY_SWEEP=1)"
   fi
-else
-  echo "    sweep not applied — review tmp/tracking-type-sweep.csv, then re-run with APPLY_SWEEP=1"
 fi
 
 if [ "${IMAGES:-0}" = "1" ]; then
@@ -214,10 +254,93 @@ else
   mark_done backend
 fi
 
-if [ "${IOS_DEVICE:-0}" = "1" ]; then
-  step "iOS: build onto the connected iPhone (stays running with Metro)"
-  DEVICE=1 "$ROOT/scripts/run.sh" frontend
+# --- 6. iphone ---------------------------------------------------------------
+if [ "${IOS_DEVICE:-1}" = "0" ]; then
+  step "done — log: $LOG"
+  exit 0
 fi
 
-step "done — log: $LOG"
-echo "    next: device checks in each spec's tasks.md (see docs/sdd/backlog.md)"
+cd "$ROOT/apps/mobile"
+
+DEVICE_ID="${IOS_DEVICE_ID:-}"
+if [ -z "$DEVICE_ID" ]; then
+  devices_json="$(mktemp)"
+  xcrun devicectl list devices --json-output "$devices_json" >/dev/null
+  DEVICE_ID="$(node -e '
+    const devices = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).result.devices;
+    // Simulators are listed as paired iPhones too.
+    const phone = devices.find((d) => d.hardwareProperties?.deviceType === "iPhone"
+      && d.hardwareProperties?.reality === "physical"
+      && d.connectionProperties?.pairingState === "paired");
+    process.stdout.write(phone?.hardwareProperties?.udid ?? "");
+  ' "$devices_json")"
+  rm -f "$devices_json"
+fi
+[ -n "$DEVICE_ID" ] || fail "no paired iPhone found (connect it, or set IOS_DEVICE_ID)"
+
+APP_PATH="ios/DerivedData/Build/Products/Debug-iphoneos/TrainingHub.app"
+
+WATCH_ID=""
+if [ "${WATCH_APP:-0}" = "1" ]; then
+  devices_json="$(mktemp)"
+  xcrun devicectl list devices --json-output "$devices_json" >/dev/null
+  WATCH_ID="$(node -e '
+    const devices = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).result.devices;
+    const watch = devices.find((d) => d.hardwareProperties?.deviceType === "appleWatch"
+      && d.hardwareProperties?.reality === "physical"
+      && d.connectionProperties?.pairingState === "paired");
+    process.stdout.write(watch?.hardwareProperties?.udid ?? "");
+  ' "$devices_json")"
+  rm -f "$devices_json"
+fi
+
+if is_done "iphone-$PREBUILD_STEP"; then
+  step "iPhone: already built and installed for $COMMIT"
+else
+  # Building the watch scheme for the watch first registers the watch on the
+  # team, so the watch app's profile includes it (built only for the iPhone,
+  # the watch refuses it: "This provisioning profile cannot be installed").
+  if [ -n "$WATCH_ID" ]; then
+    step "Apple Watch: xcodebuild for $WATCH_ID"
+    xcodebuild -quiet -workspace ios/TrainingHub.xcworkspace -scheme TrainingHubWatch \
+      -configuration Debug -destination "id=$WATCH_ID" -derivedDataPath ios/DerivedData \
+      -allowProvisioningUpdates build
+  fi
+
+  # Not `expo run:ios --device`: it does not pass -allowProvisioningUpdates, so
+  # it fails once the free team's 7-day profile has expired.
+  step "iPhone: xcodebuild for $DEVICE_ID (slow)"
+  xcodebuild -quiet -workspace ios/TrainingHub.xcworkspace -scheme TrainingHub \
+    -configuration Debug -destination "id=$DEVICE_ID" -derivedDataPath ios/DerivedData \
+    -allowProvisioningUpdates build
+
+  step "iPhone: install"
+  xcrun devicectl device install app --device "$DEVICE_ID" "$APP_PATH"
+
+  # The watch app is embedded in the iPhone app; installing it straight onto a
+  # connected watch saves going through the iPhone's Watch app.
+  if [ -n "$WATCH_ID" ]; then
+    step "Apple Watch: install"
+    xcrun devicectl device install app --device "$WATCH_ID" \
+      ios/DerivedData/Build/Products/Debug-watchos/TrainingHubWatch.app \
+      || echo "    could not install on the watch; use the iPhone's Watch app (My Watch → TrainingHub → Install)"
+  elif [ "${WATCH_APP:-0}" = "1" ]; then
+    echo "    no watch connected to the Mac; install it from the iPhone's Watch app (My Watch → TrainingHub → Install)"
+  fi
+  mark_done "iphone-$PREBUILD_STEP"
+fi
+
+step "Metro (API=$API_URL) — the app opens on the iPhone once Metro is up; Ctrl-C to stop"
+echo "    new signing profile? trust it on the iPhone: Settings → General → VPN & Device Management"
+echo "    then: device checks in each spec's tasks.md (see docs/sdd/backlog.md) — log: $LOG"
+(
+  for _ in $(seq 1 120); do
+    curl -fsS http://localhost:8081/status 2>/dev/null | grep -q running && break
+    sleep 1
+  done
+  xcrun devicectl device process launch --device "$DEVICE_ID" --terminate-existing "$BUNDLE_ID" >/dev/null \
+    && echo "    [iphone] app launched" \
+    || echo "    [iphone] could not launch the app; open it by hand"
+) &
+# EXPO_PUBLIC_* is baked into the bundle: --clear so the URL is not a stale one.
+EXPO_PUBLIC_API_URL="$API_URL" npx expo start --clear

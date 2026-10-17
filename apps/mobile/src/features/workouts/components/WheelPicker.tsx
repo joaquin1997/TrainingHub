@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { type ComponentRef, useEffect, useRef } from 'react';
 import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -34,7 +34,7 @@ export function WheelPicker({
   onChange,
   formatItem,
 }: WheelPickerProps) {
-  const ref = useRef<ScrollView>(null);
+  const ref = useRef<ComponentRef<typeof ScrollView>>(null);
   const index = Math.max(0, values.indexOf(value));
 
   // Keep the wheel aligned when the value changes from outside (e.g. presets).
