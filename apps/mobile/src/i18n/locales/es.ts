@@ -354,6 +354,24 @@ export const es: TranslationCatalog = {
       volume: 'Volumen',
       notes: 'Notas',
       records: 'Récords',
+      // La imagen para compartir (spec 0034 FR-25).
+      cardFooter: 'Registrado con TrainingHub',
+      moreRecords: '+{{count}} más',
+      sheetTitle: 'Compartir entrenamiento',
+      image: 'Compartir imagen',
+      asText: 'Compartir como texto',
+      imageFailed: 'No se ha podido crear la imagen; compártelo como texto.',
+    },
+    // Volumen frente a la última vez en el resumen (spec 0034 FR-24).
+    comparison: {
+      up: '{{delta}} más que el {{date}}',
+      down: '{{delta}} menos que el {{date}}',
+      same: 'Igual que el {{date}}',
+      chipUp: '+{{delta}}',
+      chipDown: '−{{delta}}',
+      chipSame: 'Igual',
+      captionUp: '+{{delta}} vs. {{date}}',
+      captionDown: '−{{delta}} vs. {{date}}',
     },
     setType: {
       warmup: 'Calentamiento',
@@ -481,6 +499,7 @@ export const es: TranslationCatalog = {
     records: {
       title: 'Récords',
       beaten: 'Récords batidos',
+      today: 'Récords de hoy',
       count_one: '{{count}} récord',
       count_other: '{{count}} récords',
       heaviestWeight: 'Peso máximo',

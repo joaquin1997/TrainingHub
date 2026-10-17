@@ -351,6 +351,24 @@ export const en = {
       volume: 'Volume',
       notes: 'Notes',
       records: 'Records',
+      // The share image (spec 0034 FR-25).
+      cardFooter: 'Logged with TrainingHub',
+      moreRecords: '+{{count}} more',
+      sheetTitle: 'Share workout',
+      image: 'Share image',
+      asText: 'Share as text',
+      imageFailed: 'Couldn’t create the image — share as text instead.',
+    },
+    // Volume versus last time on the summary (spec 0034 FR-24).
+    comparison: {
+      up: '{{delta}} more than {{date}}',
+      down: '{{delta}} less than {{date}}',
+      same: 'Same as {{date}}',
+      chipUp: '+{{delta}}',
+      chipDown: '−{{delta}}',
+      chipSame: 'Same',
+      captionUp: '+{{delta}} vs {{date}}',
+      captionDown: '−{{delta}} vs {{date}}',
     },
     setType: {
       warmup: 'Warmup',
@@ -478,6 +496,7 @@ export const en = {
     records: {
       title: 'Records',
       beaten: 'Records beaten',
+      today: 'Records today',
       count_one: '{{count}} record',
       count_other: '{{count}} records',
       heaviestWeight: 'Heaviest weight',
