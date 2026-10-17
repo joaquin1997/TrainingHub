@@ -1,7 +1,7 @@
 ---
 id: 0034
 title: Visual polish
-status: ready
+status: in-progress
 roadmap: "-"
 created: 2026-10-18
 decided: 2026-10-18
