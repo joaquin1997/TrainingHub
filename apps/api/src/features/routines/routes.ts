@@ -67,6 +67,9 @@ function parseRoutineExerciseSetInput(
     targetDistanceMeters: parseOptionalNumber(value.targetDistanceMeters),
     // Spec 0024: only `true` marks a warm-up; anything else is a working set.
     isWarmup: value.isWarmup === true ? true : undefined,
+    // Spec 0031: generated only on a warm-up, and only a literal `true`.
+    isGeneratedWarmup:
+      value.isWarmup === true && value.isGeneratedWarmup === true ? true : undefined,
   };
 }
 

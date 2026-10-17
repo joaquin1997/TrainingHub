@@ -19,7 +19,7 @@ be deployed before saved routines keep the mark.
 | 1 | [x] Plan and tasks; spec status `in-progress`; 0024's "adding again replaces" assumption marked superseded | docs | — | `docs(sdd): plan and tasks for 0031` |
 | 2 | [x] Domain `ExerciseLastSet.isWarmup`; API last performance sends it; `lastTimeByKind.ts` (`pairLastSets`, `pairedPerformance`, `targetPlaceholders`); `applyLastPerformance` pairs by kind and drops a lost pairing back to targets; active screen re-applies on draft change and pairs the previous column | domain + api + mobile | unit tests (AC-10, AC-11, FR-19, FR-20, EF-8) | `feat(workouts): pair last time by warm-up and working sets` |
 | 3 | [x] `generatedWarmup` on draft sets, cleared on value or type change; `approachSetsDraft.ts` rewritten (`warmUpActionFor`, `previewApproachSets`, `confirmApproachSets`, `removeGeneratedWarmUps`); `ApproachSetsPreviewSheet`; toggle button and sheet on the active screen; generated mark on the set marker; i18n en/es | mobile | unit tests (AC-1–AC-8, AC-12, EF-1, EF-3, EF-4, EF-6) | `feat(workouts): preview, mark and undo warm-up sets in the active workout` |
-| 4 | [ ] Domain `isGeneratedWarmup` on routine sets; column + migration `20261018110000_add_routine_set_generated_warmup`; routines API reads/writes it (only with `isWarmup`); route test | domain + api | route test; `migrate diff` SQL | `feat(routines): routine sets remember generated warm-ups` |
+| 4 | [x] Domain `isGeneratedWarmup` on routine sets; column + migration `20261018110000_add_routine_set_generated_warmup`; routines API reads/writes it (only with `isWarmup`); route test | domain + api | route test; `migrate diff` SQL | `feat(routines): routine sets remember generated warm-ups` |
 | 5 | [ ] Routine editor: `routineApproachSets.ts` rewritten around the toggle; mark in `RoutineSetTable`; button + preview sheet in `RoutineFormScreen`; load/save/clear the mark; duplicate copies it; workout from a routine carries it; i18n | mobile | unit tests (AC-9, FR-13, FR-14, FR-15) | `feat(routines): preview, mark and undo warm-up sets in the routine editor` |
 | 6 | [ ] Progress log, definition of done | docs | — | `docs(sdd): close spec 0031 implementation` |
 | 7 | [ ] [DEVICE] Preview sheet with one hand during a set; mark legible in light and dark; action reads add/remove (VoiceOver too); restart keeps the mark; routine saved and reopened keeps it; workout from that routine; History shows plain warm-ups; "last time" after inserting the ramp | device | owner, iOS | — |
@@ -67,6 +67,12 @@ Not verifiable in CI: tasks 7–8.
   the sheet. EF-1 is derived at render (the sheet hides when its exercise is
   gone or replaced) and enforced again in `confirmApproachSets`. Not done: a
   web preview of the sheet and mark (left to the device check, task 7).
+- 2026-10-17 — Task 4: `RoutineExerciseSet.isGeneratedWarmup`; migration SQL
+  produced with `prisma migrate diff --from-schema-datamodel` (old) →
+  `--to-schema-datamodel` (new), one `ADD COLUMN … DEFAULT false`. The API
+  stores the flag only for a literal `true` on a set that is also a warm-up,
+  and the repository returns it only under the same condition. Not applied
+  to a database here (owner, task 8).
 
 ## Definition of done
 

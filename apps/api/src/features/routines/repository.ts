@@ -76,6 +76,7 @@ function mapRoutine(userPublicId: string, record: RoutineRecord): Routine {
             targetDurationSeconds: set.targetDurationSeconds ?? undefined,
             targetDistanceMeters: set.targetDistanceMeters ?? undefined,
             isWarmup: set.isWarmup || undefined,
+            isGeneratedWarmup: (set.isWarmup && set.isGeneratedWarmup) || undefined,
             createdAt: set.createdAt.toISOString(),
             updatedAt: set.updatedAt.toISOString(),
           })),
@@ -109,6 +110,7 @@ function toRoutineExerciseCreateInput(
         targetDurationSeconds: set.targetDurationSeconds,
         targetDistanceMeters: set.targetDistanceMeters,
         isWarmup: set.isWarmup ?? false,
+        isGeneratedWarmup: Boolean(set.isWarmup && set.isGeneratedWarmup),
       })),
     },
   };
