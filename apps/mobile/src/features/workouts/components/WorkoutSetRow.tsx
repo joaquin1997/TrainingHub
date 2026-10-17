@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, Easing, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import type {
   ExerciseLastPerformance,
@@ -26,6 +27,7 @@ import {
 } from '@/lib/tracking';
 import { fromKg, roundWeight } from '@/lib/weight';
 import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { useReducedMotion } from '@/ui/useReducedMotion';
 
 /**
  * A column of the row: a tracked field, or one side of the reps of a
@@ -187,6 +189,36 @@ type RowProps = {
   onRemove: () => void;
 };
 
+/** Length of the done/undone transition (spec 0034 FR-6: about a third of a second at most). */
+export const DONE_TRANSITION_MS = 220;
+
+/**
+ * 0 → 1 as the set becomes done, back on untick (spec 0034 FR-6). A tick and
+ * untick in quick succession just retarget the running animation, so the row
+ * always ends in its final state (EF-2). Instant under Reduce Motion (FR-9).
+ */
+function useDoneTransition(done: boolean): Animated.Value {
+  const reducedMotion = useReducedMotion();
+  const progress = useRef(new Animated.Value(done ? 1 : 0)).current;
+
+  useEffect(() => {
+    if (reducedMotion) {
+      progress.setValue(done ? 1 : 0);
+      return;
+    }
+    const animation = Animated.timing(progress, {
+      toValue: done ? 1 : 0,
+      duration: DONE_TRANSITION_MS,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [done, progress, reducedMotion]);
+
+  return progress;
+}
+
 /**
  * One set of the active workout: type marker, previous, one input per
  * tracked field, done and remove. A time field carries the set timer
@@ -208,6 +240,7 @@ export function WorkoutSetRow({
   const typed = set.type === 'warmup' || set.type === 'drop';
   const fields = rowColumns(trackingType, unilateral);
   const compact = isCompact(fields);
+  const doneProgress = useDoneTransition(set.done);
 
   const startOrStopTimer = () => {
     if (timer.isRunning) {
@@ -334,7 +367,9 @@ export function WorkoutSetRow({
   };
 
   return (
-    <View style={[styles.row, set.done ? styles.rowDone : null]}>
+    <View style={styles.row}>
+      {/* The done tint fades in and out (spec 0034 FR-6). */}
+      <Animated.View pointerEvents="none" style={[styles.doneTint, { opacity: doneProgress }]} />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={
@@ -381,6 +416,7 @@ export function WorkoutSetRow({
         hitSlop={4}
         style={[styles.checkBox, set.done ? styles.checkBoxDone : null]}
       >
+        <Animated.View pointerEvents="none" style={[styles.checkFill, { opacity: doneProgress }]} />
         <Ionicons name="checkmark" size={20} color={set.done ? colors.onPrimary : colors.controlBorder} />
       </Pressable>
       <Pressable
@@ -448,7 +484,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.xs,
   },
-  rowDone: {
+  doneTint: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: radii.md,
     backgroundColor: colors.successSoft,
   },
   marker: {
@@ -557,9 +595,15 @@ const styles = StyleSheet.create({
     // An undone box must stand out from its fill at 3:1 (spec 0034 FR-16).
     borderColor: colors.controlBorder,
     backgroundColor: colors.surfaceRaised,
+    overflow: 'hidden',
   },
+  // The green fill fades in with the row tint; the outline turns green at once.
   checkBoxDone: {
-    backgroundColor: colors.success,
     borderColor: colors.success,
+  },
+  checkFill: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: radii.sm,
+    backgroundColor: colors.success,
   },
 });

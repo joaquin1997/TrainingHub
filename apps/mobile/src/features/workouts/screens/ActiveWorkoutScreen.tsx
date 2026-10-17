@@ -163,6 +163,8 @@ export function ActiveWorkoutScreen() {
   const { user } = useAuth();
   // Record badges and the notice while logging (spec 0032).
   const liveRecords = useLiveRecords(workoutDraft);
+  /** The set whose tick on this screen just earned a badge: its badge pops (spec 0034 FR-7). */
+  const [recordPopSetId, setRecordPopSetId] = useState<string | null>(null);
 
   useEffect(() => {
     const entry = resolveActiveWorkoutEntry(getActiveWorkout(), routineId);
@@ -522,6 +524,7 @@ export function ActiveWorkoutScreen() {
     const feedback = tickFeedback(workoutDraft, nextDraft, workoutSetId);
     if (feedback === 'record') {
       haptics.record();
+      setRecordPopSetId(workoutSetId);
     } else if (feedback === 'setDone') {
       haptics.setDone();
     }
@@ -816,7 +819,11 @@ export function ActiveWorkoutScreen() {
                 <View pointerEvents="none" style={styles.upNextRing} />
               ) : null}
               {liveRecords.badges.bySet[set.id] ? (
-                <RecordBadge hits={liveRecords.badges.bySet[set.id]!} unit={unit} />
+                <RecordBadge
+                  hits={liveRecords.badges.bySet[set.id]!}
+                  unit={unit}
+                  pop={recordPopSetId === set.id}
+                />
               ) : null}
             </View>
             );
