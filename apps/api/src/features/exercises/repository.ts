@@ -4,6 +4,7 @@ import type { CreateExerciseInput, Exercise, MuscleGroup } from '@workout/domain
 import { prisma } from '../../infrastructure/prisma.js';
 import { photoImageUrl } from './photo.js';
 import { toExerciseTrackingType } from './trackingTypes.js';
+import { classifyExerciseAccess, visibleExerciseWhere } from './visibility.js';
 
 const exerciseInclude = {
   createdByUser: {
@@ -105,8 +106,10 @@ function mapMuscleGroup(record: {
   };
 }
 
-export async function listExercises() {
+/** The catalog plus the person's own custom exercises (spec 0015 FR-1). */
+export async function listExercises(userPublicId: string) {
   const exercises = await prisma.exercise.findMany({
+    where: visibleExerciseWhere(userPublicId),
     include: exerciseInclude,
     orderBy: { name: 'asc' },
   });
@@ -122,10 +125,11 @@ export async function listMuscleGroups() {
   return muscleGroups.map(mapMuscleGroup);
 }
 
-export async function findExerciseById(id: string) {
-  const exercise = await prisma.exercise.findUnique({
+/** An exercise the person can see; someone else's custom one is `null`, like an unknown id (FR-2). */
+export async function findExerciseById(userPublicId: string, id: string) {
+  const exercise = await prisma.exercise.findFirst({
     include: exerciseInclude,
-    where: { publicId: id },
+    where: { publicId: id, ...visibleExerciseWhere(userPublicId) },
   });
 
   return exercise ? mapExercise(exercise) : null;
@@ -134,8 +138,12 @@ export async function findExerciseById(id: string) {
 export async function listFavoriteExerciseIds(
   userPublicId: string,
 ): Promise<string[]> {
+  // Favourites of exercises the person can no longer see are hidden (FR-12).
   const favorites = await prisma.exerciseFavorite.findMany({
-    where: { user: { publicId: userPublicId } },
+    where: {
+      user: { publicId: userPublicId },
+      exercise: visibleExerciseWhere(userPublicId),
+    },
     select: { exercise: { select: { publicId: true } } },
   });
 
@@ -151,8 +159,8 @@ async function resolveFavoriteIds(
       where: { publicId: userPublicId },
       select: { id: true },
     }),
-    prisma.exercise.findUnique({
-      where: { publicId: exercisePublicId },
+    prisma.exercise.findFirst({
+      where: { publicId: exercisePublicId, ...visibleExerciseWhere(userPublicId) },
       select: { id: true },
     }),
   ]);
@@ -235,6 +243,8 @@ export async function createExercise(
     throw new InvalidMuscleGroupSelectionError();
   }
 
+  // Same name (ignoring case) returns a catalog exercise or the person's own,
+  // catalog first; someone else's never counts (spec 0015 FR-4, FR-5).
   const existingExercise = await prisma.exercise.findFirst({
     include: exerciseInclude,
     where: {
@@ -242,7 +252,9 @@ export async function createExercise(
         equals: input.name,
         mode: 'insensitive',
       },
+      ...visibleExerciseWhere(userPublicId),
     },
+    orderBy: [{ isSystemDefined: 'desc' }, { id: 'asc' }],
   });
 
   if (existingExercise) {
@@ -289,11 +301,15 @@ export type ExercisePhotoRecord = {
   updatedAt: Date;
 };
 
+/** The photo of an exercise the person can see — in practice only the creator (FR-13). */
 export async function findExercisePhoto(
+  userPublicId: string,
   exercisePublicId: string,
 ): Promise<ExercisePhotoRecord | null> {
   const photo = await prisma.exercisePhoto.findFirst({
-    where: { exercise: { publicId: exercisePublicId } },
+    where: {
+      exercise: { publicId: exercisePublicId, ...visibleExerciseWhere(userPublicId) },
+    },
     select: { data: true, updatedAt: true },
   });
 
@@ -307,11 +323,11 @@ export async function findExercisePhoto(
 
 export type PhotoWriteResult = 'ok' | 'not-found' | 'forbidden';
 
-/** Finds the exercise and checks that the user created it (system exercises never qualify). */
-async function findOwnedExerciseId(
-  userPublicId: string,
-  exercisePublicId: string,
-): Promise<{ id: bigint } | 'not-found' | 'forbidden'> {
+/**
+ * Finds the exercise as the person sees it (spec 0015): `null` when it does
+ * not exist or is someone else's custom exercise — both answer "not found".
+ */
+async function findAccessibleExercise(userPublicId: string, exercisePublicId: string) {
   const exercise = await prisma.exercise.findUnique({
     where: { publicId: exercisePublicId },
     select: {
@@ -322,10 +338,32 @@ async function findOwnedExerciseId(
   });
 
   if (!exercise) {
+    return null;
+  }
+
+  const access = classifyExerciseAccess(
+    {
+      isSystemDefined: exercise.isSystemDefined,
+      creatorPublicId: exercise.createdByUser?.publicId,
+    },
+    userPublicId,
+  );
+
+  return access === 'hidden' ? null : { id: exercise.id, access };
+}
+
+/** The person's own custom exercise; catalog ones exist but are not theirs to change. */
+async function findOwnedExerciseId(
+  userPublicId: string,
+  exercisePublicId: string,
+): Promise<{ id: bigint } | 'not-found' | 'forbidden'> {
+  const exercise = await findAccessibleExercise(userPublicId, exercisePublicId);
+
+  if (!exercise) {
     return 'not-found';
   }
 
-  if (exercise.isSystemDefined || exercise.createdByUser?.publicId !== userPublicId) {
+  if (exercise.access !== 'own') {
     return 'forbidden';
   }
 
@@ -368,33 +406,24 @@ export async function deleteExercisePhoto(
   return 'ok';
 }
 
-export type UnilateralWriteResult = Exercise | 'not-found' | 'forbidden';
+export type UnilateralWriteResult = Exercise | 'not-found';
 
 /**
  * Marks an exercise as done one side at a time, or not (spec 0022 FR-1).
  * Catalog exercises can be marked by anyone signed in — the flag is on the
- * exercise, shared by everyone on the server; a custom one only by its creator.
+ * exercise, shared by everyone on the server; a custom one only by its
+ * creator. For anyone else a custom exercise does not exist (spec 0015
+ * FR-14): `'not-found'`, never a "forbidden" that would reveal it.
  */
 export async function setExerciseUnilateral(
   userPublicId: string,
   exercisePublicId: string,
   isUnilateral: boolean,
 ): Promise<UnilateralWriteResult> {
-  const exercise = await prisma.exercise.findUnique({
-    where: { publicId: exercisePublicId },
-    select: {
-      id: true,
-      isSystemDefined: true,
-      createdByUser: { select: { publicId: true } },
-    },
-  });
+  const exercise = await findAccessibleExercise(userPublicId, exercisePublicId);
 
   if (!exercise) {
     return 'not-found';
-  }
-
-  if (!exercise.isSystemDefined && exercise.createdByUser?.publicId !== userPublicId) {
-    return 'forbidden';
   }
 
   const updated = await prisma.exercise.update({

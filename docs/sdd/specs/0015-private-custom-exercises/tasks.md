@@ -17,7 +17,7 @@ older apps (fewer rows, 404 instead of 403 on paths they cannot reach).
 |---|---|---|---|---|
 | 1 | [x] Plan and tasks; spec status `in-progress` | docs | — | `docs(sdd): plan and tasks for 0015` |
 | 2 | [x] `exercises/visibility.ts`: `visibleExerciseWhere`, `usableExerciseWhere`, `classifyExerciseAccess`; tests | api | unit tests | `feat(exercises): visibility rule for custom exercises` |
-| 3 | [ ] Exercises API scoped to the person: list, detail, same-name dedupe (catalog first), favourites (add, list), photo read; photo writes and unilateral answer 404 for someone else's custom exercise; route tests incl. "no existence leak" | api | route tests (AC-1, 2, 7, 8, 9) | `feat(exercises): custom exercises visible only to their creator` |
+| 3 | [x] Exercises API scoped to the person: list, detail, same-name dedupe (catalog first), favourites (add, list), photo read; photo writes and unilateral answer 404 for someone else's custom exercise; route tests incl. "no existence leak" | api | route tests (AC-1, 2, 7, 8, 9) | `feat(exercises): custom exercises visible only to their creator` |
 | 4 | [ ] `findUsableExercises`; routines create/update and workout save accept catalog, own and held exercises only; route tests | api | route tests (AC-5, AC-6, EF-1, EF-2) | `feat(exercises): routines and workouts keep held exercises only` |
 | 5 | [ ] Mobile EF-4: `isExerciseGone`; picker checks a custom exercise before choosing (notice + reload); routine form message + catalog reload on unknown exercises; i18n en/es | mobile | unit test; typecheck | `feat(exercises): handle exercises that are no longer available` |
 | 6 | [ ] Local end-to-end check on PGlite (two users, curl through AC-1…AC-9); progress log; definition of done | docs | log | `docs(sdd): record 0015 implementation` |
@@ -54,6 +54,14 @@ device pass (task 7), the redeploy (task 8).
 - 2026-10-17 — Task 2: `exercises/visibility.ts` — the rule as two Prisma
   `where` builders (visible; usable = visible or held) and a pure classifier
   (catalog / own / hidden); 8 unit tests.
+- 2026-10-17 — Task 3: list, detail, dedupe (catalog first), favourites,
+  photo read scoped to the acting person; photo writes and unilateral map
+  someone else's custom exercise to 404 (the 403 branch for it is gone; the
+  photo write keeps 403 for catalog exercises). Route tests: a "no existence
+  leak" block whose repository mock applies the real classifier, comparing
+  status, content type and body of Ana's id against an unknown id for detail,
+  photo read/write/delete, favourite and unilateral. Interim: the routines
+  route looks exercises up as visible-only until task 4 widens it to held.
 
 ## Definition of done
 

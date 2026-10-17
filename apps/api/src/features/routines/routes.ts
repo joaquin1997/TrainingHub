@@ -148,6 +148,7 @@ function parseRoutineWriteInput(body: unknown): CreateRoutineInput | null {
 }
 
 async function hydrateRoutineWriteInput(
+  userPublicId: string,
   input: CreateRoutineInput,
 ): Promise<RoutineWriteInput | null> {
   const exercises = await Promise.all(
@@ -155,7 +156,7 @@ async function hydrateRoutineWriteInput(
       async (
         exercise,
       ): Promise<RoutineWriteInput['exercises'][number] | null> => {
-        const existingExercise = await findExerciseById(exercise.exerciseId);
+        const existingExercise = await findExerciseById(userPublicId, exercise.exerciseId);
 
         if (!existingExercise) {
           return null;
@@ -234,7 +235,10 @@ export async function registerRoutineRoutes(app: FastifyInstance) {
       });
     }
 
-    const input = await hydrateRoutineWriteInput(parsedInput);
+    const input = await hydrateRoutineWriteInput(
+      await resolveUserPublicId(request),
+      parsedInput,
+    );
 
     if (!input) {
       return reply.code(400).send({
@@ -279,7 +283,10 @@ export async function registerRoutineRoutes(app: FastifyInstance) {
         });
       }
 
-      const input = await hydrateRoutineWriteInput(parsedInput);
+      const input = await hydrateRoutineWriteInput(
+        await resolveUserPublicId(request),
+        parsedInput,
+      );
 
       if (!input) {
         return reply.code(400).send({
