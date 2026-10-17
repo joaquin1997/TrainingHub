@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 
-import { colors, radii } from '@/ui/theme';
+import { colors, radii, typeScale } from '@/ui/theme';
 
 const ITEM_HEIGHT = 40;
 const VISIBLE_ROWS = 3;
@@ -105,7 +105,8 @@ const styles = StyleSheet.create({
   },
   item: {
     color: colors.textSubtle,
-    fontSize: 22,
+    // Figure size in the system face; the wheel fixes the row height itself.
+    fontSize: typeScale.figure.fontSize,
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
   },

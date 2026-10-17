@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { colors } from '@/ui/theme';
+import { colors, radii } from '@/ui/theme';
 
 interface ProgressRingProps {
   size: number;
@@ -94,7 +94,7 @@ export function ProgressRing({
           position: 'absolute',
           width: hole,
           height: hole,
-          borderRadius: hole / 2,
+          borderRadius: radii.round,
           backgroundColor: holeColor,
           alignItems: 'center',
           justifyContent: 'center',

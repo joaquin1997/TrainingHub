@@ -19,7 +19,8 @@ import { useSettings } from '@/features/settings/SettingsContext';
 import { formatDate, formatShortDate, formatTime } from '@/lib/format';
 import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, spacing } from '@/ui/theme';
+import { colors, commonStyles, spacing, typeScale } from '@/ui/theme';
+import { ListRow } from '@/ui/ListRow';
 
 /** Bars shown at most; a weekly weigh-in fills about four months. */
 const MAX_BARS = 16;
@@ -94,21 +95,17 @@ export function MeasurementHistoryScreen() {
           <View style={styles.list}>
             <Text style={commonStyles.cardTitle}>{t('profile.entries')}</Text>
             {[...points].reverse().map((point) => (
-              <Pressable
+              <ListRow
                 key={point.entryId}
-                accessibilityRole="button"
+                divider
+                title={formatDate(point.measuredAt, i18n.language)}
+                subtitle={formatTime(point.measuredAt, i18n.language)}
+                trailing={formatMeasurement(kind, point.value, unit)}
+                chevron
                 onPress={() =>
                   router.push({ pathname: '/settings/measurement', params: { entryId: point.entryId } })
                 }
-                style={({ pressed }) => [styles.row, pressed ? commonStyles.pressed : null]}
-              >
-                <View style={styles.rowDate}>
-                  <Text style={commonStyles.label}>{formatDate(point.measuredAt, i18n.language)}</Text>
-                  <Text style={styles.rowTime}>{formatTime(point.measuredAt, i18n.language)}</Text>
-                </View>
-                <Text style={commonStyles.label}>{formatMeasurement(kind, point.value, unit)}</Text>
-                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-              </Pressable>
+              />
             ))}
           </View>
         </>
@@ -135,20 +132,5 @@ const styles = StyleSheet.create({
   list: {
     ...commonStyles.card,
     gap: 0,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  rowDate: {
-    flex: 1,
-  },
-  rowTime: {
-    color: colors.textSubtle,
-    fontSize: 12,
   },
 });

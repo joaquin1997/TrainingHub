@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { formatWarmUpTarget } from '@/features/routines/utils/warmUpItems';
-import { colors, commonStyles, spacing } from '@/ui/theme';
+import { colors, commonStyles, spacing, typeScale } from '@/ui/theme';
+import { CardHeader } from '@/ui/CardHeader';
 
 type Item = {
   key: string;
@@ -33,10 +34,7 @@ export function WarmUpChecklist({ items, onToggle }: Props) {
 
   return (
     <View style={styles.card}>
-      <View style={styles.header}>
-        <Ionicons name="flame-outline" size={18} color={colors.textMuted} />
-        <Text style={styles.title}>{t('warmUp.title')}</Text>
-      </View>
+      <CardHeader icon="flame-outline" title={t('warmUp.title')} />
       {items.map((item) => {
         const target = formatWarmUpTarget(item);
         const icon =
@@ -81,14 +79,6 @@ const styles = StyleSheet.create({
     ...commonStyles.card,
     gap: spacing.sm,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  title: {
-    ...commonStyles.cardTitle,
-  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -101,14 +91,14 @@ const styles = StyleSheet.create({
   name: {
     flex: 1,
     color: colors.text,
-    fontSize: 15,
+    ...typeScale.body,
   },
   nameDone: {
     color: colors.textMuted,
   },
   target: {
     color: colors.textMuted,
-    fontSize: 14,
+    ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
 });

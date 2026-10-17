@@ -26,7 +26,8 @@ import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { CardHeader } from '@/ui/CardHeader';
 import type { SessionRecord, WeightUnit, WorkoutSession, WorkoutSet } from '@workout/domain';
 
 /**
@@ -275,12 +276,10 @@ export function WorkoutSessionDetailScreen() {
       <Text style={styles.sectionLabel}>{t('workouts.exercisesDone')}</Text>
       {session.exercises.map((exercise) => (
         <View key={exercise.id} style={styles.card}>
-          <View style={styles.exerciseHeader}>
-            <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
-            <Text style={styles.exerciseVolume}>
-              {exerciseHeadline(exercise, unit)}
-            </Text>
-          </View>
+          <CardHeader
+            title={exercise.exerciseName}
+            trailing={<Text style={styles.exerciseVolume}>{exerciseHeadline(exercise, unit)}</Text>}
+          />
           {exercise.sets.map((set) => {
             const type = setTypeLabel(set.type, t);
             const done = isPerformedSet(set);
@@ -325,9 +324,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   title: {
-    ...commonStyles.heading,
-    fontSize: 26,
-    lineHeight: 32,
+    ...commonStyles.title,
   },
   metaRow: {
     flexDirection: 'row',
@@ -355,20 +352,10 @@ const styles = StyleSheet.create({
     ...commonStyles.card,
     gap: spacing.xs,
   },
-  exerciseHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  cardTitle: {
-    ...commonStyles.cardTitle,
-    flex: 1,
-  },
   exerciseVolume: {
     ...commonStyles.figureUnit,
     color: colors.text,
-    paddingTop: 2,
+    paddingTop: spacing.xxs,
   },
   setRow: {
     minHeight: 40,
@@ -386,13 +373,13 @@ const styles = StyleSheet.create({
     width: 18,
     color: colors.textMuted,
     fontFamily: fonts.displayBold,
-    fontSize: 14,
+    ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
   setValue: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
     fontVariant: ['tabular-nums'],
   },
   spacer: {
@@ -401,7 +388,7 @@ const styles = StyleSheet.create({
   setRest: {
     color: colors.textSubtle,
     fontFamily: fonts.display,
-    fontSize: 12,
+    ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
 });

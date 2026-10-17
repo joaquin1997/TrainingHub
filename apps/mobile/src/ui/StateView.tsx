@@ -2,7 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/ui/Button';
-import { colors, fonts, spacing } from '@/ui/theme';
+import { EmptyState } from '@/ui/EmptyState';
+import { colors, fonts, spacing, typeScale } from '@/ui/theme';
 
 interface StateViewProps {
   kind: 'loading' | 'empty' | 'error';
@@ -17,19 +18,28 @@ interface StateViewProps {
 
 /**
  * One look for loading, empty and error states on every screen (spec 0017
- * EF-1): an icon or spinner, a title, a sentence and at most one action.
+ * EF-1): an icon or spinner, a title, a sentence and at most one action. The
+ * empty case is the shared `EmptyState` block (spec 0034 FR-13); list screens
+ * show a skeleton instead of the spinner while they first load (FR-15).
  */
 export function StateView({ kind, title, message, icon, actionLabel, onAction }: StateViewProps) {
+  if (kind === 'empty') {
+    return (
+      <EmptyState
+        icon={icon}
+        title={title}
+        message={message}
+        action={actionLabel && onAction ? { label: actionLabel, onPress: onAction } : undefined}
+      />
+    );
+  }
+
   return (
     <View style={styles.container}>
       {kind === 'loading' ? (
         <ActivityIndicator color={colors.primary} />
       ) : (
-        <Ionicons
-          name={kind === 'error' ? 'alert-circle-outline' : (icon ?? 'file-tray-outline')}
-          size={40}
-          color={kind === 'error' ? colors.danger : colors.textSubtle}
-        />
+        <Ionicons name="alert-circle-outline" size={40} color={colors.danger} />
       )}
       {title ? <Text style={styles.title}>{title}</Text> : null}
       {message ? (
@@ -38,12 +48,7 @@ export function StateView({ kind, title, message, icon, actionLabel, onAction }:
         </Text>
       ) : null}
       {actionLabel && onAction ? (
-        <Button
-          label={actionLabel}
-          onPress={onAction}
-          variant={kind === 'empty' ? 'primary' : 'secondary'}
-          style={styles.action}
-        />
+        <Button label={actionLabel} onPress={onAction} variant="secondary" style={styles.action} />
       ) : null}
     </View>
   );
@@ -58,15 +63,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   title: {
+    ...typeScale.heading,
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 18,
     textAlign: 'center',
   },
   message: {
+    ...typeScale.caption,
     color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 20,
     textAlign: 'center',
   },
   errorMessage: {

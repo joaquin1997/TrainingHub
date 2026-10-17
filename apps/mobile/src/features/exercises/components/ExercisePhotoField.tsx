@@ -5,7 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { ExerciseThumb } from '@/features/exercises/components/ExerciseThumb';
 import { pickProfilePhoto } from '@/features/profile/photo/pickProfilePhoto';
 import { Button } from '@/ui/Button';
-import { colors, spacing } from '@/ui/theme';
+import { colors, spacing, typeScale } from '@/ui/theme';
 
 type ExercisePhotoFieldProps = {
   /** The chosen photo as base64 JPEG (no data-URL prefix), or undefined. */
@@ -81,6 +81,6 @@ const styles = StyleSheet.create({
   },
   error: {
     color: colors.danger,
-    fontSize: 13,
+    ...typeScale.caption,
   },
 });

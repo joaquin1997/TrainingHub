@@ -9,6 +9,7 @@ import {
   resolveSwitchOutcome,
 } from '@/features/workouts/utils/activeWorkoutEntry';
 import type { ActionSheet } from '@/ui/ActionSheet';
+import { haptics } from '@/ui/haptics';
 
 interface RoutineRef {
   id: string;
@@ -63,11 +64,16 @@ export function useRoutineStart() {
               next: nextRoutine.name,
             }),
             destructive: outcome === 'discard',
-            onPress: () =>
+            onPress: () => {
+              // Choosing to discard here is the confirmation (spec 0034 FR-4).
+              if (outcome === 'discard') {
+                haptics.destructiveConfirm();
+              }
               router.push({
                 pathname: '/workouts/active',
                 params: { action: 'switch', nextRoutineId: nextRoutine.id },
-              }),
+              });
+            },
           },
           {
             label: t('workouts.switchBack', { current }),

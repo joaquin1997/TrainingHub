@@ -71,7 +71,10 @@ import { confirmAction } from '@/lib/confirmAction';
 import { formatDuration } from '@/lib/format';
 import { isPermanentRejection } from '@/lib/http';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, fontScaleCap, layout, radii, spacing, typeScale } from '@/ui/theme';
+import { tickFeedback } from '@/features/workouts/liveRecords/tickFeedback';
+import { haptics } from '@/ui/haptics';
+import { CardHeader } from '@/ui/CardHeader';
 import type { Exercise, ExerciseLastPerformance } from '@workout/domain';
 import { syncWorkoutCompletionToAppleHealth } from '@/features/health/integrations/appleWorkoutIntegration';
 import {
@@ -160,6 +163,8 @@ export function ActiveWorkoutScreen() {
   const { user } = useAuth();
   // Record badges and the notice while logging (spec 0032).
   const liveRecords = useLiveRecords(workoutDraft);
+  /** The set whose tick on this screen just earned a badge: its badge pops (spec 0034 FR-7). */
+  const [recordPopSetId, setRecordPopSetId] = useState<string | null>(null);
 
   useEffect(() => {
     const entry = resolveActiveWorkoutEntry(getActiveWorkout(), routineId);
@@ -515,6 +520,14 @@ export function ActiveWorkoutScreen() {
           settings.defaultRestSeconds,
         )
       : toggleWorkoutSetDone(workoutDraft, workoutExerciseId, workoutSetId);
+    // One pulse per tick: the record pattern replaces the tap (spec 0034 FR-4).
+    const feedback = tickFeedback(workoutDraft, nextDraft, workoutSetId);
+    if (feedback === 'record') {
+      haptics.record();
+      setRecordPopSetId(workoutSetId);
+    } else if (feedback === 'setDone') {
+      haptics.setDone();
+    }
     scrollAfterTickRef.current =
       becomingDone && (!nextDraft.rest || nextDraft.rest === workoutDraft.rest);
     setActiveWorkout(nextDraft);
@@ -632,6 +645,8 @@ export function ActiveWorkoutScreen() {
       workoutExerciseId,
       workoutSetId,
     );
+    // Removing a set has no dialog: the tap is the confirmation (spec 0034 FR-4).
+    haptics.destructiveConfirm();
     setActiveWorkout(nextDraft);
   };
 
@@ -698,56 +713,61 @@ export function ActiveWorkoutScreen() {
 
     return (
       <View key={exercise.id} style={styles.exercise}>
-        <View style={styles.exerciseHeader}>
-          <View style={[styles.blockBadge, inSuperset ? styles.blockBadgeSuperset : null]}>
-            <Text style={[styles.blockBadgeText, inSuperset ? styles.blockBadgeTextSuperset : null]}>
-              {label.label}
-            </Text>
-          </View>
-          {imageByExercise[exercise.exerciseId] ? (
-            <ExerciseThumb imageUrl={imageByExercise[exercise.exerciseId]} size={40} />
-          ) : null}
-          <View style={styles.exerciseTitleColumn}>
-            <Text style={styles.exerciseTitle}>{exercise.exerciseName}</Text>
-            <View style={styles.restChipRow}>
-              <Chip
-                icon="timer-outline"
-                size="sm"
-                label={restChipLabel(
-                  resolveRestSeconds(exercise, settings.defaultRestSeconds),
-                  t,
-                )}
-                onPress={() => setRestEditorFor(exercise.id)}
-              />
+        <CardHeader
+          title={exercise.exerciseName}
+          leading={
+            <>
+              <View style={[styles.blockBadge, inSuperset ? styles.blockBadgeSuperset : null]}>
+                <Text style={[styles.blockBadgeText, inSuperset ? styles.blockBadgeTextSuperset : null]}>
+                  {label.label}
+                </Text>
+              </View>
+              {imageByExercise[exercise.exerciseId] ? (
+                <ExerciseThumb imageUrl={imageByExercise[exercise.exerciseId]} size={40} />
+              ) : null}
+            </>
+          }
+          trailing={
+            <View style={styles.reorderRow}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="↑"
+                onPress={() => handleMoveExercise(exercise.id, 'up')}
+                hitSlop={6}
+                style={styles.iconButton}
+              >
+                <Ionicons name="arrow-up" size={18} color={colors.textMuted} />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="↓"
+                onPress={() => handleMoveExercise(exercise.id, 'down')}
+                hitSlop={6}
+                style={styles.iconButton}
+              >
+                <Ionicons name="arrow-down" size={18} color={colors.textMuted} />
+              </Pressable>
             </View>
-            {liveRecords.badges.sessionVolumeByExercise[exercise.exerciseId] ? (
-              <RecordBadge
-                hits={[liveRecords.badges.sessionVolumeByExercise[exercise.exerciseId]!]}
-                unit={unit}
-              />
-            ) : null}
+          }
+        >
+          <View style={styles.restChipRow}>
+            <Chip
+              icon="timer-outline"
+              size="sm"
+              label={restChipLabel(
+                resolveRestSeconds(exercise, settings.defaultRestSeconds),
+                t,
+              )}
+              onPress={() => setRestEditorFor(exercise.id)}
+            />
           </View>
-          <View style={styles.reorderRow}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="↑"
-              onPress={() => handleMoveExercise(exercise.id, 'up')}
-              hitSlop={6}
-              style={styles.iconButton}
-            >
-              <Ionicons name="arrow-up" size={18} color={colors.textMuted} />
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="↓"
-              onPress={() => handleMoveExercise(exercise.id, 'down')}
-              hitSlop={6}
-              style={styles.iconButton}
-            >
-              <Ionicons name="arrow-down" size={18} color={colors.textMuted} />
-            </Pressable>
-          </View>
-        </View>
+          {liveRecords.badges.sessionVolumeByExercise[exercise.exerciseId] ? (
+            <RecordBadge
+              hits={[liveRecords.badges.sessionVolumeByExercise[exercise.exerciseId]!]}
+              unit={unit}
+            />
+          ) : null}
+        </CardHeader>
         <View style={[styles.setList, inSuperset ? styles.indented : null]}>
           <WorkoutSetHeader
             trackingType={exercise.trackingType}
@@ -799,7 +819,11 @@ export function ActiveWorkoutScreen() {
                 <View pointerEvents="none" style={styles.upNextRing} />
               ) : null}
               {liveRecords.badges.bySet[set.id] ? (
-                <RecordBadge hits={liveRecords.badges.bySet[set.id]!} unit={unit} />
+                <RecordBadge
+                  hits={liveRecords.badges.bySet[set.id]!}
+                  unit={unit}
+                  pop={recordPopSetId === set.id}
+                />
               ) : null}
             </View>
             );
@@ -874,7 +898,11 @@ export function ActiveWorkoutScreen() {
             </View>
             <Text style={styles.routineName}>{workoutDraft.routineName}</Text>
             <View style={styles.clockRow}>
-              <Text style={[styles.clock, isPaused ? styles.clockPaused : null]}>
+              {/* The clock and its button share one row (spec 0034 FR-18 caps). */}
+              <Text
+                maxFontSizeMultiplier={fontScaleCap.largeFigure}
+                style={[styles.clock, isPaused ? styles.clockPaused : null]}
+              >
                 {formatDuration(elapsedSeconds)}
               </Text>
               <Button
@@ -882,6 +910,7 @@ export function ActiveWorkoutScreen() {
                 icon={isPaused ? 'play' : 'pause'}
                 variant="secondary"
                 onPress={handleTogglePause}
+                maxFontScale={fontScaleCap.fixedColumn}
               />
             </View>
             {activeKcal !== null ? (
@@ -956,6 +985,7 @@ export function ActiveWorkoutScreen() {
             })}
           />
           <TextInput
+            keyboardAppearance="dark"
             value={workoutDraft.notes ?? ''}
             onChangeText={handleNotesChange}
             placeholder={t('workouts.notesPlaceholder')}
@@ -1058,8 +1088,7 @@ const styles = StyleSheet.create({
   },
   hint: {
     color: colors.textSubtle,
-    fontSize: 12,
-    lineHeight: 16,
+    ...typeScale.caption,
   },
   headerCard: {
     ...commonStyles.card,
@@ -1073,7 +1102,7 @@ const styles = StyleSheet.create({
   liveDot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: radii.pill,
     backgroundColor: colors.primary,
   },
   liveDotPaused: {
@@ -1081,8 +1110,6 @@ const styles = StyleSheet.create({
   },
   routineName: {
     ...commonStyles.cardTitle,
-    fontSize: 20,
-    lineHeight: 26,
   },
   clockRow: {
     flexDirection: 'row',
@@ -1110,12 +1137,10 @@ const styles = StyleSheet.create({
   },
   energyValue: {
     ...commonStyles.figure,
-    fontSize: 18,
-    lineHeight: 22,
   },
   energyUnit: {
     color: colors.textMuted,
-    fontSize: 13,
+    ...typeScale.caption,
   },
   progressRow: {
     flexDirection: 'row',
@@ -1126,18 +1151,18 @@ const styles = StyleSheet.create({
   progressCount: {
     color: colors.primary,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
     fontVariant: ['tabular-nums'],
   },
   progressTrack: {
     height: 8,
-    borderRadius: 4,
+    borderRadius: radii.pill,
     backgroundColor: colors.surfaceRaised,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: radii.pill,
     backgroundColor: colors.primary,
   },
   card: {
@@ -1153,19 +1178,19 @@ const styles = StyleSheet.create({
     top: 14,
     bottom: 14,
     width: 2,
-    borderRadius: 1,
+    borderRadius: radii.pill,
     backgroundColor: colors.borderStrong,
   },
   supersetMembers: {
     gap: spacing.lg,
   },
   indented: {
-    marginLeft: 36,
+    marginLeft: layout.setMarker,
   },
   // Centred on the superset rail, in the gutter left of the set rows.
   roundTagSlot: {
     position: 'absolute',
-    left: -36,
+    left: -layout.setMarker,
     width: 28,
     top: 0,
     bottom: 0,
@@ -1174,19 +1199,18 @@ const styles = StyleSheet.create({
   },
   roundTag: {
     minWidth: 24,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     borderWidth: 1,
     borderColor: colors.borderStrong,
     backgroundColor: colors.surface,
-    paddingHorizontal: 3,
-    paddingVertical: 1,
+    paddingHorizontal: spacing.xxs,
+    paddingVertical: spacing.xxs,
     alignItems: 'center',
   },
   roundTagText: {
     color: colors.textMuted,
     fontFamily: fonts.displayBold,
-    fontSize: 10,
-    lineHeight: 13,
+    ...typeScale.caption,
   },
   // Drawn over the row, so highlighting never shifts the layout (FR-14).
   upNextRing: {
@@ -1202,11 +1226,6 @@ const styles = StyleSheet.create({
   exercise: {
     gap: spacing.sm,
   },
-  exerciseHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-  },
   blockBadge: {
     minWidth: 28,
     height: 28,
@@ -1214,10 +1233,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radii.sm,
     backgroundColor: colors.surfaceRaised,
-    paddingHorizontal: 4,
+    paddingHorizontal: spacing.xs,
   },
   blockBadgeSuperset: {
-    borderRadius: 14,
+    borderRadius: radii.round,
     backgroundColor: colors.surface,
     borderWidth: 1.5,
     borderColor: colors.textMuted,
@@ -1225,19 +1244,11 @@ const styles = StyleSheet.create({
   blockBadgeText: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 13,
+    ...typeScale.caption,
   },
   blockBadgeTextSuperset: {
     color: colors.text,
-    fontSize: 12,
-  },
-  exerciseTitleColumn: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  exerciseTitle: {
-    ...commonStyles.cardTitle,
-    paddingTop: 2,
+    ...typeScale.caption,
   },
   restChipRow: {
     flexDirection: 'row',
@@ -1270,7 +1281,7 @@ const styles = StyleSheet.create({
   },
   notesInput: {
     ...commonStyles.input,
-    fontSize: 15,
+    ...typeScale.body,
     minHeight: 72,
     // Long notes scroll inside the field, which keeps the caret in view.
     maxHeight: 160,

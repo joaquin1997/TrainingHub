@@ -1,6 +1,6 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
 
-import { colors, fonts } from '@/ui/theme';
+import { colors, fonts, radii, typeScale } from '@/ui/theme';
 
 interface ProfileAvatarProps {
   photoDataUrl: string | null | undefined;
@@ -18,7 +18,7 @@ function initialsOf(name: string | null | undefined): string {
 
 /** The profile photo, or the name's initials on a neutral circle. */
 export function ProfileAvatar({ photoDataUrl, name, size = 56 }: ProfileAvatarProps) {
-  const shape = { width: size, height: size, borderRadius: size / 2 };
+  const shape = { width: size, height: size, borderRadius: radii.round };
 
   if (photoDataUrl) {
     return <Image source={{ uri: photoDataUrl }} style={[styles.base, shape]} accessibilityIgnoresInvertColors />;
@@ -26,7 +26,7 @@ export function ProfileAvatar({ photoDataUrl, name, size = 56 }: ProfileAvatarPr
 
   return (
     <View style={[styles.base, styles.placeholder, shape]}>
-      <Text style={[styles.initials, { fontSize: size * 0.38 }]}>{initialsOf(name) || '?'}</Text>
+      <Text style={[styles.initials, size >= 80 ? typeScale.title : typeScale.heading]}>{initialsOf(name) || '?'}</Text>
     </View>
   );
 }

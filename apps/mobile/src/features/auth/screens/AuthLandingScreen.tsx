@@ -14,7 +14,7 @@ import {
 
 import { useAuth } from '@/features/auth/AuthContext';
 import { Button } from '@/ui/Button';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
 
 export function AuthLandingScreen() {
   const { t } = useTranslation();
@@ -90,6 +90,7 @@ export function AuthLandingScreen() {
           {isRegister ? (
             <Field icon="person-outline">
               <TextInput
+                keyboardAppearance="dark"
                 value={displayName}
                 onChangeText={setDisplayName}
                 placeholder={t('auth.namePlaceholder')}
@@ -101,6 +102,7 @@ export function AuthLandingScreen() {
           ) : null}
           <Field icon="mail-outline">
             <TextInput
+              keyboardAppearance="dark"
               value={email}
               onChangeText={setEmail}
               placeholder={t('auth.emailPlaceholder')}
@@ -114,6 +116,7 @@ export function AuthLandingScreen() {
           </Field>
           <Field icon="lock-closed-outline">
             <TextInput
+              keyboardAppearance="dark"
               value={password}
               onChangeText={setPassword}
               placeholder={t('auth.passwordPlaceholder')}
@@ -193,12 +196,12 @@ const styles = StyleSheet.create({
   },
   switcher: {
     flexDirection: 'row',
-    gap: 4,
+    gap: spacing.xs,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radii.md,
     backgroundColor: colors.surface,
-    padding: 4,
+    padding: spacing.xs,
   },
   switchItem: {
     flex: 1,
@@ -212,9 +215,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceRaised,
   },
   switchText: {
+    ...typeScale.body,
     color: colors.textMuted,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
   },
   switchTextActive: {
     color: colors.text,
@@ -234,7 +237,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     minHeight: 50,
     color: colors.text,
-    fontSize: 16,
+    fontSize: typeScale.body.fontSize,
   },
   error: {
     ...commonStyles.error,

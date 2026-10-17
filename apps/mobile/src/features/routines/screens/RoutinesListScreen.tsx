@@ -18,11 +18,13 @@ import { getRoutineExerciseNames } from '@/features/routines/utils/routineSummar
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
 import { useRoutineStart } from '@/features/workouts/hooks/useRoutineStart';
 import { ActionSheet } from '@/ui/ActionSheet';
+import { CardHeader } from '@/ui/CardHeader';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { confirmAction } from '@/lib/confirmAction';
 import { useRefresh } from '@/lib/useRefresh';
 import { colors, commonStyles, spacing } from '@/ui/theme';
+import { SkeletonCardList } from '@/ui/Skeleton';
 import { ScreenTitle } from '@/ui/ScreenTitle';
 import { StateView } from '@/ui/StateView';
 import type { Routine } from '@workout/domain';
@@ -142,9 +144,8 @@ export function RoutinesListScreen() {
           onPress: () => router.push('/routines/create'),
         }}
       />
-      {showLoading ? (
-        <StateView kind="loading" message={t('routines.loadingRoutines')} />
-      ) : null}
+      {/* First load only: the shape of the cards to come (spec 0034 FR-15). */}
+      {showLoading && !errorMessage ? <SkeletonCardList withButton /> : null}
       {errorMessage ? (
         <StateView
           kind="error"
@@ -198,28 +199,31 @@ export function RoutinesListScreen() {
                       pressed ? styles.cardPressed : null,
                     ]}
                   >
-                    <View style={styles.cardHeader}>
-                      <Text style={styles.cardTitle}>{routine.name}</Text>
-                      <Pressable
-                        onPress={() => setMenuRoutine(routine)}
-                        hitSlop={10}
-                        accessibilityRole="button"
-                        accessibilityLabel={t('common.edit')}
-                        style={styles.menuButton}
-                      >
-                        <Ionicons
-                          name="ellipsis-vertical"
-                          size={18}
-                          color={colors.textMuted}
-                        />
-                      </Pressable>
-                    </View>
-                    <View style={styles.metaRow}>
-                      <Ionicons name="barbell-outline" size={14} color={colors.textMuted} />
-                      <Text style={styles.meta}>
-                        {t('routines.exerciseCount', { count: names.length })}
-                      </Text>
-                    </View>
+                    <CardHeader
+                      title={routine.name}
+                      trailing={
+                        <Pressable
+                          onPress={() => setMenuRoutine(routine)}
+                          hitSlop={6}
+                          accessibilityRole="button"
+                          accessibilityLabel={t('common.edit')}
+                          style={styles.menuButton}
+                        >
+                          <Ionicons
+                            name="ellipsis-vertical"
+                            size={18}
+                            color={colors.textMuted}
+                          />
+                        </Pressable>
+                      }
+                    >
+                      <View style={styles.metaRow}>
+                        <Ionicons name="barbell-outline" size={14} color={colors.textMuted} />
+                        <Text style={styles.meta}>
+                          {t('routines.exerciseCount', { count: names.length })}
+                        </Text>
+                      </View>
+                    </CardHeader>
                     {shown.length > 0 ? (
                       <View style={styles.chips}>
                         {shown.map((name, index) => (
@@ -329,29 +333,18 @@ const styles = StyleSheet.create({
   cardPressed: {
     ...commonStyles.pressed,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-  },
-  cardTitle: {
-    ...commonStyles.cardTitle,
-    fontSize: 20,
-    lineHeight: 26,
-    flexShrink: 1,
-  },
   menuButton: {
-    minWidth: 32,
-    minHeight: 32,
+    minWidth: 44,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: -spacing.sm,
+    marginRight: -spacing.sm,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    marginTop: -spacing.xs,
   },
   chips: {
     flexDirection: 'row',

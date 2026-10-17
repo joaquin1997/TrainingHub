@@ -18,7 +18,7 @@ import { TRACKING_TYPES, tracksField } from '@/lib/tracking';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, spacing } from '@/ui/theme';
+import { colors, commonStyles, spacing, typeScale } from '@/ui/theme';
 
 type CustomExerciseFormProps = {
   /** Prefilled name, usually the text searched (spec 0020 FR-2). */
@@ -180,6 +180,7 @@ export function CustomExerciseForm({
     >
       {showTitle ? <Text style={styles.title}>{t('customExercise.title')}</Text> : null}
       <TextInput
+        keyboardAppearance="dark"
         value={name}
         onChangeText={setName}
         placeholder={t('customExercise.namePlaceholder')}
@@ -258,7 +259,7 @@ const styles = StyleSheet.create({
   },
   sectionHint: {
     color: colors.textMuted,
-    fontSize: 13,
+    ...typeScale.caption,
     marginTop: -spacing.xs,
   },
   optionList: {

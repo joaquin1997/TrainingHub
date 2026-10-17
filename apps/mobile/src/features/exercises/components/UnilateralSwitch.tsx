@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 
-import { colors, commonStyles, spacing } from '@/ui/theme';
+import { colors, commonStyles, spacing, typeScale } from '@/ui/theme';
 
 type UnilateralSwitchProps = {
   value: boolean;
@@ -50,6 +50,6 @@ const styles = StyleSheet.create({
   },
   hint: {
     color: colors.textMuted,
-    fontSize: 13,
+    ...typeScale.caption,
   },
 });

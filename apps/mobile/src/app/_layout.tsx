@@ -1,5 +1,6 @@
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +14,28 @@ import { useRestTimerRunner } from '@/features/workouts/restTimer/useRestTimerRu
 import { getActiveWorkout } from '@/features/workouts/state/workoutDraftStore';
 import { I18nProvider } from '@/i18n/I18nProvider';
 import { colors, fontAssets, screenHeader } from '@/ui/theme';
+
+// The branded splash stays up until the first real screen is ready, so there
+// is no blank or spinner frame in between (spec 0034 FR-2). A no-op on web and
+// on a binary built before the module was added.
+SplashScreen.setOptions({ fade: true, duration: 200 });
+void SplashScreen.preventAutoHideAsync().catch(() => undefined);
+/** Never keep the splash longer than this, whatever is still loading. */
+const SPLASH_MAX_MS = 5000;
+const splashTimeout = setTimeout(() => SplashScreen.hide(), SPLASH_MAX_MS);
+
+function hideSplash() {
+  clearTimeout(splashTimeout);
+  SplashScreen.hide();
+}
+
+/** Mounted with the first real screen; takes the splash down. */
+function SplashHandOver() {
+  useEffect(() => {
+    hideSplash();
+  }, []);
+  return null;
+}
 
 function RootNavigator() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -54,6 +77,8 @@ function RootNavigator() {
   }
 
   return (
+    <>
+    <SplashHandOver />
     <Stack
       screenOptions={{
         contentStyle: { backgroundColor: colors.background },
@@ -68,6 +93,7 @@ function RootNavigator() {
       <Stack.Screen name="workouts/summary" options={{ title: t('nav.workoutSaved') }} />
       <Stack.Screen name="workouts/[workoutId]" options={{ title: t('nav.workout') }} />
     </Stack>
+    </>
   );
 }
 

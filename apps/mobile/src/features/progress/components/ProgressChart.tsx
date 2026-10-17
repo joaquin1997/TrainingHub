@@ -1,7 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { ChartSeries } from '@/features/progress/utils/chartData';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { CardHeader } from '@/ui/CardHeader';
 
 const CHART_AREA_HEIGHT = 120;
 
@@ -34,14 +35,16 @@ export function ProgressChart({
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.range}>
-          {formatValue(series.min)}
-          {series.min !== series.max ? `-${formatValue(series.max)}` : ''}
-          {unit ? ` ${unit}` : ''}
-        </Text>
-      </View>
+      <CardHeader
+        title={title}
+        trailing={
+          <Text style={styles.range}>
+            {formatValue(series.min)}
+            {series.min !== series.max ? `-${formatValue(series.max)}` : ''}
+            {unit ? ` ${unit}` : ''}
+          </Text>
+        }
+      />
       <View style={styles.chart}>
         {series.bars.map((bar, index) => {
           // The latest bar is the one that matters; the rest give context.
@@ -76,20 +79,10 @@ const styles = StyleSheet.create({
     ...commonStyles.card,
     gap: spacing.md,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    gap: spacing.sm,
-  },
-  title: {
-    ...commonStyles.cardTitle,
-    flexShrink: 1,
-  },
   range: {
     color: colors.textMuted,
     fontFamily: fonts.display,
-    fontSize: 12,
+    ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
   chart: {
@@ -105,7 +98,7 @@ const styles = StyleSheet.create({
   value: {
     color: colors.textSubtle,
     fontFamily: fonts.display,
-    fontSize: 10,
+    ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
   valueLatest: {
@@ -129,7 +122,7 @@ const styles = StyleSheet.create({
   },
   label: {
     color: colors.textSubtle,
-    fontSize: 10,
+    ...typeScale.caption,
   },
   labelLatest: {
     color: colors.primary,

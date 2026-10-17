@@ -1,77 +1,30 @@
-import { StyleSheet, type TextStyle } from 'react-native';
+import { StyleSheet } from 'react-native';
+
+import { colors, fonts, fontScaleCap, layout, radii, spacing, typeScale } from './tokens';
 
 /**
- * Accent colours carry one meaning each (spec 0017 FR-1): `primary` (lime) is
- * the primary action and the active/selected state, `accent` (orange) a
- * personal record or a failure set, `success` (green) a done set, `danger`
- * (red) destructive actions and errors.
+ * Screens import the tokens from here (the values live in `tokens.ts`, the
+ * only file where they are written — spec 0034 FR-10 – FR-12) together with
+ * the shared styles built on them.
  */
-export const colors = {
-  background: '#101418',
-  surface: '#151A21',
-  surfaceRaised: '#1D2530',
-  surfaceMuted: '#101820',
-  primary: '#C8FF2E',
-  primaryPressed: '#A9E51F',
-  primarySoft: 'rgba(200, 255, 46, 0.12)',
-  onPrimary: '#10140D',
-  accent: '#FF8A3D',
-  accentSoft: 'rgba(255, 138, 61, 0.16)',
-  success: '#66E287',
-  successSoft: 'rgba(102, 226, 135, 0.14)',
-  danger: '#FF6B6B',
-  dangerSoft: 'rgba(255, 107, 107, 0.14)',
-  text: '#F7FAF2',
-  textMuted: '#A7B0BE',
-  textSubtle: '#6E7B8E',
-  border: '#2C3543',
-  borderStrong: '#3D4A5C',
-  overlay: 'rgba(4, 8, 13, 0.76)',
-  /** Behind catalog images, which are line drawings on white. */
-  imageBackdrop: '#FFFFFF',
-};
-
-/**
- * Display typeface for titles and figures (spec 0017 FR-2), loaded at start-up
- * by the root layout from `assets/fonts`. Body text stays in the system face.
- * Custom faces carry their weight in the file, so styles using them set no
- * `fontWeight` (Android would otherwise fall back to the system face).
- */
-export const fonts = {
-  display: 'SpaceGrotesk-Medium',
-  displayBold: 'SpaceGrotesk-Bold',
-};
+export { colors, fonts, fontScaleCap, layout, radii, spacing, typeScale };
+export type { TypeStyle } from './tokens';
 
 export const fontAssets = {
   [fonts.display]: require('../../assets/fonts/SpaceGrotesk-Medium.ttf'),
   [fonts.displayBold]: require('../../assets/fonts/SpaceGrotesk-Bold.ttf'),
 };
 
-export const spacing = {
-  xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  xxl: 24,
-};
-
-export const radii = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  pill: 999,
-};
-
-/** Fixed-width digits, so a running clock or a changing weight never shifts. */
-const tabular: TextStyle['fontVariant'] = ['tabular-nums'];
-
 /** Shared navigation header styling so every stack matches the dark theme. */
 export const screenHeader = {
   headerStyle: { backgroundColor: colors.background },
   headerShadowVisible: false,
   headerTintColor: colors.text,
-  headerTitleStyle: { color: colors.text, fontFamily: fonts.displayBold, fontSize: 17 },
+  headerTitleStyle: {
+    color: colors.text,
+    fontFamily: fonts.displayBold,
+    fontSize: typeScale.body.fontSize,
+  },
 };
 
 export const commonStyles = StyleSheet.create({
@@ -82,7 +35,7 @@ export const commonStyles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: spacing.lg,
-    paddingBottom: 96,
+    paddingBottom: layout.floatingBarClearance,
     gap: spacing.lg,
   },
   fixedContent: {
@@ -91,70 +44,69 @@ export const commonStyles = StyleSheet.create({
     gap: spacing.lg,
     backgroundColor: colors.background,
   },
-  /** Large title of a tab's root screen. */
+  // Text roles: each one is a style of the type scale plus colour and emphasis.
+  /** Large title of a tab's root screen or a hero. */
   title: {
+    ...typeScale.title,
     color: colors.text,
-    fontFamily: fonts.displayBold,
-    fontSize: 32,
-    lineHeight: 38,
     letterSpacing: -0.5,
   },
+  /** Title of a screen section, a sheet or a detail screen's hero. */
   heading: {
+    ...typeScale.heading,
     color: colors.text,
-    fontFamily: fonts.displayBold,
-    fontSize: 22,
-    lineHeight: 28,
     letterSpacing: -0.2,
   },
   /** Title of a card or a block inside a screen. */
   cardTitle: {
+    ...typeScale.heading,
     color: colors.text,
-    fontFamily: fonts.displayBold,
-    fontSize: 18,
-    lineHeight: 24,
   },
   /** Small uppercase label above a section or a figure. */
   sectionLabel: {
+    ...typeScale.caption,
     color: colors.textMuted,
-    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
+  /**
+   * Header of a narrow table column ("Set", "Previous", "kg"). Sentence case
+   * and no tracking, so Caption fits the set row's fixed columns.
+   */
+  columnLabel: {
+    ...typeScale.caption,
+    color: colors.textMuted,
+    fontWeight: '700',
+  },
   figure: {
+    ...typeScale.figure,
     color: colors.text,
-    fontFamily: fonts.displayBold,
-    fontSize: 22,
-    lineHeight: 28,
-    fontVariant: tabular,
   },
   figureLarge: {
+    ...typeScale.figureLarge,
     color: colors.text,
-    fontFamily: fonts.displayBold,
-    fontSize: 40,
-    lineHeight: 46,
     letterSpacing: -0.5,
-    fontVariant: tabular,
   },
   /** Unit or small text set next to a figure ("kg", "reps"). */
   figureUnit: {
+    ...typeScale.caption,
     color: colors.textMuted,
     fontFamily: fonts.display,
-    fontSize: 14,
   },
   body: {
+    ...typeScale.body,
     color: colors.textMuted,
-    fontSize: 16,
-    lineHeight: 23,
   },
+  /** Secondary line: dates, counts, hints. */
   meta: {
+    ...typeScale.caption,
     color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 20,
   },
+  /** A row's title or value. */
   label: {
+    ...typeScale.body,
     color: colors.text,
-    fontSize: 14,
     fontWeight: '700',
   },
   card: {
@@ -173,8 +125,8 @@ export const commonStyles = StyleSheet.create({
     backgroundColor: colors.surfaceRaised,
     color: colors.text,
     paddingHorizontal: spacing.md,
-    paddingVertical: 12,
-    fontSize: 16,
+    paddingVertical: spacing.md,
+    fontSize: typeScale.body.fontSize,
   },
   primaryButton: {
     minHeight: 48,
@@ -187,9 +139,9 @@ export const commonStyles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   primaryButtonText: {
+    ...typeScale.body,
     color: colors.onPrimary,
     fontFamily: fonts.displayBold,
-    fontSize: 16,
   },
   secondaryButton: {
     minHeight: 48,
@@ -204,19 +156,18 @@ export const commonStyles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   secondaryButtonText: {
+    ...typeScale.body,
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
   },
   link: {
+    ...typeScale.body,
     color: colors.primary,
-    fontSize: 15,
     fontWeight: '700',
   },
   error: {
+    ...typeScale.caption,
     color: colors.danger,
-    fontSize: 14,
-    lineHeight: 20,
   },
   pressed: {
     opacity: 0.82,

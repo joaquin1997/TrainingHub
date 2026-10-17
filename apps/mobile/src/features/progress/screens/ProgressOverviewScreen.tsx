@@ -23,10 +23,12 @@ import { TimedProgressFigures } from '@/features/progress/components/TimedProgre
 import { isTimedOrDistance } from '@/lib/tracking';
 import { formatWeightValue, fromKg, roundWeight } from '@/lib/weight';
 import { useRefresh } from '@/lib/useRefresh';
+import { CardHeader } from '@/ui/CardHeader';
 import { Chip } from '@/ui/Chip';
 import { ScreenTitle } from '@/ui/ScreenTitle';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { SkeletonProgress } from '@/ui/Skeleton';
 import type {
   ExerciseProgressSummary,
   MuscleGroupVolumePoint,
@@ -116,17 +118,23 @@ export function ProgressOverviewScreen() {
       }
     >
       <ScreenTitle title={t('nav.progress')} />
-      <FrequencySummary summary={frequency} />
-      {weeklyVolumeSeries.bars.length > 0 ? (
-        <ProgressChart
-          title={t('progress.weeklyVolume')}
-          unit={unit}
-          series={weeklyVolumeSeries}
-          formatLabel={formatAxisDate}
-        />
-      ) : null}
-      <MuscleDistribution points={muscleVolume} unit={unit} />
-      {showLoading ? <StateView kind="loading" message={t('progress.loading')} /> : null}
+      {/* First load only: tiles, chart and cards to come (spec 0034 FR-15). */}
+      {showLoading && !errorMessage ? (
+        <SkeletonProgress />
+      ) : (
+        <>
+          <FrequencySummary summary={frequency} />
+          {weeklyVolumeSeries.bars.length > 0 ? (
+            <ProgressChart
+              title={t('progress.weeklyVolume')}
+              unit={unit}
+              series={weeklyVolumeSeries}
+              formatLabel={formatAxisDate}
+            />
+          ) : null}
+          <MuscleDistribution points={muscleVolume} unit={unit} />
+        </>
+      )}
       {errorMessage ? (
         <StateView
           kind="error"
@@ -138,9 +146,11 @@ export function ProgressOverviewScreen() {
       {hasEmptyState ? (
         <StateView
           kind="empty"
-          icon="trending-up-outline"
+          icon="stats-chart-outline"
           title={t('progress.emptyTitle')}
           message={t('progress.emptySubtitle')}
+          actionLabel={t('progress.emptyAction')}
+          onAction={() => router.push('/routines')}
         />
       ) : null}
       {hasListState ? (
@@ -153,13 +163,17 @@ export function ProgressOverviewScreen() {
               onPress={() => router.push(`/progress/exercises/${exercise.exerciseId}`)}
               style={({ pressed }) => [styles.card, pressed ? styles.cardPressed : null]}
             >
-              <View style={styles.cardTitleRow}>
-                <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
-                {exercise.isRecordSession ? (
-                  <Chip icon="trophy" tone="record" size="sm" label={t('progress.pr')} />
-                ) : null}
-                <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
-              </View>
+              <CardHeader
+                title={exercise.exerciseName}
+                trailing={
+                  <View style={styles.cardTrailing}>
+                    {exercise.isRecordSession ? (
+                      <Chip icon="trophy" tone="record" size="sm" label={t('progress.pr')} />
+                    ) : null}
+                    <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
+                  </View>
+                }
+              />
               {isTimedOrDistance(exercise.trackingType) ? (
                 <TimedProgressFigures summary={exercise} />
               ) : (
@@ -240,14 +254,10 @@ const styles = StyleSheet.create({
   cardPressed: {
     ...commonStyles.pressed,
   },
-  cardTitleRow: {
+  cardTrailing: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-  },
-  cardTitle: {
-    ...commonStyles.cardTitle,
-    flex: 1,
   },
   figures: {
     flexDirection: 'row',
@@ -255,34 +265,32 @@ const styles = StyleSheet.create({
   },
   figure: {
     flex: 1,
-    gap: 2,
+    gap: spacing.xxs,
     borderRadius: radii.md,
     backgroundColor: colors.surfaceRaised,
     padding: spacing.sm,
   },
   figureLabel: {
     ...commonStyles.sectionLabel,
-    fontSize: 10,
   },
   figureValue: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 16,
+    ...typeScale.body,
     fontVariant: ['tabular-nums'],
   },
   figureReps: {
     color: colors.textMuted,
     fontFamily: fonts.display,
-    fontSize: 13,
+    ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
   figureUnit: {
     color: colors.textMuted,
     fontFamily: fonts.display,
-    fontSize: 12,
+    ...typeScale.caption,
   },
   meta: {
     ...commonStyles.meta,
-    fontSize: 13,
   },
 });

@@ -11,7 +11,7 @@ import { useSettings } from '@/features/settings/SettingsContext';
 import { cmToFeetInches, feetInchesToCm, formatHeight } from '@/lib/length';
 import { Button } from '@/ui/Button';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, spacing } from '@/ui/theme';
+import { colors, commonStyles, spacing, typeScale } from '@/ui/theme';
 
 const BIO_MAX = 300;
 
@@ -126,6 +126,7 @@ export function ProfileEditScreen() {
       <View style={styles.field}>
         <Text style={commonStyles.sectionLabel}>{t('profile.displayName')}</Text>
         <TextInput
+          keyboardAppearance="dark"
           value={name}
           onChangeText={setName}
           maxLength={50}
@@ -138,6 +139,7 @@ export function ProfileEditScreen() {
       <View style={styles.field}>
         <Text style={commonStyles.sectionLabel}>{t('profile.bio')}</Text>
         <TextInput
+          keyboardAppearance="dark"
           value={bio}
           onChangeText={setBio}
           maxLength={BIO_MAX}
@@ -192,7 +194,6 @@ const styles = StyleSheet.create({
   },
   counter: {
     ...commonStyles.meta,
-    fontSize: 12,
     alignSelf: 'flex-end',
   },
   row: {
