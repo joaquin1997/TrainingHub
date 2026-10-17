@@ -29,6 +29,7 @@ production.
 | **Workout bar** | The strip shown on every screen while a workout is in progress, leading back to it (spec 0019). | — |
 | **Tracking type** | What an exercise's sets record: weight & reps, reps only, time, weight & time, or distance & time (spec 0021). | Set type (warm-up, drop, failure) |
 | **Warm-up block** | A checklist of non-lifting warm-up items (mobility, cardio, activation) at the start of a routine; ticked in the workout, never counted as sets, volume or records (spec 0024). | Warm-up set |
+| **Deleted exercise** | A custom exercise its creator has deleted. Gone from the catalog and every picker, but kept, with its name, for the saved workouts and routines that already contain it (spec 0033). | An exercise removed outright, which history could no longer name |
 | **Unilateral exercise** | An exercise done one side at a time, logged per side (spec 0022). | — |
 
 ## Progress
