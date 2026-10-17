@@ -50,6 +50,7 @@ import {
   adjustRest,
   applyLastPerformance,
   clearActiveWorkout,
+  completeSet,
   countWorkoutSets,
   cycleWorkoutSetType,
   getActiveWorkout,
@@ -64,7 +65,6 @@ import {
   setExerciseRest,
   skipRest,
   startActiveWorkout,
-  startRest,
   toCreateWorkoutSessionInput,
   toggleWorkoutSetDone,
   toWorkoutSessionSkeleton,
@@ -441,19 +441,18 @@ export function ActiveWorkoutScreen() {
       (set) => set.id === workoutSetId,
     )?.done;
 
-    // The exercise's rest in this workout, else the Settings default (FR-1).
-    const rest = resolveRestSeconds(exercise ?? {}, settings.defaultRestSeconds);
-
-    const nextDraft = toggleWorkoutSetDone(
-      workoutDraft,
-      workoutExerciseId,
-      workoutSetId,
-      becomingDone ? rest : undefined,
-    );
-
+    // Ticking starts the exercise's rest in this workout, else the Settings
+    // default (FR-1) — the same rule as a tick from the watch (spec 0025).
     // Un-ticking leaves a running rest alone.
     setActiveWorkout(
-      becomingDone ? startRest(nextDraft, workoutExerciseId, rest) : nextDraft,
+      becomingDone
+        ? completeSet(
+            workoutDraft,
+            workoutExerciseId,
+            workoutSetId,
+            settings.defaultRestSeconds,
+          )
+        : toggleWorkoutSetDone(workoutDraft, workoutExerciseId, workoutSetId),
     );
   };
 
