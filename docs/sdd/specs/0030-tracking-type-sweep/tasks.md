@@ -17,7 +17,7 @@ mobile → docs. The migration is additive; no native rebuild.
 | 1 | [x] Plan and tasks; spec status `in-progress` | docs | — | `docs(sdd): plan and tasks for 0030` |
 | 2 | [x] Domain `SetExerciseTrackingTypeInput`; `Exercise.trackingTypeSetBy` + migration `20261018130000_add_exercise_tracking_type_set_by`; `PUT /exercises/:id/tracking-type` (new route/repository files, one line in `routes/index.ts`); route tests | domain, api | tests; `migrate deploy` + `migrate diff` on local PGlite | `feat(exercises): change an exercise's tracking type by hand` |
 | 3 | [x] Pure classifier: normalisation, multilingual rules, 0021 list moved to `curated.ts` (old script reads it), corrections first; tests on real catalog names | api | unit tests (AC-2, AC-8) | `feat(exercises): classify catalog exercises into tracking types` |
-| 4 | [ ] Pure sweep: `parseCorrections`, `planSweep` (rows, totals, used-first order, person skips, EF-7 flags, missing ids), `toCsv`, `planUndo`; tests | api | unit tests (AC-1, AC-3, AC-5, AC-9, EF-1, EF-2, EF-7) | `feat(exercises): plan a tracking type sweep` |
+| 4 | [x] Pure sweep: `parseCorrections`, `planSweep` (rows, totals, used-first order, person skips, EF-7 flags, missing ids), `toCsv`, `planUndo`; tests | api | unit tests (AC-1, AC-3, AC-5, AC-9, EF-1, EF-2, EF-7) | `feat(exercises): plan a tracking type sweep` |
 | 5 | [ ] Script `sweep-tracking-types.ts` (report / apply / undo), corrections JSON, npm scripts | api | typecheck; run on local PGlite with hand-inserted rows (`SWEEP_WITHOUT_TRANSLATIONS=true`) | `feat(exercises): tracking type sweep with report, apply and undo` |
 | 6 | [ ] Records use only the values of the exercise's current type | api | aggregate tests (AC-6, FR-17) | `feat(progress): records follow the exercise's current tracking type` |
 | 7 | [ ] Mobile: `setTrackingType` client, `TrackingTypeControl` on the exercise detail, confirm sheet when the exercise has sessions, rollback; i18n | mobile | typecheck; **[DEVICE]** FR-12, FR-14 | `feat(exercises): change the tracking type from the exercise detail` |
@@ -90,6 +90,10 @@ it before the sweep (harmless; the sweep re-decides those 44).
   stay weight & reps. The rules alone reach the same type as the 0021 list on
   all 44 of its names. Not checked against the full catalog: wger is not
   reachable from the sandbox — that is the owner's report (task 9).
+- 2026-10-17 — Task 4. `sweep.ts`: report rows (every exercise once,
+  totals = catalog size, used changes first), person-set skips, EF-7 flags,
+  missing override ids, corrections parsing with an error per bad entry, CSV,
+  run log and undo plan; 15 tests.
 
 ## Definition of done
 
