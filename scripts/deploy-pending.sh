@@ -13,6 +13,7 @@
 #                                 so the CSV can be reviewed first)
 #   IOS_DEVICE=1                  after prebuild, build onto the connected iPhone
 #   WATCH_APP=1                   prebuild with TRAININGHUB_WATCH_APP=1 (0025 Level 2)
+#   SKIP_BACKEND=1                skip the redeploy (it already went out)
 #
 # Everything is logged to tmp/deploy-pending-<timestamp>.log.
 #
@@ -54,8 +55,17 @@ echo "    last migration: $(ls apps/api/prisma/migrations | grep -v migration_lo
 step "pnpm install"
 pnpm install
 
-step "API: rebuild and redeploy (the container applies the migrations on start)"
-HEALTH_TRIES=120 "$ROOT/scripts/run.sh" backend
+# The local scripts compile against the generated client; a stale one lacks
+# the new columns and `tsc` fails.
+step "Prisma: regenerate the client"
+pnpm --filter @workout/api prisma:generate
+
+if [ "${SKIP_BACKEND:-0}" = "1" ]; then
+  step "API: redeploy skipped (SKIP_BACKEND=1)"
+else
+  step "API: rebuild and redeploy (the container applies the migrations on start)"
+  HEALTH_TRIES=120 "$ROOT/scripts/run.sh" backend
+fi
 
 step "SSH tunnel to the database (127.0.0.1:5434)"
 if nc -z 127.0.0.1 5434 >/dev/null 2>&1; then
