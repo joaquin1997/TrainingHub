@@ -4,6 +4,10 @@
 - [x] Personal record (PR) detection (per exercise; recent-record flag + badge)
 - [x] Estimated 1RM (Epley, per session point + best)
 - [x] PR history (list of past records over time)
+- [x] Records by type (heaviest weight, most reps, reps at a weight, best set
+  and session volume, est. 1RM, longest time and distance), named on the
+  summary, History and the exercise screen (spec 0023 — redeploy and device
+  check pending)
 - [~] Charts for weight/volume over time
   - [x] Per-session bar chart (est. 1RM with volume fallback) on the exercise
     detail screen — dependency-free, pure-view bars
@@ -49,6 +53,18 @@
 - (2026-05-31) Training-frequency tiles (`2cdc6c4`): streak, total workouts,
   active weeks and best week, derived on the device from the weekly-volume data
   (`summarizeTrainingFrequency`).
+- (2026-10-17) Spec 0023 — personal records by type. The API derives records
+  per type (`records.ts`, one pure function each): heaviest weight, most reps,
+  reps at a weight ("at that weight or heavier", top three weights shown),
+  best set volume, best session volume, est. 1RM, plus longest time and
+  distance from 0021. Only strict improvements count, warm-ups never do, and
+  an exercise logged twice in one workout is one session. The progress detail
+  carries `records`; `isRecordSession` now means any type. New
+  `GET /progress/session-records` lists what each workout beat: the summary
+  and History detail show a records card, the History list a "N records"
+  chip, and the exercise screen a "Records" card (the old timeline is now
+  "Heaviest weight over time"). Needs the API redeploy (no migration); an
+  older API just shows no records.
 
 ## Notes
 - Progress aggregation already exists (`apps/api/src/features/progress`). PRs can

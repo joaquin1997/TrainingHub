@@ -120,6 +120,8 @@ Ultra 2.
   the opt-in flag, installing the watchOS platform and the watch app). The
   backlog, roadmap 08 and glossary updates go to the coordinator (parallel
   agents). Spec stays `in-progress`: everything below needs the devices.
+- 2026-10-17 — Coordinator: roadmap 08 (Apple Watch app checklist + log) and
+  backlog row updated. Glossary not touched in this pass.
 
 ### Pending on the owner's devices
 
@@ -152,6 +154,7 @@ Level 2 (`TRAININGHUB_WATCH_APP=1` prebuild, watchOS platform installed):
 - [x] Every functional requirement and acceptance criterion in `spec.md` is met
       or explicitly deferred with a TODO (device checks pending above)
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
-- [ ] Relevant `docs/roadmap/NN-*.md` checklist and progress log updated (coordinator)
-- [ ] `spec.md` status set to `done`; `../backlog.md` updated
+- [x] Relevant `docs/roadmap/NN-*.md` checklist and progress log updated (coordinator)
+- [ ] `spec.md` status set to `done`; `../backlog.md` updated (backlog row
+      updated 2026-10-17; `done` waits for the device checks)
 - [x] Constitution amended if this work settled a new invariant (none settled)

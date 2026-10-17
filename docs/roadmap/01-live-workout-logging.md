@@ -18,7 +18,11 @@ previous performance, set types, and persist completion.
   blocks the save, the active workout's routine is locked from deletion
 - [x] Workout bar on every screen; starting another routine asks to finish the
   current one first; fields stay above the keyboard (spec 0019 — keyboard
-  pending the device check; the bar's rest countdown comes with 0018)
+  pending the device check; the bar's rest countdown landed with 0018)
+- [x] Timed and distance sets: exercises carry a tracking type (weight & reps,
+  reps, time, weight & time, distance & time) with the matching columns, a
+  set timer, and time/distance in routines, history and progress (spec 0021 —
+  migration, catalog script and device check pending)
 
 ## Design notes
 - Source of truth for the live session is the mobile `workoutDraftStore`
@@ -71,3 +75,16 @@ previous performance, set types, and persist completion.
   then starts the new one; a failed save leaves the current workout with the
   finish error. The Routines card is gone (the bar replaces it). The workout
   list insets for the keyboard on iOS; needs the owner's device check.
+- (2026-10-17) Spec 0021 — timed and distance sets. `Exercise.trackingType`
+  (default weight & reps, so existing exercises and workouts are unchanged)
+  picks the set columns: reps only, time, weight & time, distance & time.
+  Routines store time/distance targets; the workout ghosts them and last
+  time's values, accepts "60" or "1:00" for time, and a per-set timer counts
+  the target down (or up) and fills the time when stopped. Save sends only the
+  type's fields. Summary, History, exercise detail and progress show time and
+  distance; volume counts only weight × reps; records gain longest time and
+  distance. Custom exercises choose their type. Needs the
+  `add_exercise_tracking_type` migration (redeploy), then
+  `pnpm run catalog:tracking-types` on the server to mark the timed and
+  distance exercises of the wger catalog (44 locally; idempotent). No
+  rebuild; timed rows, timer vibration and keyboard pending the device check.
