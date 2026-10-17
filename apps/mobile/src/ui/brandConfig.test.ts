@@ -32,6 +32,14 @@ describe('brand and system appearance (spec 0034 FR-1 – FR-3, AC-1)', () => {
     }
   });
 
+  it('has iOS 18 dark and tinted icons drawn from the mark (spec 0035 FR-24)', () => {
+    const icons = expo.ios.icon;
+    expect(icons.light).toBe(expo.icon);
+    for (const path of [icons.dark, icons.tinted]) {
+      expect(ASSETS).toContain(path);
+    }
+  });
+
   it('shows the branded splash on the app background', () => {
     expect(splash).toBeDefined();
     expect(ASSETS).toContain(splash![1].image);

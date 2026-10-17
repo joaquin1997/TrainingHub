@@ -27,18 +27,38 @@ private func discardWorkoutURL(_ workoutId: String) -> URL {
 /// The app's brand mark: the pulse of the app icon (spec 0035 FR-13), drawn
 /// as a line so it stays sharp at any size and takes the tint it is given.
 private struct BrandMarkShape: Shape {
+  /// The pulse of the Ionicons glyph, traced on a 280 × 250 box.
+  static let points: [CGPoint] = [
+    CGPoint(x: 0, y: 165), CGPoint(x: 48, y: 165), CGPoint(x: 85, y: 0),
+    CGPoint(x: 125, y: 250), CGPoint(x: 165, y: 98), CGPoint(x: 182, y: 165),
+    CGPoint(x: 245, y: 165),
+  ]
+  static let box = CGSize(width: 280, height: 250)
+
   func path(in rect: CGRect) -> Path {
-    // Ionicons "pulse" polyline on its 512 × 512 grid.
-    let points: [CGPoint] = [
-      CGPoint(x: 48, y: 320), CGPoint(x: 112, y: 320), CGPoint(x: 176, y: 64),
-      CGPoint(x: 240, y: 448), CGPoint(x: 304, y: 224), CGPoint(x: 336, y: 320),
-      CGPoint(x: 432, y: 320),
-    ]
-    let scale = min(rect.width, rect.height) / 512
-    let origin = CGPoint(x: rect.midX - 256 * scale, y: rect.midY - 256 * scale)
+    let scale = min(rect.width / Self.box.width, rect.height / Self.box.height)
+    let origin = CGPoint(
+      x: rect.midX - Self.box.width * scale / 2,
+      y: rect.midY - Self.box.height * scale / 2
+    )
+    let mapped = Self.points.map { CGPoint(x: origin.x + $0.x * scale, y: origin.y + $0.y * scale) }
     var path = Path()
-    path.addLines(points.map { CGPoint(x: origin.x + $0.x * scale, y: origin.y + $0.y * scale) })
+    path.addLines(mapped)
     return path
+  }
+}
+
+/// The dot that ends the pulse.
+private struct BrandMarkDot: Shape {
+  func path(in rect: CGRect) -> Path {
+    let box = BrandMarkShape.box
+    let scale = min(rect.width / box.width, rect.height / box.height)
+    let center = CGPoint(
+      x: rect.midX - box.width * scale / 2 + 248 * scale,
+      y: rect.midY - box.height * scale / 2 + 165 * scale
+    )
+    let radius = 32 * scale
+    return Path(ellipseIn: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
   }
 }
 
@@ -48,10 +68,14 @@ private struct BrandMark: View {
   var color: Color = primary
 
   var body: some View {
-    BrandMarkShape()
-      .stroke(color, style: StrokeStyle(lineWidth: max(1.5, size / 8), lineCap: .round, lineJoin: .round))
-      .frame(width: size, height: size)
-      .accessibilityHidden(true)
+    ZStack {
+      BrandMarkShape()
+        .stroke(color, style: StrokeStyle(lineWidth: max(1.5, size / 8), lineCap: .round, lineJoin: .round))
+      BrandMarkDot()
+        .fill(color)
+    }
+    .frame(width: size, height: size)
+    .accessibilityHidden(true)
   }
 }
 
