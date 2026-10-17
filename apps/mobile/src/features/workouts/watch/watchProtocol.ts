@@ -1,4 +1,8 @@
-import type { WatchWorkoutEvent, WatchWorkoutSnapshot } from '@workout/domain';
+import type {
+  ExerciseTrackingType,
+  WatchWorkoutEvent,
+  WatchWorkoutSnapshot,
+} from '@workout/domain';
 
 import { nextSetToDo, type SetToDo } from '@/features/workouts/restTimer/nextSetToDo';
 import {
@@ -10,6 +14,7 @@ import {
   type WorkoutSetDraft,
   type WorkoutSessionDraft,
 } from '@/features/workouts/state/workoutDraftStore';
+import { trackingFields } from '@/lib/tracking';
 
 /**
  * The set the watch offers to tick (spec 0025 FR-4). During a rest, the set
@@ -26,16 +31,35 @@ export function currentSetToDo(draft: WorkoutSessionDraft): SetToDo | null {
 }
 
 /**
- * The planned values as the phone shows them, e.g. "60 kg × 8". The draft's
- * strings are already in the workout's display unit, so nothing is converted
- * (constitution Art. 4).
+ * The planned values as the phone shows them, e.g. "60 kg × 8", "0:45" or
+ * "500 m 1:45", following the exercise's tracking type (spec 0021). The
+ * draft's strings are already in the workout's display unit, so nothing is
+ * converted (constitution Art. 4).
  */
-export function setTarget(set: WorkoutSetDraft, unit: string): string {
-  const weight = effectiveSetValue(set.weightKg, set.weightPlaceholder);
-  const reps = effectiveSetValue(set.reps, set.repsPlaceholder);
-  return [weight ? `${weight} ${unit}` : '', reps ? `× ${reps}` : '']
-    .filter(Boolean)
-    .join(' ');
+export function setTarget(
+  set: WorkoutSetDraft,
+  unit: string,
+  trackingType?: ExerciseTrackingType,
+): string {
+  const parts = trackingFields(trackingType).map((field) => {
+    switch (field) {
+      case 'weight': {
+        const weight = effectiveSetValue(set.weightKg, set.weightPlaceholder);
+        return weight ? `${weight} ${unit}` : '';
+      }
+      case 'reps': {
+        const reps = effectiveSetValue(set.reps, set.repsPlaceholder);
+        return reps ? `× ${reps}` : '';
+      }
+      case 'distance': {
+        const distance = effectiveSetValue(set.distance ?? '', set.distancePlaceholder);
+        return distance ? `${distance} m` : '';
+      }
+      case 'duration':
+        return effectiveSetValue(set.duration ?? '', set.durationPlaceholder);
+    }
+  });
+  return parts.filter(Boolean).join(' ');
 }
 
 /** What the watch shows of the active workout (spec 0025). */
@@ -65,7 +89,7 @@ export function toWatchSnapshot(
             exerciseName: exercise.exerciseName,
             setNumber: setIndex + 1,
             setCount: exercise.entries.length,
-            target: setTarget(set, draft.unit ?? 'kg'),
+            target: setTarget(set, draft.unit ?? 'kg', exercise.trackingType),
             restSeconds: resolveRestSeconds(exercise, defaultRestSeconds),
           }
         : undefined,

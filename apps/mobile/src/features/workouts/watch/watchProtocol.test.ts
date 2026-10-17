@@ -111,6 +111,11 @@ describe('toWatchSnapshot', () => {
   it('prefers typed values and leaves out what is missing', () => {
     const set = exercise('a', [false]).entries[0]!;
     expect(setTarget({ ...set, weightKg: '62.5', reps: '6' }, 'kg')).toBe('62.5 kg × 6');
+    // Spec 0021: the exercise's tracking type picks the fields.
+    expect(setTarget({ ...set, durationPlaceholder: '0:45' }, 'kg', 'duration')).toBe('0:45');
+    expect(
+      setTarget({ ...set, distance: '500', duration: '1:45' }, 'kg', 'distance_duration'),
+    ).toBe('500 m 1:45');
     expect(setTarget({ ...set, weightPlaceholder: undefined }, 'kg')).toBe('× 8');
     expect(setTarget({ ...set, repsPlaceholder: undefined }, 'kg')).toBe('60 kg');
     expect(
