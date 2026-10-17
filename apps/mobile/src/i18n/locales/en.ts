@@ -435,6 +435,9 @@ export const en = {
       bestSetVolume: 'Best set volume',
       bestSessionVolume: 'Best session volume',
       bestEstimatedOneRepMax: 'Best est. 1RM',
+      // Record badges while logging (spec 0032).
+      liveNotice: 'Record: {{title}}',
+      liveMore: '+{{count}}',
       repsValue_one: '{{count}} rep',
       repsValue_other: '{{count}} reps',
     },

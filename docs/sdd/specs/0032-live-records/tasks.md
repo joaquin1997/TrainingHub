@@ -18,7 +18,7 @@ Order: domain → API → mobile → docs. No migration, no native rebuild.
 | 3 | [x] `deriveExerciseRecords` returns most reps at every weight; `buildStartingRecords`; `GET /progress/starting-records`; tests | api | tests (performed only, warm-ups excluded, never performed, 400s) | `feat(progress): starting records for the active workout` |
 | 4 | [x] Draft `startingRecords`; `missingStartingRecordIds`, `withStartingRecords`; client; `useStartingRecords` (load, merge into the current draft, 30 s retry, stop on 404); tests | mobile | tests (AC-8 draft side, EF-4) | `feat(workouts): keep starting records with the active workout` |
 | 5 | [x] `buildLiveRecordBadges`, `recordNotice`; tests for every scenario | mobile | tests (AC-1–AC-7, AC-12–AC-14) | `feat(workouts): derive live record badges from the draft` |
-| 6 | [ ] `RecordBadge`, `RecordNotice`, `useLiveRecords`; screen wiring; `describeRecord` widened; i18n en/es | mobile | typecheck; `expo export --platform web` bundles the shared module | `feat(workouts): show record badges and a notice while logging` |
+| 6 | [x] `RecordBadge`, `RecordNotice`, `useLiveRecords`; screen wiring; `describeRecord` widened; i18n en/es | mobile | typecheck; `expo export --platform web` bundles the shared module | `feat(workouts): show record badges and a notice while logging` |
 | 7 | [ ] Progress log, definition of done | docs | — | `docs(sdd): record 0032 implementation` |
 
 Not verifiable in CI: the badge and notice layout on a phone, offline after

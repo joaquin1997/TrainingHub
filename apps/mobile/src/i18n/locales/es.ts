@@ -438,6 +438,9 @@ export const es: TranslationCatalog = {
       bestSetVolume: 'Mejor volumen en una serie',
       bestSessionVolume: 'Mejor volumen en una sesión',
       bestEstimatedOneRepMax: 'Mejor 1RM estimado',
+      // Record badges while logging (spec 0032).
+      liveNotice: 'Récord: {{title}}',
+      liveMore: '+{{count}}',
       repsValue_one: '{{count}} rep',
       repsValue_other: '{{count}} reps',
     },

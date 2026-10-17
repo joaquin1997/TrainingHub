@@ -1,4 +1,4 @@
-import type { ExerciseRecord, WeightUnit } from '@workout/domain';
+import type { ExerciseRecord, LiveRecordHit, WeightUnit } from '@workout/domain';
 
 import { formatDuration } from '@/lib/format';
 import { formatDistance } from '@/lib/tracking';
@@ -15,7 +15,7 @@ export interface RecordLabel {
   set?: string;
 }
 
-function formatSet(record: ExerciseRecord, unit: WeightUnit): string | undefined {
+function formatSet(record: ExerciseRecord | LiveRecordHit, unit: WeightUnit): string | undefined {
   if (record.weightKg === undefined || record.reps === undefined) {
     return undefined;
   }
@@ -27,7 +27,8 @@ function formatSet(record: ExerciseRecord, unit: WeightUnit): string | undefined
  * unit (FR-5). Records arrive in kg; nothing here is stored.
  */
 export function describeRecord(
-  record: ExerciseRecord,
+  // The date is never read, so live record badges (spec 0032) use it too.
+  record: ExerciseRecord | LiveRecordHit,
   unit: WeightUnit,
   t: Translate,
 ): RecordLabel {
