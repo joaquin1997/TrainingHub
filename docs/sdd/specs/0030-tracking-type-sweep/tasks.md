@@ -19,7 +19,7 @@ mobile → docs. The migration is additive; no native rebuild.
 | 3 | [x] Pure classifier: normalisation, multilingual rules, 0021 list moved to `curated.ts` (old script reads it), corrections first; tests on real catalog names | api | unit tests (AC-2, AC-8) | `feat(exercises): classify catalog exercises into tracking types` |
 | 4 | [x] Pure sweep: `parseCorrections`, `planSweep` (rows, totals, used-first order, person skips, EF-7 flags, missing ids), `toCsv`, `planUndo`; tests | api | unit tests (AC-1, AC-3, AC-5, AC-9, EF-1, EF-2, EF-7) | `feat(exercises): plan a tracking type sweep` |
 | 5 | [x] Script `sweep-tracking-types.ts` (report / apply / undo), corrections JSON, npm scripts | api | typecheck; run on local PGlite with hand-inserted rows (`SWEEP_WITHOUT_TRANSLATIONS=true`) | `feat(exercises): tracking type sweep with report, apply and undo` |
-| 6 | [ ] Records use only the values of the exercise's current type | api | aggregate tests (AC-6, FR-17) | `feat(progress): records follow the exercise's current tracking type` |
+| 6 | [x] Records use only the values of the exercise's current type | api | aggregate tests (AC-6, FR-17) | `feat(progress): records follow the exercise's current tracking type` |
 | 7 | [ ] Mobile: `setTrackingType` client, `TrackingTypeControl` on the exercise detail, confirm sheet when the exercise has sessions, rollback; i18n | mobile | typecheck; **[DEVICE]** FR-12, FR-14 | `feat(exercises): change the tracking type from the exercise detail` |
 | 8 | [ ] Progress log, definition of done | docs | — | `docs(sdd): record 0030 implementation` |
 | 9 | [ ] (owner) Deploy the API (migration), run the report, review, correct, apply, re-apply (0 changed) — commands below | ops | — | — |
@@ -109,6 +109,13 @@ it before the sweep (harmless; the sweep re-decides those 44).
   weight & reps throughout (AC-4). Note: PGlite's socket server needs
   `pgbouncer=true` in the local `DATABASE_URL` (prepared statements); not
   needed on the real server.
+- 2026-10-17 — Task 6. `recordValuesOf` in `progress/aggregate.ts` reduces
+  each working set to its exercise's current type before records are
+  derived; points, volume and history keep the logged values. Tests in
+  `progress/reclassified.test.ts` (old "0 kg × 60" plank → only the 45 s
+  record, no session record, volume unchanged); every earlier progress test
+  unchanged and green. "Last time" needed no change: the set row prints only
+  the current type's fields and `–` when none was logged (FR-17).
 
 ## Definition of done
 
