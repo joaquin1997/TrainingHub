@@ -52,11 +52,6 @@ const BASELINE: Record<string, number> = {
   'features/progress/components/TimedProgress.tsx': 7,
   'features/progress/screens/ExerciseProgressDetailScreen.tsx': 9,
   'features/progress/screens/ProgressOverviewScreen.tsx': 6,
-  'features/routines/components/RoutineSetTable.tsx': 5,
-  'features/routines/components/WarmUpBlockEditor.tsx': 2,
-  'features/routines/screens/RoutineDetailScreen.tsx': 15,
-  'features/routines/screens/RoutineFormScreen.tsx': 17,
-  'features/routines/screens/RoutinesListScreen.tsx': 2,
   'features/settings/screens/SettingsScreen.tsx': 11,
 };
 

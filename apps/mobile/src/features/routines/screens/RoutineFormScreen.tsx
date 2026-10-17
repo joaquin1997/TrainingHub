@@ -63,7 +63,7 @@ import { kgToInputString, roundWeight, toKg } from '@/lib/weight';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
 import type {
   Exercise,
   ExerciseTrackingType,
@@ -773,6 +773,7 @@ export function RoutineFormScreen({
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>{t('routineForm.routineName')}</Text>
             <TextInput
+              keyboardAppearance="dark"
               value={name}
               onChangeText={setName}
               placeholder={t('routineForm.routineNamePlaceholder')}
@@ -783,6 +784,7 @@ export function RoutineFormScreen({
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>{t('routineForm.description')}</Text>
             <TextInput
+              keyboardAppearance="dark"
               value={description}
               onChangeText={setDescription}
               placeholder={t('routineForm.descriptionPlaceholder')}
@@ -796,6 +798,7 @@ export function RoutineFormScreen({
             <View style={styles.iconInput}>
               <Ionicons name="folder-outline" size={18} color={colors.textMuted} />
               <TextInput
+                keyboardAppearance="dark"
                 value={folder}
                 onChangeText={setFolder}
                 placeholder={t('routineForm.folderPlaceholder')}
@@ -872,6 +875,7 @@ export function RoutineFormScreen({
                 <View style={styles.iconInput}>
                   <Ionicons name="search" size={18} color={colors.textMuted} />
                   <TextInput
+                    keyboardAppearance="dark"
                     value={exercise.exerciseQuery}
                     onChangeText={(value) => updateExerciseQuery(exercise.id, value)}
                     onFocus={() => {
@@ -940,6 +944,7 @@ export function RoutineFormScreen({
                       <Text style={styles.fieldLabel}>{t('routineForm.restBetweenSets')}</Text>
                     </View>
                     <TextInput
+                      keyboardAppearance="dark"
                       value={exercise.restSeconds}
                       onChangeText={(value) => updateExerciseRest(exercise.id, value)}
                       placeholder={t('routineForm.restPlaceholder')}
@@ -1145,14 +1150,13 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     ...commonStyles.sectionLabel,
-    fontSize: 11,
   },
   input: {
     ...commonStyles.input,
   },
   nameInput: {
     fontFamily: fonts.displayBold,
-    fontSize: 18,
+    fontSize: typeScale.heading.fontSize,
   },
   multilineInput: {
     minHeight: 72,
@@ -1170,7 +1174,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     minHeight: 46,
     color: colors.text,
-    fontSize: 16,
+    ...typeScale.body,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -1195,11 +1199,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceRaised,
   },
   indexBadgeSuperset: {
-    borderRadius: 14,
+    borderRadius: radii.round,
     backgroundColor: colors.surface,
     borderWidth: 1.5,
     borderColor: colors.textMuted,
-    paddingHorizontal: 4,
+    paddingHorizontal: spacing.xs,
   },
   supersetGroup: {
     gap: spacing.sm,
@@ -1210,7 +1214,7 @@ const styles = StyleSheet.create({
   },
   rail: {
     width: 2,
-    borderRadius: 1,
+    borderRadius: radii.pill,
     backgroundColor: colors.borderStrong,
     marginVertical: spacing.lg,
   },
@@ -1222,12 +1226,12 @@ const styles = StyleSheet.create({
   indexBadgeText: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 13,
+    ...typeScale.caption,
   },
   exerciseTitle: {
     ...commonStyles.cardTitle,
     flex: 1,
-    paddingTop: 2,
+    paddingTop: spacing.xxs,
   },
   reorderRow: {
     flexDirection: 'row',
@@ -1245,7 +1249,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   searchResult: {
-    gap: 2,
+    gap: spacing.xxs,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radii.md,
@@ -1255,7 +1259,7 @@ const styles = StyleSheet.create({
   },
   searchResultTitle: {
     color: colors.text,
-    fontSize: 15,
+    ...typeScale.body,
     fontWeight: '600',
   },
   metaInputsRow: {
@@ -1271,14 +1275,14 @@ const styles = StyleSheet.create({
   metaFieldLabel: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
   },
   cellInput: {
     minHeight: 46,
     paddingHorizontal: spacing.xs,
     textAlign: 'center',
     fontFamily: fonts.displayBold,
-    fontSize: 18,
+    fontSize: typeScale.figure.fontSize,
     fontVariant: ['tabular-nums'],
   },
   cardActions: {

@@ -46,6 +46,7 @@ export function WarmUpBlockEditor({ items, onChange, createId }: Props) {
       {items.map((item) => (
         <View key={item.id} style={styles.row}>
           <TextInput
+            keyboardAppearance="dark"
             value={item.name}
             onChangeText={(name) => update(item.id, { name })}
             placeholder={t('warmUp.itemPlaceholder')}
@@ -53,6 +54,7 @@ export function WarmUpBlockEditor({ items, onChange, createId }: Props) {
             style={[styles.input, styles.nameInput]}
           />
           <TextInput
+            keyboardAppearance="dark"
             value={item.target}
             onChangeText={(target) => update(item.id, { target })}
             onBlur={() => normaliseTime(item)}

@@ -11,7 +11,7 @@ import {
 } from '@/features/routines/utils/routineSetInheritance';
 import { formatDuration } from '@/lib/format';
 import { parseDurationInput, trackingFields, type SetValueField } from '@/lib/tracking';
-import { colors, commonStyles, fonts, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, spacing, typeScale } from '@/ui/theme';
 
 /** One target set as typed in the routine editor (weight in the display unit). */
 export type EditableRoutineSet = {
@@ -119,6 +119,7 @@ export function RoutineSetTable({ sets, trackingType, unit, onChange, onRemove }
           )}
           {columns.map((field) => (
             <TextInput
+              keyboardAppearance="dark"
               key={field}
               value={set[field]}
               onChangeText={(value) => onChange(set.id, field, value)}
@@ -160,7 +161,6 @@ const styles = StyleSheet.create({
   },
   colLabel: {
     ...commonStyles.sectionLabel,
-    fontSize: 10,
     textAlign: 'center',
   },
   colSet: {
@@ -180,12 +180,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
+    gap: spacing.xxs,
   },
   setNumber: {
     color: colors.textMuted,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
     textAlign: 'center',
     fontVariant: ['tabular-nums'],
   },
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
     textAlign: 'center',
     fontFamily: fonts.displayBold,
-    fontSize: 18,
+    fontSize: typeScale.figure.fontSize,
     fontVariant: ['tabular-nums'],
   },
 });

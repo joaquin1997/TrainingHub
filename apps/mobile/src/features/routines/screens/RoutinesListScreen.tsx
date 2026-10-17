@@ -337,8 +337,6 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     ...commonStyles.cardTitle,
-    fontSize: 20,
-    lineHeight: 26,
     flexShrink: 1,
   },
   menuButton: {

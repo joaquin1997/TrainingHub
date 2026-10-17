@@ -22,7 +22,7 @@ import { ActionSheet } from '@/ui/ActionSheet';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, layout, radii, spacing, typeScale } from '@/ui/theme';
 import type { RoutineExerciseSet, Routine } from '@workout/domain';
 
 function formatReps(set: RoutineExerciseSet, t: TFunction) {
@@ -393,9 +393,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   title: {
-    ...commonStyles.heading,
-    fontSize: 28,
-    lineHeight: 34,
+    ...commonStyles.title,
   },
   description: {
     ...commonStyles.body,
@@ -421,12 +419,12 @@ const styles = StyleSheet.create({
   },
   lockText: {
     flex: 1,
-    gap: 2,
+    gap: spacing.xxs,
   },
   lockTitle: {
     color: colors.primary,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
   },
   blockList: {
     gap: spacing.md,
@@ -444,7 +442,7 @@ const styles = StyleSheet.create({
     top: 14,
     bottom: 14,
     width: 2,
-    borderRadius: 1,
+    borderRadius: radii.pill,
     backgroundColor: colors.borderStrong,
   },
   supersetMembers: {
@@ -465,10 +463,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radii.sm,
     backgroundColor: colors.surfaceRaised,
-    paddingHorizontal: 4,
+    paddingHorizontal: spacing.xs,
   },
   blockBadgeSuperset: {
-    borderRadius: 14,
+    borderRadius: radii.round,
     backgroundColor: colors.background,
     borderWidth: 1.5,
     borderColor: colors.textMuted,
@@ -476,22 +474,22 @@ const styles = StyleSheet.create({
   blockBadgeText: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 13,
+    ...typeScale.caption,
   },
   blockBadgeTextSuperset: {
     color: colors.text,
-    fontSize: 12,
+    ...typeScale.caption,
   },
   exerciseTitle: {
     ...commonStyles.cardTitle,
     flex: 1,
-    paddingTop: 2,
+    paddingTop: spacing.xxs,
   },
   setTable: {
     gap: spacing.xs,
   },
   setTableIndented: {
-    marginLeft: 36,
+    marginLeft: layout.setMarker,
   },
   setHeaderRow: {
     flexDirection: 'row',
@@ -500,7 +498,6 @@ const styles = StyleSheet.create({
   },
   columnLabel: {
     ...commonStyles.sectionLabel,
-    fontSize: 11,
   },
   columnRight: {
     textAlign: 'right',
@@ -517,22 +514,20 @@ const styles = StyleSheet.create({
   setNumber: {
     color: colors.textMuted,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
     fontVariant: ['tabular-nums'],
   },
   setTarget: {
     textAlign: 'right',
   },
   setFigure: {
+    ...typeScale.figure,
     color: colors.text,
-    fontFamily: fonts.displayBold,
-    fontSize: 18,
-    fontVariant: ['tabular-nums'],
   },
   setUnit: {
     color: colors.textMuted,
     fontFamily: fonts.display,
-    fontSize: 13,
+    ...typeScale.caption,
   },
   actions: {
     gap: spacing.md,
