@@ -614,4 +614,73 @@ Filled in by each workstream as it lands (own subsection).
 
 ### B2
 
+- **API (B2.1).** `buildAccumulators` keeps a `pointSessions` array next to
+  the points (the chronological session index of each point; internal, never
+  in the payload); `buildExerciseProgressDetail` maps the points through
+  `flagRecordPoints`, which looks the index up in the record history's
+  `sessionIndexes` and adds `isRecord: true` when that workout's hits are
+  non-empty. Summaries (`/progress/exercises`) are unchanged. One existing
+  `toEqual` expectation gained `isRecord: true` (its second session beat the
+  heaviest weight): the field is additive, but an exact-shape assertion sees it.
+- **Geometry (B2.2).** `chartData.ts`: `ChartPoint { date, value, isRecord,
+  x, y }`, `ChartSeries { points, min, max }`; `buildProgressSeries(points,
+  metric, { maxPoints = 12, positiveOnly })` (options object instead of the
+  old positional `maxPoints`, which no caller passed). The bar heights moved
+  to `barHeightRatio(value, min, max)`, used only by the fallback.
+  `buildWeeklyVolumeSeries` also skips weeks with a volume of 0
+  **[ASSUMPTION: the EF-7 rule for session volume applies to weekly volume —
+  a week of only timed or reps-only work is a gap]**. `pointLabel` and
+  `pointReadout` live in `chartData.ts`. `linePath.ts` works in pixels after
+  one layout step, so the signatures differ slightly from the plan:
+  `layoutPoints(points, { width, height, insetX, insetY })` →
+  `monotonePath(pixels)`, `areaPath(pixels, baseline)`,
+  `nearestIndex(pixels, x)`; `monotoneSegments` is exported so the test can
+  prove no overshoot from the Bézier control points (convex hull).
+- **Guard (B2.3).** `features/progress/utils/svgSupport.ts`
+  (`canDrawSvg(Platform.OS, UIManager)`, with a test) — a small file not in
+  the B2 list, so the guard is pure and unit-tested. On RN 0.88 bridgeless,
+  `BridgelessUIManager.hasViewManagerConfig(name)` is
+  `unstable_hasComponent(name)` (read in the installed source): a boolean,
+  `false` for an unknown name; the guard also treats a throw or a missing
+  function as "no SVG". Web always draws. Decided once at module load.
+- **Drawing (B2.3).** Plot 140 pt (module constant), 8 pt inset so end dots
+  and record dots are not clipped. Min/max sit in a left gutter column (not
+  over the line) and first/last dates under the plot column; a flat series
+  (one point, or all equal) shows its one value at mid-height, next to the
+  centred dot. Gradient id from `useId()` (SVG ids are global on web).
+  `ProgressBars` is the previous chart body, unchanged in look.
+- **Reading a point (B2.4).** A transparent `PanResponder` layer over the
+  plot: grant and move select the nearest point; releasing without moving on
+  the point already selected clears it; a vertical scroll may take the
+  gesture over and the selection stays. "A tap outside the plot" is read as
+  a tap elsewhere in the chart's body (gutter, dates): a responder on the
+  body clears it; taps elsewhere on the screen do not. The readout replaces
+  the range: "8/24 · 105 kg · Record" with a trophy (record word in
+  `accent`); it is a polite live region on Android. The readout's date uses
+  the axis formatter (`formatShortDate`).
+- **Accessibility (B2.4).** One absolutely positioned column per point,
+  between the midpoints to its neighbours, `accessibilityRole="button"`,
+  label "date, value unit[, record]", `accessibilityState.selected`,
+  `onAccessibilityTap` selects it. SVG, axes and the touch layer carry
+  `aria-hidden` + `importantForAccessibility="no-hide-descendants"`.
+- **Call sites.** Only `ExerciseProgressDetailScreen` changed:
+  `positiveOnly` for 1RM and volume, 1RM values with one decimal (the points
+  are already rounded in the display unit). The overview needed nothing (its
+  builder skips empty weeks); `TimedProgress` and `MeasurementHistoryScreen`
+  draw the line chart with their existing props.
+- **Verified on the web export** with a Playwright script and a mocked API
+  (eight 1RM points, a reps-only session as a gap, two records): line, area,
+  orange records, tap on the 5th point → "8/20 · 102.1 kg", drag onto a
+  record → readout with "Record", tap again and tap on the gutter clear it;
+  the eight accessible labels read in order ("8/9, 102 kg, record", …); one
+  point centred with no line; weekly volume with a zero week skipped; timed
+  and measurement charts. The bar fallback is the previous view code and was
+  not re-shot (web always has SVG).
+- **Dependency.** `react-native-svg` `15.16.0` exact in
+  `apps/mobile/package.json`, root `pnpm-lock.yaml` re-resolved by
+  `pnpm --filter @workout/mobile add`. `apps/mobile/pnpm-lock.yaml` is a
+  stale SDK 55 leftover not used by the workspace; left untouched.
+- Native rebuild needed for the line chart (bars until then); API deploy
+  for the orange points (either order). Device checks: B2.6.
+
 ### B3

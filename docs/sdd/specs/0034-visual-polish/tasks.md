@@ -162,7 +162,7 @@ Shared: `apps/mobile/package.json` + `pnpm-lock.yaml` (`react-native-svg`
 | B2.2 | [x] `chartData`: `ChartPoint { date, value, isRecord, x, y }`, `positiveOnly`, one point centred, windows unchanged; `linePath`: `monotonePath`, `areaPath`, `nearestIndex`; point labels — pure, with tests (AC-15/16 logic, EF-7, 100 points) | mobile | unit tests | `feat(progress): line chart geometry` |
 | B2.3 | [x] Add `react-native-svg` 15.16.0; `ProgressChart` drawn as smooth line + gradient area + points (records orange) + first/last dates + min/max; one point → dot and value; current bars moved to `ProgressBars` as the old-binary fallback (`hasViewManagerConfig('RNSVGPath')`) | mobile | typecheck; web export screenshots of the four screens — **native rebuild** | `feat(progress): smooth line charts with record points` |
 | B2.4 | [x] Tap and drag (`PanResponder`, nearest point, guide line, readout in the header "date · value unit · Record"); per-point accessible columns; i18n `progress.chart`; call sites pass `isRecord` / `positiveOnly` / `formatValue` | mobile | unit tests (labels); web export: tap the 5th of 8 points (AC-15) | `feat(progress): read a chart point by tap or screen reader` |
-| B2.5 | [ ] B2 progress log, `plan-b.md` *As built* (B2), web export; constitution amendment-log line for Article 9's reversed `react-native-svg` example | docs | `expo export --platform web` | `docs(sdd): record 0034 phase B2` |
+| B2.5 | [x] B2 progress log, `plan-b.md` *As built* (B2), web export; constitution amendment-log line for Article 9's reversed `react-native-svg` example | docs | `expo export --platform web` | `docs(sdd): record 0034 phase B2` |
 | B2.6 | [ ] [DEVICE] After the rebuild and an API deploy: AC-15 on iPhone and Android (line, area, two orange points, tap and drag readout, VoiceOver and TalkBack read every point in order); AC-16; a 100-point chart draws without visible delay; before the rebuild the bars still show | device | owner | — |
 
 ## B3 — Summary comparison and share card
@@ -228,6 +228,18 @@ order); `expo prebuild` and a device build for `react-native-svg`,
 ### B1 log
 
 ### B2 log
+
+- 2026-10-18 — B2.1 – B2.5 done on `feat/sdd-0034-b2`. API: progress points
+  carry `isRecord: true` when their workout beat a record (4 new aggregate
+  tests). Mobile: monotone line + gradient area + record points
+  (`react-native-svg` 15.16.0), tap/drag readout, one accessible element
+  per point, gaps instead of zeros, bars kept as the old-binary fallback
+  behind `canDrawSvg`. `pnpm -r typecheck` and `pnpm -r test` green after
+  each task; `expo export --platform web` exported and the four chart
+  screens checked with a mocked API (details in `plan-b.md`, *As built*,
+  B2). Deviations: guard in a small extra file (`utils/svgSupport.ts`),
+  pixel-space path signatures, zero-volume weeks are gaps too. B2.6
+  (device, after the rebuild and an API deploy) is open.
 
 ### B3 log
 

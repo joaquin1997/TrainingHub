@@ -199,6 +199,13 @@ change. Record it below.
   already used by `add_user_password_email_unique`, and ruled that data fixes
   are scripts, not migrations. Forced by spec 0001, whose plan put an
   account-specific data reassignment into a migration.
+- **2026-10-18 — Article 9 (example).** The deferral the article cites as its
+  example is reversed: spec 0034 (FR-22) asks for smooth line charts with an
+  area, which `View`-built bars cannot draw, so `react-native-svg` (the
+  Expo SDK's pinned native module) was added, justified in
+  `specs/0034-visual-polish/plan-b.md` and guarded so older binaries keep the
+  bars. The rule itself is unchanged; the example now records a dependency
+  that earned its place once a spec needed it.
 
 `TODO(sdd): Articles 4 and 6 encode decisions that currently live only in the`
 `assistant's memory notes, not in any repo document. Confirm they are stated`
