@@ -247,6 +247,16 @@ None.
   -p ios --clean`, then the usual signed `xcodebuild` and install. The watch
   app is a second signed bundle id (`com.joaquin.traininghub.watchkitapp`) with
   the HealthKit entitlement on the free team.
+- **The watch target is opt-in** (amended 2026-10-17, during task 7): a scheme
+  that embeds a watch app does not build at all unless the watchOS platform is
+  installed in Xcode (verified here: "This scheme builds an embedded Apple
+  Watch app. watchOS 26.5 must be installed"), and the watch's signing on the
+  free team is unproven. So that neither can break the iPhone build of the
+  batch, `app.config.js` limits `@bacons/apple-targets` to
+  `workout-activity` unless `TRAININGHUB_WATCH_APP=1` is set at prebuild.
+  `[ASSUMPTION: remove the flag once the owner's first signed build with the
+  watch app works.]` The phone module is always linked; without the watch app
+  it does nothing.
 
 ## Testing strategy
 
@@ -276,6 +286,7 @@ Level 2:
 - `apps/mobile/src/features/health/providers/appleHealth.ts`, `index.ts`
 - `apps/mobile/modules/watch-workout/*` (module, podspec, Swift, wire test)
 - `apps/mobile/targets/watch/*` (config, Info.plist, Swift)
+- `apps/mobile/app.config.js` (the opt-in flag for the watch target)
 - `apps/mobile/src/i18n/en.ts`, `es.ts`
 - `apps/mobile/README.md` (watch target, install on the watch)
 - `docs/sdd/specs/0025-apple-watch/*`

@@ -23,7 +23,7 @@ follows in separate commits; its JS reaches native code through
 | 4 | [x] `completeSet` in `workoutDraftStore.ts` (done + rest from an instant; no-op when done or unknown) used by `handleToggleDone`; `watch/watchProtocol.ts`: `currentSetToDo`, `toWatchSnapshot`, `parseWatchEvent`, `applyWatchEvent` + tests | mobile | unit tests: tick → done + rest from the tick's instant (AC-3), replay is a no-op (EF-1), events for another workout dropped, unknown/malformed JSON ignored, target text in the session unit (Art. 4), superset order | `feat(workouts): apply watch requests to the active workout` |
 | 5 | [x] `watch/watchWorkoutController.ts` (start / update / end finished-or-discarded; events → store; kcal and finish callbacks) + tests with a fake bridge | mobile | controller tests: start once per workout (FR-2), update only on snapshot change, end `finished` vs `discarded`, ordered apply of queued ticks (EF-1), kcal callback only for the current workout | `feat(workouts): mirror the active workout to a watch` |
 | 6 | [x] Local module `modules/watch-workout` (WCSession, `startWatchApp`, `sendContext`, buffered `onMessage`); Apple `WatchWorkoutBridge` adapter + labels; `findWatchWorkoutBridge`; wiring in `useLiveWorkoutController` (watch kcal wins, finish request → `action=finish`); i18n en/es | mobile (**native — rebuild**) | typecheck + tests (wire-format and labels); **[DEVICE]** FR-2, FR-3 | `feat(ios): talk to the watch app from the phone` |
-| 7 | [ ] Watch app target `targets/watch/` (`type: 'watch'`, watchOS 11, HealthKit entitlement, `workout-processing`): HK session + live builder from the phone's start, HR/kcal, context in, events out (queued), Done / rest + haptic / Pause / Resume / Finish request, save on `finished`, discard on `discarded`; wire-format test against the watch's `Codable` keys | watch (**native — rebuild**) | `swiftc -typecheck` against the watchOS 26.5 simulator SDK; wire-format test; `expo config` evaluates the target; **[DEVICE]** FR-2…FR-5, AC-2, AC-3, EF-1, EF-2 | `feat(watch): the workout on the Apple Watch` |
+| 7 | [x] Watch app target `targets/watch/` (`type: 'watch'`, watchOS 11, HealthKit entitlement, `workout-processing`): HK session + live builder from the phone's start, HR/kcal, context in, events out (queued), Done / rest + haptic / Pause / Resume / Finish request, save on `finished`, discard on `discarded`; wire-format test against the watch's `Codable` keys | watch (**native — rebuild**) | `swiftc -typecheck` against the watchOS 26.5 simulator SDK; wire-format test; `expo config` evaluates the target; **[DEVICE]** FR-2…FR-5, AC-2, AC-3, EF-1, EF-2 | `feat(watch): the workout on the Apple Watch` |
 | 8 | [ ] README (watch target, install on the watch), progress log, pending device steps | docs | links resolve | `docs(sdd): close spec 0025 implementation` |
 
 **Not verifiable in CI:** tasks 2, 6 and 7 need `expo prebuild` and a device
@@ -94,6 +94,28 @@ Ultra 2.
   `useLiveWorkoutController` (Settings default rest read through a ref; the
   watch's Finish opens `/workouts/active?action=finish`); i18n en/es
   `workouts.watch*`. Without the native module everything is a no-op.
+- 2026-10-17 — Task 7: watch app `targets/watch/` (`type: 'watch'`, watchOS
+  11.0, `.watchkitapp`, HealthKit entitlement, `WKApplication`,
+  `workout-processing`, Health usage strings): `WatchWire.swift` (Codable
+  mirror of the wire), `WorkoutModel.swift` (WCSession in/out; the HealthKit
+  session + live builder start from the phone's start instant, once per
+  workout, also when the app is opened by hand; pause follows the phone;
+  `finished` → end collection + `finishWorkout`, `discarded` → discard;
+  Done ticks locally, starts the local rest and queues `setDone`; haptic
+  `.stop` at the rest end; kcal sent at most every 10 s; heart rate hidden
+  when unknown), `WorkoutView.swift`, `TrainingHubWatchApp.swift`
+  (`handle(_ workoutConfiguration:)`). `wire.test.mjs` checks every key both
+  ways against `WatchWire.swift`.
+  Checks: `swiftc -typecheck` against the watchOS 26.5 simulator SDK at
+  watchOS 11.0; after `expo prebuild` the target is generated and embedded
+  ("Embed Watch Content", companion id set) and `xcodebuild -target
+  TrainingHubWatch -sdk watchsimulator CODE_SIGNING_ALLOWED=NO` succeeds;
+  the `WatchWorkout` pod (module + link) builds for the iOS simulator. The
+  full scheme with the watch app does **not** build here: "watchOS 26.5 must
+  be installed" (the platform component is missing on this Mac, for device
+  builds too). Hence the plan amendment: the watch target is opt-in with
+  `TRAININGHUB_WATCH_APP=1` (`app.config.js`); without it the full app
+  (Level 1 widget, all modules) builds unsigned for the simulator — verified.
 
 ## Definition of done
 

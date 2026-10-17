@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>WKApplication</key>
+    <true/>
+    <key>WKRunsIndependentlyOfCompanionApp</key>
+    <false/>
+    <key>WKBackgroundModes</key>
+    <array>
+      <string>workout-processing</string>
+    </array>
+    <key>NSHealthShareUsageDescription</key>
+    <string>TrainingHub reads your heart rate and active energy to show them during the workout.</string>
+    <key>NSHealthUpdateUsageDescription</key>
+    <string>TrainingHub saves your strength workouts to Health, with the active energy measured during them.</string>
+  </dict>
+</plist>
