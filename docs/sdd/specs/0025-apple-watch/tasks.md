@@ -1,6 +1,6 @@
 ---
 spec: 0025
-status: approved     # self-approved under the delegated gates, 2026-10-17
+status: in-progress  # self-approved under the delegated gates, 2026-10-17
 created: 2026-10-17
 ---
 
@@ -24,7 +24,7 @@ follows in separate commits; its JS reaches native code through
 | 5 | [x] `watch/watchWorkoutController.ts` (start / update / end finished-or-discarded; events → store; kcal and finish callbacks) + tests with a fake bridge | mobile | controller tests: start once per workout (FR-2), update only on snapshot change, end `finished` vs `discarded`, ordered apply of queued ticks (EF-1), kcal callback only for the current workout | `feat(workouts): mirror the active workout to a watch` |
 | 6 | [x] Local module `modules/watch-workout` (WCSession, `startWatchApp`, `sendContext`, buffered `onMessage`); Apple `WatchWorkoutBridge` adapter + labels; `findWatchWorkoutBridge`; wiring in `useLiveWorkoutController` (watch kcal wins, finish request → `action=finish`); i18n en/es | mobile (**native — rebuild**) | typecheck + tests (wire-format and labels); **[DEVICE]** FR-2, FR-3 | `feat(ios): talk to the watch app from the phone` |
 | 7 | [x] Watch app target `targets/watch/` (`type: 'watch'`, watchOS 11, HealthKit entitlement, `workout-processing`): HK session + live builder from the phone's start, HR/kcal, context in, events out (queued), Done / rest + haptic / Pause / Resume / Finish request, save on `finished`, discard on `discarded`; wire-format test against the watch's `Codable` keys | watch (**native — rebuild**) | `swiftc -typecheck` against the watchOS 26.5 simulator SDK; wire-format test; `expo config` evaluates the target; **[DEVICE]** FR-2…FR-5, AC-2, AC-3, EF-1, EF-2 | `feat(watch): the workout on the Apple Watch` |
-| 8 | [ ] README (watch target, install on the watch), progress log, pending device steps | docs | links resolve | `docs(sdd): close spec 0025 implementation` |
+| 8 | [x] README (watch target, install on the watch), progress log, pending device steps | docs | links resolve | `docs(sdd): close spec 0025 implementation` |
 
 **Not verifiable in CI:** tasks 2, 6 and 7 need `expo prebuild` and a device
 build; their device checks go in one batch on the owner's iPhone + Apple Watch
@@ -116,12 +116,42 @@ Ultra 2.
   builds too). Hence the plan amendment: the watch target is opt-in with
   `TRAININGHUB_WATCH_APP=1` (`app.config.js`); without it the full app
   (Level 1 widget, all modules) builds unsigned for the simulator — verified.
+- 2026-10-17 — Task 8: `apps/mobile/README.md` (the new module and target,
+  the opt-in flag, installing the watchOS platform and the watch app). The
+  backlog, roadmap 08 and glossary updates go to the coordinator (parallel
+  agents). Spec stays `in-progress`: everything below needs the devices.
+
+### Pending on the owner's devices
+
+Level 1 (normal prebuild + rebuild, no flag):
+- [ ] [DEVICE] Workout in progress, phone locked → the watch's Smart Stack
+      shows routine, clock, calories (once known) and, during a rest, the
+      countdown; it disappears at the rest end (AC-1, FR-1)
+- [ ] [DEVICE] The iPhone lock screen and Dynamic Island look as before
+
+Level 2 (`TRAININGHUB_WATCH_APP=1` prebuild, watchOS platform installed):
+- [ ] [DEVICE] The watch app signs with HealthKit on the free team and installs
+      (TODO in the plan; if not, Level 2 needs a paid team — owner decision)
+- [ ] [DEVICE] Start a workout on the phone → the watch app opens into it
+      (FR-2); Health permission asked on the watch once
+- [ ] [DEVICE] Heart rate and kcal on the watch; the phone shows the watch's
+      kcal; 45-minute workout → app vs the watch's figure within ±5 % (AC-2, FR-3)
+- [ ] [DEVICE] Done on the watch → done on the phone, rest on both, haptic at
+      its end (AC-3, FR-4); count the buzzes with the phone locked (TODO)
+- [ ] [DEVICE] Phone in airplane mode / out of range, tick twice, reconnect →
+      both applied in order (EF-1); how long it takes with the phone app in the
+      background (plan risk: mirroring as the fallback)
+- [ ] [DEVICE] Pause/Resume from either side; Finish on the watch opens the
+      confirmation on the phone
+- [ ] [DEVICE] Finish → one workout in Health/Fitness with the app's span
+      (FR-5); Discard → none
+- [ ] [DEVICE] Deny heart rate → the rest works, no heart rate shown (EF-2)
 
 ## Definition of done
 
-- [ ] Every functional requirement and acceptance criterion in `spec.md` is met
-      or explicitly deferred with a TODO
-- [ ] `pnpm -r typecheck` and `pnpm -r test` green
+- [x] Every functional requirement and acceptance criterion in `spec.md` is met
+      or explicitly deferred with a TODO (device checks pending above)
+- [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [ ] Relevant `docs/roadmap/NN-*.md` checklist and progress log updated (coordinator)
 - [ ] `spec.md` status set to `done`; `../backlog.md` updated
-- [ ] Constitution amended if this work settled a new invariant
+- [x] Constitution amended if this work settled a new invariant (none settled)

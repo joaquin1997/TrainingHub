@@ -40,6 +40,16 @@ Native code that lives in the repo (spec 0012):
   own copy of `WorkoutActivityAttributes.swift`; `attributes.test.mjs` fails if
   it drifts from `_shared/`.
 - `modules/health-energy/` — local Expo module (HealthKit active energy).
+- `modules/rest-alert/` — local Expo module (the rest-end notification, spec 0018).
+- `modules/watch-workout/` — local Expo module (spec 0025): WatchConnectivity
+  link to the watch app and HealthKit's "start the watch app". The JSON it
+  carries is `src/features/health/providers/appleWatchWire.ts`;
+  `wire.test.mjs` fails if a key is missing from the watch's `WatchWire.swift`.
+- `targets/watch/` — the Apple Watch app (spec 0025 Level 2, watchOS 11,
+  bundle id `com.joaquin.traininghub.watchkitapp`, HealthKit entitlement). It
+  is **opt-in**: generated only with `TRAININGHUB_WATCH_APP=1` at prebuild (see
+  `app.config.js`). The Live Activity's watch Smart Stack layout (Level 1) is
+  part of `targets/workout-activity/` and needs no flag.
 
 Local modules under `modules/` are autolinked. Run
 `EXPO_NO_GIT_STATUS=1 npx expo prebuild -p ios --clean` after changing
@@ -55,6 +65,27 @@ cd ios && xcodebuild -workspace TrainingHub.xcworkspace -scheme TrainingHub \
 
 To install a dev build on a connected iPhone, see the root `README.md`
 ("Run the mobile app on a physical iPhone").
+
+### With the watch app (spec 0025 Level 2)
+
+1. Install the watchOS platform once: Xcode → Settings → Components →
+   watchOS 26.x. Without it every build of the scheme stops with "This scheme
+   builds an embedded Apple Watch app. watchOS … must be installed".
+2. `TRAININGHUB_WATCH_APP=1 EXPO_NO_GIT_STATUS=1 npx expo prebuild -p ios --clean`
+3. Build and install the iPhone app as usual (`-allowProvisioningUpdates`
+   creates the watch app's development profile on the free team too). The
+   watch app is embedded; it installs through the iPhone's Watch app
+   (My Watch → TrainingHub → Install, or automatic installs), or directly with
+   `xcrun devicectl device install app --device <watch-id>
+   <DerivedData>/Build/Products/Debug-watchos/TrainingHubWatch.app`. The
+   watch needs Developer Mode on.
+
+To check only that the watch app compiles (no watchOS simulator runtime needed):
+
+```bash
+cd ios && xcodebuild -project TrainingHub.xcodeproj -target TrainingHubWatch \
+  -sdk watchsimulator CODE_SIGNING_ALLOWED=NO build
+```
 
 Current feature areas:
 
