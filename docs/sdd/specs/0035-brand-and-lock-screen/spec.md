@@ -1,7 +1,7 @@
 ---
 id: 0035
 title: Brand, home header and lock-screen status
-status: ready
+status: in-progress
 roadmap: "- (cross-cutting) + docs/roadmap/08-integrations-and-platform.md"
 created: 2026-10-18
 decided: 2026-10-18
