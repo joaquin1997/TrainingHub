@@ -211,6 +211,10 @@ export const es: TranslationCatalog = {
     photoNotSaved: 'El ejercicio se creó, pero no se pudo guardar la foto. Vuelve a añadirla desde el ejercicio.',
   },
   settings: {
+    restAlerts: 'Avisos de descanso',
+    restAlertsOn: 'Activados: el móvil vibra al acabar un descanso, también bloqueado.',
+    restAlertsOff: 'Desactivados. Actívalos en los ajustes del sistema.',
+    restAlertsNotAsked: 'Aún sin configurar. Toca para permitirlos.',
     language: 'Idioma',
     languageHint: 'Elige el idioma de la app.',
     languageSystem: 'Sistema',

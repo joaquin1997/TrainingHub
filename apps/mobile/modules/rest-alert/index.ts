@@ -6,6 +6,9 @@ type RestAlertNative = {
   schedule(atMs: number, title: string, body: string): Promise<void>;
   /** Removes the pending and the delivered rest alert. */
   cancel(): Promise<void>;
+  /** Spec 0037; absent in builds before it. */
+  permissionStatus?(): Promise<'notAsked' | 'denied' | 'granted'>;
+  openSettings?(): Promise<void>;
 };
 
 /** Null on platforms without the native module (Android, web, Expo Go, older builds). */

@@ -208,6 +208,10 @@ export const en = {
     trackingError: 'What the exercise records could not be changed.',
   },
   settings: {
+    restAlerts: 'Rest alerts',
+    restAlertsOn: 'On: the phone buzzes when a rest ends, also locked.',
+    restAlertsOff: 'Off. Turn them on in the system settings.',
+    restAlertsNotAsked: 'Not set up yet. Tap to allow.',
     language: 'Language',
     languageHint: 'Choose the app language.',
     languageSystem: 'System',

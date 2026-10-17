@@ -6,6 +6,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/features/auth/AuthContext';
 import { ProfileAvatar } from '@/features/profile/components/ProfileAvatar';
 import { useProfileData } from '@/features/profile/useProfileData';
+import { RestAlertsRow } from '@/features/settings/components/RestAlertsRow';
 import { useSettings } from '@/features/settings/SettingsContext';
 import {
   clearActiveWorkout,
@@ -117,6 +118,7 @@ export function SettingsScreen() {
           </Pressable>
         </View>
         <Text style={styles.hint}>{t('settings.restHint')}</Text>
+        <RestAlertsRow />
       </View>
 
       <View style={styles.section}>
