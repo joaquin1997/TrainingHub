@@ -121,7 +121,7 @@ function columnLabel(field: SetColumn, unit: WeightUnit, t: TFunction) {
     case 'repsRight':
       return t('workouts.colRight');
     case 'weight':
-      return unit.toUpperCase();
+      return unit;
     case 'reps':
       return t('workouts.colReps');
     case 'duration':
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
   },
   colLabel: {
-    ...commonStyles.sectionLabel,
+    ...commonStyles.columnLabel,
   },
   colCentered: {
     textAlign: 'center',

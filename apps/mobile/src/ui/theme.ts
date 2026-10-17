@@ -70,6 +70,15 @@ export const commonStyles = StyleSheet.create({
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
+  /**
+   * Header of a narrow table column ("Set", "Previous", "kg"). Sentence case
+   * and no tracking, so Caption fits the set row's fixed columns.
+   */
+  columnLabel: {
+    ...typeScale.caption,
+    color: colors.textMuted,
+    fontWeight: '700',
+  },
   figure: {
     ...typeScale.figure,
     color: colors.text,

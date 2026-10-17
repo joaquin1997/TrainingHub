@@ -24,7 +24,7 @@ import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { ScreenTitle } from '@/ui/ScreenTitle';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, spacing, typeScale } from '@/ui/theme';
 import type { Exercise } from '@workout/domain';
 
 const PAGE_SIZE = 50;
@@ -179,6 +179,7 @@ export function ExercisesListScreen() {
         <View style={styles.search}>
           <Ionicons name="search" size={18} color={colors.textMuted} />
           <TextInput
+            keyboardAppearance="dark"
             value={query}
             onChangeText={setQuery}
             placeholder={t('exercises.searchPlaceholder')}
@@ -342,17 +343,17 @@ const styles = StyleSheet.create({
     minWidth: 0,
     minHeight: 46,
     color: colors.text,
-    fontSize: 16,
+    ...typeScale.body,
   },
   chipRow: {
     alignItems: 'center',
     gap: spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: spacing.xxs,
   },
   facetLabel: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
     marginRight: spacing.xs,
   },
   sectionLabel: {
@@ -376,13 +377,12 @@ const styles = StyleSheet.create({
   },
   rowText: {
     flex: 1,
-    gap: 2,
+    gap: spacing.xxs,
   },
   rowTitle: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 16,
-    lineHeight: 21,
+    ...typeScale.body,
   },
   starButton: {
     width: 44,
@@ -392,6 +392,5 @@ const styles = StyleSheet.create({
   },
   meta: {
     ...commonStyles.meta,
-    fontSize: 13,
   },
 });

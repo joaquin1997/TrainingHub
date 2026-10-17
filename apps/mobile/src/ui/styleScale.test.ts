@@ -27,22 +27,6 @@ const SOURCES = Object.fromEntries(
 /** The one file allowed to write the values (spec 0034 FR-10 – FR-12). */
 const TOKENS = 'ui/tokens.ts';
 
-/**
- * Files still being moved onto the scales, with the number of violations each
- * may still have. Shrinks with every migration commit; must end empty.
- */
-const BASELINE: Record<string, number> = {
-  'features/exercises/components/CustomExerciseForm.tsx': 2,
-  'features/exercises/components/CustomExerciseModal.tsx': 1,
-  'features/exercises/components/ExercisePhotoField.tsx': 1,
-  'features/exercises/components/ExercisePickerModal.tsx': 12,
-  'features/exercises/components/TrackingTypeControl.tsx': 1,
-  'features/exercises/components/UnilateralSwitch.tsx': 1,
-  'features/exercises/screens/ExerciseDetailScreen.tsx': 4,
-  'features/exercises/screens/ExercisesListScreen.tsx': 8,
-  'features/settings/screens/SettingsScreen.tsx': 11,
-};
-
 describe('scanStyleSource', () => {
   it('flags numeric sizes, radii and spacing, and accepts tokens and zero', () => {
     const found = scanStyleSource(
@@ -119,25 +103,11 @@ describe('closed scales (spec 0034 AC-5, AC-6)', () => {
       if (file === TOKENS) {
         continue;
       }
-      const violations = scanStyleSource(source);
-      const allowed = BASELINE[file] ?? 0;
-      if (violations.length > allowed) {
-        report.push(
-          `${file}: ${violations.length} (allowed ${allowed})`,
-          ...violations.map((v) => `  ${v.line} [${v.kind}] ${v.text}`),
-        );
+      for (const v of scanStyleSource(source)) {
+        report.push(`${file}:${v.line} [${v.kind}] ${v.text}`);
       }
     }
 
     expect(report).toEqual([]);
-  });
-
-  it('keeps the migration baseline honest', () => {
-    const stale = Object.entries(BASELINE).filter(([file, allowed]) => {
-      const source = SOURCES[file];
-      return source === undefined || scanStyleSource(source).length < allowed;
-    });
-
-    expect(stale.map(([file]) => file)).toEqual([]);
   });
 });

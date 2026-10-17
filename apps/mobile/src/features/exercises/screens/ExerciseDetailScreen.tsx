@@ -19,7 +19,7 @@ import { ActionSheet } from '@/ui/ActionSheet';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
 import type { Exercise, ExerciseProgressPoint, ExerciseTrackingType } from '@workout/domain';
 
 const MAX_HISTORY = 8;
@@ -361,9 +361,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   title: {
-    ...commonStyles.heading,
-    fontSize: 28,
-    lineHeight: 34,
+    ...commonStyles.title,
   },
   body: {
     ...commonStyles.body,
@@ -400,12 +398,12 @@ const styles = StyleSheet.create({
   },
   historyDate: {
     color: colors.textMuted,
-    fontSize: 14,
+    ...typeScale.caption,
   },
   historyValue: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
     fontVariant: ['tabular-nums'],
   },
   meta: {

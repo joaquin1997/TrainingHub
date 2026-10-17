@@ -58,7 +58,7 @@ export function RoutineSetTable({ sets, trackingType, unit, onChange, onRemove }
   const label = (field: NumericSetField) => {
     switch (field) {
       case 'targetWeight':
-        return unit.toUpperCase();
+        return unit;
       case 'minReps':
         return t('routineForm.colMin');
       case 'maxReps':
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   colLabel: {
-    ...commonStyles.sectionLabel,
+    ...commonStyles.columnLabel,
     textAlign: 'center',
   },
   colSet: {

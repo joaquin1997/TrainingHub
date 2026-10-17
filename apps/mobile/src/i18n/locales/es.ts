@@ -93,11 +93,11 @@ export const es: TranslationCatalog = {
     repsUpTo: 'hasta {{max}} reps',
     repsNone: '- reps',
     repsExact: '{{reps}} reps',
-    colTarget: 'OBJETIVO',
+    colTarget: 'Objetivo',
   },
   routineForm: {
-    colMin: 'MÍN',
-    colMax: 'MÁX',
+    colMin: 'Mín',
+    colMax: 'Máx',
     workoutInProgress:
       'Esta rutina tiene un entrenamiento en curso. Termínalo o descártalo antes de editar.',
     backToRoutine: 'Volver a la rutina',
@@ -387,12 +387,12 @@ export const es: TranslationCatalog = {
     watchWaiting: 'Empieza un entrenamiento en el iPhone',
     min: 'min',
     sec: 'seg',
-    colSet: 'SERIE',
-    colPrev: 'ANTERIOR',
-    colReps: 'REPS',
+    colSet: 'Serie',
+    colPrev: 'Anterior',
+    colReps: 'Reps',
     // Series de tiempo y distancia (spec 0021).
-    colTime: 'TIEMPO',
-    colDistance: 'DIST',
+    colTime: 'Tiempo',
+    colDistance: 'Dist',
     // Izquierda y derecha de un ejercicio unilateral (spec 0022); también en "10 I / 8 D".
     colLeft: 'I',
     colRight: 'D',

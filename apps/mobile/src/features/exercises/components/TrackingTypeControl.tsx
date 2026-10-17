@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { TRACKING_TYPES } from '@/lib/tracking';
 import { Chip } from '@/ui/Chip';
-import { colors, commonStyles, spacing } from '@/ui/theme';
+import { colors, commonStyles, spacing, typeScale } from '@/ui/theme';
 import type { ExerciseTrackingType } from '@workout/domain';
 
 type TrackingTypeControlProps = {
@@ -51,6 +51,6 @@ const styles = StyleSheet.create({
   },
   hint: {
     color: colors.textMuted,
-    fontSize: 13,
+    ...typeScale.caption,
   },
 });

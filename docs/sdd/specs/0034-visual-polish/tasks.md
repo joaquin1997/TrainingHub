@@ -26,7 +26,7 @@ empty states → brand → haptics → motion → Dynamic Type → docs.
 | 5 | [x] Workouts on the scales | mobile | idem | `refactor(ui): workouts on the closed scales` |
 | 6 | [x] Routines on the scales | mobile | idem | `refactor(ui): routines on the closed scales` |
 | 7 | [x] Progress and profile on the scales | mobile | idem | `refactor(ui): progress and profile on the closed scales` |
-| 8 | [ ] Exercises and settings on the scales; baseline deleted (check strict); `keyboardAppearance="dark"` on every input | mobile | check strict (AC-5) | `refactor(ui): exercises and settings on the closed scales` |
+| 8 | [x] Exercises and settings on the scales; baseline deleted (check strict); `keyboardAppearance="dark"` on every input | mobile | check strict (AC-5) | `refactor(ui): exercises and settings on the closed scales` |
 | 9 | [ ] `CardHeader`, `ListRow`, `EmptyState`, `Skeleton` in `src/ui`; adopted for card headers and list rows across screens | mobile | typecheck; search (AC-10) | `feat(ui): shared card header, list row and empty state` |
 | 10 | [ ] Skeleton first load + designed empty states with one action on Progress, History, Routines, Exercises; i18n | mobile | web screenshots (AC-8, AC-9) | `feat(ui): skeletons and designed empty states on the list screens` |
 | 11 | [ ] Brand assets script + PNGs; `app.json` icon / adaptive icon / favicon / splash / dark appearance; `expo-splash-screen`, `expo-system-ui`; splash hand-over in the root layout | mobile | config unit test; web favicon (AC-1, AC-2 partly) — **native rebuild** | `feat(ui): app icon, splash and dark system appearance` |

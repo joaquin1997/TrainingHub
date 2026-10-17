@@ -14,7 +14,7 @@ import {
 import { confirmAction } from '@/lib/confirmAction';
 import { formatDuration } from '@/lib/format';
 import { Button } from '@/ui/Button';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
 import { ScreenTitle } from '@/ui/ScreenTitle';
 import type { AppLanguage, WeightUnit } from '@workout/domain';
 
@@ -232,10 +232,10 @@ const styles = StyleSheet.create({
   },
   segment: {
     flexDirection: 'row',
-    gap: 4,
+    gap: spacing.xs,
     borderRadius: radii.md,
     backgroundColor: colors.background,
-    padding: 4,
+    padding: spacing.xs,
   },
   segmentItem: {
     flex: 1,
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   segmentText: {
     color: colors.textMuted,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
   },
   segmentTextActive: {
     color: colors.onPrimary,
@@ -275,14 +275,11 @@ const styles = StyleSheet.create({
   },
   restValue: {
     ...commonStyles.figureLarge,
-    fontSize: 32,
-    lineHeight: 38,
     textAlign: 'center',
   },
   hint: {
     color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 18,
+    ...typeScale.caption,
   },
   profileRow: {
     flexDirection: 'row',
@@ -291,19 +288,18 @@ const styles = StyleSheet.create({
   },
   profileText: {
     flex: 1,
-    gap: 2,
+    gap: spacing.xxs,
   },
   profileName: {
     ...commonStyles.label,
-    fontSize: 16,
   },
   email: {
     color: colors.textMuted,
-    fontSize: 14,
+    ...typeScale.caption,
   },
   profileLink: {
     color: colors.primary,
-    fontSize: 13,
+    ...typeScale.caption,
     fontWeight: '700',
   },
 });

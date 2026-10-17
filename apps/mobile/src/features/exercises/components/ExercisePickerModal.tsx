@@ -22,7 +22,7 @@ import {
 } from '@/features/exercises/utils/exerciseAvailability';
 import { Button } from '@/ui/Button';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
 import type { Exercise } from '@workout/domain';
 
 const MAX_VISIBLE = 50;
@@ -233,6 +233,7 @@ export function ExercisePickerModal({
             <View style={styles.search}>
               <Ionicons name="search" size={18} color={colors.textMuted} />
               <TextInput
+                keyboardAppearance="dark"
                 value={query}
                 onChangeText={setQuery}
                 placeholder={t('exercises.searchPlaceholder')}
@@ -330,7 +331,7 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 22,
+    borderRadius: radii.round,
     backgroundColor: colors.surfaceRaised,
   },
   search: {
@@ -345,24 +346,21 @@ const styles = StyleSheet.create({
     minWidth: 0,
     minHeight: 46,
     color: colors.text,
-    fontSize: 16,
+    ...typeScale.body,
   },
   confirm: {
     gap: spacing.md,
   },
   confirmTitle: {
+    ...typeScale.heading,
     color: colors.text,
-    fontFamily: fonts.displayBold,
-    fontSize: 18,
-    lineHeight: 24,
   },
   centered: {
     alignSelf: 'center',
   },
   notice: {
     color: colors.danger,
-    fontSize: 14,
-    lineHeight: 20,
+    ...typeScale.caption,
   },
   createRow: {
     minHeight: 44,
@@ -375,7 +373,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.primary,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
   },
   list: {
     gap: spacing.sm,
@@ -393,17 +391,16 @@ const styles = StyleSheet.create({
   },
   rowText: {
     flex: 1,
-    gap: 2,
+    gap: spacing.xxs,
   },
   rowTitle: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 16,
-    lineHeight: 21,
+    ...typeScale.body,
   },
   meta: {
     color: colors.textMuted,
-    fontSize: 13,
+    ...typeScale.caption,
   },
   more: {
     ...commonStyles.meta,

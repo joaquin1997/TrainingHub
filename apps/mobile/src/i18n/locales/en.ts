@@ -91,11 +91,11 @@ export const en = {
     repsUpTo: 'up to {{max}} reps',
     repsNone: '- reps',
     repsExact: '{{reps}} reps',
-    colTarget: 'TARGET',
+    colTarget: 'Target',
   },
   routineForm: {
-    colMin: 'MIN',
-    colMax: 'MAX',
+    colMin: 'Min',
+    colMax: 'Max',
     workoutInProgress:
       'This routine has a workout in progress. Finish or discard it before editing.',
     backToRoutine: 'Back to routine',
@@ -384,12 +384,12 @@ export const en = {
     watchWaiting: 'Start a workout on your iPhone',
     min: 'min',
     sec: 'sec',
-    colSet: 'SET',
-    colPrev: 'PREVIOUS',
-    colReps: 'REPS',
+    colSet: 'Set',
+    colPrev: 'Previous',
+    colReps: 'Reps',
     // Time and distance sets (spec 0021).
-    colTime: 'TIME',
-    colDistance: 'DIST',
+    colTime: 'Time',
+    colDistance: 'Dist',
     // Left and right of a unilateral exercise (spec 0022); also in "10 L / 8 R".
     colLeft: 'L',
     colRight: 'R',

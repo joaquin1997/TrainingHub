@@ -497,7 +497,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   columnLabel: {
-    ...commonStyles.sectionLabel,
+    ...commonStyles.columnLabel,
   },
   columnRight: {
     textAlign: 'right',
