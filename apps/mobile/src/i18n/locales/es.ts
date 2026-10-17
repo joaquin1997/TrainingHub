@@ -354,6 +354,9 @@ export const es: TranslationCatalog = {
       volume: 'Volumen',
       notes: 'Notas',
       records: 'Récords',
+      // La imagen para compartir (spec 0034 FR-25).
+      cardFooter: 'Registrado con TrainingHub',
+      moreRecords: '+{{count}} más',
     },
     // Volumen frente a la última vez en el resumen (spec 0034 FR-24).
     comparison: {

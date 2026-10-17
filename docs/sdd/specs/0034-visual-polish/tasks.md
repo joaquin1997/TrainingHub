@@ -184,7 +184,7 @@ share until then).
 |---|---|---|---|
 | B3.1 | [x] `compareWithPrevious` (routine: previous saved workout of the same routine strictly before; per exercise: its last earlier session; up/down/same; null without an earlier session or with a previous volume of 0) and `useWorkoutComparison` (one `workoutsClient.list()`, failure → null) — with tests | unit tests (AC-17 logic, EF-5) | `feat(workouts): compare a finished workout with the previous one` |
 | B3.2 | [x] Summary: records of the day as a highlighted block above the tiles (`RecordsCard variant="highlight"`), volume tile caption with the routine comparison (arrow + word), per-exercise comparison chip; nothing shown without data; i18n `workouts.comparison`, `progress.records.today` | typecheck; web export with a mock API: routine done before + two records; first workout (AC-17); list failing (EF-5) | `feat(workouts): summary leads with records and compares with last time` |
-| B3.3 | [ ] `buildShareCard` (stats, up to 3 records, up to 5 exercises with their best set, display unit, language) — pure, with tests; `ShareCard` view (360 × 450, tokens, app mark, no font scaling) | unit tests; web screenshot of the card in English/kg and Spanish/lb | `feat(workouts): workout share card` |
+| B3.3 | [x] `buildShareCard` (stats, up to 3 records, up to 5 exercises with their best set, display unit, language) — pure, with tests; `ShareCard` view (360 × 450, tokens, app mark, no font scaling) | unit tests; web screenshot of the card in English/kg and Spanish/lb | `feat(workouts): workout share card` |
 | B3.4 | [ ] Add `react-native-view-shot` 6.1.1 and `expo-sharing` ~58.0.19; `share/shareImage.ts` (availability with lazy `require`, capture 1080 × 1350 PNG, share sheet, failure result); `ShareSheet` (preview, Share image, Share as text, one-line failure); summary and session detail open the sheet; i18n inside `workouts.share` | typecheck; web export: image action hidden, text share works (EF-6) — **native rebuild** | `feat(workouts): share a workout as an image` |
 | B3.5 | [ ] B3 progress log, `plan-b.md` *As built* (B3), web export | `expo export --platform web` | `docs(sdd): record 0034 phase B3` |
 | B3.6 | [ ] [DEVICE] After the rebuild: AC-18 — share the image card to Messages / WhatsApp on iPhone and Android, in Spanish with lb, and the text share still offered; AC-17 on real data (routine done before with less volume); summary offline (EF-5) | owner | — |
@@ -251,6 +251,17 @@ order); `expo prebuild` and a device build for `react-native-svg`,
   outside B3's list, additive only. i18n `workouts.comparison` (after
   `share`) and `progress.records.today` (after `beaten`, away from B2's
   insertion point at the end of `progress`).
+- 2026-10-18 — B3.3: `utils/shareCard.ts` (`buildShareCard`, `bestSet`) from
+  the text share's input (translator with options): duration (when known),
+  volume, sets done, ≤ 3 records + "+n more", ≤ 5 exercises in workout order
+  that have a performed set, each with its best set (longest distance → longest
+  time → heaviest weight then reps → most reps; warm-ups only when nothing
+  else). A reps-only best set reads "12 reps" rather than the text share's
+  "– kg × 12". `components/ShareCard.tsx`: 360 × 450 frame, `surface` panel,
+  lime `pulse` mark, title/date, three stats, records in `accent`, exercise
+  lines, footer; `allowFontScaling={false}` on every text; ref as a prop
+  (React 19). i18n `workouts.share.cardFooter`, `moreRecords` added here (the
+  card needs them); the sheet's keys come with B3.4.
 
 ## Definition of done (Phase B)
 

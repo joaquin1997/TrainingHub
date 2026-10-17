@@ -351,6 +351,9 @@ export const en = {
       volume: 'Volume',
       notes: 'Notes',
       records: 'Records',
+      // The share image (spec 0034 FR-25).
+      cardFooter: 'Logged with TrainingHub',
+      moreRecords: '+{{count}} more',
     },
     // Volume versus last time on the summary (spec 0034 FR-24).
     comparison: {
