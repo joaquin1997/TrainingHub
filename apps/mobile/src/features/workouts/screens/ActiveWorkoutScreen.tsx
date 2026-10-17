@@ -163,7 +163,7 @@ export function ActiveWorkoutScreen() {
   const { user } = useAuth();
   // Record badges and the notice while logging (spec 0032).
   const liveRecords = useLiveRecords(workoutDraft);
-  /** The set whose tick on this screen just earned a badge: its badge pops (spec 0034 FR-7). */
+  /** The set whose tick on this screen just earned a record: its status area pops (spec 0034 FR-7). */
   const [recordPopSetId, setRecordPopSetId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -693,7 +693,8 @@ export function ActiveWorkoutScreen() {
   const unit = workoutDraft.unit ?? 'kg';
   const isPaused = Boolean(workoutDraft.pausedAt);
   const blockLabels = exerciseBlockLabels(workoutDraft.exercises);
-  // The set to do now: highlighted, and named in the rest bar (spec 0029).
+  // The set to do now: its status area says so, and the rest bar names it
+  // (spec 0029, spec 0034 FR-20).
   const upNext = currentSetToDo(workoutDraft);
   const blocks: number[][] = [];
   blockLabels.forEach((label, index) => {
@@ -810,21 +811,15 @@ export function ActiveWorkoutScreen() {
                   exercise.trackingType,
                   unit,
                 )}
+                // One status per set, in the row (spec 0034 FR-19, FR-20).
+                isUpNext={upNext?.workoutSetId === set.id}
+                recordHits={liveRecords.badges.bySet[set.id]}
+                recordPop={recordPopSetId === set.id}
                 onChange={(field, value) => handleSetChange(exercise.id, set.id, field, value)}
                 onCycleType={() => handleCycleSetType(exercise.id, set.id)}
                 onToggleDone={() => handleToggleDone(exercise.id, set.id)}
                 onRemove={() => handleRemoveSet(exercise.id, set.id)}
               />
-              {upNext?.workoutSetId === set.id ? (
-                <View pointerEvents="none" style={styles.upNextRing} />
-              ) : null}
-              {liveRecords.badges.bySet[set.id] ? (
-                <RecordBadge
-                  hits={liveRecords.badges.bySet[set.id]!}
-                  unit={unit}
-                  pop={recordPopSetId === set.id}
-                />
-              ) : null}
             </View>
             );
           })}
@@ -1211,17 +1206,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: fonts.displayBold,
     ...typeScale.caption,
-  },
-  // Drawn over the row, so highlighting never shifts the layout (FR-14).
-  upNextRing: {
-    position: 'absolute',
-    top: -2,
-    bottom: -2,
-    left: -2,
-    right: -2,
-    borderRadius: radii.md,
-    borderWidth: 1.5,
-    borderColor: colors.primary,
   },
   exercise: {
     gap: spacing.sm,
