@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
 import {
@@ -11,7 +11,7 @@ import { isExerciseGone } from '@/features/exercises/utils/exerciseAvailability'
 import { getActiveWorkout } from '@/features/workouts/state/workoutDraftStore';
 import { confirmAction } from '@/lib/confirmAction';
 import { Button } from '@/ui/Button';
-import { commonStyles, spacing } from '@/ui/theme';
+import { commonStyles, createStyles, spacing, useTheme } from '@/ui/theme';
 import type { Exercise, ExerciseDeletionImpact } from '@workout/domain';
 
 interface DeleteExerciseButtonProps {
@@ -27,6 +27,7 @@ interface DeleteExerciseButtonProps {
  * never queues offline (EF-1); "not found" means it is already gone (EF-2).
  */
 export function DeleteExerciseButton({ exercise, onDeleted }: DeleteExerciseButtonProps) {
+  useTheme();
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -93,7 +94,7 @@ export function DeleteExerciseButton({ exercise, onDeleted }: DeleteExerciseButt
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     gap: spacing.xs,
   },
@@ -101,4 +102,4 @@ const styles = StyleSheet.create({
     ...commonStyles.meta,
     textAlign: 'center',
   },
-});
+}));

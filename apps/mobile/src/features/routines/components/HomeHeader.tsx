@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ProfileAvatar } from '@/features/profile/components/ProfileAvatar';
@@ -7,7 +7,7 @@ import { greetingKey } from '@/features/routines/utils/greeting';
 import { getRoutineExerciseNames } from '@/features/routines/utils/routineSummary';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
-import { colors, commonStyles, spacing } from '@/ui/theme';
+import { colors, commonStyles, createStyles, spacing, useTheme } from '@/ui/theme';
 import type { Routine, UserProfile } from '@workout/domain';
 
 interface HomeHeaderProps {
@@ -38,6 +38,7 @@ export function HomeHeader({
   onOpenRoutine,
   onStart,
 }: HomeHeaderProps) {
+  useTheme();
   const { t } = useTranslation();
   const name = profile?.displayName?.trim() || null;
 
@@ -86,7 +87,7 @@ export function HomeHeader({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     gap: spacing.md,
   },
@@ -132,4 +133,4 @@ const styles = StyleSheet.create({
     ...commonStyles.meta,
     color: colors.danger,
   },
-});
+}));

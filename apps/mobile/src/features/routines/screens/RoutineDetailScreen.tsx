@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { TFunction } from 'i18next';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { exerciseBlockLabels } from '@/features/routines/utils/exerciseBlockLabels';
@@ -22,7 +22,7 @@ import { ActionSheet } from '@/ui/ActionSheet';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, layout, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, layout, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import { CardHeader } from '@/ui/CardHeader';
 import type { RoutineExerciseSet, Routine } from '@workout/domain';
 
@@ -51,6 +51,7 @@ function formatTimedTarget(set: RoutineExerciseSet) {
 }
 
 export function RoutineDetailScreen() {
+  useTheme();
   const { t } = useTranslation();
   const { routineId } = useLocalSearchParams<{ routineId?: string }>();
   const router = useRouter();
@@ -386,7 +387,7 @@ export function RoutineDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   screen: {
     ...commonStyles.screen,
   },
@@ -541,4 +542,4 @@ const styles = StyleSheet.create({
   actionHalf: {
     flex: 1,
   },
-});
+}));

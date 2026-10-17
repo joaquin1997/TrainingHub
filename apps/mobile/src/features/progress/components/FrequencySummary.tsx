@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 
 import type { TrainingFrequencySummary } from '@/features/progress/utils/trainingFrequency';
 import { StatTile } from '@/ui/StatTile';
-import { spacing } from '@/ui/theme';
+import { createStyles, spacing, useTheme } from '@/ui/theme';
 
 interface FrequencySummaryProps {
   summary: TrainingFrequencySummary;
@@ -11,6 +11,7 @@ interface FrequencySummaryProps {
 
 /** Stat tiles for training frequency (streak, totals, best week), two by two. */
 export function FrequencySummary({ summary }: FrequencySummaryProps) {
+  useTheme();
   const { t } = useTranslation();
 
   if (summary.totalWorkouts === 0) {
@@ -31,7 +32,7 @@ export function FrequencySummary({ summary }: FrequencySummaryProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   grid: {
     gap: spacing.sm,
   },
@@ -39,4 +40,4 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
   },
-});
+}));

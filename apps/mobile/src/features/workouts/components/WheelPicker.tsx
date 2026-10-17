@@ -4,12 +4,11 @@ import {
   type NativeSyntheticEvent,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
 
-import { colors, radii, typeScale } from '@/ui/theme';
+import { colors, createStyles, radii, typeScale, useTheme } from '@/ui/theme';
 
 const ITEM_HEIGHT = 40;
 const VISIBLE_ROWS = 3;
@@ -34,6 +33,7 @@ export function WheelPicker({
   onChange,
   formatItem,
 }: WheelPickerProps) {
+  useTheme();
   const ref = useRef<ComponentRef<typeof ScrollView>>(null);
   const index = Math.max(0, values.indexOf(value));
 
@@ -90,7 +90,7 @@ export function WheelPicker({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     width: 56,
     height: ITEM_HEIGHT * VISIBLE_ROWS,
@@ -122,4 +122,4 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm,
     backgroundColor: colors.surfaceMuted,
   },
-});
+}));

@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { WeightUnit } from '@workout/domain';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
-import { colors, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 import type { RecordNotice as Notice } from './liveRecordBadges';
 import { recordBadgeLabel } from './recordBadgeLabel';
@@ -23,6 +23,7 @@ export function RecordNotice({
   /** Distance from the top of the screen, e.g. below the sticky workout header (spec 0034). */
   top?: number;
 }) {
+  useTheme();
   const { t } = useTranslation();
 
   if (!notice) {
@@ -52,7 +53,7 @@ export function RecordNotice({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   overlay: {
     position: 'absolute',
     top: spacing.md,
@@ -84,4 +85,4 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     ...typeScale.caption,
   },
-});
+}));

@@ -31,7 +31,7 @@ import {
   type SetValueField,
 } from '@/lib/tracking';
 import { fromKg, roundWeight } from '@/lib/weight';
-import { colors, commonStyles, fontScaleCap, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, fontScaleCap, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 import { SetStatusArea, STATUS_AREA_SIZE, useDoneTransition } from './SetStatusArea';
 
@@ -166,6 +166,7 @@ type HeaderProps = {
  * and remove (spec 0034 — "last time" is on the row's second line).
  */
 export function WorkoutSetHeader({ trackingType, unilateral, unit }: HeaderProps) {
+  useTheme();
   const { t } = useTranslation();
   const fields = rowColumns(trackingType, unilateral);
   const compact = isCompact(fields);
@@ -247,6 +248,7 @@ export function WorkoutSetRow({
   onToggleDone,
   onRemove,
 }: RowProps) {
+  useTheme();
   const { t } = useTranslation();
   const timer = useSetTimer((seconds) => onChange('duration', formatDuration(seconds)));
   const typed = set.type === 'warmup' || set.type === 'drop';
@@ -447,7 +449,7 @@ export function WorkoutSetRow({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   // Lined up with the rows below: same padding, same (invisible) border.
   headerRow: {
     flexDirection: 'row',
@@ -605,4 +607,4 @@ const styles = StyleSheet.create({
   timerButtonRunning: {
     backgroundColor: colors.primary,
   },
-});
+}));

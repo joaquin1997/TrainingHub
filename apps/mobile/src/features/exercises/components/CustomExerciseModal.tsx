@@ -1,9 +1,9 @@
-import { Modal, StyleSheet, View } from 'react-native';
+import { Modal, View } from 'react-native';
 
 import type { Exercise } from '@workout/domain';
 
 import { CustomExerciseForm } from '@/features/exercises/components/CustomExerciseForm';
-import { colors, radii, spacing } from '@/ui/theme';
+import { colors, createStyles, radii, spacing, useTheme } from '@/ui/theme';
 
 type CustomExerciseModalProps = {
   visible: boolean;
@@ -19,6 +19,7 @@ export function CustomExerciseModal({
   onClose,
   onCreated,
 }: CustomExerciseModalProps) {
+  useTheme();
   return (
     <Modal
       animationType="fade"
@@ -44,7 +45,7 @@ export function CustomExerciseModal({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   overlay: {
     flex: 1,
     backgroundColor: colors.overlay,
@@ -61,4 +62,4 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
     paddingHorizontal: spacing.lg,
   },
-});
+}));

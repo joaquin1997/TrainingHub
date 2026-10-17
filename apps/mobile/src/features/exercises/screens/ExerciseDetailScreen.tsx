@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
 import { DeleteExerciseButton } from '@/features/exercises/components/DeleteExerciseButton';
@@ -19,7 +19,7 @@ import { ActionSheet } from '@/ui/ActionSheet';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import type { Exercise, ExerciseProgressPoint, ExerciseTrackingType } from '@workout/domain';
 
 const MAX_HISTORY = 8;
@@ -29,6 +29,7 @@ function formatHistoryValue(value?: number) {
 }
 
 export function ExerciseDetailScreen() {
+  useTheme();
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const { exerciseId } = useLocalSearchParams<{ exerciseId?: string }>();
@@ -350,7 +351,7 @@ export function ExerciseDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   screen: {
     ...commonStyles.screen,
   },
@@ -409,4 +410,4 @@ const styles = StyleSheet.create({
   meta: {
     ...commonStyles.meta,
   },
-});
+}));

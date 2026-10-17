@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BrandMark } from '@/ui/BrandMark';
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 interface ScreenTitleProps {
   title: string;
@@ -21,6 +21,7 @@ interface ScreenTitleProps {
  * tab (spec 0035 FR-13). Rendered as the first child of the screen's scroll view.
  */
 export function ScreenTitle({ title, action }: ScreenTitleProps) {
+  useTheme();
   const insets = useSafeAreaInsets();
 
   return (
@@ -49,7 +50,7 @@ export function ScreenTitle({ title, action }: ScreenTitleProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -82,4 +83,4 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontFamily: fonts.displayBold,
   },
-});
+}));

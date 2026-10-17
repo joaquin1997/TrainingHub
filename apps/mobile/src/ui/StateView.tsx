@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 
 import { Button } from '@/ui/Button';
 import { EmptyState } from '@/ui/EmptyState';
-import { colors, fonts, spacing, typeScale } from '@/ui/theme';
+import { colors, createStyles, fonts, spacing, typeScale, useTheme } from '@/ui/theme';
 
 interface StateViewProps {
   kind: 'loading' | 'empty' | 'error';
@@ -23,6 +23,7 @@ interface StateViewProps {
  * show a skeleton instead of the spinner while they first load (FR-15).
  */
 export function StateView({ kind, title, message, icon, actionLabel, onAction }: StateViewProps) {
+  useTheme();
   if (kind === 'empty') {
     return (
       <EmptyState
@@ -54,7 +55,7 @@ export function StateView({ kind, title, message, icon, actionLabel, onAction }:
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -80,4 +81,4 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: spacing.sm,
   },
-});
+}));

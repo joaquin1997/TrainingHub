@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next';
 import {
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -77,7 +76,7 @@ import { formatDuration } from '@/lib/format';
 import { isPermanentRejection } from '@/lib/http';
 import { notify } from '@/lib/notify';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
-import { colors, commonStyles, fonts, fontScaleCap, layout, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, fontScaleCap, layout, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import { tickFeedback } from '@/features/workouts/liveRecords/tickFeedback';
 import { haptics } from '@/ui/haptics';
 import { CardHeader } from '@/ui/CardHeader';
@@ -116,6 +115,7 @@ function restChipLabel(seconds: number, t: TFunction) {
 }
 
 export function ActiveWorkoutScreen() {
+  useTheme();
   const { t } = useTranslation();
   const { routineId, action, nextRoutineId, workoutId } = useLocalSearchParams<{
     routineId?: string;
@@ -1146,7 +1146,7 @@ export function ActiveWorkoutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   screen: {
     ...commonStyles.screen,
   },
@@ -1361,4 +1361,4 @@ const styles = StyleSheet.create({
   errorText: {
     ...commonStyles.error,
   },
-});
+}));

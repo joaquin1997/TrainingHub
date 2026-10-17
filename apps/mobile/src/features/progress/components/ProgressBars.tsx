@@ -1,7 +1,7 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { barHeightRatio, type ChartSeries } from '@/features/progress/utils/chartData';
-import { colors, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 const CHART_AREA_HEIGHT = 120;
 
@@ -18,6 +18,7 @@ interface ProgressBarsProps {
  * plan-b B2 "old binary guard"). Same look as before the line charts.
  */
 export function ProgressBars({ series, formatLabel, formatValue }: ProgressBarsProps) {
+  useTheme();
   return (
     <View style={styles.chart}>
       {series.points.map((bar, index) => {
@@ -52,7 +53,7 @@ export function ProgressBars({ series, formatLabel, formatValue }: ProgressBarsP
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   chart: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -96,4 +97,4 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '700',
   },
-});
+}));

@@ -1,13 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 
 import type { EditableWarmUpItem } from '@/features/routines/utils/warmUpItems';
 import { formatDuration } from '@/lib/format';
 import { parseDurationInput } from '@/lib/tracking';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, radii, spacing, useTheme } from '@/ui/theme';
 import { CardHeader } from '@/ui/CardHeader';
 
 type Props = {
@@ -21,6 +21,7 @@ type Props = {
  * of items, each a name and an optional time or reps target.
  */
 export function WarmUpBlockEditor({ items, onChange, createId }: Props) {
+  useTheme();
   const { t } = useTranslation();
 
   const update = (id: string, patch: Partial<EditableWarmUpItem>) =>
@@ -94,7 +95,7 @@ export function WarmUpBlockEditor({ items, onChange, createId }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   card: {
     ...commonStyles.card,
     gap: spacing.sm,
@@ -133,4 +134,4 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingHorizontal: spacing.sm,
   },
-});
+}));

@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { ExerciseThumb } from '@/features/exercises/components/ExerciseThumb';
 import { pickProfilePhoto } from '@/features/profile/photo/pickProfilePhoto';
 import { Button } from '@/ui/Button';
-import { colors, spacing, typeScale } from '@/ui/theme';
+import { colors, createStyles, spacing, typeScale, useTheme } from '@/ui/theme';
 
 type ExercisePhotoFieldProps = {
   /** The chosen photo as base64 JPEG (no data-URL prefix), or undefined. */
@@ -26,6 +26,7 @@ export function ExercisePhotoField({
   onChange,
   disabled,
 }: ExercisePhotoFieldProps) {
+  useTheme();
   const { t } = useTranslation();
   const [error, setError] = useState<string>();
 
@@ -68,7 +69,7 @@ export function ExercisePhotoField({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -83,4 +84,4 @@ const styles = StyleSheet.create({
     color: colors.danger,
     ...typeScale.caption,
   },
-});
+}));

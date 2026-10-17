@@ -6,7 +6,6 @@ import {
   Keyboard,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -63,7 +62,7 @@ import { kgToInputString, roundWeight, toKg } from '@/lib/weight';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import { CardHeader } from '@/ui/CardHeader';
 import type {
   Exercise,
@@ -216,6 +215,7 @@ export function RoutineFormScreen({
   mode,
   routineId,
 }: RoutineFormScreenProps) {
+  useTheme();
   const { t } = useTranslation();
   const router = useRouter();
   const isEditMode = mode === 'edit';
@@ -1128,7 +1128,7 @@ export function RoutineFormScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   screen: {
     ...commonStyles.screen,
   },
@@ -1290,4 +1290,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
   },
-});
+}));

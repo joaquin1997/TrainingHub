@@ -4,7 +4,6 @@ import {
   Modal,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -22,7 +21,7 @@ import {
 } from '@/features/exercises/utils/exerciseAvailability';
 import { Button } from '@/ui/Button';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import { ListRow } from '@/ui/ListRow';
 import type { Exercise } from '@workout/domain';
 
@@ -57,6 +56,7 @@ export function ExercisePickerModal({
   title,
   confirm,
 }: ExercisePickerModalProps) {
+  useTheme();
   const { t } = useTranslation();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [query, setQuery] = useState('');
@@ -304,7 +304,7 @@ export function ExercisePickerModal({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     flex: 1,
     padding: spacing.lg,
@@ -385,4 +385,4 @@ const styles = StyleSheet.create({
     ...commonStyles.meta,
     textAlign: 'center',
   },
-});
+}));

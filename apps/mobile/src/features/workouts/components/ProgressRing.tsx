@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 
-import { colors, radii } from '@/ui/theme';
+import { colors, createStyles, radii, useTheme } from '@/ui/theme';
 
 interface ProgressRingProps {
   size: number;
@@ -29,6 +29,7 @@ export function ProgressRing({
   holeColor = colors.surfaceRaised,
   children,
 }: ProgressRingProps) {
+  useTheme();
   const p = Math.max(0, Math.min(1, progress));
   const half = size / 2;
   const hole = size - strokeWidth * 2;
@@ -106,10 +107,10 @@ export function ProgressRing({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   clip: {
     position: 'absolute',
     top: 0,
     overflow: 'hidden',
   },
-});
+}));

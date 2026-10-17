@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { BrandMark } from '@/ui/BrandMark';
 import { Button } from '@/ui/Button';
-import { colors, commonStyles, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, createStyles, radii, spacing, useTheme } from '@/ui/theme';
 
 export interface EmptyStateProps {
   /**
@@ -22,6 +22,7 @@ export interface EmptyStateProps {
  * a title, one sentence and at most one action.
  */
 export function EmptyState({ icon = 'file-tray-outline', title, message, action }: EmptyStateProps) {
+  useTheme();
   return (
     <View style={styles.container}>
       {icon === 'brand' ? (
@@ -46,7 +47,7 @@ export function EmptyState({ icon = 'file-tray-outline', title, message, action 
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -78,4 +79,4 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: spacing.sm,
   },
-});
+}));

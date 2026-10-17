@@ -6,7 +6,6 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
@@ -29,13 +28,14 @@ import { confirmAction } from '@/lib/confirmAction';
 import { ApiError } from '@/lib/http';
 import { countInWeek, weekStreak } from '@/lib/week';
 import { useRefresh } from '@/lib/useRefresh';
-import { colors, commonStyles, spacing } from '@/ui/theme';
+import { colors, commonStyles, createStyles, spacing, useTheme } from '@/ui/theme';
 import { SkeletonCardList } from '@/ui/Skeleton';
 import { ScreenTitle } from '@/ui/ScreenTitle';
 import { StateView } from '@/ui/StateView';
 import type { Routine, UserProfile, WorkoutSession } from '@workout/domain';
 
 export function RoutinesListScreen() {
+  useTheme();
   const { t } = useTranslation();
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -354,7 +354,7 @@ export function RoutinesListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   screen: {
     ...commonStyles.screen,
   },
@@ -410,4 +410,4 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.xs,
   },
-});
+}));

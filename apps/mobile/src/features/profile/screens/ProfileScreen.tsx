@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import type { BodyMeasurementEntry, BodyMeasurementKey, WeightUnit } from '@workout/domain';
 
 import { profileClient } from '@/features/profile/api/profileClient';
@@ -24,11 +24,12 @@ import { ActionSheet, type SheetAction } from '@/ui/ActionSheet';
 import { Button } from '@/ui/Button';
 import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, spacing, typeScale, useTheme } from '@/ui/theme';
 import { ListRow } from '@/ui/ListRow';
 
 /** The person's profile (spec 0027), reached from the Settings account card. */
 export function ProfileScreen() {
+  useTheme();
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const { settings } = useSettings();
@@ -162,6 +163,7 @@ function BodySection({
   onAdd: () => void;
   onOpen: (key: BodyMeasurementKey) => void;
 }) {
+  useTheme();
   const { t } = useTranslation();
   const latest = latestByKind(entries);
   // Derived figures need both values; neither is shown otherwise (AC-4).
@@ -217,7 +219,7 @@ function BodySection({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   screen: {
     ...commonStyles.screen,
   },
@@ -277,4 +279,4 @@ const styles = StyleSheet.create({
   factValue: {
     ...commonStyles.label,
   },
-});
+}));

@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, Text, TextInput, View } from 'react-native';
 
 import { profileClient } from '@/features/profile/api/profileClient';
 import { UnitInput } from '@/features/profile/components/UnitInput';
@@ -11,12 +11,13 @@ import { useSettings } from '@/features/settings/SettingsContext';
 import { cmToFeetInches, feetInchesToCm, formatHeight } from '@/lib/length';
 import { Button } from '@/ui/Button';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, spacing, typeScale, useTheme } from '@/ui/theme';
 
 const BIO_MAX = 300;
 
 /** Name, bio and height (spec 0027 FR-1). Height is typed in cm, or ft + in. */
 export function ProfileEditScreen() {
+  useTheme();
   const { t } = useTranslation();
   const router = useRouter();
   const { settings } = useSettings();
@@ -177,7 +178,7 @@ export function ProfileEditScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   screen: {
     ...commonStyles.screen,
   },
@@ -200,4 +201,4 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
   },
-});
+}));

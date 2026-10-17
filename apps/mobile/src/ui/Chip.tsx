@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 /**
  * Tones follow the colour meanings of spec 0017 FR-1: `record` (orange) for a
@@ -20,13 +20,14 @@ interface ChipProps {
   size?: 'sm' | 'md';
 }
 
-const toneColors: Record<ChipTone, { background: string; text: string }> = {
+/** Read at render time, so it follows the theme (spec 0038). */
+const toneColors = (): Record<ChipTone, { background: string; text: string }> => ({
   neutral: { background: colors.surfaceRaised, text: colors.textMuted },
   primary: { background: colors.primarySoft, text: colors.primary },
   record: { background: colors.accentSoft, text: colors.accent },
   done: { background: colors.successSoft, text: colors.success },
   danger: { background: colors.dangerSoft, text: colors.danger },
-};
+});
 
 /** The one pill style for tags, filters and set types (spec 0017 FR-4). */
 export function Chip({
@@ -37,9 +38,10 @@ export function Chip({
   onPress,
   size = 'md',
 }: ChipProps) {
+  useTheme();
   const palette = selected
     ? { background: colors.primary, text: colors.onPrimary }
-    : toneColors[tone];
+    : toneColors()[tone];
   const content = (
     <>
       {icon ? (
@@ -77,7 +79,7 @@ export function Chip({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -105,4 +107,4 @@ const styles = StyleSheet.create({
     fontFamily: fonts.display,
     fontVariant: ['tabular-nums'],
   },
-});
+}));

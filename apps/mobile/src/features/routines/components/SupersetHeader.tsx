@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 
 import { supersetKind } from '@/features/routines/utils/supersetGroups';
 import { Chip } from '@/ui/Chip';
-import { spacing } from '@/ui/theme';
+import { createStyles, spacing, useTheme } from '@/ui/theme';
 
 interface SupersetHeaderProps {
   /** How many exercises the group holds. */
@@ -18,6 +18,7 @@ interface SupersetHeaderProps {
  * or "Complete". The same in the routine detail, the editor and the workout.
  */
 export function SupersetHeader({ size, round }: SupersetHeaderProps) {
+  useTheme();
   const { t } = useTranslation();
 
   return (
@@ -38,11 +39,11 @@ export function SupersetHeader({ size, round }: SupersetHeaderProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   row: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
     gap: spacing.xs,
   },
-});
+}));

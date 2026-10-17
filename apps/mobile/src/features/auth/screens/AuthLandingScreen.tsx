@@ -6,7 +6,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -14,9 +13,10 @@ import {
 
 import { useAuth } from '@/features/auth/AuthContext';
 import { Button } from '@/ui/Button';
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 export function AuthLandingScreen() {
+  useTheme();
   const { t } = useTranslation();
   const { signIn, register } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -154,6 +154,7 @@ function Field({
   icon: keyof typeof Ionicons.glyphMap;
   children: ReactNode;
 }) {
+  useTheme();
   return (
     <View style={styles.field}>
       <Ionicons name={icon} size={18} color={colors.textMuted} />
@@ -162,7 +163,7 @@ function Field({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   screen: {
     ...commonStyles.screen,
   },
@@ -243,4 +244,4 @@ const styles = StyleSheet.create({
     ...commonStyles.error,
     textAlign: 'center',
   },
-});
+}));

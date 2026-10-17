@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { colors, radii } from '@/ui/theme';
+import { colors, createStyles, radii, useTheme } from '@/ui/theme';
 
 interface WarmUpActionButtonProps {
   /** Add (with a preview) or remove the generated warm-up sets (spec 0031). */
@@ -17,6 +17,7 @@ interface WarmUpActionButtonProps {
  * not in colour alone (spec 0031 FR-12).
  */
 export function WarmUpActionButton({ action, onPress, style }: WarmUpActionButtonProps) {
+  useTheme();
   const { t } = useTranslation();
   const removing = action === 'remove';
 
@@ -44,7 +45,7 @@ export function WarmUpActionButton({ action, onPress, style }: WarmUpActionButto
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   badge: {
     position: 'absolute',
     bottom: 4,
@@ -58,4 +59,4 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.borderStrong,
   },
-});
+}));

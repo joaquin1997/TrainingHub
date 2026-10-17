@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { isValidElement, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -44,6 +44,7 @@ export function ListRow({
   divider = false,
   accessibilityLabel,
 }: ListRowProps) {
+  useTheme();
   const content = (
     <>
       {typeof leading === 'string' ? (
@@ -89,7 +90,7 @@ export function ListRow({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   row: {
     minHeight: 44,
     flexDirection: 'row',
@@ -132,4 +133,4 @@ const styles = StyleSheet.create({
     fontFamily: fonts.displayBold,
     fontVariant: ['tabular-nums'],
   },
-});
+}));

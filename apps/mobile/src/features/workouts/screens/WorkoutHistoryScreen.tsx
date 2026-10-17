@@ -6,7 +6,6 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
@@ -31,11 +30,12 @@ import { CardHeader } from '@/ui/CardHeader';
 import { Chip } from '@/ui/Chip';
 import { ScreenTitle } from '@/ui/ScreenTitle';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import { SkeletonCardList } from '@/ui/Skeleton';
 import type { WorkoutSession } from '@workout/domain';
 
 export function WorkoutHistoryScreen() {
+  useTheme();
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
@@ -268,7 +268,7 @@ export function WorkoutHistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   screen: {
     ...commonStyles.screen,
   },
@@ -327,4 +327,4 @@ const styles = StyleSheet.create({
     color: colors.textSubtle,
     ...typeScale.caption,
   },
-});
+}));

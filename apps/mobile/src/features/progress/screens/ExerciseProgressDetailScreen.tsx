@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
 import { ProgressChart } from '@/features/progress/components/ProgressChart';
 import { RecordsCard } from '@/features/progress/components/RecordsCard';
@@ -17,7 +17,7 @@ import { formatWeightValue, fromKg, roundWeight } from '@/lib/weight';
 import { Chip } from '@/ui/Chip';
 import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import { CardHeader } from '@/ui/CardHeader';
 import type { ExerciseProgressDetail, WeightUnit } from '@workout/domain';
 
@@ -31,6 +31,7 @@ function toDisplay(kg: number, unit: WeightUnit) {
 }
 
 export function ExerciseProgressDetailScreen() {
+  useTheme();
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const { exerciseId } = useLocalSearchParams<{ exerciseId?: string }>();
@@ -254,7 +255,7 @@ export function ExerciseProgressDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   screen: {
     ...commonStyles.screen,
   },
@@ -342,4 +343,4 @@ const styles = StyleSheet.create({
     ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
-});
+}));

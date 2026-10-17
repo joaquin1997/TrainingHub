@@ -14,7 +14,7 @@ import type { TextStyle } from 'react-native';
  * personal record or a failure set, `success` (green) a done set, `danger`
  * (red) destructive actions and errors.
  */
-export const colors = {
+const dark = {
   background: '#101418',
   surface: '#151A21',
   surfaceRaised: '#1D2530',
@@ -40,6 +40,21 @@ export const colors = {
   overlay: 'rgba(4, 8, 13, 0.76)',
   /** Behind catalog images, which are line drawings on white. */
   imageBackdrop: '#FFFFFF',
+};
+
+/** The named colours of one theme (spec 0038): every theme has every token. */
+export type Palette = { [Key in keyof typeof dark]: string };
+
+export type ThemeName = 'dark' | 'light';
+
+/**
+ * Both themes (spec 0038 FR-5). The app reads the active one through
+ * `colors` in `theme.ts`; tests read these directly.
+ */
+export const palettes: Record<ThemeName, Palette> = {
+  dark,
+  // Replaced by the light values in the next step; dark until then.
+  light: dark,
 };
 
 /**

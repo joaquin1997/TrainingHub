@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { sameDay } from '@/lib/week';
-import { colors, fonts, fontScaleCap, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, createStyles, fonts, fontScaleCap, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 interface WeekStripProps {
   /** Monday to Sunday of the current week. */
@@ -21,6 +21,7 @@ interface WeekStripProps {
  * today cannot be tapped.
  */
 export function WeekStrip({ days, today, counts, selected, onSelect }: WeekStripProps) {
+  useTheme();
   const { t, i18n } = useTranslation();
 
   return (
@@ -78,7 +79,7 @@ export function WeekStrip({ days, today, counts, selected, onSelect }: WeekStrip
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   strip: {
     flexDirection: 'row',
     gap: spacing.xs,
@@ -129,4 +130,4 @@ const styles = StyleSheet.create({
   dotOnSelected: {
     backgroundColor: colors.onPrimary,
   },
-});
+}));

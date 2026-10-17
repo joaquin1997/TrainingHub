@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
-import { colors, commonStyles, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, spacing, typeScale, useTheme } from '@/ui/theme';
 
 interface CardHeaderProps {
   title: string;
@@ -34,6 +34,7 @@ export function CardHeader({
   size = 'heading',
   children,
 }: CardHeaderProps) {
+  useTheme();
   const lineHeight = (size === 'body' ? typeScale.body : typeScale.heading).lineHeight;
 
   return (
@@ -61,7 +62,7 @@ export function CardHeader({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -84,4 +85,4 @@ const styles = StyleSheet.create({
   titleBody: {
     ...typeScale.body,
   },
-});
+}));

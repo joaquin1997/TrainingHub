@@ -6,7 +6,6 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
@@ -32,7 +31,7 @@ import { CardHeader } from '@/ui/CardHeader';
 import { Chip } from '@/ui/Chip';
 import { ScreenTitle } from '@/ui/ScreenTitle';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import { SkeletonProgress } from '@/ui/Skeleton';
 import type {
   ExerciseProgressSummary,
@@ -47,6 +46,7 @@ function formatValue(value?: number) {
 }
 
 export function ProgressOverviewScreen() {
+  useTheme();
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const [progress, setProgress] = useState<ExerciseProgressSummary[]>([]);
@@ -255,6 +255,7 @@ function Figure({
   unit: string;
   reps?: string;
 }) {
+  useTheme();
   return (
     <View style={styles.figure}>
       <Text style={styles.figureLabel} numberOfLines={1}>
@@ -269,7 +270,7 @@ function Figure({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   screen: {
     ...commonStyles.screen,
   },
@@ -329,4 +330,4 @@ const styles = StyleSheet.create({
   meta: {
     ...commonStyles.meta,
   },
-});
+}));

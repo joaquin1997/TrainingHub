@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import type { BodyMeasurementKey } from '@workout/domain';
 
 import { measurementsClient } from '@/features/profile/api/measurementsClient';
@@ -31,7 +31,7 @@ import { confirmAction } from '@/lib/confirmAction';
 import { formatDayHeading } from '@/lib/format';
 import { Button } from '@/ui/Button';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 const COMPOSITION = MEASUREMENT_KINDS.filter((kind) => kind.dimension !== 'length');
 const CIRCUMFERENCES = MEASUREMENT_KINDS.filter((kind) => kind.dimension === 'length');
@@ -41,6 +41,7 @@ const CIRCUMFERENCES = MEASUREMENT_KINDS.filter((kind) => kind.dimension === 'le
  * the measurements, or edits / deletes one (`?entryId=`) (spec 0027 FR-2).
  */
 export function MeasurementEntryScreen() {
+  useTheme();
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const { entryId } = useLocalSearchParams<{ entryId?: string }>();
@@ -241,7 +242,7 @@ export function MeasurementEntryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   screen: {
     ...commonStyles.screen,
   },
@@ -287,4 +288,4 @@ const styles = StyleSheet.create({
   hint: {
     ...commonStyles.meta,
   },
-});
+}));

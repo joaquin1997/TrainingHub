@@ -1,7 +1,7 @@
 import { createContext, type ReactNode, useContext, useEffect, useRef } from 'react';
-import { Animated, type DimensionValue, StyleSheet, View } from 'react-native';
+import { Animated, type DimensionValue, View } from 'react-native';
 
-import { colors, commonStyles, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, createStyles, radii, spacing, useTheme } from '@/ui/theme';
 import { useReducedMotion } from '@/ui/useReducedMotion';
 
 /**
@@ -12,6 +12,7 @@ import { useReducedMotion } from '@/ui/useReducedMotion';
 const PulseContext = createContext<Animated.Value | null>(null);
 
 function SkeletonGroup({ children }: { children: ReactNode }) {
+  useTheme();
   const reduced = useReducedMotion();
   const opacity = useRef(new Animated.Value(1)).current;
 
@@ -53,6 +54,7 @@ interface BlockProps {
 }
 
 export function SkeletonBlock({ width = '100%', height, radius = radii.sm, grow = false }: BlockProps) {
+  useTheme();
   const opacity = useContext(PulseContext);
 
   return (
@@ -69,6 +71,7 @@ export function SkeletonBlock({ width = '100%', height, radius = radii.sm, grow 
 
 /** Card with a title line, a meta line, a row of chips and a button: routines, history. */
 export function SkeletonCardList({ count = 3, withButton = false }: { count?: number; withButton?: boolean }) {
+  useTheme();
   return (
     <SkeletonGroup>
       {Array.from({ length: count }, (_, index) => (
@@ -89,6 +92,7 @@ export function SkeletonCardList({ count = 3, withButton = false }: { count?: nu
 
 /** Rows with a thumbnail and two lines: the exercise list. */
 export function SkeletonRowList({ count = 6 }: { count?: number }) {
+  useTheme();
   return (
     <SkeletonGroup>
       {Array.from({ length: count }, (_, index) => (
@@ -106,6 +110,7 @@ export function SkeletonRowList({ count = 6 }: { count?: number }) {
 
 /** Stat tiles, a chart and exercise cards: the progress overview. */
 export function SkeletonProgress() {
+  useTheme();
   return (
     <SkeletonGroup>
       {[0, 1].map((row) => (
@@ -132,7 +137,7 @@ export function SkeletonProgress() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   group: {
     gap: spacing.md,
   },
@@ -163,4 +168,4 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: spacing.md,
   },
-});
+}));

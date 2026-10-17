@@ -29,7 +29,7 @@ import {
 } from '@/features/progress/utils/linePath';
 import { canDrawSvg } from '@/features/progress/utils/svgSupport';
 import { CardHeader } from '@/ui/CardHeader';
-import { colors, commonStyles, fonts, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, spacing, typeScale, useTheme } from '@/ui/theme';
 
 /** Height of the plot (not a type, radius or spacing size: no token). */
 const PLOT_HEIGHT = 140;
@@ -77,6 +77,7 @@ export function ProgressChart({
   formatLabel,
   formatValue = roundValue,
 }: ProgressChartProps) {
+  useTheme();
   const { t } = useTranslation();
   const [selected, setSelected] = useState<number | null>(null);
 
@@ -139,6 +140,7 @@ function LineChart({
   selected: number | null;
   onSelect: (index: number | null) => void;
 }) {
+  useTheme();
   const { t } = useTranslation();
   const [width, setWidth] = useState(0);
   // SVG ids are global on web: one gradient id per chart.
@@ -335,7 +337,7 @@ function LineChart({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     ...commonStyles.card,
     gap: spacing.md,
@@ -401,4 +403,4 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     ...typeScale.caption,
   },
-});
+}));

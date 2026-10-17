@@ -6,7 +6,6 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -24,7 +23,7 @@ import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { ScreenTitle } from '@/ui/ScreenTitle';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, spacing, typeScale, useTheme } from '@/ui/theme';
 import { SkeletonRowList } from '@/ui/Skeleton';
 import { ListRow } from '@/ui/ListRow';
 import type { Exercise } from '@workout/domain';
@@ -32,6 +31,7 @@ import type { Exercise } from '@workout/domain';
 const PAGE_SIZE = 50;
 
 export function ExercisesListScreen() {
+  useTheme();
   const { t } = useTranslation();
   const router = useRouter();
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -327,7 +327,7 @@ export function ExercisesListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   screen: {
     ...commonStyles.screen,
   },
@@ -378,4 +378,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-});
+}));

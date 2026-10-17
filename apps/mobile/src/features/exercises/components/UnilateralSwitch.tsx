@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Switch, Text, View } from 'react-native';
+import { Switch, Text, View } from 'react-native';
 
-import { colors, commonStyles, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, spacing, typeScale, useTheme } from '@/ui/theme';
 
 type UnilateralSwitchProps = {
   value: boolean;
@@ -15,6 +15,7 @@ type UnilateralSwitchProps = {
  * custom exercise and on any exercise's detail.
  */
 export function UnilateralSwitch({ value, onChange, disabled }: UnilateralSwitchProps) {
+  useTheme();
   const { t } = useTranslation();
 
   return (
@@ -35,7 +36,7 @@ export function UnilateralSwitch({ value, onChange, disabled }: UnilateralSwitch
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -52,4 +53,4 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     ...typeScale.caption,
   },
-});
+}));

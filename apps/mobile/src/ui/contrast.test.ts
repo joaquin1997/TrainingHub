@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { composite, contrastRatio } from './contrast';
-import { colors } from './tokens';
+import { palettes } from './tokens';
+
+const colors = palettes.dark;
 
 /** Every surface text is drawn on; tints are composited over the card. */
 const SURFACES = {

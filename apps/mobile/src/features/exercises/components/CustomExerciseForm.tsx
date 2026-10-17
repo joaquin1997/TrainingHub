@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import {
   Alert,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -18,7 +17,7 @@ import { TRACKING_TYPES, tracksField } from '@/lib/tracking';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, spacing, typeScale, useTheme } from '@/ui/theme';
 
 type CustomExerciseFormProps = {
   /** Prefilled name, usually the text searched (spec 0020 FR-2). */
@@ -40,6 +39,7 @@ export function CustomExerciseForm({
   onCreated,
   showTitle = true,
 }: CustomExerciseFormProps) {
+  useTheme();
   const { t } = useTranslation();
   const [name, setName] = useState(initialName);
   const [muscleGroups, setMuscleGroups] = useState<MuscleGroup[]>([]);
@@ -237,7 +237,7 @@ export function CustomExerciseForm({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   content: {
     gap: spacing.lg,
     paddingBottom: spacing.lg,
@@ -270,4 +270,4 @@ const styles = StyleSheet.create({
   centered: {
     alignSelf: 'center',
   },
-});
+}));

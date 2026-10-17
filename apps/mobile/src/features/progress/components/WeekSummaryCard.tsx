@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import type { WeekVolumeComparison } from '@/features/progress/utils/weekComparison';
 import { formatWeight, fromKg, roundWeight } from '@/lib/weight';
-import { colors, commonStyles, fontScaleCap, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fontScaleCap, spacing, typeScale, useTheme } from '@/ui/theme';
 import type { WeightUnit } from '@workout/domain';
 
 interface WeekSummaryCardProps {
@@ -18,6 +18,7 @@ interface WeekSummaryCardProps {
  * full total. With no workout last week there is no comparison.
  */
 export function WeekSummaryCard({ comparison, unit }: WeekSummaryCardProps) {
+  useTheme();
   const { t } = useTranslation();
   const shown = (kg: number) => roundWeight(fromKg(kg, unit));
   const delta = shown(comparison.thisWeekKg) - shown(comparison.lastWeekToDateKg);
@@ -55,7 +56,7 @@ export function WeekSummaryCard({ comparison, unit }: WeekSummaryCardProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   card: {
     ...commonStyles.card,
     gap: spacing.xs,
@@ -83,4 +84,4 @@ const styles = StyleSheet.create({
   meta: {
     ...commonStyles.meta,
   },
-});
+}));

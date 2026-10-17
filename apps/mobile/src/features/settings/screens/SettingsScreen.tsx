@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/AuthContext';
 import { ProfileAvatar } from '@/features/profile/components/ProfileAvatar';
@@ -15,7 +15,7 @@ import {
 import { confirmAction } from '@/lib/confirmAction';
 import { formatDuration } from '@/lib/format';
 import { Button } from '@/ui/Button';
-import { colors, commonStyles, fonts, fontScaleCap, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, fontScaleCap, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import { ListRow } from '@/ui/ListRow';
 import { CardHeader } from '@/ui/CardHeader';
 import { ScreenTitle } from '@/ui/ScreenTitle';
@@ -26,6 +26,7 @@ const UNITS: WeightUnit[] = ['kg', 'lb'];
 type LanguageOption = { value: AppLanguage | null; label: string };
 
 export function SettingsScreen() {
+  useTheme();
   const { t } = useTranslation();
   const { settings, update } = useSettings();
   const { user, signOut } = useAuth();
@@ -157,6 +158,7 @@ function SectionHeader({
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
 }) {
+  useTheme();
   return (
     <CardHeader
       title={title}
@@ -175,6 +177,7 @@ function Segmented({
 }: {
   options: Array<{ key: string; label: string; selected: boolean; onPress: () => void }>;
 }) {
+  useTheme();
   return (
     <View style={styles.segment}>
       {options.map((option) => (
@@ -197,7 +200,7 @@ function Segmented({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   screen: {
     ...commonStyles.screen,
   },
@@ -270,4 +273,4 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     ...typeScale.caption,
   },
-});
+}));

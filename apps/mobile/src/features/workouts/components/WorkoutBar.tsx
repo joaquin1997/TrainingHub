@@ -9,7 +9,7 @@ import { useRestRemaining } from '@/features/workouts/restTimer/useRestRemaining
 import type { WorkoutSessionDraft } from '@/features/workouts/state/workoutDraftStore';
 import { formatDuration } from '@/lib/format';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
-import { colors, commonStyles, fontScaleCap, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, fontScaleCap, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 interface WorkoutBarProps {
   /** Pad for the home indicator; only where no tab bar sits below the bar. */
@@ -22,6 +22,7 @@ interface WorkoutBarProps {
  * item of a list nor the tab bar (EF-2). Renders nothing with no workout.
  */
 export function WorkoutBar({ withBottomInset = false }: WorkoutBarProps) {
+  useTheme();
   const workout = useActiveWorkout();
 
   if (!workout) {
@@ -38,6 +39,7 @@ function ActiveWorkoutBar({
   withBottomInset: boolean;
   workout: WorkoutSessionDraft;
 }) {
+  useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const elapsedSeconds = useElapsedSeconds(workout.startedAt, {
@@ -90,7 +92,7 @@ function ActiveWorkoutBar({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -138,4 +140,4 @@ const styles = StyleSheet.create({
   clockResting: {
     color: colors.accent,
   },
-});
+}));

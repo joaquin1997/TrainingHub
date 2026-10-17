@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ComponentRef, Ref } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import type { ShareCardModel } from '@/features/workouts/utils/shareCard';
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 /** The card's size in points (4:5); captured at 1080 × 1350 px. */
 export const SHARE_CARD_WIDTH = 360;
@@ -24,6 +24,7 @@ interface ShareCardProps {
  * `collapsable={false}` keeps the view in the native tree for the capture.
  */
 export function ShareCard({ card, ref }: ShareCardProps) {
+  useTheme();
   return (
     <View ref={ref} collapsable={false} style={styles.frame}>
       <View style={styles.panel}>
@@ -109,7 +110,7 @@ export function ShareCard({ card, ref }: ShareCardProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   frame: {
     width: SHARE_CARD_WIDTH,
     height: SHARE_CARD_HEIGHT,
@@ -222,4 +223,4 @@ const styles = StyleSheet.create({
     color: colors.textSubtle,
     textAlign: 'right',
   },
-});
+}));

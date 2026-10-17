@@ -14,7 +14,7 @@ import { useActiveWorkoutPersistence } from '@/features/workouts/persistence/use
 import { useRestTimerRunner } from '@/features/workouts/restTimer/useRestTimerRunner';
 import { getActiveWorkout } from '@/features/workouts/state/workoutDraftStore';
 import { I18nProvider } from '@/i18n/I18nProvider';
-import { colors, fontAssets, screenHeader } from '@/ui/theme';
+import { colors, fontAssets, screenHeader, useTheme } from '@/ui/theme';
 
 // The branded splash stays up until the first real screen is ready, so there
 // is no blank or spinner frame in between (spec 0034 FR-2). A no-op on web and
@@ -32,6 +32,7 @@ function hideSplash() {
 
 /** Mounted with the first real screen; takes the splash down. */
 function SplashHandOver() {
+  useTheme();
   useEffect(() => {
     hideSplash();
   }, []);
@@ -39,6 +40,7 @@ function SplashHandOver() {
 }
 
 function RootNavigator() {
+  useTheme();
   const { user, isAuthenticated, isLoading } = useAuth();
   // The stored workout is restored before any screen can read it (spec 0010).
   const isRestoringWorkout = useActiveWorkoutPersistence(user?.id ?? null);
@@ -122,6 +124,7 @@ function RootNavigator() {
 }
 
 function StartupSpinner() {
+  useTheme();
   return (
     <View
       style={{
@@ -137,6 +140,7 @@ function StartupSpinner() {
 }
 
 export default function RootLayout() {
+  useTheme();
   const [fontsLoaded, fontError] = useFonts(fontAssets);
 
   useEffect(() => {

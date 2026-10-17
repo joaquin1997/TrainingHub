@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Modal, Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -13,7 +13,7 @@ import {
 import { captureAndShare, shareImageAvailable } from '@/features/workouts/share/shareImage';
 import type { ShareCardModel } from '@/features/workouts/utils/shareCard';
 import { Button } from '@/ui/Button';
-import { colors, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 interface ShareSheetProps {
   visible: boolean;
@@ -33,6 +33,7 @@ const PREVIEW_MAX_HEIGHT_RATIO = 0.5;
  * action keeps working (EF-6).
  */
 export function ShareSheet({ visible, card, onShareText, onClose }: ShareSheetProps) {
+  useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const window = useWindowDimensions();
@@ -131,7 +132,7 @@ export function ShareSheet({ visible, card, onShareText, onClose }: ShareSheetPr
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   backdrop: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -182,4 +183,4 @@ const styles = StyleSheet.create({
   cancel: {
     alignSelf: 'center',
   },
-});
+}));

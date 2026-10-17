@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 
-import { colors, radii } from '@/ui/theme';
+import { colors, createStyles, radii, useTheme } from '@/ui/theme';
 
 interface BrandMarkProps {
   /** Side of the tile; the pulse takes about two thirds of it. */
@@ -14,6 +14,7 @@ interface BrandMarkProps {
  * readers.
  */
 export function BrandMark({ size = 24 }: BrandMarkProps) {
+  useTheme();
   return (
     <View
       accessible={false}
@@ -26,7 +27,7 @@ export function BrandMark({ size = 24 }: BrandMarkProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   tile: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -36,4 +37,4 @@ const styles = StyleSheet.create({
   tileLarge: {
     borderRadius: radii.lg,
   },
-});
+}));

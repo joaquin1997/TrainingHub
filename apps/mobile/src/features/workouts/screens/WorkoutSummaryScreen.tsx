@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import type { TFunction } from 'i18next';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
 import { progressClient } from '@/features/progress/api/progressClient';
 import { RecordsCard } from '@/features/progress/components/RecordsCard';
@@ -35,7 +35,7 @@ import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import { CardHeader } from '@/ui/CardHeader';
 import type { SessionRecord, WeightUnit, WorkoutSetType } from '@workout/domain';
 
@@ -74,6 +74,7 @@ function ComparisonChip({
   language: string;
   t: TFunction;
 }) {
+  useTheme();
   const words = describeComparison(comparison, unit, language, t);
   return (
     <View accessible accessibilityLabel={words.sentence}>
@@ -88,6 +89,7 @@ function ComparisonChip({
 }
 
 export function WorkoutSummaryScreen() {
+  useTheme();
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const workoutDraft = getLatestCompletedWorkout();
@@ -324,7 +326,7 @@ export function WorkoutSummaryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   screen: {
     ...commonStyles.screen,
   },
@@ -392,4 +394,4 @@ const styles = StyleSheet.create({
   setSpacer: {
     flex: 1,
   },
-});
+}));

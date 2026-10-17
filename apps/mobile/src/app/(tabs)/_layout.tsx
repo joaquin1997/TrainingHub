@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import type { ColorValue } from 'react-native';
 
 import { WorkoutBar } from '@/features/workouts/components/WorkoutBar';
-import { colors, fonts, typeScale } from '@/ui/theme';
+import { colors, fonts, typeScale, useTheme } from '@/ui/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -17,6 +17,7 @@ function tabIcon(focused: IconName, unfocused: IconName) {
 }
 
 export default function TabsLayout() {
+  useTheme();
   const { t } = useTranslation();
 
   return (

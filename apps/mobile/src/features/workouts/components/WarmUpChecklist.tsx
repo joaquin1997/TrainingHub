@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { formatWarmUpTarget } from '@/features/routines/utils/warmUpItems';
-import { colors, commonStyles, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, spacing, typeScale, useTheme } from '@/ui/theme';
 import { CardHeader } from '@/ui/CardHeader';
 
 type Item = {
@@ -26,6 +26,7 @@ type Props = {
  * workout's checklist, or what a saved workout ticked. Never sets.
  */
 export function WarmUpChecklist({ items, onToggle }: Props) {
+  useTheme();
   const { t } = useTranslation();
 
   if (items.length === 0) {
@@ -74,7 +75,7 @@ export function WarmUpChecklist({ items, onToggle }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   card: {
     ...commonStyles.card,
     gap: spacing.sm,
@@ -101,4 +102,4 @@ const styles = StyleSheet.create({
     ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
-});
+}));

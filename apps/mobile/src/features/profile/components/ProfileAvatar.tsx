@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 
-import { colors, fonts, radii, typeScale } from '@/ui/theme';
+import { colors, createStyles, fonts, radii, typeScale, useTheme } from '@/ui/theme';
 
 interface ProfileAvatarProps {
   photoDataUrl: string | null | undefined;
@@ -22,6 +22,7 @@ function initialsOf(name: string | null | undefined): string {
  * person mark when there are no initials either (spec 0035 EF-2).
  */
 export function ProfileAvatar({ photoDataUrl, name, size = 56 }: ProfileAvatarProps) {
+  useTheme();
   const shape = { width: size, height: size, borderRadius: radii.round };
 
   if (photoDataUrl) {
@@ -40,7 +41,7 @@ export function ProfileAvatar({ photoDataUrl, name, size = 56 }: ProfileAvatarPr
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   base: {
     backgroundColor: colors.surfaceRaised,
     overflow: 'hidden',
@@ -55,4 +56,4 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: fonts.displayBold,
   },
-});
+}));

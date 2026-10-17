@@ -3,7 +3,7 @@ import { getLocales } from 'expo-localization';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -24,7 +24,7 @@ import { formatDuration } from '@/lib/format';
 import { BrandMark } from '@/ui/BrandMark';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
-import { colors, commonStyles, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import type { AppLanguage, WeightUnit } from '@workout/domain';
 
 const STEPS = 3;
@@ -41,6 +41,7 @@ const UNITS: WeightUnit[] = ['kg', 'lb'];
  * when asked, as it belongs to the device.
  */
 export function FirstRunScreen() {
+  useTheme();
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -268,7 +269,7 @@ export function FirstRunScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
@@ -347,4 +348,4 @@ const styles = StyleSheet.create({
     ...typeScale.caption,
     color: colors.danger,
   },
-});
+}));

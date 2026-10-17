@@ -1,7 +1,7 @@
 import { useFocusEffect } from 'expo-router';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AccessibilityInfo, Animated, AppState, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, Animated, AppState, View } from 'react-native';
 
 import {
   parseCelebrated,
@@ -10,7 +10,7 @@ import {
 } from '@/features/workouts/utils/celebration';
 import { deviceKeys, deviceStore } from '@/lib/deviceStore';
 import { haptics } from '@/ui/haptics';
-import { colors, radii, spacing } from '@/ui/theme';
+import { colors, createStyles, radii, spacing, useTheme } from '@/ui/theme';
 import { useReducedMotion } from '@/ui/useReducedMotion';
 
 interface RecordCelebrationProps {
@@ -29,6 +29,7 @@ const BURST_MS = 900;
  * instead. Never over the text, never in the way of a tap or a scroll.
  */
 export function RecordCelebration({ workoutId, recordCount, children }: RecordCelebrationProps) {
+  useTheme();
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
   const [focused, setFocused] = useState(true);
@@ -93,7 +94,7 @@ export function RecordCelebration({ workoutId, recordCount, children }: RecordCe
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     borderRadius: radii.lg,
   },
@@ -114,4 +115,4 @@ const styles = StyleSheet.create({
     borderWidth: spacing.md,
     borderColor: colors.primary,
   },
-});
+}));

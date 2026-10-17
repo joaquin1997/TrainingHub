@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { describeRecord } from '@/features/progress/utils/recordLabels';
 import { formatDate } from '@/lib/format';
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import type { SessionRecord, WeightUnit } from '@workout/domain';
 
 interface LatestRecordCardProps {
@@ -19,6 +19,7 @@ interface LatestRecordCardProps {
  * exercise's progress.
  */
 export function LatestRecordCard({ record, unit, onPress }: LatestRecordCardProps) {
+  useTheme();
   const { t, i18n } = useTranslation();
   const label = describeRecord(record, unit, t);
 
@@ -46,7 +47,7 @@ export function LatestRecordCard({ record, unit, onPress }: LatestRecordCardProp
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   card: {
     ...commonStyles.card,
     flexDirection: 'row',
@@ -80,4 +81,4 @@ const styles = StyleSheet.create({
     fontFamily: fonts.displayBold,
     fontVariant: ['tabular-nums'],
   },
-});
+}));
