@@ -355,7 +355,8 @@ export type PhotoWriteResult = 'ok' | 'not-found' | 'forbidden';
 
 /**
  * Finds the exercise as the person sees it (spec 0015): `null` when it does
- * not exist or is someone else's custom exercise — both answer "not found".
+ * not exist, is someone else's custom exercise, or was deleted (spec 0033) —
+ * all answer "not found".
  */
 async function findAccessibleExercise(userPublicId: string, exercisePublicId: string) {
   const exercise = await prisma.exercise.findUnique({
@@ -363,6 +364,7 @@ async function findAccessibleExercise(userPublicId: string, exercisePublicId: st
     select: {
       id: true,
       isSystemDefined: true,
+      deletedAt: true,
       createdByUser: { select: { publicId: true } },
     },
   });
@@ -375,6 +377,7 @@ async function findAccessibleExercise(userPublicId: string, exercisePublicId: st
     {
       isSystemDefined: exercise.isSystemDefined,
       creatorPublicId: exercise.createdByUser?.publicId,
+      isDeleted: exercise.deletedAt !== null,
     },
     userPublicId,
   );

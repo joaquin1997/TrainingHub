@@ -15,7 +15,7 @@ API ships before the app (the app's delete action needs the endpoints).
 | # | Task | Area | Verify | Commit message |
 |---|---|---|---|---|
 | 1 | [x] Plan and tasks; spec status `in-progress` | docs | — | `docs(sdd): plan and tasks for 0033` |
-| 2 | [ ] `Exercise.deletedAt` + migration `20261018150000_add_exercise_deleted_at`; `visibility.ts`: visible excludes deleted custom exercises, usable keeps the creator's own whatever its lifecycle, classifier `isDeleted` → hidden; `findAccessibleExercise` passes it; tests | api | unit tests; `prisma:generate` | `feat(exercises): deleted lifecycle for custom exercises` |
+| 2 | [x] `Exercise.deletedAt` + migration `20261018150000_add_exercise_deleted_at`; `visibility.ts`: visible excludes deleted custom exercises, usable keeps the creator's own whatever its lifecycle, classifier `isDeleted` → hidden; `findAccessibleExercise` passes it; tests | api | unit tests; `prisma:generate` | `feat(exercises): deleted lifecycle for custom exercises` |
 | 3 | [ ] `ExerciseDeletionImpact` (domain); `deletion.ts` (`planExerciseDeletion`, `deletionImpactWhere`) + tests; repository `getExerciseDeletionImpact`, `deleteCustomExercise` (remove or archive, favourites, photo best effort, `P2003` fallback); `GET /exercises/:id/deletion-impact`, `DELETE /exercises/:id`; route tests | domain / api | unit + route tests (AC-1, 2, 5, 7, EF-2, EF-3) | `feat(exercises): delete custom exercises` |
 | 4 | [ ] `RoutineExercise.exerciseDeleted` (domain); routine reads set it | domain / api | typecheck; e2e (task 7) | `feat(exercises): routines mark deleted exercises` |
 | 5 | [ ] Mobile: client methods; `exerciseDeletion.ts` (`describeDeletionImpact`, `isAlreadyDeleted`) + tests; delete action on the custom exercise detail (impact → confirm → delete; EF-1, EF-2, EF-6); i18n en/es | mobile | unit tests; typecheck | `feat(exercises): delete a custom exercise from its detail` |
@@ -55,6 +55,16 @@ device pass (task 8), the deploy (task 9).
   device's active workout; impact counts only the creator's data; the
   creator's deleted exercise stays usable for saves so routines and the
   active workout never break.
+- 2026-10-17 — Task 2: `Exercise.deletedAt` and the hand-written migration
+  `20261018150000_add_exercise_deleted_at` (one `ADD COLUMN`, mirrors the
+  schema). `visibleExerciseWhere`'s custom branch requires `deletedAt: null`,
+  so list, detail, search, favourites, photo read and same-name dedupe all
+  drop a deleted exercise with no change at their call sites.
+  `usableExerciseWhere` no longer reuses the visible branches: it keeps the
+  creator's own exercise whatever its lifecycle (saves never break) plus the
+  held branches. The classifier takes an optional `isDeleted` (deleted custom
+  → hidden), passed by `findAccessibleExercise`, so photo writes and
+  unilateral answer 404 for a deleted exercise. 4 new rule tests.
 
 ## Definition of done
 

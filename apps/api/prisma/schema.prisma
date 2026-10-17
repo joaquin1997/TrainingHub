@@ -70,6 +70,9 @@ model Exercise {
   trackingType              String                       @default("weight_reps")
   /// Done one side at a time; its sets record left and right reps (spec 0022).
   isUnilateral              Boolean                      @default(false)
+  /// Set when its creator deleted this custom exercise (spec 0033): gone from the
+  /// catalog and pickers, kept for the routines and workouts that contain it.
+  deletedAt                 DateTime?
   createdByUserId           BigInt?
   createdAt                 DateTime                     @default(now())
   updatedAt                 DateTime                     @updatedAt
