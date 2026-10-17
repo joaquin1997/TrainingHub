@@ -331,6 +331,8 @@ export const es: TranslationCatalog = {
     restOverTitle: 'Descanso terminado',
     restOverBody: 'Siguiente: {{exercise}}',
     restOverBodyGeneric: 'Toca la siguiente serie.',
+    nextSet: '{{exercise}} · serie {{number}}',
+    nextWarmUp: '{{exercise}} · calentamiento',
     watchDone: 'Hecha',
     watchSetOf: 'Serie {{number}} de {{count}}',
     watchRest: 'Descanso',

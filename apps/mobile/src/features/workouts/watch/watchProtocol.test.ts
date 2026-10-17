@@ -168,6 +168,50 @@ describe('applyWatchEvent (spec 0025 AC-3, EF-1)', () => {
     expect(late.rest).toEqual(resting.rest);
   });
 
+  it('follows superset rounds: no rest mid-round, then the round’s rest (spec 0029 AC-7)', () => {
+    const start = workout(
+      exercise('bench', [false, false], { supersetGroup: 1, restSeconds: 120 }),
+      exercise('row', [false, false], { supersetGroup: 1, restSeconds: 60 }),
+    );
+    expect(toWatchSnapshot(start, 90).currentSet).toMatchObject({
+      workoutSetId: 'bench1',
+      restSeconds: 0,
+    });
+
+    const afterBench = applyWatchEvent(start, tick('bench', 'bench1', 0), 90);
+    const offered = toWatchSnapshot(afterBench, 90);
+    expect(afterBench.rest).toBeUndefined();
+    expect(offered.restEndsAt).toBeUndefined();
+    expect(offered.currentSet).toMatchObject({ workoutSetId: 'row1', restSeconds: 60 });
+
+    const afterRow = applyWatchEvent(afterBench, tick('row', 'row1', 20), 90);
+    expect(afterRow.rest).toEqual({ endsAt: at(80), totalSeconds: 60, workoutExerciseId: 'row' });
+    expect(toWatchSnapshot(afterRow, 90).currentSet).toMatchObject({ workoutSetId: 'bench2' });
+  });
+
+  it('ends a rest on an early mid-round tick, but not one started after the tick (EF-6)', () => {
+    const resting = applyWatchEvent(
+      applyWatchEvent(
+        workout(
+          exercise('bench', [false, false], { supersetGroup: 1 }),
+          exercise('row', [false, false], { supersetGroup: 1, restSeconds: 60 }),
+        ),
+        tick('bench', 'bench1', 0),
+        90,
+      ),
+      tick('row', 'row1', 20),
+      90,
+    );
+
+    const early = applyWatchEvent(resting, tick('bench', 'bench2', 30), 90);
+    expect(early.rest).toBeUndefined();
+
+    // Ticked on the watch before the phone's rest began, delivered after it.
+    const late = applyWatchEvent(resting, tick('bench', 'bench2', 10), 90);
+    expect(late.exercises[0]!.entries[1]!.done).toBe(true);
+    expect(late.rest).toEqual(resting.rest);
+  });
+
   it('ignores events for another workout', () => {
     const draft = workout(exercise('a', [false]));
     expect(applyWatchEvent(draft, tick('a', 'a1', 0, 'other'), 90)).toBe(draft);

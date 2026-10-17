@@ -31,6 +31,7 @@ import {
 import { RestBar } from '@/features/workouts/components/RestBar';
 import { WarmUpChecklist } from '@/features/workouts/components/WarmUpChecklist';
 import { toggleWarmUpItem } from '@/features/workouts/state/warmUpDraft';
+import { completeSetInRounds } from '@/features/workouts/superset/rounds';
 import { RestEditorSheet } from '@/features/workouts/components/RestEditorSheet';
 import { nextSetToDo } from '@/features/workouts/restTimer/nextSetToDo';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -59,7 +60,6 @@ import {
   adjustRest,
   applyLastPerformance,
   clearActiveWorkout,
-  completeSet,
   countWorkoutSets,
   cycleWorkoutSetType,
   getActiveWorkout,
@@ -452,11 +452,12 @@ export function ActiveWorkoutScreen() {
     )?.done;
 
     // Ticking starts the exercise's rest in this workout, else the Settings
-    // default (FR-1) — the same rule as a tick from the watch (spec 0025).
+    // default (FR-1); in a superset only a tick that completes the round rests
+    // (spec 0029) — the same rule as a tick from the watch (spec 0025).
     // Un-ticking leaves a running rest alone.
     setActiveWorkout(
       becomingDone
-        ? completeSet(
+        ? completeSetInRounds(
             workoutDraft,
             workoutExerciseId,
             workoutSetId,

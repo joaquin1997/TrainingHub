@@ -328,6 +328,8 @@ export const en = {
     restOverTitle: 'Rest over',
     restOverBody: 'Next: {{exercise}}',
     restOverBodyGeneric: 'Time for your next set.',
+    nextSet: '{{exercise}} · set {{number}}',
+    nextWarmUp: '{{exercise}} · warm-up',
     watchDone: 'Done',
     watchSetOf: 'Set {{number}} of {{count}}',
     watchRest: 'Rest',
