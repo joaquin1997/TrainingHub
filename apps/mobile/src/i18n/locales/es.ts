@@ -610,4 +610,12 @@ export const es: TranslationCatalog = {
     start: 'Empezar a entrenar',
     saveError: 'No se pudieron guardar tus elecciones. Revisa la conexión e inténtalo de nuevo.',
   },
+  widget: {
+    start: 'Empezar {{name}}',
+    setsThisWeek: 'series esta semana',
+    streak: 'semanas seguidas',
+    createRoutine: 'Crea una rutina',
+    signIn: 'Inicia sesión',
+    openApp: 'Abre TrainingHub',
+  },
 };

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Pressable,
@@ -165,9 +165,22 @@ export function RoutinesListScreen() {
         return;
       }
       // Offline: the workout screen reports it, as from any other Start.
-      startRoutine(routine);
+      startRoutine(routines.find((item) => item.id === routine.id) ?? routine);
     }
   };
+
+  // "Start <routine>" on the home-screen widget opens Routines with
+  // ?start=<id> (spec 0036 FR-9, FR-10): the routine is re-read, a deleted
+  // one is never started (EF-6), and 0019's question applies when another
+  // workout is in progress. The widget's routine is used even when stale (EF-7).
+  const { start: startParam } = useLocalSearchParams<{ start?: string }>();
+  useEffect(() => {
+    if (!startParam) {
+      return;
+    }
+    router.setParams({ start: undefined });
+    void startToday({ id: startParam, name: '' } as Routine);
+  }, [startParam]);
 
   const startLabel = (routine: Routine) =>
     activeWorkout?.routineId === routine.id

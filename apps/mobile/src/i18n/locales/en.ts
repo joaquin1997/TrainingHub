@@ -607,6 +607,14 @@ export const en = {
     start: 'Start training',
     saveError: 'Your choices could not be saved. Check the connection and try again.',
   },
+  widget: {
+    start: 'Start {{name}}',
+    setsThisWeek: 'sets this week',
+    streak: 'week streak',
+    createRoutine: 'Create a routine',
+    signIn: 'Sign in',
+    openApp: 'Open TrainingHub',
+  },
 };
 
 export type TranslationCatalog = typeof en;

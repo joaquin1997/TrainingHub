@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, View } from 'react-native';
 
 import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
+import { useHomeWidgetSync } from '@/features/homeWidget/useHomeWidgetSync';
 import { FirstRunContext, useFirstRunGate } from '@/features/onboarding/useFirstRunGate';
 import { SettingsProvider } from '@/features/settings/SettingsContext';
 import { useLiveWorkoutController } from '@/features/workouts/liveActivity/useLiveWorkoutController';
@@ -48,6 +49,11 @@ function RootNavigator() {
   useLiveWorkoutController(isAuthenticated && !isRestoringWorkout);
   // The rest timer keeps counting and alerting on every screen (spec 0018).
   useRestTimerRunner(isAuthenticated && !isRestoringWorkout);
+  // The home-screen widget follows the account and the workout (spec 0036).
+  useHomeWidgetSync({
+    userId: isAuthenticated ? (user?.id ?? null) : null,
+    ready: !isLoading && !isRestoringWorkout,
+  });
   const segments = useSegments();
   const router = useRouter();
   const { t } = useTranslation();
