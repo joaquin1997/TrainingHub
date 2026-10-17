@@ -20,7 +20,7 @@ mobile → docs. The migration is additive; no native rebuild.
 | 4 | [x] Pure sweep: `parseCorrections`, `planSweep` (rows, totals, used-first order, person skips, EF-7 flags, missing ids), `toCsv`, `planUndo`; tests | api | unit tests (AC-1, AC-3, AC-5, AC-9, EF-1, EF-2, EF-7) | `feat(exercises): plan a tracking type sweep` |
 | 5 | [x] Script `sweep-tracking-types.ts` (report / apply / undo), corrections JSON, npm scripts | api | typecheck; run on local PGlite with hand-inserted rows (`SWEEP_WITHOUT_TRANSLATIONS=true`) | `feat(exercises): tracking type sweep with report, apply and undo` |
 | 6 | [x] Records use only the values of the exercise's current type | api | aggregate tests (AC-6, FR-17) | `feat(progress): records follow the exercise's current tracking type` |
-| 7 | [ ] Mobile: `setTrackingType` client, `TrackingTypeControl` on the exercise detail, confirm sheet when the exercise has sessions, rollback; i18n | mobile | typecheck; **[DEVICE]** FR-12, FR-14 | `feat(exercises): change the tracking type from the exercise detail` |
+| 7 | [x] Mobile: `setTrackingType` client, `TrackingTypeControl` on the exercise detail, confirm sheet when the exercise has sessions, rollback; i18n | mobile | typecheck; **[DEVICE]** FR-12, FR-14 | `feat(exercises): change the tracking type from the exercise detail` |
 | 8 | [ ] Progress log, definition of done | docs | — | `docs(sdd): record 0030 implementation` |
 | 9 | [ ] (owner) Deploy the API (migration), run the report, review, correct, apply, re-apply (0 changed) — commands below | ops | — | — |
 | 10 | [ ] [DEVICE] Exercise detail: change a catalog type (Mountain climbers → time), the confirm sheet on an exercise with workouts, a custom exercise of someone else shows no control; a plank row after the sweep shows no previous value (AC-5, AC-6, FR-14) | mobile | device | — |
@@ -116,6 +116,18 @@ it before the sweep (harmless; the sweep re-decides those 44).
   record, no session record, volume unchanged); every earlier progress test
   unchanged and green. "Last time" needed no change: the set row prints only
   the current type's fields and `–` when none was logged (FR-17).
+- 2026-10-17 — Task 7. `TrackingTypeControl` (the five chips of the create
+  form) in a card on the exercise detail, shown to whoever may change the
+  exercise (catalog: anyone signed in; custom: its creator). With recent
+  sessions on screen, an `ActionSheet` explains first that past workouts keep
+  what was logged and "last time"/records use the new type (FR-14); the change
+  is optimistic with rollback and an error line, like the unilateral switch.
+  End-to-end against the built API on the same PGlite (two registered users):
+  no token 401, `weight_distance` 400, catalog "Plancha lateral" → reps by
+  any user 200 with `trackingTypeSetBy = person`, someone else's custom
+  exercise 403, its creator 200, unknown id 404; the next sweep apply listed
+  "Plancha lateral" as skipped, set by a person (AC-5). Not checked: the
+  screen itself (no web preview this time) — [DEVICE] task 10.
 
 ## Definition of done
 

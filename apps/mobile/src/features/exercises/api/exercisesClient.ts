@@ -2,6 +2,7 @@ import type {
   CreateExerciseInput,
   Exercise,
   MuscleGroup,
+  SetExerciseTrackingTypeInput,
   SetExerciseUnilateralInput,
   SetProfilePhotoInput,
 } from '@workout/domain';
@@ -34,6 +35,13 @@ export const exercisesClient = {
   /** Marks the exercise as done one side at a time, or not (spec 0022). */
   setUnilateral(exerciseId: string, input: SetExerciseUnilateralInput) {
     return apiRequest<Exercise>(`/exercises/${exerciseId}/unilateral`, {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    });
+  },
+  /** Changes what the exercise's sets record (spec 0030 FR-12). */
+  setTrackingType(exerciseId: string, input: SetExerciseTrackingTypeInput) {
+    return apiRequest<Exercise>(`/exercises/${exerciseId}/tracking-type`, {
       method: 'PUT',
       body: JSON.stringify(input),
     });
