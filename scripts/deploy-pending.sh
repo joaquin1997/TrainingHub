@@ -38,6 +38,8 @@
 #                                 e.g. to renew the 7-day profile
 #   IOS_DEVICE_ID=<udid>          iPhone to build for (default: the paired iPhone)
 #   WATCH_APP=1                   prebuild with TRAININGHUB_WATCH_APP=1 (0025 Level 2)
+#   HOME_WIDGET=0                 prebuild without the widget's App Group (0036; on by
+#                                 default since the free team signs it)
 #   SKIP_BACKEND=1                skip the image rebuild
 #
 # Everything is logged to tmp/deploy-pending-<timestamp>.log.
@@ -253,6 +255,7 @@ if is_done "$PREBUILD_STEP"; then
 else
   # --clean: @bacons/apple-targets 5.0.0 crashes updating an existing target.
   step "iOS: expo prebuild --clean"
+  export TRAININGHUB_HOME_WIDGET="${HOME_WIDGET:-1}"
   if [ "${WATCH_APP:-0}" = "1" ]; then
     TRAININGHUB_WATCH_APP=1 npx expo prebuild --platform ios --clean
   else
