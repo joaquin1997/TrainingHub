@@ -319,6 +319,11 @@ export const en = {
     // Time and distance sets (spec 0021).
     colTime: 'TIME',
     colDistance: 'DIST',
+    // Left and right of a unilateral exercise (spec 0022); also in "10 L / 8 R".
+    colLeft: 'L',
+    colRight: 'R',
+    repsLeft: 'Left reps',
+    repsRight: 'Right reps',
     startSetTimer: 'Start set timer',
     stopSetTimer: 'Stop set timer',
     addSet: 'Add set',

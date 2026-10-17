@@ -145,6 +145,28 @@ describe('replaceExerciseInWorkout', () => {
     ).toBeUndefined();
   });
 
+  it('takes whether the new exercise is unilateral, with empty sides (spec 0022)', () => {
+    const squat = draft([
+      exercise('s', 1, [set(1, { repsLeft: '10', repsRightPlaceholder: '8' })], {
+        isUnilateral: true,
+      }),
+    ]);
+
+    const toRow = replaceExerciseInWorkout(
+      squat,
+      's',
+      { id: 'row', name: 'One-arm row', isUnilateral: true },
+      'drop',
+    ).exercises[0]!;
+    expect(toRow.isUnilateral).toBe(true);
+    expect(toRow.entries[0]!.repsLeft).toBeUndefined();
+    expect(toRow.entries[0]!.repsRightPlaceholder).toBeUndefined();
+
+    expect(
+      replaceExerciseInWorkout(squat, 's', hackSquat, 'drop').exercises[0]!.isUnilateral,
+    ).toBeUndefined();
+  });
+
   it("'drop' discards the done sets and mirrors every set", () => {
     const started = draft([
       exercise('b', 1, [set(1, { done: true, reps: '10' }), set(2), set(3)]),

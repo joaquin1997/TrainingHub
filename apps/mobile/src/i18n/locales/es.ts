@@ -322,6 +322,11 @@ export const es: TranslationCatalog = {
     // Series de tiempo y distancia (spec 0021).
     colTime: 'TIEMPO',
     colDistance: 'DIST',
+    // Izquierda y derecha de un ejercicio unilateral (spec 0022); también en "10 I / 8 D".
+    colLeft: 'I',
+    colRight: 'D',
+    repsLeft: 'Repeticiones izquierda',
+    repsRight: 'Repeticiones derecha',
     startSetTimer: 'Iniciar cronómetro de la serie',
     stopSetTimer: 'Parar cronómetro de la serie',
     addSet: 'Añadir serie',

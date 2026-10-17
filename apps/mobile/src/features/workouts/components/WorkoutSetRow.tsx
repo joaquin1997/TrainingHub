@@ -13,6 +13,7 @@ import type {
 import { useSetTimer } from '@/features/workouts/hooks/useSetTimer';
 import {
   effectiveSetValue,
+  sideRepsPlaceholder,
   type SetDraftField,
   type WorkoutSetDraft,
 } from '@/features/workouts/state/workoutDraftStore';
@@ -25,6 +26,22 @@ import {
 } from '@/lib/tracking';
 import { fromKg, roundWeight } from '@/lib/weight';
 import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+
+/**
+ * A column of the row: a tracked field, or one side of the reps of a
+ * unilateral exercise (spec 0022), side by side in the same row.
+ */
+type SetColumn = SetValueField | 'repsLeft' | 'repsRight';
+
+function rowColumns(
+  trackingType: ExerciseTrackingType | undefined,
+  unilateral: boolean | undefined,
+): readonly SetColumn[] {
+  const fields = trackingFields(trackingType);
+  return unilateral
+    ? fields.flatMap((field): SetColumn[] => (field === 'reps' ? ['repsLeft', 'repsRight'] : [field]))
+    : fields;
+}
 
 /** Draft field that holds each tracked value. */
 const DRAFT_FIELD: Record<SetValueField, SetDraftField> = {
@@ -68,6 +85,10 @@ export function previousSetLabel(
       case 'weight':
         return last.weightKg != null ? String(roundWeight(fromKg(last.weightKg, unit))) : null;
       case 'reps':
+        // Both sides of a unilateral set, e.g. "10/8" (spec 0022).
+        if (last.repsLeft != null || last.repsRight != null) {
+          return `${last.repsLeft ?? '–'}/${last.repsRight ?? '–'}`;
+        }
         return last.reps != null ? String(last.reps) : null;
       case 'duration':
         return last.durationSeconds != null ? formatDuration(last.durationSeconds) : null;
@@ -89,12 +110,16 @@ export function previousSetLabel(
  * Two fields plus the timer do not fit the usual columns on a phone: the
  * previous column narrows, the time column widens and the figures shrink.
  */
-function isCompact(fields: readonly SetValueField[]) {
-  return fields.length > 1 && fields.includes('duration');
+function isCompact(fields: readonly SetColumn[]) {
+  return (fields.length > 1 && fields.includes('duration')) || fields.length > 2;
 }
 
-function columnLabel(field: SetValueField, unit: WeightUnit, t: TFunction) {
+function columnLabel(field: SetColumn, unit: WeightUnit, t: TFunction) {
   switch (field) {
+    case 'repsLeft':
+      return t('workouts.colLeft');
+    case 'repsRight':
+      return t('workouts.colRight');
     case 'weight':
       return unit.toUpperCase();
     case 'reps':
@@ -106,12 +131,17 @@ function columnLabel(field: SetValueField, unit: WeightUnit, t: TFunction) {
   }
 }
 
-type HeaderProps = { trackingType?: ExerciseTrackingType; unit: WeightUnit };
+type HeaderProps = {
+  trackingType?: ExerciseTrackingType;
+  /** Reps split into left and right columns (spec 0022). */
+  unilateral?: boolean;
+  unit: WeightUnit;
+};
 
 /** Column labels above an exercise's sets, for its tracking type (spec 0021 FR-3). */
-export function WorkoutSetHeader({ trackingType, unit }: HeaderProps) {
+export function WorkoutSetHeader({ trackingType, unilateral, unit }: HeaderProps) {
   const { t } = useTranslation();
-  const fields = trackingFields(trackingType);
+  const fields = rowColumns(trackingType, unilateral);
   const compact = isCompact(fields);
 
   return (
@@ -147,6 +177,8 @@ export function WorkoutSetHeader({ trackingType, unit }: HeaderProps) {
 type RowProps = {
   set: WorkoutSetDraft;
   trackingType?: ExerciseTrackingType;
+  /** Reps logged as left and right side by side (spec 0022 FR-2). */
+  unilateral?: boolean;
   unit: WeightUnit;
   previousLabel: string;
   onChange: (field: SetDraftField, value: string) => void;
@@ -163,6 +195,7 @@ type RowProps = {
 export function WorkoutSetRow({
   set,
   trackingType,
+  unilateral,
   unit,
   previousLabel,
   onChange,
@@ -173,7 +206,7 @@ export function WorkoutSetRow({
   const { t } = useTranslation();
   const timer = useSetTimer((seconds) => onChange('duration', formatDuration(seconds)));
   const typed = set.type === 'warmup' || set.type === 'drop';
-  const fields = trackingFields(trackingType);
+  const fields = rowColumns(trackingType, unilateral);
   const compact = isCompact(fields);
 
   const startOrStopTimer = () => {
@@ -194,7 +227,7 @@ export function WorkoutSetRow({
     }
   };
 
-  const renderInput = (field: SetValueField) => {
+  const renderInput = (field: SetColumn) => {
     const inputStyle = [
       styles.cellInput,
       compact ? styles.cellInputCompact : null,
@@ -227,6 +260,22 @@ export function WorkoutSetRow({
             style={inputStyle}
           />
         );
+      case 'repsLeft':
+      case 'repsRight': {
+        const side = field === 'repsLeft' ? 'left' : 'right';
+        return (
+          <TextInput
+            key={field}
+            keyboardType="number-pad"
+            accessibilityLabel={t(side === 'left' ? 'workouts.repsLeft' : 'workouts.repsRight')}
+            value={set[field] ?? ''}
+            placeholder={sideRepsPlaceholder(set, side) ?? '–'}
+            placeholderTextColor={colors.textSubtle}
+            onChangeText={(value) => onChange(field, value)}
+            style={inputStyle}
+          />
+        );
+      }
       case 'distance':
         return (
           <TextInput
