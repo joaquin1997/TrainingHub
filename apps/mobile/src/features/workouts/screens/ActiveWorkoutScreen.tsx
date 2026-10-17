@@ -23,7 +23,14 @@ import {
   WorkoutSetRow,
 } from '@/features/workouts/components/WorkoutSetRow';
 import { useExerciseReplacement } from '@/features/workouts/hooks/useExerciseReplacement';
+import {
+  addApproachSets,
+  canAddApproachSets,
+  type ApproachSetsOutcome,
+} from '@/features/workouts/state/approachSetsDraft';
 import { RestBar } from '@/features/workouts/components/RestBar';
+import { WarmUpChecklist } from '@/features/workouts/components/WarmUpChecklist';
+import { toggleWarmUpItem } from '@/features/workouts/state/warmUpDraft';
 import { RestEditorSheet } from '@/features/workouts/components/RestEditorSheet';
 import { nextSetToDo } from '@/features/workouts/restTimer/nextSetToDo';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -115,6 +122,11 @@ export function ActiveWorkoutScreen() {
   const replacement = useExerciseReplacement(workoutDraft);
   // The exercise whose rest is being changed (spec 0018 FR-2).
   const [restEditorFor, setRestEditorFor] = useState<string | null>(null);
+  // Why approach sets could not be added to an exercise (spec 0024 EF-1).
+  const [approachNotice, setApproachNotice] = useState<{
+    workoutExerciseId: string;
+    outcome: Exclude<ApproachSetsOutcome, 'added'>;
+  } | null>(null);
   const [lastByExercise, setLastByExercise] = useState<
     Record<string, ExerciseLastPerformance | null>
   >({});
@@ -466,6 +478,14 @@ export function ActiveWorkoutScreen() {
     applyDraft(addSetToWorkoutExercise(workoutDraft, workoutExerciseId));
   };
 
+  const handleAddApproachSets = (workoutExerciseId: string) => {
+    const { draft, outcome } = addApproachSets(workoutDraft, workoutExerciseId);
+    setApproachNotice(outcome === 'added' ? null : { workoutExerciseId, outcome });
+    if (outcome === 'added') {
+      applyDraft(draft);
+    }
+  };
+
   const handleAddExercise = (exercise: Exercise) => {
     if (!workoutDraft) {
       return;
@@ -680,6 +700,17 @@ export function ActiveWorkoutScreen() {
               onPress={() => handleAddSet(exercise.id)}
               style={styles.compactButton}
             />
+            {canAddApproachSets(exercise) ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('workouts.addApproachSets')}
+                onPress={() => handleAddApproachSets(exercise.id)}
+                hitSlop={6}
+                style={styles.iconButton}
+              >
+                <Ionicons name="flame-outline" size={18} color={colors.textMuted} />
+              </Pressable>
+            ) : null}
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t('workouts.replaceExercise')}
@@ -697,6 +728,13 @@ export function ActiveWorkoutScreen() {
               style={styles.compactButton}
             />
           </View>
+          {approachNotice?.workoutExerciseId === exercise.id ? (
+            <Text style={styles.meta}>
+              {approachNotice.outcome === 'noWeight'
+                ? t('workouts.approachNoWeight')
+                : t('workouts.approachTooLight')}
+            </Text>
+          ) : null}
         </View>
       </View>
     );
@@ -763,6 +801,11 @@ export function ActiveWorkoutScreen() {
             </View>
             <Text style={styles.hint}>{t('workouts.autosaveHint')}</Text>
           </View>
+          {/* The warm-up block first; ticking is not a set (spec 0024 FR-6). */}
+          <WarmUpChecklist
+            items={(workoutDraft.warmUp ?? []).map((item) => ({ ...item, key: item.id }))}
+            onToggle={(itemId) => applyDraft(toggleWarmUpItem(workoutDraft, itemId))}
+          />
           {blocks.map((members) => {
             const first = blockLabels[members[0] ?? 0];
             const key = workoutDraft.exercises[members[0] ?? 0]?.id ?? String(members[0]);

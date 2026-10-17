@@ -22,6 +22,16 @@ import {
   type EditableRoutineSet,
 } from '@/features/routines/components/RoutineSetTable';
 import { routinesClient } from '@/features/routines/api/routinesClient';
+import { WarmUpBlockEditor } from '@/features/routines/components/WarmUpBlockEditor';
+import {
+  toEditableWarmUpItems,
+  toWarmUpItemsInput,
+  type EditableWarmUpItem,
+} from '@/features/routines/utils/warmUpItems';
+import {
+  addRoutineApproachSets,
+  type RoutineApproachSetsOutcome,
+} from '@/features/routines/utils/routineApproachSets';
 import { replaceRoutineRowExercise } from '@/features/routines/utils/replaceRoutineExercise';
 import {
   effectiveRoutineSetValue,
@@ -113,6 +123,7 @@ function toEditableSet(
       routineSet.targetDistanceMeters !== undefined
         ? String(routineSet.targetDistanceMeters)
         : '',
+    isWarmup: routineSet.isWarmup || undefined,
   };
 }
 
@@ -197,6 +208,8 @@ export function RoutineFormScreen({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [folder, setFolder] = useState('');
+  // The routine's warm-up block (spec 0024).
+  const [warmUpItems, setWarmUpItems] = useState<EditableWarmUpItem[]>([]);
   const [exercises, setExercises] = useState<EditableRoutineExercise[]>([
     createEmptyExerciseRow(),
   ]);
@@ -213,6 +226,11 @@ export function RoutineFormScreen({
     useState<ActiveCustomExerciseDraft | null>(null);
   // The row whose exercise is being replaced through the picker (spec 0020).
   const [replaceRowId, setReplaceRowId] = useState<string | null>(null);
+  // Why approach sets could not be added to a row (spec 0024 EF-1).
+  const [approachNotice, setApproachNotice] = useState<{
+    exerciseRowId: string;
+    outcome: Exclude<RoutineApproachSetsOutcome, 'added'>;
+  } | null>(null);
   const activeWorkout = useActiveWorkout();
 
   useEffect(() => {
@@ -271,6 +289,9 @@ export function RoutineFormScreen({
           setName(nextRoutine.name);
           setDescription(nextRoutine.description ?? '');
           setFolder(nextRoutine.folder ?? '');
+          setWarmUpItems(
+            toEditableWarmUpItems(nextRoutine.warmUpItems, () => createRowId('warm-up-row')),
+          );
           setExercises(
             nextRoutine.exercises.length > 0
               ? nextRoutine.exercises
@@ -446,6 +467,27 @@ export function RoutineFormScreen({
     );
   }
 
+  function addApproachSetRows(exerciseId: string) {
+    const exercise = exercises.find((item) => item.id === exerciseId);
+    if (!exercise) {
+      return;
+    }
+
+    const result = addRoutineApproachSets(exercise.sets, unit, () =>
+      createRowId('routine-set-row'),
+    );
+    setApproachNotice(
+      result.outcome === 'added' ? null : { exerciseRowId: exerciseId, outcome: result.outcome },
+    );
+    if (result.outcome === 'added') {
+      setExercises((currentExercises) =>
+        currentExercises.map((item) =>
+          item.id === exerciseId ? { ...item, sets: result.sets } : item,
+        ),
+      );
+    }
+  }
+
   function removeSetRow(exerciseId: string, setId: string) {
     setExercises((currentExercises) =>
       currentExercises.map((exercise) => {
@@ -469,6 +511,12 @@ export function RoutineFormScreen({
 
     if (!trimmedName) {
       setErrorMessage(t('routineForm.nameRequired'));
+      return;
+    }
+
+    const warmUpInput = toWarmUpItemsInput(warmUpItems);
+    if (warmUpInput === null) {
+      setErrorMessage(t('warmUp.invalidTarget'));
       return;
     }
 
@@ -542,6 +590,7 @@ export function RoutineFormScreen({
                 : undefined,
             targetDurationSeconds,
             targetDistanceMeters,
+            isWarmup: exercise.sets[setIndex]?.isWarmup || undefined,
           });
         }
 
@@ -564,6 +613,7 @@ export function RoutineFormScreen({
           name: trimmedName,
           description: trimmedDescription || undefined,
           folder: folder.trim() || undefined,
+          warmUpItems: warmUpInput,
           exercises: routineExercises,
         });
 
@@ -582,6 +632,7 @@ export function RoutineFormScreen({
         name: trimmedName,
         description: trimmedDescription || undefined,
         folder: folder.trim() || undefined,
+        warmUpItems: warmUpInput,
         exercises: routineExercises,
       });
 
@@ -685,6 +736,12 @@ export function RoutineFormScreen({
             </View>
           </View>
         </View>
+
+        <WarmUpBlockEditor
+          items={warmUpItems}
+          onChange={setWarmUpItems}
+          createId={() => createRowId('warm-up-row')}
+        />
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t('routineForm.routineExercises')}</Text>
@@ -844,6 +901,19 @@ export function RoutineFormScreen({
                   onPress={() => addSetRow(exercise.id)}
                   style={styles.compactButton}
                 />
+                {exercise.exerciseId &&
+                tracksField(exercise.trackingType, 'weight') &&
+                tracksField(exercise.trackingType, 'reps') ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t('workouts.addApproachSets')}
+                    onPress={() => addApproachSetRows(exercise.id)}
+                    hitSlop={6}
+                    style={styles.iconButton}
+                  >
+                    <Ionicons name="flame-outline" size={18} color={colors.textMuted} />
+                  </Pressable>
+                ) : null}
                 {exercise.exerciseId ? (
                   <Pressable
                     accessibilityRole="button"
@@ -863,6 +933,13 @@ export function RoutineFormScreen({
                   style={styles.compactButton}
                 />
               </View>
+              {approachNotice?.exerciseRowId === exercise.id ? (
+                <Text style={styles.meta}>
+                  {approachNotice.outcome === 'noWeight'
+                    ? t('workouts.approachNoWeight')
+                    : t('workouts.approachTooLight')}
+                </Text>
+              ) : null}
             </View>
           );
         })}
@@ -1067,6 +1144,8 @@ const styles = StyleSheet.create({
   },
   cardActions: {
     flexDirection: 'row',
+    // Four actions may not fit a narrow phone (spec 0024 adds approach sets).
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
     alignItems: 'center',
   },

@@ -121,9 +121,30 @@ export interface Routine {
   description?: string;
   /** Optional folder/grouping label for organizing routines. */
   folder?: string;
+  /** Mobility, cardio or activation items done first (spec 0024). Absent from older servers. */
+  warmUpItems?: RoutineWarmUpItem[];
   exercises: RoutineExercise[];
   createdAt: ISODateString;
   updatedAt: ISODateString;
+}
+
+/**
+ * One item of a routine's warm-up block (spec 0024): ticked off in the
+ * workout, never logged as lifting. Time or reps is an optional target.
+ */
+export interface RoutineWarmUpItem {
+  /** 1-based position in the block. */
+  order: number;
+  name: string;
+  targetDurationSeconds?: number;
+  targetReps?: number;
+}
+
+/** Write contract for one warm-up block item of a routine. */
+export interface RoutineWarmUpItemInput {
+  name: string;
+  targetDurationSeconds?: number;
+  targetReps?: number;
 }
 
 /**
@@ -162,6 +183,8 @@ export interface RoutineExerciseSet {
   targetDurationSeconds?: number;
   /** Target distance in metres (spec 0021). */
   targetDistanceMeters?: number;
+  /** A warm-up (approach) set in the plan (spec 0024); absent = working set. */
+  isWarmup?: boolean;
   createdAt: ISODateString;
   updatedAt: ISODateString;
 }
@@ -177,6 +200,8 @@ export interface RoutineSetInput {
   targetWeight?: number;
   targetDurationSeconds?: number;
   targetDistanceMeters?: number;
+  /** A warm-up (approach) set (spec 0024). */
+  isWarmup?: boolean;
 }
 
 /**
@@ -198,6 +223,11 @@ export interface CreateRoutineInput {
   name: string;
   description?: string;
   folder?: string;
+  /**
+   * The warm-up block, in order (spec 0024). On update, absent keeps the
+   * stored block and `[]` clears it.
+   */
+  warmUpItems?: RoutineWarmUpItemInput[];
   exercises: RoutineExerciseInput[];
 }
 
@@ -219,9 +249,31 @@ export interface WorkoutSession {
   /** Whole seconds the workout was paused; active duration = elapsed − this (spec 0011). */
   pausedSeconds?: number;
   notes?: string;
+  /** The warm-up block as performed, each item ticked or not (spec 0024). */
+  warmUpItems?: WorkoutWarmUpItem[];
   exercises: WorkoutExercise[];
   createdAt: ISODateString;
   updatedAt: ISODateString;
+}
+
+/**
+ * One warm-up block item of a performed workout (spec 0024), copied from the
+ * routine when the workout started, so routine edits never change it.
+ */
+export interface WorkoutWarmUpItem {
+  order: number;
+  name: string;
+  targetDurationSeconds?: number;
+  targetReps?: number;
+  done: boolean;
+}
+
+/** Write contract for one warm-up block item of a saved workout. */
+export interface WorkoutWarmUpItemInput {
+  name: string;
+  targetDurationSeconds?: number;
+  targetReps?: number;
+  done: boolean;
 }
 
 /**
@@ -321,6 +373,8 @@ export interface CreateWorkoutSessionInput {
   /** Whole seconds paused, ≤ completedAt − startedAt (spec 0011). Absent from older clients. */
   pausedSeconds?: number;
   notes?: string;
+  /** The warm-up block with what was ticked (spec 0024). Absent from older clients. */
+  warmUpItems?: WorkoutWarmUpItemInput[];
   exercises: WorkoutExerciseInput[];
 }
 

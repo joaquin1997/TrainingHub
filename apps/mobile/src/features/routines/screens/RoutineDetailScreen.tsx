@@ -8,8 +8,10 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { exerciseBlockLabels } from '@/features/routines/utils/exerciseBlockLabels';
 import { buildRoutineCopyInput } from '@/features/routines/utils/duplicateRoutine';
+import { routineSetLabel } from '@/features/routines/utils/routineApproachSets';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
+import { WarmUpChecklist } from '@/features/workouts/components/WarmUpChecklist';
 import { useRoutineStart } from '@/features/workouts/hooks/useRoutineStart';
 import { confirmAction } from '@/lib/confirmAction';
 import { formatDuration } from '@/lib/format';
@@ -246,9 +248,11 @@ export function RoutineDetailScreen() {
                 {t('routineDetail.colTarget')}
               </Text>
             </View>
-            {sets.map((set) => (
+            {sets.map((set, setIndex) => (
               <View key={set.id} style={styles.setRow}>
-                <Text style={styles.setNumber}>{set.setNumber}</Text>
+                <Text style={styles.setNumber}>
+                  {routineSetLabel(sets, setIndex, t('workouts.setType.warmup'))}
+                </Text>
                 <Text style={styles.setTarget}>
                   {set.targetWeight !== undefined && tracksField(exercise.trackingType, 'weight') ? (
                     <>
@@ -298,6 +302,9 @@ export function RoutineDetailScreen() {
         </View>
       ) : null}
       {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+      <WarmUpChecklist
+        items={(routine.warmUpItems ?? []).map((item) => ({ ...item, key: String(item.order) }))}
+      />
       {exercises.length === 0 ? (
         <StateView kind="empty" icon="barbell-outline" message={t('routineDetail.noExercises')} />
       ) : (

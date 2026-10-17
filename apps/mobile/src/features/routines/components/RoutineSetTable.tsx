@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import type { ExerciseTrackingType, WeightUnit } from '@workout/domain';
 
+import { routineSetLabel } from '@/features/routines/utils/routineApproachSets';
 import {
   setFieldPlaceholder,
   type NumericSetField,
@@ -22,6 +23,8 @@ export type EditableRoutineSet = {
   targetDuration: string;
   /** Metres (spec 0021). */
   targetDistance: string;
+  /** A warm-up (approach) set (spec 0024). */
+  isWarmup?: boolean;
 };
 
 /** The editor columns of each tracked field: reps has a min and a max. */
@@ -93,7 +96,9 @@ export function RoutineSetTable({ sets, trackingType, unit, onChange, onRemove }
       </View>
       {sets.map((set, setIndex) => (
         <View key={set.id} style={styles.row}>
-          <Text style={[styles.colSet, styles.setNumber]}>{setIndex + 1}</Text>
+          <Text style={[styles.colSet, styles.setNumber]}>
+            {routineSetLabel(sets, setIndex, t('workouts.setType.warmup'))}
+          </Text>
           {columns.map((field) => (
             <TextInput
               key={field}

@@ -9,6 +9,7 @@ import { progressClient } from '@/features/progress/api/progressClient';
 import { RecordsCard } from '@/features/progress/components/RecordsCard';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
+import { WarmUpChecklist } from '@/features/workouts/components/WarmUpChecklist';
 import { isPerformedSet } from '@/features/workouts/utils/performedSet';
 import { formatWorkoutShareText, shareRecords } from '@/features/workouts/utils/shareText';
 import { shareWorkoutText } from '@/features/workouts/utils/shareWorkout';
@@ -264,6 +265,11 @@ export function WorkoutSessionDetailScreen() {
             }),
           )
         }
+      />
+
+      {/* What the warm-up block ticked (spec 0024 FR-7). */}
+      <WarmUpChecklist
+        items={(session.warmUpItems ?? []).map((item) => ({ ...item, key: String(item.order) }))}
       />
 
       <Text style={styles.sectionLabel}>{t('workouts.exercisesDone')}</Text>

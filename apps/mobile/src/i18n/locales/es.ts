@@ -129,6 +129,21 @@ export const es: TranslationCatalog = {
     notAvailableEdit: 'La rutina no está disponible para editar.',
     saveError: 'No se ha podido guardar la rutina.',
   },
+  // Bloque de calentamiento (spec 0024).
+  warmUp: {
+    title: 'Calentamiento',
+    hint: 'Movilidad, cardio o activación, para marcar antes de levantar.',
+    addItem: 'Añadir ejercicio de calentamiento',
+    itemPlaceholder: 'p. ej. Bici, aperturas con banda',
+    targetTime: 'Tiempo',
+    targetReps: 'Reps',
+    timePlaceholder: '5:00',
+    repsPlaceholder: '15',
+    removeItem: 'Quitar del calentamiento',
+    invalidTarget: 'El objetivo del calentamiento debe ser un tiempo (m:ss) o un número entero de repeticiones.',
+    done: 'Hecho',
+    notDone: 'Sin hacer',
+  },
   customExercise: {
     title: 'Crear ejercicio personalizado',
     namePlaceholder: 'Nombre del ejercicio',
@@ -283,6 +298,10 @@ export const es: TranslationCatalog = {
     setsDoneShort: 'Series hechas',
     setsCountOf: '{{done}} / {{total}}',
     autosaveHint: 'Se guarda sola · retómala cuando quieras',
+    // Series de aproximación (spec 0024).
+    addApproachSets: 'Añadir series de calentamiento',
+    approachNoWeight: 'Escribe primero el peso de trabajo: el calentamiento se calcula a partir de él.',
+    approachTooLight: 'El peso de trabajo está demasiado cerca de la barra vacía para calentar.',
     share: {
       action: 'Compartir',
       duration: 'Duración',

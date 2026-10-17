@@ -13,6 +13,8 @@ import { formatDuration } from '@/lib/format';
 import { parseDistanceInput, parseDurationInput, tracksField } from '@/lib/tracking';
 import { kgToInputString, roundWeight, toKg } from '@/lib/weight';
 
+import { buildWarmUpDraft, toWarmUpItemsInput } from './warmUpDraft';
+
 export const WORKOUT_SET_TYPES: WorkoutSetType[] = [
   'normal',
   'warmup',
@@ -137,7 +139,18 @@ export type WorkoutSessionDraft = {
   pausedSeconds?: number;
   /** The rest counting down now; absent when none runs (spec 0018). */
   rest?: RunningRest;
+  /** The warm-up block's checklist; absent when the routine has none (spec 0024). */
+  warmUp?: WarmUpItemDraft[];
   exercises: WorkoutExerciseDraft[];
+};
+
+/** One warm-up block item in the workout: ticked, never a set (spec 0024). */
+export type WarmUpItemDraft = {
+  id: string;
+  name: string;
+  targetDurationSeconds?: number;
+  targetReps?: number;
+  done: boolean;
 };
 
 /**
@@ -168,7 +181,7 @@ let draftIdCounter = 0;
  */
 const draftIdSeed = Date.now().toString(36);
 
-function nextDraftId(prefix: string) {
+export function nextDraftId(prefix: string) {
   draftIdCounter += 1;
   return `${prefix}-gen-${draftIdSeed}-${draftIdCounter}`;
 }
@@ -228,7 +241,8 @@ function buildExerciseDrafts(
               ? String(set.targetDistanceMeters)
               : undefined,
           done: false,
-          type: 'normal',
+          // A routine warm-up set (spec 0024) is a warm-up in the workout.
+          type: set.isWarmup ? 'warmup' : 'normal',
           minReps: set.minReps,
           maxReps: set.maxReps,
           targetWeight: set.targetWeight,
@@ -255,6 +269,7 @@ export function buildWorkoutSessionDraft(
     routineName: routine.name,
     startedAt: new Date().toISOString(),
     unit,
+    warmUp: buildWarmUpDraft(routine),
     exercises: buildExerciseDrafts(routine, unit),
   };
 }
@@ -822,6 +837,7 @@ export function toCreateWorkoutSessionInput(
     completedAt,
     pausedSeconds,
     notes: workoutDraft.notes?.trim() ? workoutDraft.notes.trim() : undefined,
+    warmUpItems: toWarmUpItemsInput(workoutDraft),
     exercises: workoutDraft.exercises.map((exercise) => ({
       exerciseId: exercise.exerciseId,
       routineExerciseId: exercise.routineExerciseId,

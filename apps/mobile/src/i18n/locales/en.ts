@@ -126,6 +126,21 @@ export const en = {
     notAvailableEdit: 'Routine not available for editing.',
     saveError: 'Unable to save routine.',
   },
+  // Warm-up block (spec 0024).
+  warmUp: {
+    title: 'Warm-up',
+    hint: 'Mobility, cardio or activation, ticked off before you lift.',
+    addItem: 'Add warm-up item',
+    itemPlaceholder: 'e.g. Bike, band pull-aparts',
+    targetTime: 'Time',
+    targetReps: 'Reps',
+    timePlaceholder: '5:00',
+    repsPlaceholder: '15',
+    removeItem: 'Remove warm-up item',
+    invalidTarget: 'Warm-up targets must be a time (m:ss) or a whole number of reps.',
+    done: 'Done',
+    notDone: 'Not done',
+  },
   customExercise: {
     title: 'Create Custom Exercise',
     namePlaceholder: 'Exercise name',
@@ -280,6 +295,10 @@ export const en = {
     setsDoneShort: 'Sets done',
     setsCountOf: '{{done}} / {{total}}',
     autosaveHint: 'Saved as you go · pick it up any time',
+    // Approach sets (spec 0024).
+    addApproachSets: 'Add warm-up sets',
+    approachNoWeight: 'Enter the working weight first: warm-up sets are worked out from it.',
+    approachTooLight: 'The working weight is too close to the empty bar for warm-up sets.',
     share: {
       action: 'Share',
       duration: 'Duration',
