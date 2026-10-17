@@ -24,6 +24,7 @@ import { Chip } from '@/ui/Chip';
 import { confirmAction } from '@/lib/confirmAction';
 import { useRefresh } from '@/lib/useRefresh';
 import { colors, commonStyles, spacing } from '@/ui/theme';
+import { SkeletonCardList } from '@/ui/Skeleton';
 import { ScreenTitle } from '@/ui/ScreenTitle';
 import { StateView } from '@/ui/StateView';
 import type { Routine } from '@workout/domain';
@@ -143,9 +144,8 @@ export function RoutinesListScreen() {
           onPress: () => router.push('/routines/create'),
         }}
       />
-      {showLoading ? (
-        <StateView kind="loading" message={t('routines.loadingRoutines')} />
-      ) : null}
+      {/* First load only: the shape of the cards to come (spec 0034 FR-15). */}
+      {showLoading && !errorMessage ? <SkeletonCardList withButton /> : null}
       {errorMessage ? (
         <StateView
           kind="error"

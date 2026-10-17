@@ -28,6 +28,7 @@ import { Chip } from '@/ui/Chip';
 import { ScreenTitle } from '@/ui/ScreenTitle';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { SkeletonProgress } from '@/ui/Skeleton';
 import type {
   ExerciseProgressSummary,
   MuscleGroupVolumePoint,
@@ -117,17 +118,23 @@ export function ProgressOverviewScreen() {
       }
     >
       <ScreenTitle title={t('nav.progress')} />
-      <FrequencySummary summary={frequency} />
-      {weeklyVolumeSeries.bars.length > 0 ? (
-        <ProgressChart
-          title={t('progress.weeklyVolume')}
-          unit={unit}
-          series={weeklyVolumeSeries}
-          formatLabel={formatAxisDate}
-        />
-      ) : null}
-      <MuscleDistribution points={muscleVolume} unit={unit} />
-      {showLoading ? <StateView kind="loading" message={t('progress.loading')} /> : null}
+      {/* First load only: tiles, chart and cards to come (spec 0034 FR-15). */}
+      {showLoading && !errorMessage ? (
+        <SkeletonProgress />
+      ) : (
+        <>
+          <FrequencySummary summary={frequency} />
+          {weeklyVolumeSeries.bars.length > 0 ? (
+            <ProgressChart
+              title={t('progress.weeklyVolume')}
+              unit={unit}
+              series={weeklyVolumeSeries}
+              formatLabel={formatAxisDate}
+            />
+          ) : null}
+          <MuscleDistribution points={muscleVolume} unit={unit} />
+        </>
+      )}
       {errorMessage ? (
         <StateView
           kind="error"
@@ -139,9 +146,11 @@ export function ProgressOverviewScreen() {
       {hasEmptyState ? (
         <StateView
           kind="empty"
-          icon="trending-up-outline"
+          icon="stats-chart-outline"
           title={t('progress.emptyTitle')}
           message={t('progress.emptySubtitle')}
+          actionLabel={t('progress.emptyAction')}
+          onAction={() => router.push('/routines')}
         />
       ) : null}
       {hasListState ? (

@@ -29,6 +29,7 @@ import { Chip } from '@/ui/Chip';
 import { ScreenTitle } from '@/ui/ScreenTitle';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { SkeletonCardList } from '@/ui/Skeleton';
 import type { WorkoutSession } from '@workout/domain';
 
 export function WorkoutHistoryScreen() {
@@ -101,9 +102,8 @@ export function WorkoutHistoryScreen() {
       }
     >
       <ScreenTitle title={t('nav.history')} />
-      {showLoading ? (
-        <StateView kind="loading" message={t('workouts.loadingWorkouts')} />
-      ) : null}
+      {/* First load only: the shape of the cards to come (spec 0034 FR-15). */}
+      {showLoading && !errorMessage ? <SkeletonCardList /> : null}
       {errorMessage ? (
         <StateView
           kind="error"
@@ -118,6 +118,8 @@ export function WorkoutHistoryScreen() {
           icon="time-outline"
           title={t('workouts.emptyTitle')}
           message={t('workouts.emptySubtitle')}
+          actionLabel={t('workouts.emptyAction')}
+          onAction={() => router.push('/routines')}
         />
       ) : null}
       {hasListState ? (

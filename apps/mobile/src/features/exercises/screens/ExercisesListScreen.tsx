@@ -25,6 +25,7 @@ import { Chip } from '@/ui/Chip';
 import { ScreenTitle } from '@/ui/ScreenTitle';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, fonts, spacing, typeScale } from '@/ui/theme';
+import { SkeletonRowList } from '@/ui/Skeleton';
 import { ListRow } from '@/ui/ListRow';
 import type { Exercise } from '@workout/domain';
 
@@ -154,6 +155,15 @@ export function ExercisesListScreen() {
     setQuery(created.name);
   };
 
+  const hasFilters =
+    favoritesOnly || query.trim() !== '' || category !== undefined || equipment !== undefined;
+  const clearFilters = () => {
+    setFavoritesOnly(false);
+    setQuery('');
+    setCategory(undefined);
+    setEquipment(undefined);
+  };
+
   const visible = filtered.slice(0, visibleCount);
   const hiddenCount = filtered.length - visible.length;
   const { isRefreshing, onRefresh } = useRefresh(loadExercises);
@@ -192,6 +202,7 @@ export function ExercisesListScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          style={styles.chipScroller}
           contentContainerStyle={styles.chipRow}
         >
           <Chip
@@ -213,6 +224,7 @@ export function ExercisesListScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
+            style={styles.chipScroller}
             contentContainerStyle={styles.chipRow}
           >
             <View style={styles.facetLabel}>
@@ -230,7 +242,8 @@ export function ExercisesListScreen() {
             ))}
           </ScrollView>
         ) : null}
-        {showLoading ? <StateView kind="loading" message={t('exercises.loading')} /> : null}
+        {/* First load only: the shape of the rows to come (spec 0034 FR-15). */}
+        {showLoading && !errorMessage ? <SkeletonRowList /> : null}
         {errorMessage ? (
           <StateView
             kind="error"
@@ -255,6 +268,9 @@ export function ExercisesListScreen() {
                 ? t('exercises.emptyFavoritesSubtitle')
                 : t('exercises.emptyMatchesSubtitle')
             }
+            // Back to the whole catalog (spec 0034 FR-14).
+            actionLabel={hasFilters ? t('exercises.clearFilters') : undefined}
+            onAction={hasFilters ? clearFilters : undefined}
           />
         ) : null}
         <View style={styles.list}>
@@ -334,6 +350,10 @@ const styles = StyleSheet.create({
     minHeight: 46,
     color: colors.text,
     ...typeScale.body,
+  },
+  // A short list must not stretch the chip rows (react-native-web grows scroll views).
+  chipScroller: {
+    flexGrow: 0,
   },
   chipRow: {
     alignItems: 'center',
