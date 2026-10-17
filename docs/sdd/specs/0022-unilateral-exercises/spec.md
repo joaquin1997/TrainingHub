@@ -1,7 +1,7 @@
 ---
 id: 0022
 title: Unilateral exercises (left / right)
-status: ready
+status: in-progress
 decided: 2026-10-16
 roadmap: docs/roadmap/01-live-workout-logging.md
 created: 2026-10-16
