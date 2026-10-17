@@ -5,12 +5,13 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
 import { ExerciseImage } from '@/features/exercises/components/ExerciseImage';
+import { UnilateralSwitch } from '@/features/exercises/components/UnilateralSwitch';
 import { useAuth } from '@/features/auth/AuthContext';
 import { pickProfilePhoto } from '@/features/profile/photo/pickProfilePhoto';
 import { progressClient } from '@/features/progress/api/progressClient';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { formatDate } from '@/lib/format';
-import { formatSetValues } from '@/lib/tracking';
+import { formatSetValues, tracksField } from '@/lib/tracking';
 import { formatWeightValue } from '@/lib/weight';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
@@ -36,6 +37,8 @@ export function ExerciseDetailScreen() {
   const { user } = useAuth();
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoError, setPhotoError] = useState<string>();
+  const [unilateralBusy, setUnilateralBusy] = useState(false);
+  const [unilateralError, setUnilateralError] = useState<string>();
   const unit = settings.unit;
 
   const loadExercise = useCallback(
@@ -131,6 +134,25 @@ export function ExerciseDetailScreen() {
     }
   }
 
+  /** Marks the exercise as done one side at a time, or not (spec 0022 FR-1). */
+  async function handleUnilateralChange(isUnilateral: boolean) {
+    if (!exercise) {
+      return;
+    }
+    const previous = exercise;
+    try {
+      setUnilateralError(undefined);
+      setUnilateralBusy(true);
+      setExercise({ ...exercise, isUnilateral });
+      setExercise(await exercisesClient.setUnilateral(exercise.id, { isUnilateral }));
+    } catch {
+      setExercise(previous);
+      setUnilateralError(t('customExercise.unilateralError'));
+    } finally {
+      setUnilateralBusy(false);
+    }
+  }
+
   if (isLoading) {
     return (
       <View style={styles.screen}>
@@ -181,6 +203,17 @@ export function ExerciseDetailScreen() {
           />
           {photoError ? <Text style={styles.meta}>{photoError}</Text> : null}
         </>
+      ) : null}
+      {tracksField(exercise.trackingType, 'reps') &&
+      (exercise.isSystemDefined || exercise.createdByUserId === user?.id) ? (
+        <View style={styles.card}>
+          <UnilateralSwitch
+            value={exercise.isUnilateral ?? false}
+            onChange={(value) => void handleUnilateralChange(value)}
+            disabled={unilateralBusy}
+          />
+          {unilateralError ? <Text style={styles.meta}>{unilateralError}</Text> : null}
+        </View>
       ) : null}
       <View style={styles.card}>
         {chipGroups.map((group) => (

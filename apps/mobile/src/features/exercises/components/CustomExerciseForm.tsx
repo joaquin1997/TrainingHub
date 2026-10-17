@@ -13,7 +13,8 @@ import type { Exercise, ExerciseTrackingType, MuscleGroup } from '@workout/domai
 
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
 import { ExercisePhotoField } from '@/features/exercises/components/ExercisePhotoField';
-import { TRACKING_TYPES } from '@/lib/tracking';
+import { UnilateralSwitch } from '@/features/exercises/components/UnilateralSwitch';
+import { TRACKING_TYPES, tracksField } from '@/lib/tracking';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StateView } from '@/ui/StateView';
@@ -46,6 +47,7 @@ export function CustomExerciseForm({
   const [secondaryMuscleGroupIds, setSecondaryMuscleGroupIds] = useState<string[]>([]);
   const [photoBase64, setPhotoBase64] = useState<string>();
   const [trackingType, setTrackingType] = useState<ExerciseTrackingType>('weight_reps');
+  const [isUnilateral, setIsUnilateral] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>();
   const [isLoadingMuscleGroups, setIsLoadingMuscleGroups] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -127,6 +129,8 @@ export function CustomExerciseForm({
         primaryMuscleGroupIds,
         secondaryMuscleGroupIds,
         trackingType,
+        // Only rep-based types log per side (spec 0022).
+        isUnilateral: isUnilateral && tracksField(trackingType, 'reps'),
       });
       let result = createdExercise;
       if (photoBase64) {
@@ -200,6 +204,9 @@ export function CustomExerciseForm({
           ))}
         </View>
       </View>
+      {tracksField(trackingType, 'reps') ? (
+        <UnilateralSwitch value={isUnilateral} onChange={setIsUnilateral} disabled={isSubmitting} />
+      ) : null}
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>{t('customExercise.primaryTitle')}</Text>
         <Text style={styles.sectionHint}>{t('customExercise.selectOneOrMore')}</Text>

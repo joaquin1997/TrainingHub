@@ -152,6 +152,10 @@ export const en = {
       weight_duration: 'Weight & time',
       distance_duration: 'Distance & time',
     },
+    // Unilateral exercise (spec 0022).
+    unilateralTitle: 'Left and right',
+    unilateralHint: 'Done one side at a time: each set records left and right reps.',
+    unilateralError: 'The exercise could not be changed.',
   },
   settings: {
     language: 'Language',

@@ -147,6 +147,10 @@ export const es: TranslationCatalog = {
       weight_duration: 'Peso y tiempo',
       distance_duration: 'Distancia y tiempo',
     },
+    // Ejercicio unilateral (spec 0022).
+    unilateralTitle: 'Izquierda y derecha',
+    unilateralHint: 'Se hace un lado cada vez: cada serie registra las repeticiones de cada lado.',
+    unilateralError: 'No se ha podido cambiar el ejercicio.',
     loadError: 'No se han podido cargar los grupos musculares.',
     validation: 'El nombre y al menos un grupo muscular primario son obligatorios.',
     createError: 'No se ha podido crear el ejercicio.',
