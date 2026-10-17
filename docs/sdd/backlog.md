@@ -29,6 +29,11 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0026](specs/0026-exercise-images/spec.md) | Exercise images | `in-progress` — code complete (2026-10-17); awaiting the migration `add_exercise_photo`, redeploy, the image-matching script on the server (dry run, review, apply; AC-1 depends on the owner's top 50), a device rebuild and the photo-library check | 6 — Exercises |
 | [0027](specs/0027-personal-profile/spec.md) | Personal profile and body measurements | `in-progress` — code complete (2026-10-16/17); awaiting the migration `add_profile_and_body_measurements` and redeploy (before the new app build), a device rebuild (image picker and manipulator) and the photo check (AC-5) | 3 — Auth & users |
 | [0028](specs/0028-share-workout/spec.md) | Share a workout | `in-progress` — code complete (2026-10-16; records in the text since 0023, 2026-10-17); awaiting the device check of the share sheet to Notes (no rebuild) | 7 — Social |
+| [0029](specs/0029-superset-flow/spec.md) | Superset flow: rounds and rest per round | `ready` — from the owner's device test 2026-10-17: joining exercises today only changes the look; rest starts after every set | 5 — Routines (advanced) |
+| [0030](specs/0030-tracking-type-sweep/spec.md) | Tracking type sweep of the catalog | `ready` — from the device test 2026-10-17: most timed/distance/bodyweight exercises are still weight & reps; report first, then apply; adds a type control on the exercise detail | 6 — Exercises |
+| [0031](specs/0031-warm-up-preview-and-undo/spec.md) | Warm-up button: preview, mark and undo | `ready` — amends 0024 after the device test 2026-10-17; also fixes "last time" matching shifted by warm-ups | 1 — Live workout logging |
+| [0032](specs/0032-live-records/spec.md) | Records shown live while logging | `ready` — from the device test 2026-10-17: badge on a done set that beats the starting records; stored only on save | 4 — Progress |
+| [0033](specs/0033-delete-custom-exercises/spec.md) | Delete my custom exercises | `ready` — later priority (owner, 2026-10-17); hides rather than blocks; open: wait for 0015 if others use the server | 6 — Exercises |
 
 Execution order agreed 2026-09-24: 0013 → 0014 → 0010 → 0011 → 0012 →
 visual redesign (to be specified; "functional first, then pretty") → 0001 →
