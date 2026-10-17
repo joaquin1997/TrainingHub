@@ -17,6 +17,8 @@ model User {
   unit        String    @default("kg")
   defaultRestSeconds Int @default(90)
   language    String?
+  /// Theme preference (spec 0038): 'light' | 'dark'; null means follow the device.
+  appearance  String?
   bio         String?
   heightCm    Float?
   photo       Bytes?

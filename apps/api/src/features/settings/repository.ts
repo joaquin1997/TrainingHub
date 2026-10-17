@@ -1,6 +1,7 @@
 import { prisma } from '../../infrastructure/prisma.js';
 import type {
   AppLanguage,
+  Appearance,
   UpdateUserSettingsInput,
   UserSettings,
   WeightUnit,
@@ -14,18 +15,31 @@ function toLanguage(value: string | null): AppLanguage | null {
   return value === 'en' || value === 'es' ? value : null;
 }
 
+/** Stored as 'light' | 'dark', null for "follow the device" (spec 0038). */
+export function toAppearance(value: string | null): Appearance {
+  return value === 'light' || value === 'dark' ? value : 'system';
+}
+
+export function fromAppearance(value: Appearance | undefined): string | null | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  return value === 'system' ? null : value;
+}
+
 export async function getUserSettings(
   userPublicId: string,
 ): Promise<UserSettings> {
   const user = await prisma.user.findUnique({
     where: { publicId: userPublicId },
-    select: { unit: true, defaultRestSeconds: true, language: true },
+    select: { unit: true, defaultRestSeconds: true, language: true, appearance: true },
   });
 
   return {
     unit: toUnit(user?.unit ?? 'kg'),
     defaultRestSeconds: user?.defaultRestSeconds ?? 90,
     language: toLanguage(user?.language ?? null),
+    appearance: toAppearance(user?.appearance ?? null),
   };
 }
 
@@ -39,13 +53,15 @@ export async function updateUserSettings(
       unit: input.unit,
       defaultRestSeconds: input.defaultRestSeconds,
       language: input.language,
+      appearance: fromAppearance(input.appearance),
     },
-    select: { unit: true, defaultRestSeconds: true, language: true },
+    select: { unit: true, defaultRestSeconds: true, language: true, appearance: true },
   });
 
   return {
     unit: toUnit(user.unit),
     defaultRestSeconds: user.defaultRestSeconds,
     language: toLanguage(user.language),
+    appearance: toAppearance(user.appearance),
   };
 }
