@@ -1,5 +1,7 @@
 import type { WeeklyVolumePoint } from '@workout/domain';
 
+import { startOfWeek } from '@/lib/week';
+
 export interface TrainingFrequencySummary {
   /** Total workouts across the recorded weeks. */
   totalWorkouts: number;
@@ -7,7 +9,10 @@ export interface TrainingFrequencySummary {
   activeWeeks: number;
   /** Most workouts done in a single week. */
   bestWeek: number;
-  /** Trailing run of calendar-consecutive weeks ending at the most recent one. */
+  /**
+   * The week streak (spec 0035): consecutive weeks ending this week, or last
+   * week while this week has none; 0 when the latest run ended before that.
+   */
   currentStreak: number;
 }
 
@@ -19,13 +24,23 @@ function weeksApart(earlier: string, later: string): number {
   return Math.round((b - a) / MS_PER_WEEK);
 }
 
+/** `YYYY-MM-DD` of a local date. */
+function isoDay(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
 /**
  * Summarizes training frequency from the weekly-volume points (oldest-first,
- * only weeks that had workouts). The streak counts how many calendar-consecutive
- * weeks lead up to the most recent recorded week.
+ * only weeks that had workouts). The streak counts the calendar-consecutive
+ * weeks leading up to the most recent recorded week, provided that week is
+ * this week or last week (spec 0035 FR-4); screens with the saved workouts
+ * at hand use `weekStreak` from `lib/week` instead, which agrees.
  */
 export function summarizeTrainingFrequency(
   points: WeeklyVolumePoint[],
+  now: Date = new Date(),
 ): TrainingFrequencySummary {
   if (points.length === 0) {
     return { totalWorkouts: 0, activeWeeks: 0, bestWeek: 0, currentStreak: 0 };
@@ -41,6 +56,13 @@ export function summarizeTrainingFrequency(
     } else {
       break;
     }
+  }
+
+  // An old run is not current: the latest week must be this one or the last.
+  const latest = points[points.length - 1]!.weekStart;
+  const thisWeek = isoDay(startOfWeek(now));
+  if (weeksApart(latest, thisWeek) > 1) {
+    currentStreak = 0;
   }
 
   return {

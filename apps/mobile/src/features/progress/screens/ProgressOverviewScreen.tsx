@@ -12,17 +12,22 @@ import {
 } from 'react-native';
 
 import { FrequencySummary } from '@/features/progress/components/FrequencySummary';
+import { LatestRecordCard } from '@/features/progress/components/LatestRecordCard';
+import { WeekSummaryCard } from '@/features/progress/components/WeekSummaryCard';
 import { MuscleDistribution } from '@/features/progress/components/MuscleDistribution';
 import { ProgressChart } from '@/features/progress/components/ProgressChart';
 import { progressClient } from '@/features/progress/api/progressClient';
 import { buildWeeklyVolumeSeries } from '@/features/progress/utils/chartData';
 import { summarizeTrainingFrequency } from '@/features/progress/utils/trainingFrequency';
+import { latestRecord, weekVolumeComparison } from '@/features/progress/utils/weekComparison';
+import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { formatShortDate } from '@/lib/format';
 import { TimedProgressFigures } from '@/features/progress/components/TimedProgress';
 import { isTimedOrDistance } from '@/lib/tracking';
 import { formatWeightValue, fromKg, roundWeight } from '@/lib/weight';
 import { useRefresh } from '@/lib/useRefresh';
+import { weekStreak } from '@/lib/week';
 import { CardHeader } from '@/ui/CardHeader';
 import { Chip } from '@/ui/Chip';
 import { ScreenTitle } from '@/ui/ScreenTitle';
@@ -32,7 +37,9 @@ import { SkeletonProgress } from '@/ui/Skeleton';
 import type {
   ExerciseProgressSummary,
   MuscleGroupVolumePoint,
+  SessionRecords,
   WeeklyVolumePoint,
+  WorkoutSession,
 } from '@workout/domain';
 
 function formatValue(value?: number) {
@@ -45,6 +52,10 @@ export function ProgressOverviewScreen() {
   const [progress, setProgress] = useState<ExerciseProgressSummary[]>([]);
   const [weeklyVolume, setWeeklyVolume] = useState<WeeklyVolumePoint[]>([]);
   const [muscleVolume, setMuscleVolume] = useState<MuscleGroupVolumePoint[]>([]);
+  // The week summary and latest record (spec 0035 FR-11); null when they could
+  // not be loaded, which hides them (EF-3).
+  const [sessions, setSessions] = useState<WorkoutSession[] | null>(null);
+  const [sessionRecords, setSessionRecords] = useState<SessionRecords[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
   const { settings } = useSettings();
@@ -56,17 +67,21 @@ export function ProgressOverviewScreen() {
       setErrorMessage(undefined);
 
       try {
-        const [nextProgress, nextWeeklyVolume, nextMuscleVolume] =
+        const [nextProgress, nextWeeklyVolume, nextMuscleVolume, nextSessions, nextRecords] =
           await Promise.all([
             progressClient.list(),
             progressClient.weeklyVolume(),
             progressClient.muscleDistribution(),
+            workoutsClient.list().catch(() => null),
+            progressClient.sessionRecords().catch(() => null),
           ]);
 
         if (shouldUpdate()) {
           setProgress(nextProgress);
           setWeeklyVolume(nextWeeklyVolume);
           setMuscleVolume(nextMuscleVolume);
+          setSessions(nextSessions);
+          setSessionRecords(nextRecords);
         }
       } catch (error) {
         if (shouldUpdate()) {
@@ -102,7 +117,20 @@ export function ProgressOverviewScreen() {
       totalVolume: roundWeight(fromKg(point.totalVolume, unit)),
     })),
   );
-  const frequency = summarizeTrainingFrequency(weeklyVolume);
+  const now = new Date();
+  const summary = summarizeTrainingFrequency(weeklyVolume, now);
+  // The same week streak as the Routines chip (spec 0035 FR-4), in local weeks.
+  const frequency = sessions
+    ? {
+        ...summary,
+        currentStreak: weekStreak(
+          sessions.map((session) => new Date(session.startedAt)),
+          now,
+        ),
+      }
+    : summary;
+  const comparison = sessions && sessions.length > 0 ? weekVolumeComparison(sessions, now) : null;
+  const record = sessionRecords ? latestRecord(sessionRecords) : null;
   const showLoading = isLoading && progress.length === 0;
   const hasEmptyState = !isLoading && !errorMessage && progress.length === 0;
   const hasListState = !errorMessage && progress.length > 0;
@@ -123,6 +151,14 @@ export function ProgressOverviewScreen() {
         <SkeletonProgress />
       ) : (
         <>
+          {comparison ? <WeekSummaryCard comparison={comparison} unit={unit} /> : null}
+          {record ? (
+            <LatestRecordCard
+              record={record}
+              unit={unit}
+              onPress={() => router.push(`/progress/exercises/${record.exerciseId}`)}
+            />
+          ) : null}
           <FrequencySummary summary={frequency} />
           {weeklyVolumeSeries.points.length > 0 ? (
             <ProgressChart
