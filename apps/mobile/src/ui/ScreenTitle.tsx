@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { BrandMark } from '@/ui/BrandMark';
 import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
 
 interface ScreenTitleProps {
@@ -16,16 +17,20 @@ interface ScreenTitleProps {
 
 /**
  * Large title at the top of a tab's root screen, which hides the native header
- * (spec 0017 FR-11). Rendered as the first child of the screen's scroll view.
+ * (spec 0017 FR-11), led by the small brand mark at the same place on every
+ * tab (spec 0035 FR-13). Rendered as the first child of the screen's scroll view.
  */
 export function ScreenTitle({ title, action }: ScreenTitleProps) {
   const insets = useSafeAreaInsets();
 
   return (
     <View style={[styles.row, { paddingTop: insets.top + spacing.sm }]}>
-      <Text accessibilityRole="header" style={styles.title}>
-        {title}
-      </Text>
+      <View style={styles.titleGroup}>
+        <BrandMark size={28} />
+        <Text accessibilityRole="header" style={styles.title}>
+          {title}
+        </Text>
+      </View>
       {action ? (
         <Pressable
           accessibilityRole="button"
@@ -50,6 +55,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
+  },
+  titleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flexShrink: 1,
   },
   title: {
     ...commonStyles.title,

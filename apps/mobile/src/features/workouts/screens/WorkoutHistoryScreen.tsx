@@ -115,7 +115,7 @@ export function WorkoutHistoryScreen() {
       {hasEmptyState ? (
         <StateView
           kind="empty"
-          icon="time-outline"
+          icon="brand"
           title={t('workouts.emptyTitle')}
           message={t('workouts.emptySubtitle')}
           actionLabel={t('workouts.emptyAction')}

@@ -157,7 +157,7 @@ export function RoutinesListScreen() {
       {hasEmptyState ? (
         <StateView
           kind="empty"
-          icon="clipboard-outline"
+          icon="brand"
           title={t('routines.emptyTitle')}
           message={t('routines.emptySubtitle')}
           actionLabel={t('routines.createRoutine')}

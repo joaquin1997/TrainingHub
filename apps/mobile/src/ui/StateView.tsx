@@ -9,8 +9,8 @@ interface StateViewProps {
   kind: 'loading' | 'empty' | 'error';
   title?: string;
   message?: string;
-  /** Empty states: the icon above the title. */
-  icon?: keyof typeof Ionicons.glyphMap;
+  /** Empty states: the icon above the title, or `brand` for the brand mark. */
+  icon?: keyof typeof Ionicons.glyphMap | 'brand';
   /** The single action the screen already offers here (retry, create). */
   actionLabel?: string;
   onAction?: () => void;
