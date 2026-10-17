@@ -20,7 +20,7 @@ older apps (fewer rows, 404 instead of 403 on paths they cannot reach).
 | 3 | [x] Exercises API scoped to the person: list, detail, same-name dedupe (catalog first), favourites (add, list), photo read; photo writes and unilateral answer 404 for someone else's custom exercise; route tests incl. "no existence leak" | api | route tests (AC-1, 2, 7, 8, 9) | `feat(exercises): custom exercises visible only to their creator` |
 | 4 | [x] `findUsableExercises`; routines create/update and workout save accept catalog, own and held exercises only; route tests | api | route tests (AC-5, AC-6, EF-1, EF-2) | `feat(exercises): routines and workouts keep held exercises only` |
 | 5 | [x] Mobile EF-4: `isExerciseGone`; picker checks a custom exercise before choosing (notice + reload); routine form message + catalog reload on unknown exercises; i18n en/es | mobile | unit test; typecheck | `feat(exercises): handle exercises that are no longer available` |
-| 6 | [ ] Local end-to-end check on PGlite (two users, curl through AC-1…AC-9); progress log; definition of done | docs | log | `docs(sdd): record 0015 implementation` |
+| 6 | [x] Local end-to-end check on PGlite (two users, curl through AC-1…AC-9); progress log; definition of done | docs | log | `docs(sdd): record 0015 implementation` |
 | 7 | [ ] [DEVICE] Ben's app: held exercise in a routine and its workout show the neutral tile and the name; not in pickers; a stale picker shows the notice | mobile | device | — |
 | 8 | [ ] (owner: deploy) Redeploy the API (no migration) | ops | `/health`; Ana/Ben check of AC-1 on the server | — |
 
@@ -78,12 +78,29 @@ device pass (task 7), the redeploy (task 8).
   reloads its search list. Held exercises needed no app change: the active
   workout's thumbnail already falls back to the neutral tile when the detail
   is 404, and the routine form edits a row from the routine's own id and name.
+- 2026-10-17 — Task 6: end-to-end on a fresh in-memory PGlite (all 20
+  migrations applied with `migrate deploy`), the built API on a local port,
+  and a node script with `fetch` + `psql` (kept in the session scratchpad,
+  not committed). Seeded one muscle group and a catalog "Sentadilla";
+  registered Ana and Ben; Ana created "Hip thrust (máquina gym)" with a photo
+  and "Remo Hammer". "Before this ships" was simulated in SQL: Ben's routine
+  slot and one saved workout pointed at Ana's exercise, plus a favourite of
+  it. 32 checks, all passing: AC-1 (lists for Ana, Ben, anonymous), AC-2
+  (detail, photo read/write/delete, favourite, unilateral as Ben: status,
+  body and content type identical to an id that never existed), AC-3, AC-4,
+  AC-5 (routine shows it by name, saves when edited, a workout with it saves
+  = EF-1, history names it with its sets, progress and last time 200, absent
+  from his list, photo 404 → tile), AC-6 / EF-2 (routine and workout with
+  Ana's not-held "Remo Hammer" → 400, same body as an unknown id), AC-7,
+  AC-8, FR-15 (catalog unilateral still allowed), EF-3 (creator set to null →
+  visible to nobody). Remaining: device pass (task 7) and redeploy (task 8).
 
 ## Definition of done
 
-- [ ] Every functional requirement and acceptance criterion in `spec.md` is met
-      or explicitly deferred with a TODO
-- [ ] `pnpm -r typecheck` and `pnpm -r test` green
+- [x] Every functional requirement and acceptance criterion in `spec.md` is met
+      or explicitly deferred with a TODO (EF-4 and the held-exercise display
+      await the device pass, task 7)
+- [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [ ] Relevant `docs/roadmap/NN-*.md` checklist and progress log updated
       (left to the owner's merge: this branch does not touch `docs/roadmap/`)
 - [ ] `spec.md` status set to `done`; `../backlog.md` updated (after the
