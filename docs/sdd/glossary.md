@@ -24,10 +24,12 @@ production.
 | **Active duration** | A workout's elapsed time minus its paused time. What every screen shows as a workout's duration (spec 0011). | Elapsed time (end − start) |
 | **Workout identity** | An id the device gives a workout when it starts, unique per user. Saving the same identity again returns the workout saved first instead of creating a duplicate (spec 0014). | The server's own session id |
 | **Optional provenance** | A saved `WorkoutSession`'s link to the `Routine` / `RoutineExercise` it came from. Kept only when it points at the user's own existing records; the workout is saved without it otherwise (spec 0014). | A required reference |
-| **Superset** | A group of `RoutineExercise` entries performed back to back. | — |
+| **Superset** | A group of adjacent `RoutineExercise` entries performed in rounds, with one rest per round (spec 0029). Three exercises: tri-set; four or more: giant set. | — |
+| **Round** | In a superset, set *n* of every exercise in it that has one; warm-up sets are outside rounds. The rest starts when a round is complete (spec 0029). | A set |
 | **Rest timer** | The countdown after a set is marked done. Belongs to the active workout, so it survives leaving the screen and restarting the app, and alerts when it ends (spec 0018). | Pause, which stops the workout clock |
 | **Workout bar** | The strip shown on every screen while a workout is in progress, leading back to it (spec 0019). | — |
 | **Tracking type** | What an exercise's sets record: weight & reps, reps only, time, weight & time, or distance & time (spec 0021). | Set type (warm-up, drop, failure) |
+| **Tracking type sweep** | A reviewed, repeatable classification of the catalog into tracking types. Changes only catalog exercises whose type the system set; a type set by a person (at creation or by hand) is never overridden (spec 0030). | Changing one exercise's type by hand |
 | **Warm-up block** | A checklist of non-lifting warm-up items (mobility, cardio, activation) at the start of a routine; ticked in the workout, never counted as sets, volume or records (spec 0024). | Warm-up set |
 | **Deleted exercise** | A custom exercise its creator has deleted. Gone from the catalog and every picker, but kept, with its name, for the saved workouts and routines that already contain it (spec 0033). | An exercise removed outright, which history could no longer name |
 | **Unilateral exercise** | An exercise done one side at a time, logged per side (spec 0022). | — |
