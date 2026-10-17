@@ -4,12 +4,44 @@ type ErrorResponse = {
   message?: string;
 };
 
+/** A non-2xx answer from the API, with its status (network failures stay plain errors). */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    /** The parsed JSON error body, for callers that need more than the message. */
+    readonly body?: unknown,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+/**
+ * Whether retrying cannot help: the server understood the request and refused
+ * it (4xx), other than for the session (401), a timeout (408) or rate limiting
+ * (429). Network failures and 5xx are worth retrying.
+ */
+export function isPermanentRejection(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    error.status >= 400 &&
+    error.status < 500 &&
+    ![401, 408, 429].includes(error.status)
+  );
+}
+
 let authToken: string | null = null;
 let onUnauthorized: (() => void) | null = null;
 
 /** Set (or clear) the bearer token sent with every request. */
 export function setAuthToken(token: string | null) {
   authToken = token;
+}
+
+/** The bearer token currently sent with requests (for image loads that bypass fetch). */
+export function getAuthToken() {
+  return authToken;
 }
 
 /** Register a callback fired when the API returns 401 (e.g. to sign out). */
@@ -19,7 +51,7 @@ export function setOnUnauthorized(handler: (() => void) | null) {
 
 /**
  * Shared fetch wrapper for the API clients: sets JSON content-type on writes,
- * handles 204 responses, and throws Error(message) on non-2xx responses.
+ * handles 204 responses, and throws ApiError(message, status) on non-2xx responses.
  */
 export async function apiRequest<T>(
   path: string,
@@ -83,7 +115,7 @@ export async function apiRequest<T>(
         ? responseBody.message
         : `Request failed with status ${response.status}`;
 
-    throw new Error(message);
+    throw new ApiError(message, response.status, responseBody);
   }
 
   return responseBody as T;

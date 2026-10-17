@@ -1,16 +1,23 @@
-import { Link, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ProgressChart } from '@/features/progress/components/ProgressChart';
+import { RecordsCard } from '@/features/progress/components/RecordsCard';
+import { TimedProgressDetail } from '@/features/progress/components/TimedProgress';
 import { progressClient } from '@/features/progress/api/progressClient';
 import { buildProgressSeries } from '@/features/progress/utils/chartData';
 import { extractPersonalRecords } from '@/features/progress/utils/personalRecords';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { formatDate, formatShortDate } from '@/lib/format';
+import { isTimedOrDistance } from '@/lib/tracking';
 import { formatWeightValue, fromKg, roundWeight } from '@/lib/weight';
-import { colors, commonStyles, spacing } from '@/ui/theme';
+import { Chip } from '@/ui/Chip';
+import { StatTile } from '@/ui/StatTile';
+import { StateView } from '@/ui/StateView';
+import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
 import type { ExerciseProgressDetail, WeightUnit } from '@workout/domain';
 
 function formatValue(value?: number) {
@@ -23,7 +30,8 @@ function toDisplay(kg: number, unit: WeightUnit) {
 }
 
 export function ExerciseProgressDetailScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const router = useRouter();
   const { exerciseId } = useLocalSearchParams<{ exerciseId?: string }>();
   const [progress, setProgress] = useState<ExerciseProgressDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -82,23 +90,29 @@ export function ExerciseProgressDetailScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.meta}>{t('progress.loading')}</Text>
+      <View style={styles.screen}>
+        <StateView kind="loading" message={t('progress.loading')} />
       </View>
     );
   }
 
   if (!progress) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.body}>
-          {errorMessage ?? t('progress.notAvailable')}
-        </Text>
-        <Link href="/progress" style={styles.link}>
-          {t('progress.backToProgress')}
-        </Link>
+      <View style={styles.screen}>
+        <StateView
+          kind="empty"
+          icon="trending-up-outline"
+          message={errorMessage ?? t('progress.notAvailable')}
+          actionLabel={t('progress.backToProgress')}
+          onAction={() => router.replace('/progress')}
+        />
       </View>
     );
+  }
+
+  // Timed and distance exercises read in time or distance (spec 0021).
+  if (isTimedOrDistance(progress.trackingType)) {
+    return <TimedProgressDetail progress={progress} unit={unit} />;
   }
 
   // Convert the kg-scaled metrics into the user's display unit up front so the
@@ -125,90 +139,112 @@ export function ExerciseProgressDetailScreen() {
   );
   const volumeSeries = buildProgressSeries(displayPoints, 'totalVolume');
   const personalRecords = extractPersonalRecords(progress.points);
+  // Current best of each record type (spec 0023); absent from older servers.
+  const records = progress.records ?? [];
+  const heaviest = records.find((record) => record.type === 'heaviestWeight');
+
+  const formatAxisDate = (date: string) => formatShortDate(date, i18n.language);
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
-      <Text style={styles.body}>{progress.exerciseName}</Text>
-      <Text style={styles.meta}>
-        {t('progress.latest', {
-          weight: formatWeightValue(progress.latestWeightKg, unit),
-          unit,
-          reps: formatValue(progress.latestReps),
-        })}
-      </Text>
-      <Text style={styles.meta}>
-        {t('progress.personalBest', {
-          weight: formatWeightValue(progress.personalBestWeightKg, unit),
-          unit,
-          reps: formatValue(progress.personalBestReps),
-        })}
-      </Text>
-      <Text style={styles.meta}>
-        {t('progress.est1rm', {
-          weight: formatWeightValue(progress.bestEstimatedOneRepMax, unit),
-          unit,
-          count: progress.sessionCount,
-        })}
-        {progress.isRecordSession ? t('progress.recentPr') : ''}
-      </Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>{progress.exerciseName}</Text>
+        <View style={styles.headerMeta}>
+          <Text style={styles.meta}>{t('progress.sessionsCount', { count: progress.sessionCount })}</Text>
+          {progress.isRecordSession ? (
+            <Chip icon="trophy" tone="record" size="sm" label={t('progress.recentPrLabel')} />
+          ) : null}
+        </View>
+      </View>
+      <View style={styles.tiles}>
+        <StatTile
+          label={t('progress.latestLabel')}
+          value={formatWeightValue(progress.latestWeightKg, unit)}
+          unit={unit}
+          caption={t('progress.repsCaption', { reps: formatValue(progress.latestReps) })}
+        />
+        <StatTile
+          label={t('progress.bestLabel')}
+          value={formatWeightValue(progress.personalBestWeightKg, unit)}
+          unit={unit}
+          caption={t('progress.repsCaption', {
+            reps: formatValue(heaviest ? heaviest.reps : progress.personalBestReps),
+          })}
+          tone="record"
+        />
+      </View>
+      <View style={styles.tiles}>
+        <StatTile
+          icon="flash-outline"
+          label={t('progress.estimated1rm')}
+          value={formatWeightValue(progress.bestEstimatedOneRepMax, unit)}
+          unit={unit}
+        />
+      </View>
       {oneRepMaxSeries.bars.length > 0 ? (
         <ProgressChart
           title={t('progress.estimated1rm')}
           unit={unit}
           series={oneRepMaxSeries}
-          formatLabel={formatShortDate}
+          formatLabel={formatAxisDate}
         />
       ) : volumeSeries.bars.length > 0 ? (
         <ProgressChart
           title={t('progress.volumePerSession')}
           unit={unit}
           series={volumeSeries}
-          formatLabel={formatShortDate}
+          formatLabel={formatAxisDate}
         />
       ) : null}
+      <RecordsCard
+        title={t('progress.records.title')}
+        unit={unit}
+        items={records.map((record, index) => ({
+          key: `${record.type}-${index}`,
+          record,
+          meta: formatDate(record.date, i18n.language),
+        }))}
+      />
       {personalRecords.length > 0 ? (
-        <View style={styles.records}>
-          <Text style={styles.sectionTitle}>{t('progress.personalRecords')}</Text>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>{t('progress.heaviestOverTime')}</Text>
           {personalRecords
             .slice()
             .reverse()
             .map((record, index) => (
               <View key={`${record.date}-${index}`} style={styles.recordRow}>
-                <Text style={styles.recordBadge}>🏆</Text>
-                <Text style={styles.recordText}>
-                  {t('progress.recordLine', {
-                    weight: formatWeightValue(record.weightKg, unit),
-                    unit,
-                    reps: record.reps !== undefined ? ` x ${record.reps}` : '',
-                    date: formatDate(record.date),
-                  })}
+                <View style={styles.recordIcon}>
+                  <Ionicons name="trophy" size={14} color={colors.accent} />
+                </View>
+                <Text style={styles.recordValue}>
+                  {`${formatWeightValue(record.weightKg, unit)} ${unit}${record.reps !== undefined ? ` × ${record.reps}` : ''}`}
                 </Text>
+                <Text style={styles.recordDate}>{formatDate(record.date, i18n.language)}</Text>
               </View>
             ))}
         </View>
       ) : null}
-      <View style={styles.list}>
-        {displayPoints
-          .slice()
-          .reverse()
-          .map((point, index) => (
-            <View key={`${point.date}-${index}`} style={styles.card}>
-              <Text style={styles.cardTitle}>{formatDate(point.date)}</Text>
-              <Text style={styles.meta}>
-                {t('progress.sessionBest', {
-                  bestWeight: formatValue(point.bestWeightKg),
-                  bestReps: formatValue(point.bestReps),
+      <Text style={styles.sectionLabel}>{t('progress.sessionsLabel')}</Text>
+      {displayPoints
+        .slice()
+        .reverse()
+        .map((point, index) => (
+          <View key={`${point.date}-${index}`} style={styles.sessionRow}>
+            <Text style={styles.sessionDate}>{formatDate(point.date, i18n.language)}</Text>
+            <View style={styles.sessionFigures}>
+              <Text style={styles.sessionValue}>
+                {`${formatValue(point.bestWeightKg)} ${unit} × ${formatValue(point.bestReps)}`}
+              </Text>
+              <Text style={styles.sessionMeta}>
+                {t('progress.sessionMeta', {
                   volume: formatValue(point.totalVolume),
                   oneRepMax: formatValue(point.estimatedOneRepMax),
                   unit,
                 })}
               </Text>
             </View>
-          ))}
-      </View>
-      <Link href="/progress" style={styles.link}>
-        {t('progress.backToProgress')}
-      </Link>
+          </View>
+        ))}
     </ScrollView>
   );
 }
@@ -220,51 +256,91 @@ const styles = StyleSheet.create({
   container: {
     ...commonStyles.scrollContent,
   },
+  header: {
+    gap: spacing.xs,
+  },
   title: {
-    ...commonStyles.title,
+    ...commonStyles.heading,
+    fontSize: 28,
+    lineHeight: 34,
   },
-  body: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: '800',
-  },
-  records: {
-    gap: spacing.sm,
-  },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  recordRow: {
+  headerMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
-  recordBadge: {
-    fontSize: 14,
-  },
-  recordText: {
-    color: colors.textMuted,
-    fontSize: 14,
-    flexShrink: 1,
-  },
-  list: {
-    gap: spacing.md,
-  },
-  card: {
-    ...commonStyles.card,
-    gap: spacing.sm,
-  },
-  cardTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '700',
-  },
   meta: {
     ...commonStyles.meta,
   },
-  link: {
-    ...commonStyles.link,
+  tiles: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  card: {
+    ...commonStyles.card,
+  },
+  cardTitle: {
+    ...commonStyles.cardTitle,
+    marginBottom: spacing.xs,
+  },
+  recordRow: {
+    minHeight: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  recordIcon: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+    backgroundColor: colors.accentSoft,
+  },
+  recordValue: {
+    flex: 1,
+    color: colors.text,
+    fontFamily: fonts.displayBold,
+    fontSize: 15,
+    fontVariant: ['tabular-nums'],
+  },
+  recordDate: {
+    color: colors.textMuted,
+    fontSize: 13,
+  },
+  sectionLabel: {
+    ...commonStyles.sectionLabel,
+    marginTop: spacing.sm,
+  },
+  sessionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    backgroundColor: colors.surface,
+    padding: spacing.md,
+  },
+  sessionDate: {
+    width: 96,
+    color: colors.textMuted,
+    fontSize: 13,
+  },
+  sessionFigures: {
+    flex: 1,
+    alignItems: 'flex-end',
+    gap: 2,
+  },
+  sessionValue: {
+    color: colors.text,
+    fontFamily: fonts.displayBold,
+    fontSize: 15,
+    fontVariant: ['tabular-nums'],
+  },
+  sessionMeta: {
+    color: colors.textSubtle,
+    fontSize: 12,
+    fontVariant: ['tabular-nums'],
   },
 });

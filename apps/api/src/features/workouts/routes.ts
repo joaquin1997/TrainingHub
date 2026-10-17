@@ -5,6 +5,7 @@ import type {
   WorkoutExerciseInput,
   WorkoutSetInput,
   WorkoutSetType,
+  WorkoutWarmUpItemInput,
 } from '@workout/domain';
 
 const WORKOUT_SET_TYPES: WorkoutSetType[] = [
@@ -27,6 +28,9 @@ import {
   getExerciseLastPerformance,
   listWorkoutSessions,
 } from './repository.js';
+import { UnknownExerciseError } from './saveReferences.js';
+import { parseSideReps, withSideTotal } from './sides.js';
+import { parseWarmUpItemFields, parseWarmUpItemsField } from '../routines/warmUpItems.js';
 import { resolveUserPublicId } from '../../infrastructure/userContext.js';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -41,6 +45,47 @@ function parseOptionalNumber(value: unknown) {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
+function isReadableTime(value: string) {
+  return !Number.isNaN(Date.parse(value));
+}
+
+/** Why the workout's times are unacceptable, or undefined when they are fine. */
+function workoutTimesProblem(input: CreateWorkoutSessionInput) {
+  const setTimes = input.exercises.flatMap((exercise) =>
+    exercise.sets.flatMap((set) => (set.completedAt ? [set.completedAt] : [])),
+  );
+  const times = [
+    input.startedAt,
+    ...(input.completedAt ? [input.completedAt] : []),
+    ...setTimes,
+  ];
+
+  if (!times.every(isReadableTime)) {
+    return 'Workout times must be valid dates';
+  }
+
+  if (
+    input.completedAt &&
+    Date.parse(input.completedAt) < Date.parse(input.startedAt)
+  ) {
+    return 'A workout cannot end before it starts';
+  }
+
+  if (
+    input.completedAt &&
+    input.pausedSeconds !== undefined &&
+    input.pausedSeconds * 1000 >
+      Date.parse(input.completedAt) - Date.parse(input.startedAt)
+  ) {
+    return "Paused time cannot exceed the workout's duration";
+  }
+
+  return undefined;
+}
+
+/** Longest accepted `clientId` (spec 0014); the app sends far fewer. */
+const MAX_CLIENT_ID_LENGTH = 64;
+
 function parseOptionalInteger(value: unknown) {
   return typeof value === 'number' && Number.isInteger(value) ? value : undefined;
 }
@@ -53,17 +98,32 @@ function parseWorkoutSetInput(
     return null;
   }
 
-  return {
+  const completedAt = parseOptionalString(value.completedAt);
+
+  // With a side sent, reps becomes the sum of the sides (spec 0022).
+  return withSideTotal({
     order: parseOptionalInteger(value.order) ?? fallbackOrder,
     type: parseWorkoutSetType(value.type),
     reps: parseOptionalInteger(value.reps),
+    repsLeft: parseSideReps(value.repsLeft),
+    repsRight: parseSideReps(value.repsRight),
     weightKg: parseOptionalNumber(value.weightKg),
     durationSeconds: parseOptionalInteger(value.durationSeconds),
     distanceMeters: parseOptionalNumber(value.distanceMeters),
     restSeconds: parseOptionalInteger(value.restSeconds),
     isWarmup: typeof value.isWarmup === 'boolean' ? value.isWarmup : undefined,
-    completedAt: parseOptionalString(value.completedAt),
-  };
+    completedAt,
+  });
+}
+
+/** A performed warm-up item: name and targets, ticked or not (spec 0024). */
+function parseWorkoutWarmUpItemInput(value: unknown): WorkoutWarmUpItemInput | null {
+  const fields = parseWarmUpItemFields(value);
+  if (!fields || !isRecord(value)) {
+    return null;
+  }
+
+  return { ...fields, done: value.done === true };
 }
 
 function parseWorkoutExerciseInput(
@@ -107,6 +167,26 @@ function parseCreateWorkoutSessionInput(
     return null;
   }
 
+  const completedAt = parseOptionalString(body.completedAt);
+
+  // Paused time must be whole, non-negative seconds when sent (spec 0011).
+  const pausedSeconds = body.pausedSeconds;
+  if (
+    pausedSeconds !== undefined &&
+    !(
+      typeof pausedSeconds === 'number' &&
+      Number.isInteger(pausedSeconds) &&
+      pausedSeconds >= 0
+    )
+  ) {
+    return null;
+  }
+
+  const clientId = parseOptionalString(body.clientId);
+  if (clientId && clientId.length > MAX_CLIENT_ID_LENGTH) {
+    return null;
+  }
+
   const exercisesInput = Array.isArray(body.exercises) ? body.exercises : [];
   const exercises = exercisesInput
     .map((exercise, index) => parseWorkoutExerciseInput(exercise, index + 1))
@@ -116,11 +196,19 @@ function parseCreateWorkoutSessionInput(
     return null;
   }
 
+  const warmUpItems = parseWarmUpItemsField(body.warmUpItems, parseWorkoutWarmUpItemInput);
+  if (warmUpItems === null) {
+    return null;
+  }
+
   return {
+    clientId,
     routineId: parseOptionalString(body.routineId),
     startedAt: body.startedAt,
-    completedAt: parseOptionalString(body.completedAt),
+    completedAt,
+    pausedSeconds,
     notes: parseOptionalString(body.notes),
+    warmUpItems,
     exercises,
   };
 }
@@ -166,6 +254,11 @@ export async function registerWorkoutRoutes(app: FastifyInstance) {
       return reply.code(400).send({ message: 'Invalid workout payload' });
     }
 
+    const timesProblem = workoutTimesProblem(parsedInput);
+    if (timesProblem) {
+      return reply.code(400).send({ message: timesProblem });
+    }
+
     const hasCompletedSet = parsedInput.exercises.some((exercise) =>
       exercise.sets.some((set) => Boolean(set.completedAt)),
     );
@@ -177,14 +270,21 @@ export async function registerWorkoutRoutes(app: FastifyInstance) {
     }
 
     try {
-      const session = await createWorkoutSession(
+      const { session, created } = await createWorkoutSession(
         await resolveUserPublicId(request),
         parsedInput,
       );
 
-      return reply.code(201).send(session);
+      // A repeated clientId answers with the workout saved first (spec 0014).
+      return reply.code(created ? 201 : 200).send(session);
     } catch (error) {
-      // Prisma throws P2025 when a connected exercise/routine publicId is unknown.
+      if (error instanceof UnknownExerciseError) {
+        return reply.code(400).send({
+          message: 'Workout references an unknown exercise',
+        });
+      }
+
+      // Safety net: a reference deleted between the check and the create.
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2025'

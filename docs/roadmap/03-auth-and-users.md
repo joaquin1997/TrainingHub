@@ -22,7 +22,8 @@ for what exists today.
 - [ ] Server-side session revocation — spec 0003, **before any distribution**
 - [ ] Sign in with Apple — spec 0002
 - [ ] Password reset / account recovery — unspecified; needs an email capability
-- [ ] Account / profile screen
+- [x] Account / profile screen: name, bio, height, photo, body measurements
+  with history (spec 0027 — migration, rebuild and photo check pending)
 
 ## Notes
 - `packages/domain/src/auth.ts` already has provider contracts, and an Apple
@@ -42,3 +43,17 @@ for what exists today.
   not orphaned); sessions last **90 days**, fixed, with no renewal; only the
   liveness check stays public; revocation is **deferred to spec 0003** rather
   than dropped.
+- (2026-10-16 → 2026-10-17) Spec 0027 — personal profile and body
+  measurements. `User` gains bio, height (cm) and a photo; new
+  `BodyMeasurement` entries (date plus any of weight, body fat %, muscle %,
+  neck, chest, waist, hips, arm, forearm, thigh, calf), owner-scoped. API:
+  `GET/PUT /profile`, `PUT/DELETE /profile/photo` (JPEG base64, 512 KB) and
+  `GET/POST/PUT/DELETE /measurements` with range checks. Settings is now a
+  stack: the account card (avatar + name) opens Profile, with edit (height in
+  cm or ft + in), photo from the library (square, 512 px), BMI with its band
+  and waist-to-height when height is known, latest value per measurement, an
+  entry screen in the display unit and a history screen with chart and
+  change. Lengths are canonical in cm (like kg). Needs the
+  `add_profile_and_body_measurements` migration (redeploy before the new app
+  build) and `expo prebuild` + a rebuild for `expo-image-picker` and
+  `expo-image-manipulator`.

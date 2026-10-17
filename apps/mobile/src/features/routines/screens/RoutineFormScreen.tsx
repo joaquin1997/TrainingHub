@@ -1,4 +1,5 @@
-import { Link, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -14,19 +15,58 @@ import {
 import {
   exercisesClient,
 } from '@/features/exercises/api/exercisesClient';
-import { CustomExerciseModal } from '@/features/routines/components/CustomExerciseModal';
+import { CustomExerciseModal } from '@/features/exercises/components/CustomExerciseModal';
+import { ExercisePickerModal } from '@/features/exercises/components/ExercisePickerModal';
+import { isUnknownRoutineExerciseError } from '@/features/exercises/utils/exerciseAvailability';
+import {
+  RoutineSetTable,
+  type EditableRoutineSet,
+} from '@/features/routines/components/RoutineSetTable';
 import { routinesClient } from '@/features/routines/api/routinesClient';
-import { getRoutineExerciseSummary } from '@/features/routines/utils/routineSummary';
+import { WarmUpBlockEditor } from '@/features/routines/components/WarmUpBlockEditor';
+import {
+  toEditableWarmUpItems,
+  toWarmUpItemsInput,
+  type EditableWarmUpItem,
+} from '@/features/routines/utils/warmUpItems';
+import {
+  confirmRoutineApproachSets,
+  editRoutineSetValue,
+  previewRoutineApproachSets,
+  removeRoutineGeneratedWarmUps,
+  routineWarmUpActionFor,
+  type RoutineApproachSetsNotice,
+  type RoutineApproachSetsPreview,
+} from '@/features/routines/utils/routineApproachSets';
+import { replaceRoutineRowExercise } from '@/features/routines/utils/replaceRoutineExercise';
+import { exerciseBlockLabels } from '@/features/routines/utils/exerciseBlockLabels';
+import {
+  joinWithNext,
+  leaveSuperset,
+  moveInGroups,
+  normalizeSupersetGroups,
+  removeKeepingGroups,
+  supersetRuns,
+} from '@/features/routines/utils/supersetGroups';
+import { SupersetHeader } from '@/features/routines/components/SupersetHeader';
 import {
   effectiveRoutineSetValue,
-  setFieldPlaceholder,
+  type NumericSetField,
 } from '@/features/routines/utils/routineSetInheritance';
 import { useSettings } from '@/features/settings/SettingsContext';
+import { ApproachSetsPreviewSheet } from '@/features/workouts/components/ApproachSetsPreviewSheet';
+import { WarmUpActionButton } from '@/features/workouts/components/WarmUpActionButton';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
+import { formatDuration } from '@/lib/format';
+import { parseDistanceInput, parseDurationInput, tracksField } from '@/lib/tracking';
 import { kgToInputString, roundWeight, toKg } from '@/lib/weight';
-import { colors, commonStyles, radii, spacing } from '@/ui/theme';
+import { Button } from '@/ui/Button';
+import { Chip } from '@/ui/Chip';
+import { StateView } from '@/ui/StateView';
+import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
 import type {
   Exercise,
+  ExerciseTrackingType,
   Routine,
   RoutineExercise,
   RoutineExerciseInput,
@@ -39,19 +79,15 @@ type RoutineFormScreenProps = {
   routineId?: string;
 };
 
-type EditableRoutineSet = {
-  id: string;
-  minReps: string;
-  maxReps: string;
-  targetWeight: string;
-};
-
 type EditableRoutineExercise = {
   id: string;
   exerciseId?: string;
   exerciseQuery: string;
   restSeconds: string;
-  supersetGroup: string;
+  /** Joined by actions, never typed (spec 0029 FR-16); kept normalised. */
+  supersetGroup?: number;
+  /** The selected exercise's tracking type; decides the set columns (spec 0021). */
+  trackingType?: ExerciseTrackingType;
   sets: EditableRoutineSet[];
 };
 
@@ -70,6 +106,8 @@ function createEmptySetRow(): EditableRoutineSet {
     minReps: '',
     maxReps: '',
     targetWeight: '',
+    targetDuration: '',
+    targetDistance: '',
   };
 }
 
@@ -79,7 +117,6 @@ function createEmptyExerciseRow(): EditableRoutineExercise {
     exerciseId: undefined,
     exerciseQuery: '',
     restSeconds: '',
-    supersetGroup: '',
     sets: [createEmptySetRow()],
   };
 }
@@ -96,6 +133,16 @@ function toEditableSet(
       routineSet.targetWeight !== undefined
         ? kgToInputString(routineSet.targetWeight, unit)
         : '',
+    targetDuration:
+      routineSet.targetDurationSeconds !== undefined
+        ? formatDuration(routineSet.targetDurationSeconds)
+        : '',
+    targetDistance:
+      routineSet.targetDistanceMeters !== undefined
+        ? String(routineSet.targetDistanceMeters)
+        : '',
+    isWarmup: routineSet.isWarmup || undefined,
+    generatedWarmup: (routineSet.isWarmup && routineSet.isGeneratedWarmup) || undefined,
   };
 }
 
@@ -107,14 +154,12 @@ function toEditableExercise(
     id: routineExercise.id,
     exerciseId: routineExercise.exerciseId,
     exerciseQuery: routineExercise.exerciseName,
+    trackingType: routineExercise.trackingType,
     restSeconds:
       routineExercise.restSeconds !== undefined
         ? String(routineExercise.restSeconds)
         : '',
-    supersetGroup:
-      routineExercise.supersetGroup !== undefined
-        ? String(routineExercise.supersetGroup)
-        : '',
+    supersetGroup: routineExercise.supersetGroup,
     sets:
       routineExercise.sets.length > 0
         ? routineExercise.sets
@@ -179,6 +224,8 @@ export function RoutineFormScreen({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [folder, setFolder] = useState('');
+  // The routine's warm-up block (spec 0024).
+  const [warmUpItems, setWarmUpItems] = useState<EditableWarmUpItem[]>([]);
   const [exercises, setExercises] = useState<EditableRoutineExercise[]>([
     createEmptyExerciseRow(),
   ]);
@@ -193,7 +240,26 @@ export function RoutineFormScreen({
   >(null);
   const [activeCustomExerciseDraft, setActiveCustomExerciseDraft] =
     useState<ActiveCustomExerciseDraft | null>(null);
+  // The row whose exercise is being replaced through the picker (spec 0020).
+  const [replaceRowId, setReplaceRowId] = useState<string | null>(null);
+  // Why approach sets could not be added to a row (spec 0024 EF-1).
+  const [approachNotice, setApproachNotice] = useState<{
+    exerciseRowId: string;
+    outcome: RoutineApproachSetsNotice;
+  } | null>(null);
+  // The approach rows about to be added (spec 0031 FR-13); nothing changes
+  // until confirmed.
+  const [approachPreview, setApproachPreview] = useState<{
+    exerciseRowId: string;
+    preview: RoutineApproachSetsPreview;
+  } | null>(null);
   const activeWorkout = useActiveWorkout();
+  // Exercises of this routine their creator deleted (spec 0033 FR-7).
+  const deletedExerciseIds = new Set(
+    (routine?.exercises ?? [])
+      .filter((routineExercise) => routineExercise.exerciseDeleted)
+      .map((routineExercise) => routineExercise.exerciseId),
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -251,12 +317,17 @@ export function RoutineFormScreen({
           setName(nextRoutine.name);
           setDescription(nextRoutine.description ?? '');
           setFolder(nextRoutine.folder ?? '');
+          setWarmUpItems(
+            toEditableWarmUpItems(nextRoutine.warmUpItems, () => createRowId('warm-up-row')),
+          );
           setExercises(
             nextRoutine.exercises.length > 0
-              ? nextRoutine.exercises
-                  .slice()
-                  .sort((left, right) => left.orderIndex - right.orderIndex)
-                  .map((exercise) => toEditableExercise(exercise, unit))
+              ? normalizeSupersetGroups(
+                  nextRoutine.exercises
+                    .slice()
+                    .sort((left, right) => left.orderIndex - right.orderIndex)
+                    .map((exercise) => toEditableExercise(exercise, unit)),
+                )
               : [createEmptyExerciseRow()],
           );
         }
@@ -288,6 +359,7 @@ export function RoutineFormScreen({
           ? {
               ...exercise,
               exerciseId: undefined,
+              trackingType: undefined,
               exerciseQuery: value,
             }
           : exercise,
@@ -298,16 +370,20 @@ export function RoutineFormScreen({
   function selectExercise(exerciseRowId: string, selectedExercise: Exercise) {
     setActiveExerciseSelectorRowId(null);
     setExercises((currentExercises) =>
-      currentExercises.map((exercise) =>
-        exercise.id === exerciseRowId
-          ? {
-              ...exercise,
-              exerciseId: selectedExercise.id,
-              exerciseQuery: selectedExercise.name,
-            }
-          : exercise,
-      ),
+      replaceRoutineRowExercise(currentExercises, exerciseRowId, selectedExercise),
     );
+  }
+
+  function handleReplaceExercise(selectedExercise: Exercise) {
+    if (!replaceRowId) {
+      return;
+    }
+
+    // The picker can create the exercise; keep the inline search aware of it.
+    setAvailableExercises((currentExercises) =>
+      upsertExercise(currentExercises, selectedExercise),
+    );
+    selectExercise(replaceRowId, selectedExercise);
   }
 
   function openCustomExerciseModal(exerciseRowId: string) {
@@ -343,7 +419,7 @@ export function RoutineFormScreen({
   function updateSetField(
     exerciseId: string,
     setId: string,
-    field: keyof EditableRoutineSet,
+    field: NumericSetField,
     value: string,
   ) {
     setExercises((currentExercises) =>
@@ -352,7 +428,8 @@ export function RoutineFormScreen({
           ? {
               ...exercise,
               sets: exercise.sets.map((set) =>
-                set.id === setId ? { ...set, [field]: value } : set,
+                // A changed generated row becomes the person's own (spec 0031 FR-7).
+                set.id === setId ? editRoutineSetValue(set, field, value) : set,
               ),
             }
           : exercise,
@@ -370,14 +447,14 @@ export function RoutineFormScreen({
     );
   }
 
-  function updateExerciseSuperset(exerciseId: string, value: string) {
-    setExercises((currentExercises) =>
-      currentExercises.map((exercise) =>
-        exercise.id === exerciseId
-          ? { ...exercise, supersetGroup: value }
-          : exercise,
-      ),
-    );
+  // Supersets are made by joining neighbours and taken apart one exercise at
+  // a time; no group number is typed (spec 0029 FR-16, FR-17).
+  function joinExerciseWithNext(index: number) {
+    setExercises((currentExercises) => joinWithNext(currentExercises, index));
+  }
+
+  function takeExerciseOutOfSuperset(index: number) {
+    setExercises((currentExercises) => leaveSuperset(currentExercises, index));
   }
 
   function addExerciseRow() {
@@ -389,26 +466,19 @@ export function RoutineFormScreen({
 
   function removeExerciseRow(exerciseId: string) {
     setExercises((currentExercises) => {
-      const nextExercises = currentExercises.filter(
-        (exercise) => exercise.id !== exerciseId,
+      const nextExercises = removeKeepingGroups(
+        currentExercises,
+        currentExercises.findIndex((exercise) => exercise.id === exerciseId),
       );
 
       return nextExercises.length > 0 ? nextExercises : [createEmptyExerciseRow()];
     });
   }
 
+  // Superset-aware: inside the superset, out of it at its edge, or past it
+  // whole — never into one (spec 0029 FR-18 to FR-20).
   function moveExerciseRow(index: number, direction: 'up' | 'down') {
-    setExercises((currentExercises) => {
-      const target = direction === 'up' ? index - 1 : index + 1;
-      if (target < 0 || target >= currentExercises.length) {
-        return currentExercises;
-      }
-      const next = currentExercises.slice();
-      const moved = next[index]!;
-      next[index] = next[target]!;
-      next[target] = moved;
-      return next;
-    });
+    setExercises((currentExercises) => moveInGroups(currentExercises, index, direction));
   }
 
   function addSetRow(exerciseId: string) {
@@ -417,6 +487,63 @@ export function RoutineFormScreen({
         exercise.id === exerciseId
           ? { ...exercise, sets: [...exercise.sets, createEmptySetRow()] }
           : exercise,
+      ),
+    );
+  }
+
+  // The warm-up action as a toggle (spec 0031 FR-13): remove the generated
+  // rows at once, or preview the ramp and add it on confirm.
+  function handleWarmUpAction(exerciseRowId: string) {
+    const exercise = exercises.find((item) => item.id === exerciseRowId);
+    if (!exercise?.exerciseId) {
+      return;
+    }
+
+    if (routineWarmUpActionFor(exercise.sets) === 'remove') {
+      setApproachNotice(null);
+      replaceRowSets(exerciseRowId, (sets) => removeRoutineGeneratedWarmUps(sets));
+      return;
+    }
+
+    const result = previewRoutineApproachSets(exercise.sets, exercise.exerciseId, unit);
+    if (result.outcome === 'preview') {
+      setApproachNotice(null);
+      setApproachPreview({ exerciseRowId, preview: result });
+    } else {
+      setApproachNotice({ exerciseRowId, outcome: result.outcome });
+    }
+  }
+
+  function confirmApproachPreview() {
+    const pending = approachPreview;
+    setApproachPreview(null);
+    if (!pending) {
+      return;
+    }
+
+    // Exactly the rows shown (EF-2); nothing if the row went away or its
+    // exercise was replaced (EF-1).
+    setExercises((currentExercises) =>
+      currentExercises.map((item) =>
+        item.id === pending.exerciseRowId && item.exerciseId === pending.preview.exerciseId
+          ? {
+              ...item,
+              sets: confirmRoutineApproachSets(item.sets, pending.preview, () =>
+                createRowId('routine-set-row'),
+              ),
+            }
+          : item,
+      ),
+    );
+  }
+
+  function replaceRowSets(
+    exerciseRowId: string,
+    update: (sets: EditableRoutineSet[]) => EditableRoutineSet[],
+  ) {
+    setExercises((currentExercises) =>
+      currentExercises.map((item) =>
+        item.id === exerciseRowId ? { ...item, sets: update(item.sets) } : item,
       ),
     );
   }
@@ -447,13 +574,19 @@ export function RoutineFormScreen({
       return;
     }
 
+    const warmUpInput = toWarmUpItemsInput(warmUpItems);
+    if (warmUpInput === null) {
+      setErrorMessage(t('warmUp.invalidTarget'));
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       setErrorMessage(undefined);
 
       const routineExercises: RoutineExerciseInput[] = [];
 
-      for (const [exerciseIndex, exercise] of exercises.entries()) {
+      for (const [exerciseIndex, exercise] of normalizeSupersetGroups(exercises).entries()) {
         if (!exercise.exerciseId) {
           setErrorMessage(t('routineForm.selectExercise'));
           return;
@@ -466,31 +599,34 @@ export function RoutineFormScreen({
           return;
         }
 
-        const supersetGroup = parseOptionalInteger(exercise.supersetGroup);
-
-        if (supersetGroup === null) {
-          setErrorMessage(t('routineForm.supersetWholeNumber'));
-          return;
-        }
-
         const sets: RoutineExerciseInput['sets'] = [];
+
+        // Only the fields the exercise tracks are saved (spec 0021 FR-3).
+        const tracks = (field: Parameters<typeof tracksField>[1]) =>
+          tracksField(exercise.trackingType, field);
 
         for (const [setIndex] of exercise.sets.entries()) {
           // Unedited fields inherit the previous set's value (the ghosted placeholder).
-          const minReps = parseOptionalInteger(
-            effectiveRoutineSetValue(exercise.sets, setIndex, 'minReps'),
-          );
-          const maxReps = parseOptionalInteger(
-            effectiveRoutineSetValue(exercise.sets, setIndex, 'maxReps'),
-          );
-          const targetWeight = parseOptionalNumber(
-            effectiveRoutineSetValue(exercise.sets, setIndex, 'targetWeight'),
-          );
+          const value = (field: NumericSetField) =>
+            effectiveRoutineSetValue(exercise.sets, setIndex, field);
+          const minReps = tracks('reps') ? parseOptionalInteger(value('minReps')) : undefined;
+          const maxReps = tracks('reps') ? parseOptionalInteger(value('maxReps')) : undefined;
+          const targetWeight = tracks('weight')
+            ? parseOptionalNumber(value('targetWeight'))
+            : undefined;
+          const targetDurationSeconds = tracks('duration')
+            ? parseDurationInput(value('targetDuration'))
+            : undefined;
+          const targetDistanceMeters = tracks('distance')
+            ? parseDistanceInput(value('targetDistance'))
+            : undefined;
 
           if (
             minReps === null ||
             maxReps === null ||
-            targetWeight === null
+            targetWeight === null ||
+            targetDurationSeconds === null ||
+            targetDistanceMeters === null
           ) {
             setErrorMessage(t('routineForm.setValuesInvalid'));
             return;
@@ -505,6 +641,12 @@ export function RoutineFormScreen({
               targetWeight !== undefined
                 ? roundWeight(toKg(targetWeight, unit))
                 : undefined,
+            targetDurationSeconds,
+            targetDistanceMeters,
+            isWarmup: exercise.sets[setIndex]?.isWarmup || undefined,
+            isGeneratedWarmup:
+              (exercise.sets[setIndex]?.isWarmup && exercise.sets[setIndex]?.generatedWarmup) ||
+              undefined,
           });
         }
 
@@ -512,7 +654,7 @@ export function RoutineFormScreen({
           exerciseId: exercise.exerciseId,
           orderIndex: exerciseIndex + 1,
           restSeconds,
-          supersetGroup,
+          supersetGroup: exercise.supersetGroup,
           sets,
         });
       }
@@ -527,15 +669,18 @@ export function RoutineFormScreen({
           name: trimmedName,
           description: trimmedDescription || undefined,
           folder: folder.trim() || undefined,
+          warmUpItems: warmUpInput,
           exercises: routineExercises,
         });
 
         setRoutine(updatedRoutine);
         setExercises(
-          updatedRoutine.exercises
-            .slice()
-            .sort((left, right) => left.orderIndex - right.orderIndex)
-            .map((exercise) => toEditableExercise(exercise, unit)),
+          normalizeSupersetGroups(
+            updatedRoutine.exercises
+              .slice()
+              .sort((left, right) => left.orderIndex - right.orderIndex)
+              .map((exercise) => toEditableExercise(exercise, unit)),
+          ),
         );
         router.replace(`/routines/${updatedRoutine.id}`);
         return;
@@ -545,11 +690,23 @@ export function RoutineFormScreen({
         name: trimmedName,
         description: trimmedDescription || undefined,
         folder: folder.trim() || undefined,
+        warmUpItems: warmUpInput,
         exercises: routineExercises,
       });
 
       router.replace(`/routines/${createdRoutine.id}`);
     } catch (error) {
+      // Spec 0015 EF-4: an exercise picked from a list loaded earlier is no
+      // longer this person's to use; say so and refresh the search list.
+      if (isUnknownRoutineExerciseError(error)) {
+        setErrorMessage(t('routineForm.unknownExercise'));
+        void exercisesClient
+          .list()
+          .then((nextExercises) => setAvailableExercises(toSortedExercises(nextExercises)))
+          .catch(() => undefined);
+        return;
+      }
+
       setErrorMessage(
         error instanceof Error ? error.message : t('routineForm.saveError'),
       );
@@ -560,148 +717,177 @@ export function RoutineFormScreen({
 
   if (isEditMode && activeWorkout?.routineId === routineId) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.body}>{t('routineForm.workoutInProgress')}</Text>
-        <Link href={`/routines/${routineId}`} style={styles.link}>
-          {t('routineForm.backToRoutine')}
-        </Link>
+      <View style={styles.screen}>
+        <StateView
+          kind="empty"
+          icon="lock-closed-outline"
+          message={t('routineForm.workoutInProgress')}
+          actionLabel={t('routineForm.backToRoutine')}
+          onAction={() => router.replace(`/routines/${routineId}`)}
+        />
       </View>
     );
   }
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.body}>{t('routineDetail.loading')}</Text>
+      <View style={styles.screen}>
+        <StateView kind="loading" message={t('routineDetail.loading')} />
       </View>
     );
   }
 
+  const retryExercises = () => {
+    setIsExercisesLoading(true);
+    setExerciseLoadError(undefined);
+    void exercisesClient
+      .list()
+      .then((nextExercises) => {
+        setAvailableExercises(toSortedExercises(nextExercises));
+      })
+      .catch((error: unknown) => {
+        setExerciseLoadError(
+          error instanceof Error
+            ? error.message
+            : t('routineForm.loadExercisesError'),
+        );
+      })
+      .finally(() => {
+        setIsExercisesLoading(false);
+      });
+  };
+
+  const totalSets = exercises.reduce((sum, exercise) => sum + exercise.sets.length, 0);
+  const blockLabels = exerciseBlockLabels(exercises);
+
   return (
     <>
       <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.contentContainer}
+        style={styles.screen}
+        contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
         contentInsetAdjustmentBehavior="automatic"
       >
-        <Text style={styles.body}>
-          {isEditMode
-            ? t('routineForm.editIntro')
-            : t('routineForm.createIntro')}
-        </Text>
         {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>{t('routineForm.routineName')}</Text>
-          <TextInput
-            value={name}
-            onChangeText={setName}
-            placeholder={t('routineForm.routineNamePlaceholder')}
-            placeholderTextColor={colors.textSubtle}
-            style={styles.input}
-          />
-        </View>
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>{t('routineForm.description')}</Text>
-          <TextInput
-            value={description}
-            onChangeText={setDescription}
-            placeholder={t('routineForm.descriptionPlaceholder')}
-            placeholderTextColor={colors.textSubtle}
-            multiline
-            style={[styles.input, styles.multilineInput]}
-          />
-        </View>
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>{t('routineForm.folder')}</Text>
-          <TextInput
-            value={folder}
-            onChangeText={setFolder}
-            placeholder={t('routineForm.folderPlaceholder')}
-            placeholderTextColor={colors.textSubtle}
-            style={styles.input}
-            autoCapitalize="words"
-          />
-        </View>
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>{t('routineForm.routineExercises')}</Text>
-          <Text style={styles.meta}>{t('routineForm.exercisesHint')}</Text>
-          {isExercisesLoading ? (
-            <Text style={styles.meta}>{t('routineForm.loadingExercises')}</Text>
-          ) : null}
-          {exerciseLoadError ? (
-            <View style={styles.inlineState}>
-              <Text style={styles.error}>{exerciseLoadError}</Text>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => {
-                  setIsExercisesLoading(true);
-                  setExerciseLoadError(undefined);
-                  void exercisesClient
-                    .list()
-                    .then((nextExercises) => {
-                      setAvailableExercises(toSortedExercises(nextExercises));
-                    })
-                    .catch((error: unknown) => {
-                      setExerciseLoadError(
-                        error instanceof Error
-                          ? error.message
-                          : t('routineForm.loadExercisesError'),
-                      );
-                    })
-                    .finally(() => {
-                      setIsExercisesLoading(false);
-                    });
-                }}
-                style={({ pressed }) => [
-                  styles.secondaryButton,
-                  pressed ? styles.buttonPressed : null,
-                ]}
-              >
-                <Text style={styles.secondaryButtonText}>
-                  {t('routineForm.retryExercises')}
-                </Text>
-              </Pressable>
+        <View style={styles.card}>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>{t('routineForm.routineName')}</Text>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder={t('routineForm.routineNamePlaceholder')}
+              placeholderTextColor={colors.textSubtle}
+              style={[styles.input, styles.nameInput]}
+            />
+          </View>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>{t('routineForm.description')}</Text>
+            <TextInput
+              value={description}
+              onChangeText={setDescription}
+              placeholder={t('routineForm.descriptionPlaceholder')}
+              placeholderTextColor={colors.textSubtle}
+              multiline
+              style={[styles.input, styles.multilineInput]}
+            />
+          </View>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>{t('routineForm.folder')}</Text>
+            <View style={styles.iconInput}>
+              <Ionicons name="folder-outline" size={18} color={colors.textMuted} />
+              <TextInput
+                value={folder}
+                onChangeText={setFolder}
+                placeholder={t('routineForm.folderPlaceholder')}
+                placeholderTextColor={colors.textSubtle}
+                style={styles.iconInputField}
+                autoCapitalize="words"
+              />
             </View>
-          ) : null}
-          <View style={styles.exerciseList}>
-            {exercises.map((exercise, index) => (
-              <View key={exercise.id} style={styles.exerciseCard}>
-                <View style={styles.exerciseCardHeader}>
-                  <Text style={styles.exerciseCardTitle}>
-                    {t('routineForm.exerciseN', { number: index + 1 })}
+          </View>
+        </View>
+
+        <WarmUpBlockEditor
+          items={warmUpItems}
+          onChange={setWarmUpItems}
+          createId={() => createRowId('warm-up-row')}
+        />
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{t('routineForm.routineExercises')}</Text>
+          <Chip label={String(exercises.length)} size="sm" />
+        </View>
+        <Text style={styles.meta}>{t('routineForm.exercisesHint')}</Text>
+        {isExercisesLoading ? (
+          <StateView kind="loading" message={t('routineForm.loadingExercises')} />
+        ) : null}
+        {exerciseLoadError ? (
+          <StateView
+            kind="error"
+            message={exerciseLoadError}
+            actionLabel={t('routineForm.retryExercises')}
+            onAction={retryExercises}
+          />
+        ) : null}
+        {supersetRuns(exercises).map((run) => {
+          // Drawn as in the routine detail: a superset is one group with a
+          // header, a rail and lettered badges (spec 0029 FR-15).
+          const cards = exercises.slice(run.start, run.end).map((exercise, offset) => {
+            const index = run.start + offset;
+            const selectedName = exercise.exerciseId ? exercise.exerciseQuery : null;
+            const inSuperset = run.isSuperset;
+
+            return (
+              <View key={exercise.id} style={styles.card}>
+                <View style={styles.exerciseHeader}>
+                  <View style={[styles.indexBadge, inSuperset ? styles.indexBadgeSuperset : null]}>
+                    <Text style={styles.indexBadgeText}>
+                      {blockLabels[index]?.label ?? index + 1}
+                    </Text>
+                  </View>
+                  <Text style={styles.exerciseTitle}>
+                    {selectedName || t('routineForm.exerciseN', { number: index + 1 })}
                   </Text>
-                  <View style={styles.exerciseReorder}>
+                  <View style={styles.reorderRow}>
                     <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="↑"
                       onPress={() => moveExerciseRow(index, 'up')}
-                      hitSlop={8}
+                      hitSlop={6}
+                      style={styles.iconButton}
                     >
-                      <Text style={styles.reorderArrow}>↑</Text>
+                      <Ionicons name="arrow-up" size={18} color={colors.textMuted} />
                     </Pressable>
                     <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="↓"
                       onPress={() => moveExerciseRow(index, 'down')}
-                      hitSlop={8}
+                      hitSlop={6}
+                      style={styles.iconButton}
                     >
-                      <Text style={styles.reorderArrow}>↓</Text>
+                      <Ionicons name="arrow-down" size={18} color={colors.textMuted} />
                     </Pressable>
                   </View>
                 </View>
-                <TextInput
-                  value={exercise.exerciseQuery}
-                  onChangeText={(value) => updateExerciseQuery(exercise.id, value)}
-                  onFocus={() => {
-                    if (exercise.exerciseQuery.trim()) {
-                      setActiveExerciseSelectorRowId(exercise.id);
-                    }
-                  }}
-                  placeholder={t('routineForm.searchExercise')}
-                  placeholderTextColor={colors.textSubtle}
-                  style={styles.input}
-                />
-                {exercise.exerciseId ? (
-                  <Text style={styles.selectedHint}>
-                    {t('routineForm.exerciseSelected')}
-                  </Text>
+                <View style={styles.iconInput}>
+                  <Ionicons name="search" size={18} color={colors.textMuted} />
+                  <TextInput
+                    value={exercise.exerciseQuery}
+                    onChangeText={(value) => updateExerciseQuery(exercise.id, value)}
+                    onFocus={() => {
+                      if (exercise.exerciseQuery.trim()) {
+                        setActiveExerciseSelectorRowId(exercise.id);
+                      }
+                    }}
+                    placeholder={t('routineForm.searchExercise')}
+                    placeholderTextColor={colors.textSubtle}
+                    style={styles.iconInputField}
+                  />
+                </View>
+                {exercise.exerciseId && deletedExerciseIds.has(exercise.exerciseId) ? (
+                  <Chip icon="trash-outline" size="sm" label={t('exerciseDeletion.deleted')} />
+                ) : exercise.exerciseId ? (
+                  <Chip icon="checkmark-circle" tone="done" size="sm" label={t('routineForm.exerciseSelected')} />
                 ) : null}
                 {activeExerciseSelectorRowId === exercise.id &&
                 exercise.exerciseQuery.trim() ? (
@@ -721,8 +907,8 @@ export function RoutineFormScreen({
                             accessibilityRole="button"
                             onPress={() => selectExercise(exercise.id, candidate)}
                             style={({ pressed }) => [
-                              styles.searchResultButton,
-                              pressed ? styles.buttonPressed : null,
+                              styles.searchResult,
+                              pressed ? styles.pressed : null,
                             ]}
                           >
                             <Text style={styles.searchResultTitle}>{candidate.name}</Text>
@@ -733,216 +919,195 @@ export function RoutineFormScreen({
                             </Text>
                           </Pressable>
                         ))}
-                        {!isExercisesLoading &&
-                        !exerciseLoadError &&
-                        matchingExercises.length === 0 ? (
-                          <Pressable
-                            accessibilityRole="button"
+                        {/* Offered for any search, not only an empty one (spec 0020 FR-2). */}
+                        {!isExercisesLoading && !exerciseLoadError ? (
+                          <Button
+                            label={t('routineForm.createCustomExercise')}
+                            icon="add-circle-outline"
+                            variant="secondary"
+                            fullWidth
                             onPress={() => openCustomExerciseModal(exercise.id)}
-                            style={({ pressed }) => [
-                              styles.secondaryButton,
-                              pressed ? styles.buttonPressed : null,
-                            ]}
-                          >
-                            <Text style={styles.secondaryButtonText}>
-                              {t('routineForm.createCustomExercise')}
-                            </Text>
-                          </Pressable>
+                          />
                         ) : null}
                       </View>
                     );
                   })()
                 ) : null}
                 <View style={styles.metaInputsRow}>
-                  <View style={styles.restRow}>
-                    <Text style={styles.meta}>{t('routineForm.restBetweenSets')}</Text>
+                  <View style={styles.metaField}>
+                    <View style={styles.metaFieldLabel}>
+                      <Ionicons name="timer-outline" size={14} color={colors.textMuted} />
+                      <Text style={styles.fieldLabel}>{t('routineForm.restBetweenSets')}</Text>
+                    </View>
                     <TextInput
                       value={exercise.restSeconds}
-                      onChangeText={(value) =>
-                        updateExerciseRest(exercise.id, value)
-                      }
+                      onChangeText={(value) => updateExerciseRest(exercise.id, value)}
                       placeholder={t('routineForm.restPlaceholder')}
                       placeholderTextColor={colors.textSubtle}
                       keyboardType="number-pad"
-                      style={[styles.input, styles.restInput]}
-                    />
-                  </View>
-                  <View style={styles.restRow}>
-                    <Text style={styles.meta}>{t('routineForm.supersetGroup')}</Text>
-                    <TextInput
-                      value={exercise.supersetGroup}
-                      onChangeText={(value) =>
-                        updateExerciseSuperset(exercise.id, value)
-                      }
-                      placeholder={t('routineForm.supersetPlaceholder')}
-                      placeholderTextColor={colors.textSubtle}
-                      keyboardType="number-pad"
-                      style={[styles.input, styles.restInput]}
+                      style={[styles.input, styles.cellInput]}
                     />
                   </View>
                 </View>
-                <View style={styles.setList}>
-                  {exercise.sets.map((set, setIndex) => (
-                    <View key={set.id} style={styles.setCard}>
-                      <Text style={styles.setCardTitle}>
-                        {t('routineForm.setN', { number: setIndex + 1 })}
-                      </Text>
-                      <View style={styles.numericRow}>
-                        <Text style={styles.numericLabel}>{t('routineForm.minReps')}</Text>
-                        <Text style={styles.numericLabel}>{t('routineForm.maxReps')}</Text>
-                        <Text style={styles.numericLabel}>
-                          {t('routineForm.weightUnit', { unit })}
-                        </Text>
-                      </View>
-                      <View style={styles.numericRow}>
-                        <TextInput
-                          value={set.minReps}
-                          onChangeText={(value) =>
-                            updateSetField(exercise.id, set.id, 'minReps', value)
-                          }
-                          placeholder={setFieldPlaceholder(
-                            exercise.sets,
-                            setIndex,
-                            'minReps',
-                          )}
-                          placeholderTextColor={colors.textSubtle}
-                          keyboardType="number-pad"
-                          style={[styles.input, styles.numericInput]}
-                        />
-                        <TextInput
-                          value={set.maxReps}
-                          onChangeText={(value) =>
-                            updateSetField(exercise.id, set.id, 'maxReps', value)
-                          }
-                          placeholder={setFieldPlaceholder(
-                            exercise.sets,
-                            setIndex,
-                            'maxReps',
-                          )}
-                          placeholderTextColor={colors.textSubtle}
-                          keyboardType="number-pad"
-                          style={[styles.input, styles.numericInput]}
-                        />
-                        <TextInput
-                          value={set.targetWeight}
-                          onChangeText={(value) =>
-                            updateSetField(
-                              exercise.id,
-                              set.id,
-                              'targetWeight',
-                              value,
-                            )
-                          }
-                          placeholder={setFieldPlaceholder(
-                            exercise.sets,
-                            setIndex,
-                            'targetWeight',
-                          )}
-                          placeholderTextColor={colors.textSubtle}
-                          keyboardType="decimal-pad"
-                          style={[styles.input, styles.numericInput]}
-                        />
-                      </View>
-                      <Pressable
-                        accessibilityRole="button"
-                        onPress={() => removeSetRow(exercise.id, set.id)}
-                        style={({ pressed }) => [
-                          styles.secondaryButton,
-                          pressed ? styles.buttonPressed : null,
-                        ]}
-                      >
-                        <Text style={styles.secondaryButtonText}>
-                          {t('routineForm.removeSet')}
-                        </Text>
-                      </Pressable>
-                    </View>
-                  ))}
-                </View>
-                <View style={styles.actionRow}>
-                  <Pressable
-                    accessibilityRole="button"
+                <RoutineSetTable
+                  sets={exercise.sets}
+                  trackingType={exercise.trackingType}
+                  unit={unit}
+                  onChange={(setId, field, value) =>
+                    updateSetField(exercise.id, setId, field, value)
+                  }
+                  onRemove={(setId) => removeSetRow(exercise.id, setId)}
+                />
+                <View style={styles.cardActions}>
+                  <Button
+                    label={t('routineForm.addSet')}
+                    icon="add"
+                    variant="ghost"
                     onPress={() => addSetRow(exercise.id)}
-                    style={({ pressed }) => [
-                      styles.secondaryButton,
-                      pressed ? styles.buttonPressed : null,
-                    ]}
-                  >
-                    <Text style={styles.secondaryButtonText}>
-                      {t('routineForm.addSet')}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
+                    style={styles.compactButton}
+                  />
+                  {exercise.exerciseId &&
+                  tracksField(exercise.trackingType, 'weight') &&
+                  tracksField(exercise.trackingType, 'reps') ? (
+                    <WarmUpActionButton
+                      action={routineWarmUpActionFor(exercise.sets)}
+                      onPress={() => handleWarmUpAction(exercise.id)}
+                      style={styles.iconButton}
+                    />
+                  ) : null}
+                  {index < exercises.length - 1 ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t('supersets.joinNext')}
+                      onPress={() => joinExerciseWithNext(index)}
+                      hitSlop={6}
+                      style={styles.iconButton}
+                    >
+                      <Ionicons name="link" size={18} color={colors.textMuted} />
+                    </Pressable>
+                  ) : null}
+                  {inSuperset ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t('supersets.leave')}
+                      onPress={() => takeExerciseOutOfSuperset(index)}
+                      hitSlop={6}
+                      style={styles.iconButton}
+                    >
+                      <Ionicons name="unlink" size={18} color={colors.textMuted} />
+                    </Pressable>
+                  ) : null}
+                  {exercise.exerciseId ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t('workouts.replaceExercise')}
+                      onPress={() => setReplaceRowId(exercise.id)}
+                      hitSlop={6}
+                      style={styles.iconButton}
+                    >
+                      <Ionicons name="swap-horizontal" size={18} color={colors.textMuted} />
+                    </Pressable>
+                  ) : null}
+                  <Button
+                    label={t('routineForm.removeExercise')}
+                    variant="ghost"
+                    destructive
                     onPress={() => removeExerciseRow(exercise.id)}
-                    style={({ pressed }) => [
-                      styles.secondaryButton,
-                      pressed ? styles.buttonPressed : null,
-                    ]}
-                  >
-                    <Text style={styles.secondaryButtonText}>
-                      {t('routineForm.removeExercise')}
-                    </Text>
-                  </Pressable>
+                    style={styles.compactButton}
+                  />
                 </View>
+                {approachNotice?.exerciseRowId === exercise.id ? (
+                  <Text style={styles.meta}>
+                    {approachNotice.outcome === 'noWeight'
+                      ? t('workouts.approachNoWeight')
+                      : t('workouts.approachTooLight')}
+                  </Text>
+                ) : null}
               </View>
-            ))}
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            onPress={addExerciseRow}
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              pressed ? styles.buttonPressed : null,
-            ]}
-          >
-            <Text style={styles.secondaryButtonText}>
-              {t('routineForm.addExercise')}
-            </Text>
-          </Pressable>
-        </View>
-        {isEditMode ? (
-          routine ? (
-            <Text style={styles.meta}>
-              {t('routineForm.currentSummary', {
-                summary: getRoutineExerciseSummary(routine, 3),
-              })}
-            </Text>
-          ) : (
-            <Text style={styles.meta}>{t('routineDetail.notFoundResponse')}</Text>
-          )
+            );
+          });
+
+          if (!run.isSuperset) {
+            return cards;
+          }
+          return (
+            <View key={`superset-${exercises[run.start]?.id}`} style={styles.supersetGroup}>
+              <SupersetHeader size={run.end - run.start} />
+              <View style={styles.supersetBody}>
+                <View style={styles.rail} />
+                <View style={styles.supersetMembers}>{cards}</View>
+              </View>
+            </View>
+          );
+        })}
+        <Button
+          label={t('routineForm.addExercise')}
+          icon="add-circle-outline"
+          variant="secondary"
+          fullWidth
+          onPress={addExerciseRow}
+        />
+        {isEditMode && !routine ? (
+          <Text style={styles.meta}>{t('routineDetail.notFoundResponse')}</Text>
         ) : null}
-        {isSubmitting ? (
-          <Text style={styles.meta}>{t('routineForm.savingRoutine')}</Text>
-        ) : null}
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => void handleSubmit()}
-          disabled={isSubmitting}
-          style={({ pressed }) => [
-            styles.button,
-            pressed ? styles.buttonPressed : null,
-            isSubmitting ? styles.buttonDisabled : null,
-          ]}
-        >
-          <Text style={styles.buttonText}>
-            {isSubmitting
-              ? t('routineForm.saving')
-              : isEditMode
-                ? t('routineForm.saveRoutine')
-                : t('routines.createRoutine')}
+        <View style={styles.footer}>
+          <Text style={styles.meta}>
+            {`${t('routines.exerciseCount', { count: exercises.length })} · ${t('workouts.setsCount', { count: totalSets })}`}
           </Text>
-        </Pressable>
-        <View style={styles.links}>
-          <Link href="/routines" style={styles.link}>
-            {t('routineDetail.backToRoutines')}
-          </Link>
-          {isEditMode && routine ? (
-            <Link href={`/routines/${routine.id}`} style={styles.link}>
-              {t('routineForm.openDetail')}
-            </Link>
-          ) : null}
+          <Button
+            label={
+              isSubmitting
+                ? t('routineForm.saving')
+                : isEditMode
+                  ? t('routineForm.saveRoutine')
+                  : t('routines.createRoutine')
+            }
+            icon="checkmark-circle-outline"
+            disabled={isSubmitting}
+            fullWidth
+            onPress={() => void handleSubmit()}
+          />
+          <View style={styles.links}>
+            <Button
+              label={t('routineDetail.backToRoutines')}
+              variant="ghost"
+              onPress={() => router.replace('/routines')}
+            />
+            {isEditMode && routine ? (
+              <Button
+                label={t('routineForm.openDetail')}
+                variant="ghost"
+                onPress={() => router.replace(`/routines/${routine.id}`)}
+              />
+            ) : null}
+          </View>
         </View>
       </ScrollView>
+      <ApproachSetsPreviewSheet
+        preview={(() => {
+          // Hidden once its row is gone or its exercise replaced (EF-1).
+          const row = approachPreview
+            ? exercises.find(
+                (item) =>
+                  item.id === approachPreview.exerciseRowId &&
+                  item.exerciseId === approachPreview.preview.exerciseId,
+              )
+            : undefined;
+          return approachPreview && row
+            ? { ...approachPreview.preview, exerciseName: row.exerciseQuery }
+            : null;
+        })()}
+        onConfirm={confirmApproachPreview}
+        onCancel={() => setApproachPreview(null)}
+      />
+      <ExercisePickerModal
+        visible={replaceRowId !== null}
+        title={t('workouts.replaceTitle', {
+          name: exercises.find((exercise) => exercise.id === replaceRowId)?.exerciseQuery ?? '',
+        })}
+        onClose={() => setReplaceRowId(null)}
+        onSelect={handleReplaceExercise}
+      />
       {activeCustomExerciseDraft ? (
         <CustomExerciseModal
           visible
@@ -956,161 +1121,185 @@ export function RoutineFormScreen({
 }
 
 const styles = StyleSheet.create({
-  scrollView: {
+  screen: {
     ...commonStyles.screen,
   },
   container: {
-    ...commonStyles.fixedContent,
-  },
-  contentContainer: {
     ...commonStyles.scrollContent,
   },
-  title: {
-    ...commonStyles.title,
-  },
-  body: {
-    ...commonStyles.body,
-  },
-  fieldGroup: {
-    gap: spacing.sm,
-  },
-  label: {
-    ...commonStyles.label,
-  },
-  input: {
-    ...commonStyles.input,
-  },
-  multilineInput: {
-    minHeight: 96,
-    textAlignVertical: 'top',
-  },
-  exerciseList: {
-    gap: spacing.md,
-  },
-  exerciseCard: {
-    ...commonStyles.card,
-    gap: spacing.md,
-    padding: spacing.md,
-  },
-  exerciseCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  exerciseReorder: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.lg,
-  },
-  reorderArrow: {
-    color: colors.primary,
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  exerciseCardTitle: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  metaInputsRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  restRow: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  restInput: {
-    alignSelf: 'stretch',
-  },
-  setList: {
-    gap: spacing.sm,
-  },
-  inlineState: {
-    gap: spacing.sm,
-  },
-  searchResults: {
-    gap: spacing.sm,
-  },
-  searchResultButton: {
-    backgroundColor: colors.surfaceRaised,
-    gap: 4,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-  },
-  searchResultTitle: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  setCard: {
-    gap: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: 10,
-  },
-  setCardTitle: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  numericRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  numericInput: {
-    flex: 1,
-  },
-  numericLabel: {
-    flex: 1,
-    color: colors.textMuted,
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  actionRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  meta: {
-    ...commonStyles.meta,
-  },
-  selectedHint: {
-    color: colors.success,
-    fontSize: 13,
-    fontWeight: '700',
+  pressed: {
+    ...commonStyles.pressed,
   },
   error: {
     ...commonStyles.error,
   },
-  button: {
-    ...commonStyles.primaryButton,
+  meta: {
+    ...commonStyles.meta,
   },
-  buttonText: {
-    ...commonStyles.primaryButtonText,
+  card: {
+    ...commonStyles.card,
+    gap: spacing.md,
   },
-  buttonPressed: {
-    ...commonStyles.pressed,
+  fieldGroup: {
+    gap: spacing.xs,
   },
-  buttonDisabled: {
-    ...commonStyles.disabled,
+  fieldLabel: {
+    ...commonStyles.sectionLabel,
+    fontSize: 11,
   },
-  secondaryButton: {
-    ...commonStyles.secondaryButton,
+  input: {
+    ...commonStyles.input,
   },
-  secondaryButtonText: {
-    ...commonStyles.secondaryButtonText,
+  nameInput: {
+    fontFamily: fonts.displayBold,
+    fontSize: 18,
+  },
+  multilineInput: {
+    minHeight: 72,
+    textAlignVertical: 'top',
+  },
+  iconInput: {
+    ...commonStyles.input,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: 0,
+  },
+  iconInputField: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 46,
+    color: colors.text,
+    fontSize: 16,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  sectionTitle: {
+    ...commonStyles.heading,
+  },
+  exerciseHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  indexBadge: {
+    minWidth: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.sm,
+    backgroundColor: colors.surfaceRaised,
+  },
+  indexBadgeSuperset: {
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.textMuted,
+    paddingHorizontal: 4,
+  },
+  supersetGroup: {
+    gap: spacing.sm,
+  },
+  supersetBody: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  rail: {
+    width: 2,
+    borderRadius: 1,
+    backgroundColor: colors.borderStrong,
+    marginVertical: spacing.lg,
+  },
+  supersetMembers: {
+    flex: 1,
+    minWidth: 0,
+    gap: spacing.md,
+  },
+  indexBadgeText: {
+    color: colors.text,
+    fontFamily: fonts.displayBold,
+    fontSize: 13,
+  },
+  exerciseTitle: {
+    ...commonStyles.cardTitle,
+    flex: 1,
+    paddingTop: 2,
+  },
+  reorderRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  iconButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.sm,
+    backgroundColor: colors.surfaceRaised,
+  },
+  searchResults: {
+    gap: spacing.xs,
+  },
+  searchResult: {
+    gap: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    backgroundColor: colors.surfaceRaised,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  searchResultTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  metaInputsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  metaField: {
+    flex: 1,
+    flexBasis: 0,
+    minWidth: 0,
+    gap: spacing.xs,
+  },
+  metaFieldLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  cellInput: {
+    minHeight: 46,
+    paddingHorizontal: spacing.xs,
+    textAlign: 'center',
+    fontFamily: fonts.displayBold,
+    fontSize: 18,
+    fontVariant: ['tabular-nums'],
+  },
+  cardActions: {
+    flexDirection: 'row',
+    // Four actions may not fit a narrow phone (spec 0024 adds approach sets).
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  compactButton: {
+    minHeight: 44,
+    paddingHorizontal: spacing.sm,
+  },
+  footer: {
+    gap: spacing.sm,
+    marginTop: spacing.sm,
   },
   links: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.lg,
-  },
-  link: {
-    ...commonStyles.link,
+    justifyContent: 'center',
+    gap: spacing.sm,
   },
 });

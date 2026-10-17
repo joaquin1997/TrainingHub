@@ -4,13 +4,19 @@
     "slug": "traininghub",
     "scheme": "traininghub",
     "ios": {
+      "appleTeamId": "23X2PC36Y7",
       "bundleIdentifier": "com.joaquin.traininghub",
       "supportsTablet": true,
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true,
           "NSAllowsLocalNetworking": true
-        }
+        },
+        "NSSupportsLiveActivities": true,
+        "NSHealthShareUsageDescription": "TrainingHub reads your active energy from Health to show the calories of the workout in progress."
+      },
+      "entitlements": {
+        "com.apple.developer.healthkit": true
       }
     },
     "android": {
@@ -19,7 +25,16 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "TrainingHub uses your photo library to set your profile photo.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      "@bacons/apple-targets"
     ]
   }
 }

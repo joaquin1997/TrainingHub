@@ -1,25 +1,16 @@
-import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 
 import {
   getActiveWorkout,
+  subscribeActiveWorkout,
   type WorkoutSessionDraft,
 } from '@/features/workouts/state/workoutDraftStore';
 
-/**
- * Reads the in-memory active workout and refreshes it whenever the screen gains
- * focus (the store is a module variable, so changes don't trigger re-renders).
- */
+/** The active workout, re-rendering on every change to the store. */
 export function useActiveWorkout(): WorkoutSessionDraft | null {
-  const [activeWorkout, setActiveWorkout] = useState<WorkoutSessionDraft | null>(
-    getActiveWorkout(),
+  return useSyncExternalStore(
+    subscribeActiveWorkout,
+    getActiveWorkout,
+    getActiveWorkout,
   );
-
-  useFocusEffect(
-    useCallback(() => {
-      setActiveWorkout(getActiveWorkout());
-    }, []),
-  );
-
-  return activeWorkout;
 }

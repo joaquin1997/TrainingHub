@@ -24,10 +24,10 @@ be deployed at any point after task 5.
 | 4 | [x] Progress: loader passes `completedAt` / `type` / `isWarmup`; `selectPerformedWork`; bests and 1RM from performed non-warmup sets, volume from all performed | api | unit tests (`aggregate.test.ts`): 1 of 4 done, warmup above best, legacy session, stored unperformed values ignored; existing fixtures updated | `fix(progress): count only performed sets; keep warmups out of records` |
 | 5 | [x] "Last time": fetch the 10 most recent entries, choose with `pickLastPerformance` | api | unit tests (picker); route test unchanged (repository mocked) | `fix(workouts): last time shows only performed sets` |
 | 6 | Redeploy the API; check progress and "last time" on the phone | ops | **[DEPLOY]** `/health` ok; **[DEVICE]** AC-1, AC-2, AC-3, AC-5 | — (no commit) |
-| 7 | `isPerformedSet` (mobile, with `completedAt` fallback); history volume and detail ✓/○, totals use it | mobile | unit test (`performedSet.test.ts`); **[DEVICE]** AC-4 | `fix(workouts): history treats legacy sessions as performed` |
-| 8 | Post-workout summary renders the saved values from the skeleton, formatted in the session unit | mobile | unit test for the skeleton values if missing; **[DEVICE]** AC-6 | `fix(workouts): summary shows the values that were saved` |
-| 9 | Rename `progress.volumeByMuscleGroup` → `volumeByCategory` (en/es) | mobile | typecheck (catalog shape); **[DEVICE]** AC-7 in ES and EN | `fix(progress): label the volume distribution by category` |
-| 10 | Roadmap 04 (with the "figures drop on purpose" note), retro 0006, backlog; spec status `done` | docs | links resolve | `docs(sdd): close spec 0013` |
+| 7 | [x] `isPerformedSet` (mobile, with `completedAt` fallback); history volume and detail ✓/○, totals use it | mobile | unit test (`performedSet.test.ts`); **[DEVICE]** AC-4 | `fix(workouts): history treats legacy sessions as performed` |
+| 8 | [x] Post-workout summary renders the saved values from the skeleton, formatted in the session unit | mobile | unit test for the skeleton values if missing; **[DEVICE]** AC-6 | `fix(workouts): summary shows the values that were saved` |
+| 9 | [x] Rename `progress.volumeByMuscleGroup` → `volumeByCategory` (en/es) | mobile | typecheck (catalog shape); **[DEVICE]** AC-7 in ES and EN | `fix(progress): label the volume distribution by category` |
+| 10 | [x] Roadmap 04 (with the "figures drop on purpose" note), retro 0006, backlog; spec status `done` | docs | links resolve | `docs(sdd): close spec 0013` |
 
 Tasks 6–9 need a redeploy or the phone for their acceptance checks. The mobile
 tasks need only a Metro reload, not a native rebuild.
@@ -61,13 +61,30 @@ tasks need only a Metro reload, not a native rebuild.
   (`LAST_PERFORMANCE_LOOKBACK`) and picks with `pickLastPerformance`. The
   Prisma query is type-checked but only exercised for real after the redeploy
   (task 6): route tests mock the repository.
+- 2026-10-16 — Task 6 left for the owner (deploy + device checks are batched
+  after several specs; decided with the owner). Work continues on branch
+  `feat/sdd-0013-0012`.
+- 2026-10-16 — Task 7: `isPerformedSet` (server flag, `completedAt` fallback)
+  drives history volume and the detail's ✓/○, totals and per-exercise volume.
+  3 unit tests. The history list's set count still includes unperformed sets
+  (out of scope in the plan).
+- 2026-10-16 — Task 8: the summary renders the skeleton (effective values, kg
+  formatted into the session unit). 2 unit tests on the skeleton values.
+  Found, not fixed (pre-existing, out of scope): saving rounds kg to one
+  decimal, so 100 lb is stored as 45.4 kg and reads back as 100.1 lb in the
+  summary, history and detail. Logged in `../../backlog.md` follow-ups.
+- 2026-10-16 — Task 9: key renamed to `progress.volumeByCategory` ("Volume by
+  category" / "Volumen por categoría"); typecheck guards the catalog shape.
+- 2026-10-16 — Task 10: roadmap 04 (with the "figures drop on purpose" note),
+  retro 0006 invariant, backlog. Spec stays `in-progress` until task 6 (deploy
+  + AC-1…AC-7 on the phone) is done by the owner; then flip it to `done`.
 
 ## Definition of done
 
 - [ ] Every functional requirement and acceptance criterion in `spec.md` is met
       or explicitly deferred with a TODO
-- [ ] `pnpm -r typecheck` and `pnpm -r test` green
-- [ ] `docs/roadmap/04-progress-and-prs.md` checklist and progress log updated
+- [x] `pnpm -r typecheck` and `pnpm -r test` green
+- [x] `docs/roadmap/04-progress-and-prs.md` checklist and progress log updated
 - [ ] `spec.md` status set to `done`; `../backlog.md` updated
-- [ ] Retro 0006 records the invariant: progress reads only performed sets;
+- [x] Retro 0006 records the invariant: progress reads only performed sets;
       warmups count for volume, never for records

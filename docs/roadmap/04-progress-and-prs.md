@@ -4,6 +4,13 @@
 - [x] Personal record (PR) detection (per exercise; recent-record flag + badge)
 - [x] Estimated 1RM (Epley, per session point + best)
 - [x] PR history (list of past records over time)
+- [x] Records by type (heaviest weight, most reps, reps at a weight, best set
+  and session volume, est. 1RM, longest time and distance), named on the
+  summary, History and the exercise screen (spec 0023 — redeploy and device
+  check pending)
+- [x] Record badges while logging: a done set that beats the starting records
+  gets a badge and a notice; stored only on save (spec 0032 — redeploy and
+  device check pending)
 - [~] Charts for weight/volume over time
   - [x] Per-session bar chart (est. 1RM with volume fallback) on the exercise
     detail screen — dependency-free, pure-view bars
@@ -34,10 +41,41 @@
 - (2026-05-31) Volume distribution (`6e6a553`): `GET /progress/muscle-distribution`
   sums volume per exercise **category** (`buildMuscleGroupVolume`), rendered as
   horizontal bars. Category stands in for muscle group because wger's muscle
-  data is sparse — the UI label still says "muscle group", which overstates it.
+  data is sparse. (The label said "muscle group" until spec 0013 renamed it.)
+- (2026-09-24 → 2026-10-16) Spec 0013 — progress counts only performed work.
+  One rule in the API (`performedSets.ts`): a set is performed when marked
+  done, or when it belongs to a legacy session (no set marked done at all).
+  Progress, records, 1RM, weekly volume, volume by category and "last time"
+  read only performed sets; warmups count for volume but never for best
+  weight, best reps, 1RM or records. History and detail use the server's
+  `performed` flag; the post-workout summary shows the saved values; the
+  distribution is now labelled "by category".
+  **Figures drop on purpose** after the API is redeployed: sets that were
+  saved but never marked done stop counting. No data was changed — progress
+  is derived, so the old numbers were the bug, not the new ones.
 - (2026-05-31) Training-frequency tiles (`2cdc6c4`): streak, total workouts,
   active weeks and best week, derived on the device from the weekly-volume data
   (`summarizeTrainingFrequency`).
+- (2026-10-17) Spec 0023 — personal records by type. The API derives records
+  per type (`records.ts`, one pure function each): heaviest weight, most reps,
+  reps at a weight ("at that weight or heavier", top three weights shown),
+  best set volume, best session volume, est. 1RM, plus longest time and
+  distance from 0021. Only strict improvements count, warm-ups never do, and
+  an exercise logged twice in one workout is one session. The progress detail
+  carries `records`; `isRecordSession` now means any type. New
+  `GET /progress/session-records` lists what each workout beat: the summary
+  and History detail show a records card, the History list a "N records"
+  chip, and the exercise screen a "Records" card (the old timeline is now
+  "Heaviest weight over time"). Needs the API redeploy (no migration); an
+  older API just shows no records.
+- (2026-10-18) Spec 0032 — records shown live while logging. The per-set
+  record rules moved to the domain package (`records.ts`), shared by the API
+  and the app. New `GET /progress/starting-records` gives each exercise's
+  bests when it enters the workout; the draft keeps them (offline after a
+  restart). A done working set that beats them gets a record badge (session
+  volume on the exercise) and a notice; nothing is stored until the save,
+  whose records stay authoritative. Needs the API redeploy (no migration);
+  badge and notice layout pending the device check.
 
 ## Notes
 - Progress aggregation already exists (`apps/api/src/features/progress`). PRs can

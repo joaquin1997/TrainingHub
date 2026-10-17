@@ -1,8 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
+import { BottomTabBar } from '@react-navigation/bottom-tabs';
 import { Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
-import { colors, screenHeader } from '@/ui/theme';
+import { WorkoutBar } from '@/features/workouts/components/WorkoutBar';
+import { colors, fonts } from '@/ui/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -17,6 +19,14 @@ export default function TabsLayout() {
 
   return (
     <Tabs
+      // The workout bar sits just above the tabs, in the layout flow, so every
+      // tab screen shrinks to make room for it (spec 0019).
+      tabBar={(props) => (
+        <>
+          <WorkoutBar />
+          <BottomTabBar {...props} />
+        </>
+      )}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
@@ -25,7 +35,7 @@ export default function TabsLayout() {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
+        tabBarLabelStyle: { fontSize: 11, fontFamily: fonts.display },
         sceneStyle: { backgroundColor: colors.background },
       }}
     >
@@ -33,39 +43,35 @@ export default function TabsLayout() {
         name="routines"
         options={{
           title: t('nav.routines'),
-          tabBarIcon: tabIcon('barbell', 'barbell-outline'),
+          tabBarIcon: tabIcon('clipboard', 'clipboard-outline'),
         }}
       />
       <Tabs.Screen
         name="exercises"
         options={{
           title: t('nav.exercises'),
-          tabBarIcon: tabIcon('fitness', 'fitness-outline'),
+          tabBarIcon: tabIcon('barbell', 'barbell-outline'),
         }}
       />
       <Tabs.Screen
         name="progress"
         options={{
           title: t('nav.progress'),
-          tabBarIcon: tabIcon('stats-chart', 'stats-chart-outline'),
+          tabBarIcon: tabIcon('trending-up', 'trending-up-outline'),
         }}
       />
       <Tabs.Screen
         name="history"
         options={{
           title: t('nav.history'),
-          headerShown: true,
           tabBarIcon: tabIcon('time', 'time-outline'),
-          ...screenHeader,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: t('nav.settings'),
-          headerShown: true,
-          tabBarIcon: tabIcon('settings', 'settings-outline'),
-          ...screenHeader,
+          tabBarIcon: tabIcon('options', 'options-outline'),
         }}
       />
     </Tabs>

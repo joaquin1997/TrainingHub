@@ -5,8 +5,11 @@ import {
   getExerciseProgress,
   listExerciseProgress,
   listMuscleGroupVolume,
+  listSessionRecords,
+  listStartingRecords,
   listWeeklyVolume,
 } from './repository.js';
+import { parseExerciseIds } from './startingRecords.js';
 
 export async function registerProgressRoutes(app: FastifyInstance) {
   app.get('/progress/exercises', async (request) => {
@@ -20,6 +23,24 @@ export async function registerProgressRoutes(app: FastifyInstance) {
   app.get('/progress/muscle-distribution', async (request) => {
     return listMuscleGroupVolume(await resolveUserPublicId(request));
   });
+
+  // The records each workout beat (spec 0023), newest first.
+  app.get('/progress/session-records', async (request) => {
+    return listSessionRecords(await resolveUserPublicId(request));
+  });
+
+  // Bests to judge live record badges against (spec 0032), one per id asked.
+  app.get<{ Querystring: { exerciseIds?: string } }>(
+    '/progress/starting-records',
+    async (request, reply) => {
+      const exerciseIds = parseExerciseIds(request.query.exerciseIds);
+      if (!exerciseIds) {
+        return reply.code(400).send({ message: 'Invalid exerciseIds' });
+      }
+
+      return listStartingRecords(await resolveUserPublicId(request), exerciseIds);
+    },
+  );
 
   app.get<{ Params: { exerciseId: string } }>(
     '/progress/exercises/:exerciseId',

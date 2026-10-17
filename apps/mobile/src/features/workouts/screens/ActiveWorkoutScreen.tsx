@@ -1,118 +1,175 @@
-import { Link, router, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { router, useLocalSearchParams } from 'expo-router';
 import type { TFunction } from 'i18next';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  Vibration,
   View,
 } from 'react-native';
 
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
+import { ExerciseThumb } from '@/features/exercises/components/ExerciseThumb';
+import { exercisesClient } from '@/features/exercises/api/exercisesClient';
 import { ExercisePickerModal } from '@/features/exercises/components/ExercisePickerModal';
-import { ProgressRing } from '@/features/workouts/components/ProgressRing';
-import { WheelPicker } from '@/features/workouts/components/WheelPicker';
-import { useSettings } from '@/features/settings/SettingsContext';
-import { Button } from '@/ui/Button';
-import { formatDuration } from '@/lib/format';
-import { fromKg, roundWeight } from '@/lib/weight';
-import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
-import { useRestTimer } from '@/lib/useRestTimer';
-import { colors, commonStyles, radii, spacing } from '@/ui/theme';
-
-const REST_MINUTES = Array.from({ length: 11 }, (_, i) => i); // 0–10 min
-const REST_SECONDS = Array.from({ length: 12 }, (_, i) => i * 5); // 0,5,…,55
-const pad2 = (value: number) => String(value).padStart(2, '0');
-import type {
-  Exercise,
-  ExerciseLastPerformance,
-  WeightUnit,
-  WorkoutSetType,
-} from '@workout/domain';
 import {
-  notifyAppleWorkoutFinished,
-  notifyAppleWorkoutStarted,
-  syncWorkoutCompletionToAppleHealth,
-} from '@/features/health/integrations/appleWorkoutIntegration';
+  previousSetLabel,
+  WorkoutSetHeader,
+  WorkoutSetRow,
+} from '@/features/workouts/components/WorkoutSetRow';
+import { useExerciseReplacement } from '@/features/workouts/hooks/useExerciseReplacement';
+import { RecordBadge } from '@/features/workouts/liveRecords/RecordBadge';
+import { RecordNotice } from '@/features/workouts/liveRecords/RecordNotice';
+import { useLiveRecords } from '@/features/workouts/liveRecords/useLiveRecords';
+import {
+  canAddApproachSets,
+  confirmApproachSets,
+  previewApproachSets,
+  removeGeneratedWarmUps,
+  warmUpActionFor,
+  type ApproachSetsNotice,
+  type ApproachSetsPreview,
+} from '@/features/workouts/state/approachSetsDraft';
+import { pairedPerformance } from '@/features/workouts/state/lastTimeByKind';
+import { RestBar } from '@/features/workouts/components/RestBar';
+import { WarmUpChecklist } from '@/features/workouts/components/WarmUpChecklist';
+import { toggleWarmUpItem } from '@/features/workouts/state/warmUpDraft';
+import { ApproachSetsPreviewSheet } from '@/features/workouts/components/ApproachSetsPreviewSheet';
+import { WarmUpActionButton } from '@/features/workouts/components/WarmUpActionButton';
+import {
+  moveWorkoutExerciseInGroups,
+  removeWorkoutExerciseInGroups,
+} from '@/features/workouts/superset/groupedDraft';
+import {
+  completeSetInRounds,
+  roundIndexOf,
+  roundStatus,
+} from '@/features/workouts/superset/rounds';
+import { RestEditorSheet } from '@/features/workouts/components/RestEditorSheet';
+import { currentSetToDo } from '@/features/workouts/restTimer/nextSetToDo';
+import { nextSetLabel } from '@/features/workouts/restTimer/nextSetLabel';
+import { useAuth } from '@/features/auth/AuthContext';
+import { useSettings } from '@/features/settings/SettingsContext';
+import { useActiveEnergyKcal } from '@/features/workouts/hooks/useActiveEnergyKcal';
+import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
+import {
+  resolveActiveWorkoutEntry,
+  resolveSwitchOutcome,
+} from '@/features/workouts/utils/activeWorkoutEntry';
+import { parseWorkoutAction } from '@/features/workouts/utils/workoutAction';
+import { exerciseBlockLabels } from '@/features/routines/utils/exerciseBlockLabels';
+import { SupersetHeader } from '@/features/routines/components/SupersetHeader';
+import { Button } from '@/ui/Button';
+import { Chip } from '@/ui/Chip';
+import { StateView } from '@/ui/StateView';
+import { confirmAction } from '@/lib/confirmAction';
+import { formatDuration } from '@/lib/format';
+import { isPermanentRejection } from '@/lib/http';
+import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
+import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import type { Exercise, ExerciseLastPerformance } from '@workout/domain';
+import { syncWorkoutCompletionToAppleHealth } from '@/features/health/integrations/appleWorkoutIntegration';
 import {
   addExerciseToWorkout,
   addSetToWorkoutExercise,
+  adjustRest,
   applyLastPerformance,
   clearActiveWorkout,
   countWorkoutSets,
   cycleWorkoutSetType,
   getActiveWorkout,
-  moveWorkoutExercise,
-  removeExerciseFromWorkout,
+  pauseWorkout,
   removeSetFromWorkoutExercise,
+  resolveRestSeconds,
+  resumeWorkout,
   saveCompletedWorkout,
   setActiveWorkout,
+  setExerciseRest,
+  skipRest,
   startActiveWorkout,
   toCreateWorkoutSessionInput,
   toggleWorkoutSetDone,
   toWorkoutSessionSkeleton,
   updateWorkoutSetDraft,
+  type RunningRest,
+  type SetDraftField,
   type WorkoutSessionDraft,
 } from '@/features/workouts/state/workoutDraftStore';
 
-/** Compact "previous performance" label for a set (weight×reps), or "–". */
-function prevSetLabel(
-  performance: ExerciseLastPerformance | null | undefined,
-  order: number,
-  unit: WeightUnit,
-) {
-  const last = performance?.sets.find((set) => set.order === order);
-
-  if (!last || (last.weightKg == null && last.reps == null)) {
-    return '–';
-  }
-
-  const weight =
-    last.weightKg != null ? roundWeight(fromKg(last.weightKg, unit)) : '–';
-  return `${weight}×${last.reps ?? '–'}`;
-}
-
-function setTypeLabel(type: WorkoutSetType, t: TFunction) {
-  switch (type) {
-    case 'warmup':
-      return t('workouts.setType.warmup');
-    case 'drop':
-      return t('workouts.setType.drop');
-    case 'failure':
-      return t('workouts.setType.failure');
-    default:
-      return t('workouts.setType.normal');
-  }
+/** The rest chip of an exercise: "2:00", or "Off" for no rest. */
+function restChipLabel(seconds: number, t: TFunction) {
+  return seconds > 0 ? formatDuration(seconds) : t('workouts.restOff');
 }
 
 export function ActiveWorkoutScreen() {
   const { t } = useTranslation();
-  const { routineId } = useLocalSearchParams<{ routineId?: string }>();
-  const [workoutDraft, setWorkoutDraft] = useState<WorkoutSessionDraft | null>(
-    null,
-  );
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
-    'loading',
+  const { routineId, action, nextRoutineId } = useLocalSearchParams<{
+    routineId?: string;
+    action?: string;
+    /** With `action=switch`: the routine to start after this one (spec 0019). */
+    nextRoutineId?: string;
+  }>();
+  const linkAction = parseWorkoutAction(action);
+  // Set below, after the early returns; lets the link effects reach them.
+  const finishRef = useRef<(() => Promise<boolean>) | null>(null);
+  const switchRef = useRef<((nextId: string) => Promise<void>) | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  // For bringing the next set into view when a rest ends (spec 0018 FR-5).
+  const contentRef = useRef<View>(null);
+  const setRowRefs = useRef(new Map<string, View>());
+  const viewportHeightRef = useRef(0);
+  const workoutDraft = useActiveWorkout();
+  const lastRestRef = useRef<RunningRest | undefined>(workoutDraft?.rest);
+  // Set by a tick that starts no rest: bring the next set into view at once.
+  const scrollAfterTickRef = useRef(false);
+  // An active workout already on the device opens immediately, offline too.
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(() =>
+    resolveActiveWorkoutEntry(getActiveWorkout(), routineId) === 'resume'
+      ? 'ready'
+      : 'loading',
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
   const [finishError, setFinishError] = useState<string | null>(null);
+  // The server refused the workout itself; retrying cannot help (EF-5).
+  const [finishRefused, setFinishRefused] = useState(false);
   const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const replacement = useExerciseReplacement(workoutDraft);
+  // The exercise whose rest is being changed (spec 0018 FR-2).
+  const [restEditorFor, setRestEditorFor] = useState<string | null>(null);
+  // Why approach sets could not be added to an exercise (spec 0024 EF-1).
+  const [approachNotice, setApproachNotice] = useState<{
+    workoutExerciseId: string;
+    outcome: ApproachSetsNotice;
+  } | null>(null);
+  // The approach sets about to be added, shown before anything changes (spec
+  // 0031 FR-1). Screen state only, so a restart reopens without it (EF-5).
+  const [approachPreview, setApproachPreview] = useState<{
+    workoutExerciseId: string;
+    preview: ApproachSetsPreview;
+  } | null>(null);
   const [lastByExercise, setLastByExercise] = useState<
     Record<string, ExerciseLastPerformance | null>
   >({});
   const { settings } = useSettings();
-  const [restDuration, setRestDuration] = useState(settings.defaultRestSeconds);
-  const restTimer = useRestTimer(() => Vibration.vibrate([0, 400, 200, 400]));
+  const { user } = useAuth();
+  // Record badges and the notice while logging (spec 0032).
+  const liveRecords = useLiveRecords(workoutDraft);
 
   useEffect(() => {
-    if (!routineId) {
+    const entry = resolveActiveWorkoutEntry(getActiveWorkout(), routineId);
+
+    if (entry === 'resume') {
+      setStatus('ready');
+      return;
+    }
+
+    if (entry === 'none' || !routineId) {
       setStatus('error');
       setErrorMessage(null);
       return;
@@ -128,7 +185,7 @@ export function ActiveWorkoutScreen() {
           return;
         }
 
-        setWorkoutDraft(startActiveWorkout(routine, settings.unit));
+        startActiveWorkout(routine, settings.unit, user?.id);
         setStatus('ready');
       })
       .catch((error: unknown) => {
@@ -147,19 +204,77 @@ export function ActiveWorkoutScreen() {
     };
   }, [routineId]);
 
+  // "Finish" on the lock-screen status opens this screen with action=finish:
+  // confirm first, then finish as from the button (spec 0012 FR-5). With no
+  // set done, finishing shows the usual notice and saves nothing (EF-6).
   useEffect(() => {
-    if (workoutDraft) {
-      void notifyAppleWorkoutStarted(workoutDraft);
+    if (linkAction !== 'finish' || status !== 'ready' || !workoutDraft) {
+      return;
     }
-  }, [workoutDraft]);
 
-  const elapsedSeconds = useElapsedSeconds(workoutDraft?.startedAt);
+    router.setParams({ action: undefined });
+    void confirmAction({
+      title: t('workouts.finishTitle'),
+      message: t('workouts.finishConfirm'),
+      confirmLabel: t('workouts.finishWorkout'),
+      cancelLabel: t('common.cancel'),
+    }).then((confirmed) => {
+      if (confirmed) {
+        void finishRef.current?.();
+      }
+    });
+    // Runs once per link; the draft is read through the ref at confirm time.
+  }, [linkAction, status, workoutDraft === null]);
+
+  // "Finish and start" from a routine, already confirmed there (spec 0019).
+  useEffect(() => {
+    if (linkAction !== 'switch' || status !== 'ready' || !workoutDraft) {
+      return;
+    }
+
+    router.setParams({ action: undefined, nextRoutineId: undefined });
+    if (nextRoutineId) {
+      void switchRef.current?.(nextRoutineId);
+    }
+    // Runs once per link, like the finish link above.
+  }, [linkAction, status, workoutDraft === null]);
+
+  // Active energy from the person's health data, when known (spec 0017 AC-13).
+  const activeKcal = useActiveEnergyKcal(workoutDraft?.clientId);
+  const elapsedSeconds = useElapsedSeconds(workoutDraft?.startedAt, {
+    pausedAt: workoutDraft?.pausedAt,
+    pausedSeconds: workoutDraft?.pausedSeconds,
+  });
 
   const exerciseIdsKey = workoutDraft
     ? [...new Set(workoutDraft.exercises.map((exercise) => exercise.exerciseId))].join(
         ',',
       )
     : '';
+
+  // Images of the exercises in the workout (catalog image or own photo).
+  const [imageByExercise, setImageByExercise] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!exerciseIdsKey) {
+      return;
+    }
+
+    let active = true;
+    for (const id of exerciseIdsKey.split(',')) {
+      void exercisesClient
+        .getById(id)
+        .then((exercise) => {
+          if (active && exercise.imageUrl) {
+            setImageByExercise((current) => ({ ...current, [id]: exercise.imageUrl as string }));
+          }
+        })
+        .catch(() => undefined);
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [exerciseIdsKey]);
 
   useEffect(() => {
     if (!exerciseIdsKey) {
@@ -200,7 +315,6 @@ export function ActiveWorkoutScreen() {
 
       if (next !== current) {
         setActiveWorkout(next);
-        setWorkoutDraft(next);
       }
     });
 
@@ -209,64 +323,157 @@ export function ActiveWorkoutScreen() {
     };
   }, [exerciseIdsKey]);
 
+  // "Last time" pairs by kind and position within the kind (spec 0031), so a
+  // set whose type changes, or sets added or removed ahead of it, re-pair.
+  // applyLastPerformance returns the same draft when nothing changes, so this
+  // settles after one pass.
+  useEffect(() => {
+    if (!workoutDraft) {
+      return;
+    }
+
+    let next = workoutDraft;
+    for (const [id, performance] of Object.entries(lastByExercise)) {
+      if (performance) {
+        next = applyLastPerformance(next, id, performance);
+      }
+    }
+
+    if (next !== workoutDraft) {
+      setActiveWorkout(next);
+    }
+  }, [workoutDraft, lastByExercise]);
+
+  // A rest that ended or was skipped while this screen is open, or a tick that
+  // started no rest (spec 0029 FR-8), brings the next set to do to about a
+  // third of the screen (FR-5). A new rest replacing a running one, a finish
+  // or a discard do not scroll.
+  useEffect(() => {
+    const previous = lastRestRef.current;
+    lastRestRef.current = workoutDraft?.rest;
+    const afterTick = scrollAfterTickRef.current;
+    scrollAfterTickRef.current = false;
+    if (!workoutDraft || workoutDraft.rest || (!previous && !afterTick)) {
+      return;
+    }
+
+    const target = currentSetToDo(workoutDraft);
+    if (!target) {
+      return;
+    }
+
+    // After the frame that removes the rest bar, so the viewport is final.
+    requestAnimationFrame(() => {
+      const row = setRowRefs.current.get(target.workoutSetId);
+      const content = contentRef.current;
+      if (!row || !content) {
+        return;
+      }
+
+      row.measureLayout(
+        content,
+        (_x, y) => {
+          scrollRef.current?.scrollTo({
+            y: Math.max(0, y - viewportHeightRef.current / 3),
+            animated: true,
+          });
+        },
+        () => {},
+      );
+    });
+  }, [workoutDraft]);
+
   if (status === 'loading') {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator color={colors.primary} />
-        <Text style={styles.meta}>{t('workouts.loadingRoutine')}</Text>
+      <View style={styles.screen}>
+        <StateView kind="loading" message={t('workouts.loadingRoutine')} />
       </View>
     );
   }
 
   if (status === 'error' || !workoutDraft) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.meta}>
-          {errorMessage ?? t('workouts.startFromRoutine')}
-        </Text>
-        <Link href="/routines" style={styles.link}>
-          {t('routineDetail.backToRoutines')}
-        </Link>
+      <View style={styles.screen}>
+        <StateView
+          kind={errorMessage ? 'error' : 'empty'}
+          icon="barbell-outline"
+          message={errorMessage ?? t('workouts.startFromRoutine')}
+          actionLabel={t('routineDetail.backToRoutines')}
+          onAction={() => router.replace('/routines')}
+        />
       </View>
     );
   }
 
-  const finishWorkout = async () => {
+  /**
+   * Saves the workout. Goes to the summary, or with `nextRoutineId` starts that
+   * routine instead (spec 0019). Resolves whether the save succeeded.
+   */
+  const finishWorkout = async (nextId?: string) => {
     if (countWorkoutSets(workoutDraft).done === 0) {
       setFinishError(t('workouts.markOneSet'));
-      return;
+      return false;
     }
 
     try {
       setIsFinishing(true);
       setFinishError(null);
+      setFinishRefused(false);
 
       await workoutsClient.create(toCreateWorkoutSessionInput(workoutDraft));
 
       const workoutSession = toWorkoutSessionSkeleton(workoutDraft);
 
       saveCompletedWorkout(workoutDraft);
-      clearActiveWorkout();
-
-      void notifyAppleWorkoutFinished(
-        workoutDraft,
-        workoutSession.completedAt ?? workoutSession.updatedAt,
-      );
       void syncWorkoutCompletionToAppleHealth(workoutSession);
-      router.push('/workouts/summary');
+
+      if (nextId) {
+        startNextRoutine(nextId);
+      } else {
+        clearActiveWorkout();
+        // Replace, so Back from the summary does not land on a finished workout.
+        router.replace('/workouts/summary');
+      }
+      return true;
     } catch (error) {
       setFinishError(
         error instanceof Error ? error.message : t('workouts.saveError'),
       );
+      setFinishRefused(isPermanentRejection(error));
+      return false;
     } finally {
       setIsFinishing(false);
+    }
+  };
+
+  finishRef.current = () => finishWorkout();
+
+  /** Drops the finished workout and lets the entry effect fetch the next one. */
+  const startNextRoutine = (nextId: string) => {
+    // Loading first, so the empty state never flashes between the two.
+    setStatus('loading');
+    clearActiveWorkout();
+    router.setParams({ routineId: nextId });
+  };
+
+  // FR-4: saved with at least one set done, discarded otherwise. A failed save
+  // keeps this workout on screen with the error, as on finish (EF-1); the
+  // person arrived at the top, so the error is scrolled into view.
+  switchRef.current = async (nextId: string) => {
+    if (resolveSwitchOutcome(workoutDraft) === 'discard') {
+      startNextRoutine(nextId);
+      return;
+    }
+
+    if (!(await finishWorkout(nextId))) {
+      requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
     }
   };
 
   const handleSetChange = (
     workoutExerciseId: string,
     workoutSetId: string,
-    field: 'reps' | 'weightKg',
+    field: SetDraftField,
     value: string,
   ) => {
     if (!workoutDraft) {
@@ -281,7 +488,6 @@ export function ActiveWorkoutScreen() {
       value,
     );
 
-    setWorkoutDraft(nextDraft);
     setActiveWorkout(nextDraft);
   };
 
@@ -297,26 +503,24 @@ export function ActiveWorkoutScreen() {
       (set) => set.id === workoutSetId,
     )?.done;
 
-    // Prefer the routine's per-exercise rest, falling back to the picker value.
-    const rest = exercise?.restSeconds ?? restDuration;
-
-    const nextDraft = toggleWorkoutSetDone(
-      workoutDraft,
-      workoutExerciseId,
-      workoutSetId,
-      becomingDone ? rest : undefined,
-    );
-
-    setWorkoutDraft(nextDraft);
+    // Ticking starts the exercise's rest in this workout, else the Settings
+    // default (FR-1); in a superset only a tick that completes the round rests
+    // (spec 0029) — the same rule as a tick from the watch (spec 0025).
+    // Un-ticking leaves a running rest alone.
+    const nextDraft = becomingDone
+      ? completeSetInRounds(
+          workoutDraft,
+          workoutExerciseId,
+          workoutSetId,
+          settings.defaultRestSeconds,
+        )
+      : toggleWorkoutSetDone(workoutDraft, workoutExerciseId, workoutSetId);
+    scrollAfterTickRef.current =
+      becomingDone && (!nextDraft.rest || nextDraft.rest === workoutDraft.rest);
     setActiveWorkout(nextDraft);
-
-    if (becomingDone) {
-      restTimer.start(rest);
-    }
   };
 
   const applyDraft = (nextDraft: WorkoutSessionDraft) => {
-    setWorkoutDraft(nextDraft);
     setActiveWorkout(nextDraft);
   };
 
@@ -328,6 +532,44 @@ export function ActiveWorkoutScreen() {
     applyDraft(addSetToWorkoutExercise(workoutDraft, workoutExerciseId));
   };
 
+  // The warm-up action as a toggle (spec 0031): remove the generated sets at
+  // once, or preview the ramp and add it on confirm.
+  const handleWarmUpAction = (workoutExerciseId: string) => {
+    const exercise = workoutDraft.exercises.find((item) => item.id === workoutExerciseId);
+    if (exercise && warmUpActionFor(exercise) === 'remove') {
+      setApproachNotice(null);
+      applyDraft(removeGeneratedWarmUps(workoutDraft, workoutExerciseId));
+      return;
+    }
+
+    const result = previewApproachSets(workoutDraft, workoutExerciseId);
+    if (result.outcome === 'preview') {
+      setApproachNotice(null);
+      setApproachPreview({ workoutExerciseId, preview: result });
+    } else {
+      setApproachNotice({ workoutExerciseId, outcome: result.outcome });
+    }
+  };
+
+  const confirmApproachPreview = () => {
+    const current = getActiveWorkout();
+    if (current && approachPreview) {
+      setActiveWorkout(
+        confirmApproachSets(current, approachPreview.workoutExerciseId, approachPreview.preview),
+      );
+    }
+    setApproachPreview(null);
+  };
+
+  // Hidden once its exercise is removed or replaced (EF-1).
+  const previewedExercise = approachPreview
+    ? workoutDraft.exercises.find(
+        (item) =>
+          item.id === approachPreview.workoutExerciseId &&
+          item.exerciseId === approachPreview.preview.exerciseId,
+      )
+    : undefined;
+
   const handleAddExercise = (exercise: Exercise) => {
     if (!workoutDraft) {
       return;
@@ -337,6 +579,8 @@ export function ActiveWorkoutScreen() {
       addExerciseToWorkout(workoutDraft, {
         id: exercise.id,
         name: exercise.name,
+        trackingType: exercise.trackingType,
+        isUnilateral: exercise.isUnilateral,
       }),
     );
   };
@@ -346,7 +590,7 @@ export function ActiveWorkoutScreen() {
       return;
     }
 
-    applyDraft(removeExerciseFromWorkout(workoutDraft, workoutExerciseId));
+    applyDraft(removeWorkoutExerciseInGroups(workoutDraft, workoutExerciseId));
   };
 
   const handleMoveExercise = (
@@ -358,7 +602,7 @@ export function ActiveWorkoutScreen() {
     }
 
     applyDraft(
-      moveWorkoutExercise(workoutDraft, workoutExerciseId, direction),
+      moveWorkoutExerciseInGroups(workoutDraft, workoutExerciseId, direction),
     );
   };
 
@@ -388,8 +632,16 @@ export function ActiveWorkoutScreen() {
       workoutExerciseId,
       workoutSetId,
     );
-    setWorkoutDraft(nextDraft);
     setActiveWorkout(nextDraft);
+  };
+
+  // Sets can still be logged while paused (FR-6); only the clock stops.
+  const handleTogglePause = () => {
+    applyDraft(
+      workoutDraft.pausedAt
+        ? resumeWorkout(workoutDraft)
+        : pauseWorkout(workoutDraft),
+    );
   };
 
   const handleNotesChange = (value: string) => {
@@ -398,580 +650,633 @@ export function ActiveWorkoutScreen() {
     }
 
     const nextDraft = { ...workoutDraft, notes: value };
-    setWorkoutDraft(nextDraft);
     setActiveWorkout(nextDraft);
   };
 
-  const handleDiscard = () => {
+  // Discarding loses every logged set, so it always asks first.
+  const handleDiscard = async () => {
+    const confirmed = await confirmAction({
+      title: t('workouts.discardTitle'),
+      message: t('workouts.discardConfirm'),
+      confirmLabel: t('workouts.discardWorkout'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (!confirmed) {
+      return;
+    }
+
     clearActiveWorkout();
     router.replace('/routines');
   };
 
-  const setProgress = countWorkoutSets(workoutDraft);
+  const restEditorExercise = restEditorFor
+    ? workoutDraft.exercises.find((exercise) => exercise.id === restEditorFor)
+    : undefined;
 
-  return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.body}>
-        {workoutDraft.routineName}
-      </Text>
-      <Text style={styles.timer}>{formatDuration(elapsedSeconds)}</Text>
-      <Text style={styles.meta}>
-        {t('workouts.setsProgress', {
-          done: setProgress.done,
-          total: setProgress.total,
-        })}
-      </Text>
-      <TextInput
-        value={workoutDraft.notes ?? ''}
-        onChangeText={handleNotesChange}
-        placeholder={t('workouts.notesPlaceholder')}
-        placeholderTextColor={colors.textSubtle}
-        style={styles.notesInput}
-        multiline
-      />
-      <View style={styles.restBar}>
-        {restTimer.isRunning ? (
-          <View style={styles.restRingRow}>
-            <ProgressRing
-              size={116}
-              strokeWidth={9}
-              progress={
-                restTimer.total > 0 ? restTimer.remaining / restTimer.total : 0
-              }
-            >
-              <Text style={styles.ringTime}>
-                {formatDuration(restTimer.remaining)}
-              </Text>
-              <Text style={styles.ringLabel}>{t('workouts.rest')}</Text>
-            </ProgressRing>
-            <View style={styles.ringControls}>
-              <Pressable
-                onPress={() => restTimer.adjust(15)}
-                hitSlop={6}
-                style={styles.stepButton}
-              >
-                <Text style={styles.stepText}>+15</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => restTimer.adjust(-15)}
-                hitSlop={6}
-                style={styles.stepButton}
-              >
-                <Text style={styles.stepText}>−15</Text>
-              </Pressable>
-              <Pressable
-                onPress={restTimer.skip}
-                hitSlop={8}
-                style={styles.skipButton}
-              >
-                <Text style={styles.skipText}>{t('workouts.skip')}</Text>
-              </Pressable>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.restColumn}>
-            <Text style={styles.meta}>{t('workouts.restTimer')}</Text>
-            <View style={styles.wheelRow}>
-              <View style={styles.wheelGroup}>
-                <WheelPicker
-                  values={REST_MINUTES}
-                  value={Math.floor(restDuration / 60)}
-                  onChange={(m) => setRestDuration(m * 60 + (restDuration % 60))}
-                  formatItem={pad2}
-                />
-                <Text style={styles.wheelUnit}>{t('workouts.min')}</Text>
-              </View>
-              <Text style={styles.wheelColon}>:</Text>
-              <View style={styles.wheelGroup}>
-                <WheelPicker
-                  values={REST_SECONDS}
-                  value={restDuration % 60}
-                  onChange={(s) =>
-                    setRestDuration(Math.floor(restDuration / 60) * 60 + s)
-                  }
-                  formatItem={pad2}
-                />
-                <Text style={styles.wheelUnit}>{t('workouts.sec')}</Text>
-              </View>
-              <Pressable
-                onPress={() => restTimer.start(restDuration)}
-                hitSlop={8}
-                style={styles.startButton}
-              >
-                <Text style={styles.startText}>{t('workouts.start')}</Text>
-              </Pressable>
-            </View>
-          </View>
-        )}
-      </View>
-      {workoutDraft.exercises.map((exercise) => (
-        <View key={exercise.id} style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={styles.cardTitleGroup}>
-              <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
-              {exercise.supersetGroup !== undefined ? (
-                <Text style={styles.supersetBadge}>
-                  {t('routineDetail.superset', { group: exercise.supersetGroup })}
-                </Text>
-              ) : null}
-            </View>
-            <View style={styles.reorderRow}>
-              <Pressable
-                onPress={() => handleMoveExercise(exercise.id, 'up')}
-                hitSlop={8}
-              >
-                <Text style={styles.reorderText}>↑</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => handleMoveExercise(exercise.id, 'down')}
-                hitSlop={8}
-              >
-                <Text style={styles.reorderText}>↓</Text>
-              </Pressable>
-            </View>
-          </View>
-          <View style={styles.imagePlaceholder}>
-            <Text style={styles.imagePlaceholderText}>
-              {exercise.imagePlaceholderText ?? t('workouts.imagePlaceholder')}
+  const setProgress = countWorkoutSets(workoutDraft);
+  const unit = workoutDraft.unit ?? 'kg';
+  const isPaused = Boolean(workoutDraft.pausedAt);
+  const blockLabels = exerciseBlockLabels(workoutDraft.exercises);
+  // The set to do now: highlighted, and named in the rest bar (spec 0029).
+  const upNext = currentSetToDo(workoutDraft);
+  const blocks: number[][] = [];
+  blockLabels.forEach((label, index) => {
+    if (label.superset === 'none' || label.superset === 'start') {
+      blocks.push([index]);
+    } else {
+      blocks[blocks.length - 1]?.push(index);
+    }
+  });
+
+  const renderExercise = (index: number, inSuperset: boolean) => {
+    const exercise = workoutDraft.exercises[index];
+    const label = blockLabels[index];
+    if (!exercise || !label) {
+      return null;
+    }
+
+    return (
+      <View key={exercise.id} style={styles.exercise}>
+        <View style={styles.exerciseHeader}>
+          <View style={[styles.blockBadge, inSuperset ? styles.blockBadgeSuperset : null]}>
+            <Text style={[styles.blockBadgeText, inSuperset ? styles.blockBadgeTextSuperset : null]}>
+              {label.label}
             </Text>
           </View>
-          <View style={styles.setList}>
-            <View style={styles.setHeaderRow}>
-              <Text style={[styles.colSet, styles.colLabel]}>{t('workouts.colSet')}</Text>
-              <Text style={[styles.colPrev, styles.colLabel]}>{t('workouts.colPrev')}</Text>
-              <Text style={[styles.colInput, styles.colLabel]}>
-                {(workoutDraft.unit ?? 'kg').toUpperCase()}
-              </Text>
-              <Text style={[styles.colInput, styles.colLabel]}>{t('workouts.colReps')}</Text>
-              <View style={styles.colCheck} />
+          {imageByExercise[exercise.exerciseId] ? (
+            <ExerciseThumb imageUrl={imageByExercise[exercise.exerciseId]} size={40} />
+          ) : null}
+          <View style={styles.exerciseTitleColumn}>
+            <Text style={styles.exerciseTitle}>{exercise.exerciseName}</Text>
+            <View style={styles.restChipRow}>
+              <Chip
+                icon="timer-outline"
+                size="sm"
+                label={restChipLabel(
+                  resolveRestSeconds(exercise, settings.defaultRestSeconds),
+                  t,
+                )}
+                onPress={() => setRestEditorFor(exercise.id)}
+              />
             </View>
-            {exercise.entries.map((set) => (
-              <View
-                key={set.id}
-                style={[styles.setRow, set.done ? styles.setRowDone : null]}
-              >
-                <Pressable
-                  onPress={() => handleCycleSetType(exercise.id, set.id)}
-                  hitSlop={6}
-                  style={styles.colSet}
-                >
-                  <Text style={styles.setNum}>{set.order}</Text>
-                  {set.type !== 'normal' ? (
-                    <Text style={styles.setTypeTag}>
-                      {setTypeLabel(set.type, t)[0]}
-                    </Text>
-                  ) : null}
-                </Pressable>
-                <Text numberOfLines={1} style={[styles.colPrev, styles.prevText]}>
-                  {prevSetLabel(
-                    lastByExercise[exercise.exerciseId],
-                    set.order,
-                    workoutDraft.unit ?? 'kg',
-                  )}
-                </Text>
-                <TextInput
-                  keyboardType="decimal-pad"
-                  value={set.weightKg}
-                  placeholder={set.weightPlaceholder ?? '–'}
-                  placeholderTextColor={colors.textSubtle}
-                  onChangeText={(value) =>
-                    handleSetChange(exercise.id, set.id, 'weightKg', value)
-                  }
-                  style={[styles.cellInput, styles.colInput]}
-                />
-                <TextInput
-                  keyboardType="number-pad"
-                  value={set.reps}
-                  placeholder={set.repsPlaceholder ?? '–'}
-                  placeholderTextColor={colors.textSubtle}
-                  onChangeText={(value) =>
-                    handleSetChange(exercise.id, set.id, 'reps', value)
-                  }
-                  style={[styles.cellInput, styles.colInput]}
-                />
-                <Pressable
-                  onPress={() => handleToggleDone(exercise.id, set.id)}
-                  hitSlop={6}
-                  style={[styles.checkBox, set.done ? styles.checkBoxDone : null]}
-                >
-                  <Text
-                    style={[
-                      styles.checkMark,
-                      set.done ? styles.checkMarkDone : null,
-                    ]}
-                  >
-                    ✓
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => handleRemoveSet(exercise.id, set.id)}
-                  hitSlop={6}
-                  style={styles.removeSet}
-                >
-                  <Text style={styles.removeSetText}>✕</Text>
-                </Pressable>
-              </View>
-            ))}
+            {liveRecords.badges.sessionVolumeByExercise[exercise.exerciseId] ? (
+              <RecordBadge
+                hits={[liveRecords.badges.sessionVolumeByExercise[exercise.exerciseId]!]}
+                unit={unit}
+              />
+            ) : null}
           </View>
-          <View style={styles.cardActions}>
+          <View style={styles.reorderRow}>
             <Pressable
-              onPress={() => handleAddSet(exercise.id)}
-              style={styles.addSetButton}
+              accessibilityRole="button"
+              accessibilityLabel="↑"
+              onPress={() => handleMoveExercise(exercise.id, 'up')}
+              hitSlop={6}
+              style={styles.iconButton}
             >
-              <Text style={styles.addSetText}>{`+ ${t('workouts.addSet')}`}</Text>
+              <Ionicons name="arrow-up" size={18} color={colors.textMuted} />
             </Pressable>
             <Pressable
-              onPress={() => handleRemoveExercise(exercise.id)}
-              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="↓"
+              onPress={() => handleMoveExercise(exercise.id, 'down')}
+              hitSlop={6}
+              style={styles.iconButton}
             >
-              <Text style={styles.removeText}>{t('workouts.removeExercise')}</Text>
+              <Ionicons name="arrow-down" size={18} color={colors.textMuted} />
             </Pressable>
           </View>
         </View>
-      ))}
-      <Pressable
-        onPress={() => setIsPickerVisible(true)}
-        style={styles.addExerciseButton}
+        <View style={[styles.setList, inSuperset ? styles.indented : null]}>
+          <WorkoutSetHeader
+            trackingType={exercise.trackingType}
+            unilateral={exercise.isUnilateral}
+            unit={unit}
+          />
+          {exercise.entries.map((set) => {
+            // In a superset each working set shows its round on the rail (FR-14).
+            const round = inSuperset ? roundIndexOf(exercise, set.id) : -1;
+            return (
+            // The row ref lets the screen scroll the next set into view (0018).
+            <View
+              key={set.id}
+              ref={(node) => {
+                if (node) {
+                  setRowRefs.current.set(set.id, node);
+                } else {
+                  setRowRefs.current.delete(set.id);
+                }
+              }}
+            >
+              {round >= 0 ? (
+                <View pointerEvents="none" style={styles.roundTagSlot}>
+                  <View style={styles.roundTag}>
+                    <Text style={styles.roundTagText}>
+                      {t('supersets.roundTag', { round: round + 1 })}
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
+              <WorkoutSetRow
+                set={set}
+                trackingType={exercise.trackingType}
+                unilateral={exercise.isUnilateral}
+                unit={unit}
+                previousLabel={previousSetLabel(
+                  // Paired by kind, as the placeholders (spec 0031 FR-18).
+                  pairedPerformance(lastByExercise[exercise.exerciseId], exercise.entries),
+                  set.order,
+                  exercise.trackingType,
+                  unit,
+                )}
+                onChange={(field, value) => handleSetChange(exercise.id, set.id, field, value)}
+                onCycleType={() => handleCycleSetType(exercise.id, set.id)}
+                onToggleDone={() => handleToggleDone(exercise.id, set.id)}
+                onRemove={() => handleRemoveSet(exercise.id, set.id)}
+              />
+              {upNext?.workoutSetId === set.id ? (
+                <View pointerEvents="none" style={styles.upNextRing} />
+              ) : null}
+              {liveRecords.badges.bySet[set.id] ? (
+                <RecordBadge hits={liveRecords.badges.bySet[set.id]!} unit={unit} />
+              ) : null}
+            </View>
+            );
+          })}
+          <View style={styles.cardActions}>
+            <Button
+              label={t('workouts.addSet')}
+              icon="add"
+              variant="ghost"
+              onPress={() => handleAddSet(exercise.id)}
+              style={styles.compactButton}
+            />
+            {canAddApproachSets(exercise) ? (
+              <WarmUpActionButton
+                action={warmUpActionFor(exercise)}
+                onPress={() => handleWarmUpAction(exercise.id)}
+                style={styles.iconButton}
+              />
+            ) : null}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('workouts.replaceExercise')}
+              onPress={() => replacement.start(exercise.id)}
+              hitSlop={6}
+              style={styles.iconButton}
+            >
+              <Ionicons name="swap-horizontal" size={18} color={colors.textMuted} />
+            </Pressable>
+            <Button
+              label={t('workouts.removeExercise')}
+              variant="ghost"
+              destructive
+              onPress={() => handleRemoveExercise(exercise.id)}
+              style={styles.compactButton}
+            />
+          </View>
+          {approachNotice?.workoutExerciseId === exercise.id ? (
+            <Text style={styles.meta}>
+              {approachNotice.outcome === 'noWeight'
+                ? t('workouts.approachNoWeight')
+                : t('workouts.approachTooLight')}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+    );
+  };
+
+  return (
+    <View style={styles.screen}>
+      <ScrollView
+        ref={scrollRef}
+        style={styles.scroll}
+        contentContainerStyle={styles.container}
+        onLayout={(event) => {
+          viewportHeightRef.current = event.nativeEvent.layout.height;
+        }}
+        // The field being typed in stays above the keyboard (spec 0019 FR-6):
+        // iOS insets the list by the keyboard and scrolls the field into view.
+        automaticallyAdjustKeyboardInsets
+        // A tap on ✓ or another field while typing acts on the first tap.
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
       >
-        <Text style={styles.addExerciseText}>{`+ ${t('workouts.addExercise')}`}</Text>
-      </Pressable>
-      <ExercisePickerModal
-        visible={isPickerVisible}
-        onClose={() => setIsPickerVisible(false)}
-        onSelect={handleAddExercise}
+        <View ref={contentRef} collapsable={false} style={styles.content}>
+          <View style={styles.headerCard}>
+            <View style={styles.liveRow}>
+              <View style={[styles.liveDot, isPaused ? styles.liveDotPaused : null]} />
+              <Text style={styles.sectionLabel}>
+                {isPaused ? t('workouts.paused') : t('routines.activeLabel')}
+              </Text>
+            </View>
+            <Text style={styles.routineName}>{workoutDraft.routineName}</Text>
+            <View style={styles.clockRow}>
+              <Text style={[styles.clock, isPaused ? styles.clockPaused : null]}>
+                {formatDuration(elapsedSeconds)}
+              </Text>
+              <Button
+                label={isPaused ? t('workouts.resume') : t('workouts.pause')}
+                icon={isPaused ? 'play' : 'pause'}
+                variant="secondary"
+                onPress={handleTogglePause}
+              />
+            </View>
+            {activeKcal !== null ? (
+              <View style={styles.energyRow}>
+                <Ionicons name="flame-outline" size={16} color={colors.textMuted} />
+                <Text style={styles.energyValue}>{Math.round(activeKcal)}</Text>
+                <Text style={styles.energyUnit}>{t('workouts.kcalActive')}</Text>
+              </View>
+            ) : null}
+            <View style={styles.progressRow}>
+              <Text style={styles.meta}>{t('workouts.setsDoneShort')}</Text>
+              <Text style={styles.progressCount}>
+                {t('workouts.setsCountOf', { done: setProgress.done, total: setProgress.total })}
+              </Text>
+            </View>
+            <View style={styles.progressTrack}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${setProgress.total > 0 ? Math.round((setProgress.done / setProgress.total) * 100) : 0}%`,
+                  },
+                ]}
+              />
+            </View>
+            <Text style={styles.hint}>{t('workouts.autosaveHint')}</Text>
+          </View>
+          {/* The warm-up block first; ticking is not a set (spec 0024 FR-6). */}
+          <WarmUpChecklist
+            items={(workoutDraft.warmUp ?? []).map((item) => ({ ...item, key: item.id }))}
+            onToggle={(itemId) => applyDraft(toggleWarmUpItem(workoutDraft, itemId))}
+          />
+          {blocks.map((members) => {
+            const first = blockLabels[members[0] ?? 0];
+            const key = workoutDraft.exercises[members[0] ?? 0]?.id ?? String(members[0]);
+            if (members.length === 1 || !first?.supersetIndex) {
+              return (
+                <View key={key} style={styles.card}>
+                  {members.map((index) => renderExercise(index, false))}
+                </View>
+              );
+            }
+            return (
+              <View key={key} style={styles.card}>
+                <SupersetHeader
+                  size={members.length}
+                  round={roundStatus(
+                    members.flatMap((index) => workoutDraft.exercises[index] ?? []),
+                  )}
+                />
+                <View style={styles.supersetBody}>
+                  <View style={styles.rail} />
+                  <View style={styles.supersetMembers}>
+                    {members.map((index) => renderExercise(index, true))}
+                  </View>
+                </View>
+              </View>
+            );
+          })}
+          <Button
+            label={t('workouts.addExercise')}
+            icon="add-circle-outline"
+            variant="secondary"
+            onPress={() => setIsPickerVisible(true)}
+            fullWidth
+          />
+          <ExercisePickerModal
+            {...(replacement.pickerProps ?? {
+              visible: isPickerVisible,
+              onClose: () => setIsPickerVisible(false),
+              onSelect: handleAddExercise,
+            })}
+          />
+          <TextInput
+            value={workoutDraft.notes ?? ''}
+            onChangeText={handleNotesChange}
+            placeholder={t('workouts.notesPlaceholder')}
+            placeholderTextColor={colors.textSubtle}
+            style={styles.notesInput}
+            multiline
+          />
+          {finishError ? <Text style={styles.errorText}>{finishError}</Text> : null}
+          {finishRefused ? (
+            <Text style={styles.meta}>{t('workouts.saveRefusedHint')}</Text>
+          ) : null}
+          <Button
+            label={isFinishing ? t('workouts.savingWorkout') : t('workouts.finishWorkout')}
+            icon="flag"
+            onPress={() => void finishWorkout()}
+            disabled={isFinishing}
+            fullWidth
+          />
+          <Button
+            label={t('workouts.discardWorkout')}
+            icon="close-circle-outline"
+            variant="ghost"
+            destructive
+            onPress={() => void handleDiscard()}
+            disabled={isFinishing}
+            style={styles.centered}
+          />
+        </View>
+      </ScrollView>
+      {workoutDraft.rest ? (
+        <RestBar
+          rest={workoutDraft.rest}
+          // Read at tap time: the draft may have changed since this render.
+          onAdjust={(delta) => {
+            const current = getActiveWorkout();
+            if (current) {
+              setActiveWorkout(adjustRest(current, delta));
+            }
+          }}
+          onSkip={() => {
+            const current = getActiveWorkout();
+            if (current) {
+              setActiveWorkout(skipRest(current));
+            }
+          }}
+          next={nextSetLabel(workoutDraft, t)}
+        />
+      ) : null}
+      <ApproachSetsPreviewSheet
+        preview={
+          approachPreview && previewedExercise
+            ? { ...approachPreview.preview, exerciseName: previewedExercise.exerciseName }
+            : null
+        }
+        onConfirm={confirmApproachPreview}
+        onCancel={() => setApproachPreview(null)}
       />
-      {finishError ? <Text style={styles.errorText}>{finishError}</Text> : null}
-      <Button
-        label={isFinishing ? t('workouts.savingWorkout') : t('workouts.finishWorkout')}
-        onPress={() => void finishWorkout()}
-        disabled={isFinishing}
-        fullWidth
+      <RecordNotice notice={liveRecords.notice} unit={unit} />
+      <RestEditorSheet
+        visible={restEditorExercise !== undefined}
+        exerciseName={restEditorExercise?.exerciseName ?? ''}
+        seconds={
+          restEditorExercise
+            ? resolveRestSeconds(restEditorExercise, settings.defaultRestSeconds)
+            : settings.defaultRestSeconds
+        }
+        onSave={(seconds) => {
+          const current = getActiveWorkout();
+          if (current && restEditorFor) {
+            setActiveWorkout(setExerciseRest(current, restEditorFor, seconds));
+          }
+        }}
+        onClose={() => setRestEditorFor(null)}
       />
-      <Button
-        label={t('workouts.discardWorkout')}
-        variant="danger"
-        onPress={handleDiscard}
-        disabled={isFinishing}
-        fullWidth
-      />
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    ...commonStyles.screen,
+  },
+  scroll: {
+    flex: 1,
+  },
+  content: {
+    gap: spacing.lg,
+  },
   container: {
     ...commonStyles.scrollContent,
   },
-  title: {
-    ...commonStyles.title,
+  centered: {
+    alignSelf: 'center',
   },
-  body: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: '800',
-  },
-  timer: {
-    color: colors.primary,
-    fontSize: 40,
-    fontWeight: '900',
-    fontVariant: ['tabular-nums'],
+  sectionLabel: {
+    ...commonStyles.sectionLabel,
   },
   meta: {
     ...commonStyles.meta,
+  },
+  hint: {
+    color: colors.textSubtle,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  headerCard: {
+    ...commonStyles.card,
+    gap: spacing.sm,
+  },
+  liveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.primary,
+  },
+  liveDotPaused: {
+    backgroundColor: colors.textMuted,
+  },
+  routineName: {
+    ...commonStyles.cardTitle,
+    fontSize: 20,
+    lineHeight: 26,
+  },
+  clockRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    borderRadius: radii.md,
+    backgroundColor: colors.background,
+    paddingVertical: spacing.sm,
+    paddingLeft: spacing.lg,
+    paddingRight: spacing.sm,
+  },
+  clock: {
+    ...commonStyles.figureLarge,
+    color: colors.primary,
+    flexShrink: 1,
+  },
+  clockPaused: {
+    color: colors.textMuted,
+  },
+  energyRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.xs,
+  },
+  energyValue: {
+    ...commonStyles.figure,
+    fontSize: 18,
+    lineHeight: 22,
+  },
+  energyUnit: {
+    color: colors.textMuted,
+    fontSize: 13,
+  },
+  progressRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    marginTop: spacing.xs,
+  },
+  progressCount: {
+    color: colors.primary,
+    fontFamily: fonts.displayBold,
+    fontSize: 15,
+    fontVariant: ['tabular-nums'],
+  },
+  progressTrack: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.surfaceRaised,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 4,
+    backgroundColor: colors.primary,
   },
   card: {
     ...commonStyles.card,
     gap: spacing.md,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  supersetBody: {
+    position: 'relative',
+  },
+  rail: {
+    position: 'absolute',
+    left: 13,
+    top: 14,
+    bottom: 14,
+    width: 2,
+    borderRadius: 1,
+    backgroundColor: colors.borderStrong,
+  },
+  supersetMembers: {
+    gap: spacing.lg,
+  },
+  indented: {
+    marginLeft: 36,
+  },
+  // Centred on the superset rail, in the gutter left of the set rows.
+  roundTagSlot: {
+    position: 'absolute',
+    left: -36,
+    width: 28,
+    top: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  roundTag: {
+    minWidth: 24,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 3,
+    paddingVertical: 1,
     alignItems: 'center',
   },
-  cardTitleGroup: {
-    flexShrink: 1,
-    gap: 4,
+  roundTagText: {
+    color: colors.textMuted,
+    fontFamily: fonts.displayBold,
+    fontSize: 10,
+    lineHeight: 13,
   },
-  cardTitle: {
-    color: colors.text,
-    fontSize: 20,
-    fontWeight: '800',
-    flexShrink: 1,
+  // Drawn over the row, so highlighting never shifts the layout (FR-14).
+  upNextRing: {
+    position: 'absolute',
+    top: -2,
+    bottom: -2,
+    left: -2,
+    right: -2,
+    borderRadius: radii.md,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
   },
-  supersetBadge: {
-    alignSelf: 'flex-start',
-    color: colors.accent,
-    backgroundColor: colors.accentSoft,
-    fontSize: 12,
-    fontWeight: '800',
+  exercise: {
+    gap: spacing.sm,
+  },
+  exerciseHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  blockBadge: {
+    minWidth: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: radii.sm,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    overflow: 'hidden',
+    backgroundColor: colors.surfaceRaised,
+    paddingHorizontal: 4,
+  },
+  blockBadgeSuperset: {
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.textMuted,
+  },
+  blockBadgeText: {
+    color: colors.text,
+    fontFamily: fonts.displayBold,
+    fontSize: 13,
+  },
+  blockBadgeTextSuperset: {
+    color: colors.text,
+    fontSize: 12,
+  },
+  exerciseTitleColumn: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  exerciseTitle: {
+    ...commonStyles.cardTitle,
+    paddingTop: 2,
+  },
+  restChipRow: {
+    flexDirection: 'row',
   },
   reorderRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.lg,
+    gap: spacing.xs,
   },
-  reorderText: {
-    color: colors.primary,
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  imagePlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 84,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceMuted,
-  },
-  imagePlaceholderText: {
-    color: colors.textSubtle,
-    fontSize: 14,
-  },
-  target: {
-    color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  setList: {
-    gap: spacing.sm,
-  },
-  setHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingBottom: 2,
-  },
-  colLabel: {
-    color: colors.textSubtle,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  setRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    borderRadius: radii.sm,
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-  },
-  setRowDone: {
-    backgroundColor: colors.successSoft,
-  },
-  colSet: {
-    width: 36,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  colPrev: {
-    width: 64,
-  },
-  colInput: {
-    flex: 1,
-  },
-  colCheck: {
-    width: 36,
-  },
-  setNum: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  setTypeTag: {
-    color: colors.accent,
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  prevText: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontVariant: ['tabular-nums'],
-  },
-  cellInput: {
-    minHeight: 40,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surfaceMuted,
-    color: colors.text,
-    textAlign: 'center',
-    fontSize: 16,
-    paddingVertical: 6,
-  },
-  checkBox: {
+  iconButton: {
     width: 36,
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radii.sm,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
+    backgroundColor: colors.surfaceRaised,
   },
-  checkBoxDone: {
-    backgroundColor: colors.success,
-    borderColor: colors.success,
-  },
-  checkMark: {
-    color: colors.borderStrong,
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  checkMarkDone: {
-    color: colors.onPrimary,
-  },
-  removeSet: {
-    width: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  removeSetText: {
-    color: colors.textSubtle,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  removeText: {
-    color: colors.danger,
-    fontSize: 13,
-    fontWeight: '700',
+  setList: {
+    gap: spacing.xs,
   },
   cardActions: {
     flexDirection: 'row',
+    // Three actions may not fit an indented superset card (spec 0020).
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  addSetButton: {
-    alignSelf: 'flex-start',
-    paddingVertical: 6,
-  },
-  addSetText: {
-    color: colors.primary,
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  addExerciseButton: {
-    ...commonStyles.secondaryButton,
-    borderColor: colors.primary,
-  },
-  addExerciseText: {
-    color: colors.primary,
-    fontSize: 15,
-    fontWeight: '800',
+  compactButton: {
+    minHeight: 44,
+    paddingHorizontal: spacing.sm,
   },
   notesInput: {
     ...commonStyles.input,
     fontSize: 15,
-    minHeight: 60,
+    minHeight: 72,
+    // Long notes scroll inside the field, which keeps the caret in view.
+    maxHeight: 160,
     textAlignVertical: 'top',
-  },
-  restBar: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceRaised,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-  },
-  restColumn: {
-    gap: spacing.sm,
-  },
-  wheelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-  },
-  wheelGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  wheelUnit: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  wheelColon: {
-    color: colors.text,
-    fontSize: 22,
-    fontWeight: '900',
-  },
-  restRingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.lg,
-  },
-  ringTime: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: '900',
-    fontVariant: ['tabular-nums'],
-  },
-  ringLabel: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  ringControls: {
-    flex: 1,
-    gap: spacing.sm,
-  },
-  skipButton: {
-    minHeight: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radii.sm,
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.md,
-  },
-  skipText: {
-    color: colors.onPrimary,
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  restRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-  },
-  stepButton: {
-    minWidth: 38,
-    minHeight: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radii.sm,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    paddingHorizontal: 8,
-  },
-  stepText: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  startButton: {
-    borderRadius: radii.sm,
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-  },
-  startText: {
-    color: colors.onPrimary,
-    fontSize: 14,
-    fontWeight: '800',
   },
   errorText: {
     ...commonStyles.error,
-  },
-  link: {
-    ...commonStyles.link,
   },
 });

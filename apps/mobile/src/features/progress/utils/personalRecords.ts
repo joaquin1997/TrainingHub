@@ -33,3 +33,4 @@ export function extractPersonalRecords(
 
   return records;
 }
+

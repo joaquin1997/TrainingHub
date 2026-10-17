@@ -5,6 +5,8 @@ vi.mock('./repository.js', () => ({
   getExerciseProgress: vi.fn(),
   listWeeklyVolume: vi.fn(),
   listMuscleGroupVolume: vi.fn(),
+  listSessionRecords: vi.fn(),
+  listStartingRecords: vi.fn(),
 }));
 vi.mock('../../infrastructure/userContext.js', () => ({
   resolveUserPublicId: vi.fn(async () => 'user-test'),
@@ -15,6 +17,8 @@ import {
   getExerciseProgress,
   listExerciseProgress,
   listMuscleGroupVolume,
+  listSessionRecords,
+  listStartingRecords,
   listWeeklyVolume,
 } from './repository.js';
 
@@ -75,6 +79,44 @@ describe('GET /progress/muscle-distribution', () => {
   });
 });
 
+describe('GET /progress/starting-records (spec 0032)', () => {
+  it('passes the distinct ids, in order, to the repository', async () => {
+    vi.mocked(listStartingRecords).mockResolvedValue([
+      { exerciseId: 'e2', bests: {}, repsAtWeight: [] },
+      { exerciseId: 'e1', bests: { heaviestWeight: 100 }, repsAtWeight: [] },
+    ]);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/progress/starting-records?exerciseIds=e2,e1,e2',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(listStartingRecords).toHaveBeenCalledWith('user-test', ['e2', 'e1']);
+    expect(response.json()).toHaveLength(2);
+  });
+
+  it.each(['', '?exerciseIds=', '?exerciseIds=,,'])('refuses %j with 400', async (query) => {
+    const response = await app.inject({
+      method: 'GET',
+      url: `/progress/starting-records${query}`,
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(listStartingRecords).not.toHaveBeenCalled();
+  });
+
+  it('refuses more than 50 ids', async () => {
+    const ids = Array.from({ length: 51 }, (_, index) => `e${index}`).join(',');
+    const response = await app.inject({
+      method: 'GET',
+      url: `/progress/starting-records?exerciseIds=${ids}`,
+    });
+
+    expect(response.statusCode).toBe(400);
+  });
+});
+
 describe('GET /progress/exercises/:exerciseId', () => {
   it('returns 404 when the exercise has no progress', async () => {
     vi.mocked(getExerciseProgress).mockResolvedValue(null as never);
@@ -104,5 +146,32 @@ describe('GET /progress/exercises/:exerciseId', () => {
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ exerciseId: 'e1', points: [{ totalVolume: 480 }] });
     expect(getExerciseProgress).toHaveBeenCalledWith('user-test', 'e1');
+  });
+});
+
+describe('GET /progress/session-records', () => {
+  it('returns the records each workout beat for the signed-in user', async () => {
+    const records = [
+      {
+        workoutId: 'w2',
+        clientId: 'c2',
+        records: [
+          {
+            type: 'bestSessionVolume',
+            value: 1500,
+            date: '2026-05-08T09:00:00.000Z',
+            exerciseId: 'bench',
+            exerciseName: 'Bench Press',
+          },
+        ],
+      },
+    ];
+    vi.mocked(listSessionRecords).mockResolvedValue(records as never);
+
+    const response = await app.inject({ method: 'GET', url: '/progress/session-records' });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual(records);
+    expect(listSessionRecords).toHaveBeenCalledWith('user-test');
   });
 });

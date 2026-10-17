@@ -1,13 +1,20 @@
 import type {
   CreateWorkoutSessionInput,
   ExerciseLastPerformance,
+  ExerciseTrackingType,
   Routine,
   WeightUnit,
   WorkoutSession,
+  WorkoutSetInput,
   WorkoutSetType,
 } from '@workout/domain';
 
+import { formatDuration } from '@/lib/format';
+import { parseDistanceInput, parseDurationInput, tracksField } from '@/lib/tracking';
 import { kgToInputString, roundWeight, toKg } from '@/lib/weight';
+
+import { pairLastSets, withTargetPlaceholders } from './lastTimeByKind';
+import { buildWarmUpDraft, toWarmUpItemsInput } from './warmUpDraft';
 
 export const WORKOUT_SET_TYPES: WorkoutSetType[] = [
   'normal',
@@ -34,6 +41,24 @@ export type WorkoutSetDraft = {
    */
   repsPlaceholder?: string;
   weightPlaceholder?: string;
+  /**
+   * Time and distance as typed (spec 0021): time as seconds or m:ss, distance
+   * in metres. Optional, so drafts stored before them still load; their
+   * placeholders (time as m:ss) follow the same rule as reps and weight.
+   */
+  duration?: string;
+  distance?: string;
+  durationPlaceholder?: string;
+  distancePlaceholder?: string;
+  /**
+   * Reps per side of a unilateral exercise (spec 0022), side by side in the
+   * row. A side without its own placeholder ghosts `repsPlaceholder` (see
+   * {@link sideRepsPlaceholder}), so routine targets apply to each side.
+   */
+  repsLeft?: string;
+  repsRight?: string;
+  repsLeftPlaceholder?: string;
+  repsRightPlaceholder?: string;
   done: boolean;
   /** Rest configured when this set was marked done, in seconds. */
   restSeconds?: number;
@@ -41,7 +66,44 @@ export type WorkoutSetDraft = {
   minReps?: number;
   maxReps?: number;
   targetWeight?: number;
+  targetDurationSeconds?: number;
+  targetDistanceMeters?: number;
+  /**
+   * The placeholders came from last time's set of the same kind (spec 0031);
+   * if the set later has no counterpart, they go back to the routine targets.
+   */
+  lastTimePaired?: boolean;
+  /**
+   * Added by the warm-up action and untouched since (spec 0031): the action
+   * can remove it. Lost for good when a value or the type changes; never saved.
+   */
+  generatedWarmup?: boolean;
 };
+
+/** A set value the person types (the `Kg` field is in the display unit). */
+export type SetDraftField =
+  | 'reps'
+  | 'weightKg'
+  | 'duration'
+  | 'distance'
+  | 'repsLeft'
+  | 'repsRight';
+
+export type Side = 'left' | 'right';
+
+/** The ghosted reps of one side: its own, else the set's (target, previous set). */
+export function sideRepsPlaceholder(set: WorkoutSetDraft, side: Side): string | undefined {
+  return (side === 'left' ? set.repsLeftPlaceholder : set.repsRightPlaceholder) ??
+    set.repsPlaceholder;
+}
+
+/** A side's effective reps as typed or ghosted (spec 0022). */
+export function effectiveSideReps(set: WorkoutSetDraft, side: Side): string {
+  return effectiveSetValue(
+    (side === 'left' ? set.repsLeft : set.repsRight) ?? '',
+    sideRepsPlaceholder(set, side),
+  );
+}
 
 /** Trimmed actual value, falling back to the ghosted placeholder when empty. */
 export function effectiveSetValue(value: string, placeholder?: string): string {
@@ -56,12 +118,22 @@ export type WorkoutExerciseDraft = {
   routineExerciseId?: string;
   restSeconds?: number;
   supersetGroup?: number;
+  /** Captured when the exercise joined the workout; absent = weight & reps. */
+  trackingType?: ExerciseTrackingType;
+  /** Captured like the tracking type: its reps are logged per side (spec 0022). */
+  isUnilateral?: boolean;
   order: number;
   entries: WorkoutSetDraft[];
 };
 
 export type WorkoutSessionDraft = {
   id: string;
+  /**
+   * Workout identity sent with the save, unique per workout (spec 0014). The
+   * server returns the first save for a repeated identity, so retries never
+   * duplicate. `id` cannot serve: it repeats for the same routine.
+   */
+  clientId: string;
   routineId: string;
   routineName: string;
   startedAt: string;
@@ -72,7 +144,46 @@ export type WorkoutSessionDraft = {
    * Optional for backwards-compat — absent means kg.
    */
   unit?: WeightUnit;
+  /** When the current pause began; absent while the clock runs (spec 0011). */
+  pausedAt?: string;
+  /** Whole seconds of pauses already ended. */
+  pausedSeconds?: number;
+  /** The rest counting down now; absent when none runs (spec 0018). */
+  rest?: RunningRest;
+  /** The exercise of the last set ticked; anchors "next set" (spec 0029). */
+  lastTickedExerciseId?: string;
+  /** The warm-up block's checklist; absent when the routine has none (spec 0024). */
+  warmUp?: WarmUpItemDraft[];
+  /**
+   * Each exercise's starting records, by exercise id (spec 0032): loaded once
+   * when it joins the workout, kept so badges work offline after a restart,
+   * never changed by this workout. Absent = not loaded (no badges). See
+   * `features/workouts/liveRecords`.
+   */
+  startingRecords?: Record<string, import('@workout/domain').StartingRecords>;
   exercises: WorkoutExerciseDraft[];
+};
+
+/** One warm-up block item in the workout: ticked, never a set (spec 0024). */
+export type WarmUpItemDraft = {
+  id: string;
+  name: string;
+  targetDurationSeconds?: number;
+  targetReps?: number;
+  done: boolean;
+};
+
+/**
+ * A rest started by ticking a set (spec 0018). The end is absolute, so it
+ * survives leaving the screen and restarting the app.
+ */
+export type RunningRest = {
+  /** ISO instant the rest ends. */
+  endsAt: string;
+  /** Length of the rest, grown by extra time; for the progress line. */
+  totalSeconds: number;
+  /** The exercise whose set started it. */
+  workoutExerciseId: string;
 };
 
 /** The session's display unit, defaulting to kg when unset. */
@@ -83,10 +194,16 @@ function draftUnit(workoutDraft: WorkoutSessionDraft): WeightUnit {
 let latestCompletedWorkout: WorkoutSessionDraft | null = null;
 let activeWorkout: WorkoutSessionDraft | null = null;
 let draftIdCounter = 0;
+/**
+ * Time-based prefix for generated ids. The counter restarts with the app, and a
+ * draft restored after a restart (spec 0010) already holds ids from the
+ * previous run; the seed keeps new ids from colliding with them.
+ */
+const draftIdSeed = Date.now().toString(36);
 
-function nextDraftId(prefix: string) {
+export function nextDraftId(prefix: string) {
   draftIdCounter += 1;
-  return `${prefix}-gen-${draftIdCounter}`;
+  return `${prefix}-gen-${draftIdSeed}-${draftIdCounter}`;
 }
 
 function renumberSets(entries: WorkoutSetDraft[]): WorkoutSetDraft[] {
@@ -114,6 +231,8 @@ function buildExerciseDrafts(
       routineExerciseId: routineExercise.id,
       restSeconds: routineExercise.restSeconds,
       supersetGroup: routineExercise.supersetGroup,
+      trackingType: routineExercise.trackingType,
+      isUnilateral: routineExercise.isUnilateral,
       order: routineExercise.orderIndex,
       entries: routineExercise.sets
         .slice()
@@ -133,13 +252,32 @@ function buildExerciseDrafts(
             set.targetWeight !== undefined
               ? kgToInputString(set.targetWeight, unit)
               : undefined,
+          durationPlaceholder:
+            set.targetDurationSeconds !== undefined
+              ? formatDuration(set.targetDurationSeconds)
+              : undefined,
+          distancePlaceholder:
+            set.targetDistanceMeters !== undefined
+              ? String(set.targetDistanceMeters)
+              : undefined,
           done: false,
-          type: 'normal',
+          // A routine warm-up set (spec 0024) is a warm-up in the workout.
+          type: set.isWarmup ? 'warmup' : 'normal',
+          // A generated routine warm-up stays generated in the workout (0031 FR-15).
+          generatedWarmup: (set.isWarmup && set.isGeneratedWarmup) || undefined,
           minReps: set.minReps,
           maxReps: set.maxReps,
           targetWeight: set.targetWeight,
+          targetDurationSeconds: set.targetDurationSeconds,
+          targetDistanceMeters: set.targetDistanceMeters,
         })),
     }));
+}
+
+/** A per-workout identity; unique per user is enough, so no UUID dependency. */
+export function createWorkoutClientId(): string {
+  const random = Math.random().toString(36).slice(2, 10).padEnd(8, '0');
+  return `${Date.now().toString(36)}-${random}`;
 }
 
 export function buildWorkoutSessionDraft(
@@ -148,10 +286,12 @@ export function buildWorkoutSessionDraft(
 ): WorkoutSessionDraft {
   return {
     id: `workout-session-${routine.id}`,
+    clientId: createWorkoutClientId(),
     routineId: routine.id,
     routineName: routine.name,
     startedAt: new Date().toISOString(),
     unit,
+    warmUp: buildWarmUpDraft(routine),
     exercises: buildExerciseDrafts(routine, unit),
   };
 }
@@ -160,7 +300,7 @@ export function updateWorkoutSetDraft(
   workoutDraft: WorkoutSessionDraft,
   workoutExerciseId: string,
   workoutSetId: string,
-  field: 'reps' | 'weightKg',
+  field: SetDraftField,
   value: string,
 ): WorkoutSessionDraft {
   return {
@@ -173,7 +313,14 @@ export function updateWorkoutSetDraft(
       return {
         ...exercise,
         entries: exercise.entries.map((set) =>
-          set.id === workoutSetId ? { ...set, [field]: value } : set,
+          set.id === workoutSetId
+            ? {
+                ...set,
+                [field]: value,
+                // A changed value makes a generated warm-up the person's own (0031 FR-7).
+                generatedWarmup: set[field] === value ? set.generatedWarmup : undefined,
+              }
+            : set,
         ),
       };
     }),
@@ -182,12 +329,19 @@ export function updateWorkoutSetDraft(
 
 export function addExerciseToWorkout(
   workoutDraft: WorkoutSessionDraft,
-  exercise: { id: string; name: string },
+  exercise: {
+    id: string;
+    name: string;
+    trackingType?: ExerciseTrackingType;
+    isUnilateral?: boolean;
+  },
 ): WorkoutSessionDraft {
   const newExercise: WorkoutExerciseDraft = {
     id: nextDraftId('we'),
     exerciseId: exercise.id,
     exerciseName: exercise.name,
+    trackingType: exercise.trackingType,
+    isUnilateral: exercise.isUnilateral,
     order: workoutDraft.exercises.length + 1,
     entries: [
       {
@@ -243,6 +397,17 @@ export function addSetToWorkoutExercise(
           ? effectiveSetValue(previousSet.weightKg, previousSet.weightPlaceholder) ||
             undefined
           : undefined,
+        durationPlaceholder: previousSet ? inheritedDuration(previousSet) : undefined,
+        distancePlaceholder: previousSet
+          ? effectiveSetValue(previousSet.distance ?? '', previousSet.distancePlaceholder) ||
+            undefined
+          : undefined,
+        repsLeftPlaceholder: previousSet
+          ? effectiveSideReps(previousSet, 'left') || undefined
+          : undefined,
+        repsRightPlaceholder: previousSet
+          ? effectiveSideReps(previousSet, 'right') || undefined
+          : undefined,
         done: false,
         type: 'normal',
       };
@@ -252,9 +417,18 @@ export function addSetToWorkoutExercise(
   };
 }
 
+/** The previous set's time as the next set's m:ss placeholder. */
+function inheritedDuration(set: WorkoutSetDraft): string | undefined {
+  const seconds = parseDurationInput(
+    effectiveSetValue(set.duration ?? '', set.durationPlaceholder),
+  );
+  return typeof seconds === 'number' ? formatDuration(seconds) : undefined;
+}
+
 /**
  * Fills each set's ghosted placeholders from the exercise's last performance
- * (matched by set order). Only placeholders change — the user's actual entries
+ * (paired by kind and position within the kind, spec 0031 — see
+ * `lastTimeByKind.ts`). Only placeholders change — the user's actual entries
  * are untouched — and the same reference is returned when nothing changes, so
  * it is safe to call on every performance fetch without churn.
  */
@@ -271,11 +445,17 @@ export function applyLastPerformance(
       return exercise;
     }
 
-    const entries = exercise.entries.map((set) => {
-      const last = performance.sets.find((item) => item.order === set.order);
+    // Paired by kind: warm-ups with warm-ups, working with working (spec 0031).
+    const paired = pairLastSets(performance.sets, exercise.entries);
+    const entries = exercise.entries.map((set, index) => {
+      const last = paired[index];
 
       if (!last) {
-        return set;
+        if (!set.lastTimePaired) {
+          return set;
+        }
+        changed = true;
+        return withTargetPlaceholders(set, unit);
       }
 
       const repsPlaceholder =
@@ -286,16 +466,47 @@ export function applyLastPerformance(
         last.weightKg !== undefined && last.weightKg !== null
           ? kgToInputString(last.weightKg, unit)
           : set.weightPlaceholder;
+      const durationPlaceholder =
+        last.durationSeconds !== undefined && last.durationSeconds !== null
+          ? formatDuration(last.durationSeconds)
+          : set.durationPlaceholder;
+      const distancePlaceholder =
+        last.distanceMeters !== undefined && last.distanceMeters !== null
+          ? String(last.distanceMeters)
+          : set.distancePlaceholder;
+      // Per side (spec 0022 FR-4); a side not done last time ghosts the other.
+      const lastLeft = last.repsLeft ?? last.repsRight;
+      const lastRight = last.repsRight ?? last.repsLeft;
+      const repsLeftPlaceholder =
+        lastLeft !== undefined && lastLeft !== null ? String(lastLeft) : set.repsLeftPlaceholder;
+      const repsRightPlaceholder =
+        lastRight !== undefined && lastRight !== null
+          ? String(lastRight)
+          : set.repsRightPlaceholder;
 
       if (
         repsPlaceholder === set.repsPlaceholder &&
-        weightPlaceholder === set.weightPlaceholder
+        weightPlaceholder === set.weightPlaceholder &&
+        durationPlaceholder === set.durationPlaceholder &&
+        distancePlaceholder === set.distancePlaceholder &&
+        repsLeftPlaceholder === set.repsLeftPlaceholder &&
+        repsRightPlaceholder === set.repsRightPlaceholder &&
+        set.lastTimePaired
       ) {
         return set;
       }
 
       changed = true;
-      return { ...set, repsPlaceholder, weightPlaceholder };
+      return {
+        ...set,
+        repsPlaceholder,
+        weightPlaceholder,
+        durationPlaceholder,
+        distancePlaceholder,
+        repsLeftPlaceholder,
+        repsRightPlaceholder,
+        lastTimePaired: true,
+      };
     });
 
     return { ...exercise, entries };
@@ -409,7 +620,8 @@ export function cycleWorkoutSetType(
 
           const nextIndex =
             (WORKOUT_SET_TYPES.indexOf(set.type) + 1) % WORKOUT_SET_TYPES.length;
-          return { ...set, type: WORKOUT_SET_TYPES[nextIndex]! };
+          // A re-typed generated warm-up is the person's own (spec 0031 FR-7).
+          return { ...set, type: WORKOUT_SET_TYPES[nextIndex]!, generatedWarmup: undefined };
         }),
       };
     }),
@@ -445,6 +657,191 @@ export function toggleWorkoutSetDone(
   };
 }
 
+const secondsBetween = (fromIso: string, to: Date) =>
+  Math.max(0, Math.floor((to.getTime() - new Date(fromIso).getTime()) / 1000));
+
+/** Stops the workout clock; pausing a paused workout changes nothing. */
+export function pauseWorkout(
+  workoutDraft: WorkoutSessionDraft,
+  now: Date = new Date(),
+): WorkoutSessionDraft {
+  if (workoutDraft.pausedAt) {
+    return workoutDraft;
+  }
+
+  return { ...workoutDraft, pausedAt: now.toISOString() };
+}
+
+/** Restarts the clock, adding the ended pause to the paused total. */
+export function resumeWorkout(
+  workoutDraft: WorkoutSessionDraft,
+  now: Date = new Date(),
+): WorkoutSessionDraft {
+  if (!workoutDraft.pausedAt) {
+    return workoutDraft;
+  }
+
+  return {
+    ...workoutDraft,
+    pausedAt: undefined,
+    pausedSeconds:
+      (workoutDraft.pausedSeconds ?? 0) + secondsBetween(workoutDraft.pausedAt, now),
+  };
+}
+
+/** Paused seconds up to `end`, counting a pause still in progress (FR-5). */
+export function totalPausedSeconds(
+  workoutDraft: WorkoutSessionDraft,
+  end: Date = new Date(),
+): number {
+  const ongoing = workoutDraft.pausedAt ? secondsBetween(workoutDraft.pausedAt, end) : 0;
+  return (workoutDraft.pausedSeconds ?? 0) + ongoing;
+}
+
+/**
+ * The rest a ticked set starts (FR-1): the exercise's own rest — the one set
+ * in this workout, otherwise the routine's — or the Settings default.
+ */
+export function resolveRestSeconds(
+  exercise: Pick<WorkoutExerciseDraft, 'restSeconds'>,
+  defaultRestSeconds: number,
+): number {
+  return exercise.restSeconds ?? defaultRestSeconds;
+}
+
+/**
+ * Changes one exercise's rest for the rest of this workout (FR-2). The routine
+ * is never written, and a rest already running is left as it is.
+ */
+export function setExerciseRest(
+  workoutDraft: WorkoutSessionDraft,
+  workoutExerciseId: string,
+  seconds: number,
+): WorkoutSessionDraft {
+  const restSeconds = Math.max(0, Math.round(seconds));
+
+  return {
+    ...workoutDraft,
+    exercises: workoutDraft.exercises.map((exercise) =>
+      exercise.id === workoutExerciseId ? { ...exercise, restSeconds } : exercise,
+    ),
+  };
+}
+
+/** Starts a rest, replacing any running one; 0 seconds or less starts nothing. */
+export function startRest(
+  workoutDraft: WorkoutSessionDraft,
+  workoutExerciseId: string,
+  seconds: number,
+  now: Date = new Date(),
+): WorkoutSessionDraft {
+  if (!(seconds > 0)) {
+    return workoutDraft;
+  }
+
+  return {
+    ...workoutDraft,
+    rest: {
+      endsAt: new Date(now.getTime() + seconds * 1000).toISOString(),
+      totalSeconds: seconds,
+      workoutExerciseId,
+    },
+  };
+}
+
+/**
+ * Ticks a set done and starts its exercise's rest from `now` (spec 0018
+ * FR-1) — the one rule for the phone and the watch (spec 0025). A set already
+ * done, or not found, leaves the workout as it is, so a repeated tick is
+ * harmless (EF-1).
+ */
+export function completeSet(
+  workoutDraft: WorkoutSessionDraft,
+  workoutExerciseId: string,
+  workoutSetId: string,
+  defaultRestSeconds: number,
+  now: Date = new Date(),
+): WorkoutSessionDraft {
+  const exercise = workoutDraft.exercises.find((item) => item.id === workoutExerciseId);
+  const set = exercise?.entries.find((item) => item.id === workoutSetId);
+  if (!exercise || !set || set.done) {
+    return workoutDraft;
+  }
+
+  const rest = resolveRestSeconds(exercise, defaultRestSeconds);
+  return startRest(
+    toggleWorkoutSetDone(workoutDraft, workoutExerciseId, workoutSetId, rest),
+    workoutExerciseId,
+    rest,
+    now,
+  );
+}
+
+/** Whole seconds left in a rest at `now`, never below 0. */
+export function restRemainingSeconds(rest: RunningRest, now: Date = new Date()): number {
+  return Math.max(0, Math.round((new Date(rest.endsAt).getTime() - now.getTime()) / 1000));
+}
+
+/**
+ * Moves the end of the running rest by `deltaSeconds` (FR-3), never earlier
+ * than now. The total grows with extra time so the progress stays proportional.
+ */
+export function adjustRest(
+  workoutDraft: WorkoutSessionDraft,
+  deltaSeconds: number,
+  now: Date = new Date(),
+): WorkoutSessionDraft {
+  const rest = workoutDraft.rest;
+
+  if (!rest) {
+    return workoutDraft;
+  }
+
+  const endsAtMs = Math.max(
+    now.getTime(),
+    new Date(rest.endsAt).getTime() + deltaSeconds * 1000,
+  );
+  const left = Math.max(0, Math.round((endsAtMs - now.getTime()) / 1000));
+
+  return {
+    ...workoutDraft,
+    rest: {
+      ...rest,
+      endsAt: new Date(endsAtMs).toISOString(),
+      totalSeconds: Math.max(left, rest.totalSeconds + deltaSeconds),
+    },
+  };
+}
+
+/** Ends the running rest now, without an alert. */
+export function skipRest(workoutDraft: WorkoutSessionDraft): WorkoutSessionDraft {
+  if (!workoutDraft.rest) {
+    return workoutDraft;
+  }
+
+  return { ...workoutDraft, rest: undefined };
+}
+
+/** How long past its end a rest still counts as just ended, not stale. */
+export const REST_ENDED_GRACE_MS = 2000;
+
+/**
+ * `running` before the end; `ended` up to {@link REST_ENDED_GRACE_MS} after it
+ * (alert in the app); `stale` later — cleared without an alert (EF-2, EF-3).
+ */
+export function restPhase(
+  rest: RunningRest,
+  now: Date = new Date(),
+): 'running' | 'ended' | 'stale' {
+  const pastEnd = now.getTime() - new Date(rest.endsAt).getTime();
+
+  if (pastEnd < 0) {
+    return 'running';
+  }
+
+  return pastEnd <= REST_ENDED_GRACE_MS ? 'ended' : 'stale';
+}
+
 export function countWorkoutSets(workoutDraft: WorkoutSessionDraft) {
   return workoutDraft.exercises.reduce(
     (totals, exercise) => ({
@@ -463,14 +860,23 @@ export function countWorkoutSets(workoutDraft: WorkoutSessionDraft) {
 export function toCreateWorkoutSessionInput(
   workoutDraft: WorkoutSessionDraft,
 ): CreateWorkoutSessionInput {
-  const completedAt = new Date().toISOString();
+  const finishedAt = new Date();
+  const completedAt = finishedAt.toISOString();
   const unit = draftUnit(workoutDraft);
+  // Never more than the workout lasted, which the server would refuse.
+  const pausedSeconds = Math.min(
+    totalPausedSeconds(workoutDraft, finishedAt),
+    secondsBetween(workoutDraft.startedAt, finishedAt),
+  );
 
   return {
+    clientId: workoutDraft.clientId,
     routineId: workoutDraft.routineId,
     startedAt: workoutDraft.startedAt,
     completedAt,
+    pausedSeconds,
     notes: workoutDraft.notes?.trim() ? workoutDraft.notes.trim() : undefined,
+    warmUpItems: toWarmUpItemsInput(workoutDraft),
     exercises: workoutDraft.exercises.map((exercise) => ({
       exerciseId: exercise.exerciseId,
       routineExerciseId: exercise.routineExerciseId,
@@ -479,13 +885,60 @@ export function toCreateWorkoutSessionInput(
         order: set.order,
         type: set.type,
         isWarmup: set.type === 'warmup' || undefined,
-        reps: Number(effectiveSetValue(set.reps, set.repsPlaceholder)) || undefined,
-        weightKg: effectiveWeightKg(set, unit),
+        ...setValuesToSave(set, exercise.trackingType, unit, exercise.isUnilateral),
         restSeconds: set.done ? set.restSeconds : undefined,
         completedAt: set.done ? completedAt : undefined,
       })),
     })),
   };
+}
+
+type SetValues = Pick<
+  WorkoutSetInput,
+  'reps' | 'repsLeft' | 'repsRight' | 'weightKg' | 'durationSeconds' | 'distanceMeters'
+>;
+
+/**
+ * The set's effective values for the fields its exercise tracks, and only
+ * those (spec 0021 FR-3): weight in canonical kg, time in whole seconds,
+ * distance in metres. Empty or unreadable values are left out. A weight &
+ * reps exercise saves exactly what it saved before (AC-3).
+ *
+ * A unilateral exercise (spec 0022) saves each side's reps and their sum as
+ * `reps`; a side with no value, or 0, is not done (EF-1).
+ */
+export function setValuesToSave(
+  set: WorkoutSetDraft,
+  trackingType: ExerciseTrackingType | undefined,
+  unit: WeightUnit,
+  isUnilateral = false,
+): SetValues {
+  const values: SetValues = {};
+
+  if (tracksField(trackingType, 'reps') && isUnilateral) {
+    const left = Number(effectiveSideReps(set, 'left')) || undefined;
+    const right = Number(effectiveSideReps(set, 'right')) || undefined;
+    values.repsLeft = left;
+    values.repsRight = right;
+    values.reps = left || right ? (left ?? 0) + (right ?? 0) : undefined;
+  } else if (tracksField(trackingType, 'reps')) {
+    values.reps = Number(effectiveSetValue(set.reps, set.repsPlaceholder)) || undefined;
+  }
+  if (tracksField(trackingType, 'weight')) {
+    values.weightKg = effectiveWeightKg(set, unit);
+  }
+  if (tracksField(trackingType, 'duration')) {
+    values.durationSeconds =
+      parseDurationInput(effectiveSetValue(set.duration ?? '', set.durationPlaceholder)) ||
+      undefined;
+  }
+  if (tracksField(trackingType, 'distance')) {
+    values.distanceMeters =
+      parseDistanceInput(effectiveSetValue(set.distance ?? '', set.distancePlaceholder)) ||
+      undefined;
+  }
+
+  return values;
 }
 
 /**
@@ -516,32 +969,97 @@ export function clearLatestCompletedWorkout() {
 }
 
 /**
- * Active (in-progress) workout. Kept in memory so a started routine can be
- * resumed when navigating away and back without losing logged sets. Only one
- * workout can be active at a time.
+ * Active (in-progress) workout. The module variable is the single source of
+ * truth; screens and the persister observe it through
+ * `subscribeActiveWorkout`. Only one workout can be active at a time.
  */
+type ActiveWorkoutListener = () => void;
+const activeWorkoutListeners = new Set<ActiveWorkoutListener>();
+
+function notifyActiveWorkout() {
+  for (const listener of activeWorkoutListeners) {
+    listener();
+  }
+}
+
+/** Calls `listener` after every change to the active workout; returns the unsubscribe. */
+export function subscribeActiveWorkout(listener: ActiveWorkoutListener) {
+  activeWorkoutListeners.add(listener);
+  return () => {
+    activeWorkoutListeners.delete(listener);
+  };
+}
+
+/** Public id of the person the active workout belongs to (spec 0010 FR-3). */
+let activeWorkoutOwnerId: string | null = null;
+
 export function startActiveWorkout(
   routine: Routine,
   unit: WeightUnit = 'kg',
+  ownerId?: string,
 ): WorkoutSessionDraft {
   if (activeWorkout && activeWorkout.routineId === routine.id) {
     return activeWorkout;
   }
 
   activeWorkout = buildWorkoutSessionDraft(routine, unit);
+  activeWorkoutOwnerId = ownerId ?? null;
+  notifyActiveWorkout();
   return activeWorkout;
+}
+
+/** Puts a draft restored from device storage back as the active workout. */
+export function hydrateActiveWorkout(
+  workoutDraft: WorkoutSessionDraft,
+  ownerId: string,
+) {
+  activeWorkout = workoutDraft;
+  activeWorkoutOwnerId = ownerId;
+  notifyActiveWorkout();
 }
 
 export function getActiveWorkout() {
   return activeWorkout;
 }
 
+export function getActiveWorkoutOwnerId() {
+  return activeWorkoutOwnerId;
+}
+
+/**
+ * Called on every sign-in (FR-8): an active workout started by someone else is
+ * discarded, so it is neither shown to nor saved under the new person. One
+ * with no recorded owner is adopted — it cannot be shown to belong to anyone
+ * else, and dropping it would lose logged sets.
+ */
+export function discardActiveWorkoutIfForeign(userId: string) {
+  if (activeWorkout === null) {
+    return;
+  }
+
+  if (activeWorkoutOwnerId === null) {
+    activeWorkoutOwnerId = userId;
+    return;
+  }
+
+  if (activeWorkoutOwnerId !== userId) {
+    clearActiveWorkout();
+  }
+}
+
 export function setActiveWorkout(workoutDraft: WorkoutSessionDraft) {
   activeWorkout = workoutDraft;
+  notifyActiveWorkout();
 }
 
 export function clearActiveWorkout() {
+  if (activeWorkout === null) {
+    return;
+  }
+
   activeWorkout = null;
+  activeWorkoutOwnerId = null;
+  notifyActiveWorkout();
 }
 
 export function hasActiveWorkout() {
@@ -565,6 +1083,7 @@ export function toWorkoutSessionSkeleton(
     status: 'completed',
     startedAt: workoutDraft.startedAt,
     completedAt,
+    pausedSeconds: totalPausedSeconds(workoutDraft, new Date(completedAt)),
     exercises: workoutDraft.exercises.map((exercise) => ({
       id: exercise.id,
       workoutSessionId: workoutDraft.id,
@@ -577,8 +1096,7 @@ export function toWorkoutSessionSkeleton(
         workoutExerciseId: exercise.id,
         order: set.order,
         type: set.type,
-        reps: Number(effectiveSetValue(set.reps, set.repsPlaceholder)) || undefined,
-        weightKg: effectiveWeightKg(set, unit),
+        ...setValuesToSave(set, exercise.trackingType, unit, exercise.isUnilateral),
         restSeconds: set.restSeconds,
         completedAt,
         createdAt: completedAt,

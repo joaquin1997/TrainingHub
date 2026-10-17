@@ -1,5 +1,5 @@
 import type { Routine } from '@workout/domain';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   addExerciseToWorkout,
@@ -7,19 +7,36 @@ import {
   applyLastPerformance,
   buildWorkoutSessionDraft,
   cycleWorkoutSetType,
+  discardActiveWorkoutIfForeign,
+  getActiveWorkoutOwnerId,
+  hydrateActiveWorkout,
   removeExerciseFromWorkout,
   clearActiveWorkout,
+  completeSet,
   countWorkoutSets,
   moveWorkoutExercise,
   moveWorkoutSet,
+  adjustRest,
+  pauseWorkout,
+  resolveRestSeconds,
+  restPhase,
+  restRemainingSeconds,
+  resumeWorkout,
+  setExerciseRest,
+  skipRest,
+  startRest,
+  totalPausedSeconds,
   removeSetFromWorkoutExercise,
   getActiveWorkout,
   hasActiveWorkout,
   isActiveWorkoutForRoutine,
   setActiveWorkout,
   startActiveWorkout,
+  subscribeActiveWorkout,
   toCreateWorkoutSessionInput,
+  toWorkoutSessionSkeleton,
   toggleWorkoutSetDone,
+  updateWorkoutSetDraft,
   type WorkoutSessionDraft,
 } from './workoutDraftStore';
 
@@ -93,10 +110,31 @@ describe('buildWorkoutSessionDraft', () => {
   });
 });
 
+describe('workout identity (spec 0014)', () => {
+  it('gives two workouts of the same routine different identities', () => {
+    const first = buildWorkoutSessionDraft(routine);
+    const second = buildWorkoutSessionDraft(routine);
+
+    expect(first.id).toBe(second.id);
+    expect(first.clientId).not.toBe(second.clientId);
+    expect(first.clientId).toMatch(/^[0-9a-z]+-[0-9a-z]{8}$/);
+  });
+
+  it('keeps the identity across edits and sends it with the save', () => {
+    const draft = buildWorkoutSessionDraft(routine);
+    const set = draft.exercises[0]!.entries[0]!;
+    const edited = toggleWorkoutSetDone(draft, draft.exercises[0]!.id, set.id);
+
+    expect(edited.clientId).toBe(draft.clientId);
+    expect(toCreateWorkoutSessionInput(edited).clientId).toBe(draft.clientId);
+  });
+});
+
 describe('toCreateWorkoutSessionInput', () => {
   it('coerces logged strings to numbers and drops empties', () => {
     const draft: WorkoutSessionDraft = {
       id: 'w1',
+      clientId: 'c1',
       routineId: 'routine-1',
       routineName: 'Push Day',
       startedAt: '2026-05-30T09:00:00.000Z',
@@ -129,6 +167,7 @@ describe('toCreateWorkoutSessionInput', () => {
   it('logs the ghosted placeholder when the actual field is left empty', () => {
     const draft: WorkoutSessionDraft = {
       id: 'w1',
+      clientId: 'c1',
       routineId: 'routine-1',
       routineName: 'Push Day',
       startedAt: '2026-05-30T09:00:00.000Z',
@@ -175,6 +214,7 @@ describe('toCreateWorkoutSessionInput', () => {
   it('converts lb input back to canonical kg on persist', () => {
     const draft: WorkoutSessionDraft = {
       id: 'w1',
+      clientId: 'c1',
       routineId: 'routine-1',
       routineName: 'Push Day',
       startedAt: '2026-05-30T09:00:00.000Z',
@@ -208,6 +248,7 @@ describe('toCreateWorkoutSessionInput', () => {
   it('stamps completedAt on sets marked done', () => {
     const draft: WorkoutSessionDraft = {
       id: 'w1',
+      clientId: 'c1',
       routineId: 'routine-1',
       routineName: 'Push Day',
       startedAt: '2026-05-30T09:00:00.000Z',
@@ -354,12 +395,19 @@ describe('applyLastPerformance', () => {
   it('returns the same reference when nothing changes', () => {
     const draft = buildWorkoutSessionDraft(routine);
 
+    // Last time had only a warm-up: no counterpart for the working set (spec 0031).
     const unchanged = applyLastPerformance(draft, 'ex-row', {
       performedAt: '2026-05-29T09:00:00.000Z',
-      sets: [{ order: 99, reps: 5, weightKg: 5 }], // no matching set order
+      sets: [{ order: 1, reps: 5, weightKg: 5, isWarmup: true }],
     });
-
     expect(unchanged).toBe(draft);
+
+    const performance = {
+      performedAt: '2026-05-29T09:00:00.000Z',
+      sets: [{ order: 1, reps: 12, weightKg: 55 }],
+    };
+    const applied = applyLastPerformance(draft, 'ex-row', performance);
+    expect(applyLastPerformance(applied, 'ex-row', performance)).toBe(applied);
   });
 });
 
@@ -436,5 +484,542 @@ describe('set type', () => {
 
     const drop = cycleWorkoutSetType(warmup, exercise.id, setId);
     expect(drop.exercises[0]!.entries[0]!.type).toBe('drop');
+  });
+});
+
+describe('toWorkoutSessionSkeleton', () => {
+  const draftWith = (unit: 'kg' | 'lb'): WorkoutSessionDraft => ({
+    id: 'w1',
+    clientId: 'c1',
+    routineId: 'routine-1',
+    routineName: 'Push Day',
+    startedAt: '2026-05-30T09:00:00.000Z',
+    unit,
+    exercises: [
+      {
+        id: 'we-1',
+        exerciseId: 'ex-bench',
+        exerciseName: 'Bench',
+        routineExerciseId: 're-bench',
+        order: 1,
+        entries: [
+          {
+            id: 's1',
+            order: 1,
+            reps: '',
+            weightKg: '',
+            repsPlaceholder: '8',
+            weightPlaceholder: '100',
+            done: true,
+            type: 'normal',
+          },
+          { id: 's2', order: 2, reps: '', weightKg: '', done: false, type: 'normal' },
+        ],
+      },
+    ],
+  });
+
+  it('carries the values that get saved, placeholders included (spec 0013 FR-6)', () => {
+    const sets = toWorkoutSessionSkeleton(draftWith('kg')).exercises[0]?.sets;
+
+    expect(sets?.map((set) => [set.reps, set.weightKg])).toEqual([
+      [8, 100],
+      [undefined, undefined],
+    ]);
+  });
+
+  it('converts a placeholder typed in lb to canonical kg', () => {
+    const set = toWorkoutSessionSkeleton(draftWith('lb')).exercises[0]?.sets[0];
+
+    expect(set?.weightKg).toBeCloseTo(45.36, 1);
+  });
+});
+
+describe('generated draft ids (spec 0010)', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.resetModules();
+  });
+
+  async function firstGeneratedSetId(now: string) {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(now));
+    vi.resetModules();
+    const store = await import('./workoutDraftStore');
+    const draft = store.buildWorkoutSessionDraft(routine);
+    const exerciseId = draft.exercises[0]!.id;
+    const withSet = store.addSetToWorkoutExercise(draft, exerciseId);
+    return withSet.exercises[0]!.entries.at(-1)!.id;
+  }
+
+  it('do not repeat after an app restart', async () => {
+    const beforeRestart = await firstGeneratedSetId('2026-10-16T09:00:00.000Z');
+    const afterRestart = await firstGeneratedSetId('2026-10-16T09:20:00.000Z');
+
+    expect(beforeRestart).not.toBe(afterRestart);
+  });
+});
+
+describe('subscribeActiveWorkout (spec 0010)', () => {
+  beforeEach(() => {
+    clearActiveWorkout();
+  });
+
+  it('notifies on start, set and clear, and stops after unsubscribe', () => {
+    const calls: Array<string | null> = [];
+    const unsubscribe = subscribeActiveWorkout(() => {
+      calls.push(getActiveWorkout()?.routineId ?? null);
+    });
+
+    const draft = startActiveWorkout(routine);
+    setActiveWorkout({ ...draft, notes: 'heavy day' });
+    clearActiveWorkout();
+    unsubscribe();
+    startActiveWorkout(routine);
+
+    expect(calls).toEqual(['routine-1', 'routine-1', null]);
+  });
+
+  it('does not notify when resuming the same routine or clearing nothing', () => {
+    let calls = 0;
+    startActiveWorkout(routine);
+    const unsubscribe = subscribeActiveWorkout(() => {
+      calls += 1;
+    });
+
+    startActiveWorkout(routine);
+    clearActiveWorkout();
+    clearActiveWorkout();
+    unsubscribe();
+
+    expect(calls).toBe(1);
+  });
+});
+
+describe('active workout owner (spec 0010)', () => {
+  beforeEach(() => {
+    clearActiveWorkout();
+  });
+
+  it('keeps the workout when its owner signs in again', () => {
+    startActiveWorkout(routine, 'kg', 'user-a');
+    discardActiveWorkoutIfForeign('user-a');
+
+    expect(hasActiveWorkout()).toBe(true);
+  });
+
+  it('discards a workout started by someone else', () => {
+    startActiveWorkout(routine, 'kg', 'user-a');
+    discardActiveWorkoutIfForeign('user-b');
+
+    expect(hasActiveWorkout()).toBe(false);
+    expect(getActiveWorkoutOwnerId()).toBeNull();
+  });
+
+  it('adopts a workout with no recorded owner', () => {
+    startActiveWorkout(routine);
+    discardActiveWorkoutIfForeign('user-a');
+
+    expect(hasActiveWorkout()).toBe(true);
+    expect(getActiveWorkoutOwnerId()).toBe('user-a');
+  });
+
+  it('records the owner of a restored workout', () => {
+    hydrateActiveWorkout(buildWorkoutSessionDraft(routine), 'user-a');
+
+    expect(getActiveWorkoutOwnerId()).toBe('user-a');
+    discardActiveWorkoutIfForeign('user-b');
+    expect(hasActiveWorkout()).toBe(false);
+  });
+});
+
+describe('pause (spec 0011)', () => {
+  const at = (minutes: number) => new Date(Date.UTC(2026, 9, 16, 9, minutes));
+  const started = () => ({ ...buildWorkoutSessionDraft(routine), startedAt: at(0).toISOString() });
+
+  it('accumulates paused time across pause/resume cycles', () => {
+    let draft = started();
+    draft = pauseWorkout(draft, at(10));
+    draft = resumeWorkout(draft, at(15));
+    draft = pauseWorkout(draft, at(30));
+    draft = resumeWorkout(draft, at(32));
+
+    expect(draft.pausedAt).toBeUndefined();
+    expect(draft.pausedSeconds).toBe(7 * 60);
+  });
+
+  it('ignores pausing twice or resuming while running', () => {
+    const running = started();
+    const paused = pauseWorkout(running, at(5));
+
+    expect(pauseWorkout(paused, at(8))).toBe(paused);
+    expect(resumeWorkout(running, at(8))).toBe(running);
+  });
+
+  it('counts a pause still in progress', () => {
+    const draft = pauseWorkout({ ...started(), pausedSeconds: 60 }, at(20));
+
+    expect(totalPausedSeconds(draft, at(30))).toBe(60 + 10 * 60);
+  });
+
+  it('sends the paused time, an ongoing pause included, when finishing paused', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(at(60));
+    const draft = pauseWorkout(resumeWorkout(pauseWorkout(started(), at(10)), at(20)), at(50));
+
+    expect(toCreateWorkoutSessionInput(draft).pausedSeconds).toBe(20 * 60);
+    vi.useRealTimers();
+  });
+
+  it('never sends more paused time than the workout lasted', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(at(30));
+    const draft = { ...started(), pausedSeconds: 99 * 60 };
+
+    expect(toCreateWorkoutSessionInput(draft).pausedSeconds).toBe(30 * 60);
+    vi.useRealTimers();
+  });
+});
+
+describe('rest timer (spec 0018)', () => {
+  const at = (seconds: number) => new Date(Date.UTC(2026, 9, 16, 9, 0, seconds));
+  const fresh = () => buildWorkoutSessionDraft(routine);
+
+  it('resolves the rest: set in the workout, else the routine, else the default (FR-1)', () => {
+    expect(resolveRestSeconds({ restSeconds: 210 }, 90)).toBe(210);
+    expect(resolveRestSeconds({ restSeconds: 0 }, 90)).toBe(0);
+    expect(resolveRestSeconds({}, 90)).toBe(90);
+  });
+
+  it('changes one exercise rest without touching others, the routine or a running rest (FR-2, AC-1)', () => {
+    const base = fresh();
+    const [first, second] = base.exercises;
+    const resting = startRest(
+      { ...base, exercises: [{ ...first!, restSeconds: 120 }, second!] },
+      first!.id,
+      120,
+      at(0),
+    );
+
+    const changed = setExerciseRest(resting, first!.id, 210);
+
+    expect(changed.exercises[0]!.restSeconds).toBe(210);
+    expect(changed.exercises[1]).toBe(resting.exercises[1]);
+    expect(changed.rest).toEqual(resting.rest);
+    expect(resolveRestSeconds(changed.exercises[0]!, 90)).toBe(210);
+    expect(routine.exercises.every((exercise) => exercise.restSeconds === undefined)).toBe(true);
+  });
+
+  it('starts a rest with an absolute end, replacing a running one', () => {
+    const first = startRest(fresh(), 'we-a', 90, at(0));
+    const second = startRest(first, 'we-b', 60, at(10));
+
+    expect(first.rest).toEqual({ endsAt: at(90).toISOString(), totalSeconds: 90, workoutExerciseId: 'we-a' });
+    expect(second.rest).toEqual({ endsAt: at(70).toISOString(), totalSeconds: 60, workoutExerciseId: 'we-b' });
+  });
+
+  it('starts nothing for a rest of 0 seconds', () => {
+    const draft = fresh();
+
+    expect(startRest(draft, 'we-a', 0, at(0))).toBe(draft);
+  });
+
+  it('adjusts only the running rest, never earlier than now (FR-3)', () => {
+    const draft = startRest(fresh(), 'we-a', 60, at(0));
+
+    const longer = adjustRest(draft, 15, at(10));
+    expect(longer.rest).toEqual({ endsAt: at(75).toISOString(), totalSeconds: 75, workoutExerciseId: 'we-a' });
+    expect(longer.exercises).toBe(draft.exercises);
+
+    const shorter = adjustRest(draft, -15, at(50));
+    expect(shorter.rest?.endsAt).toBe(at(50).toISOString());
+    expect(restRemainingSeconds(shorter.rest!, at(50))).toBe(0);
+    expect(adjustRest(fresh(), 15, at(0)).rest).toBeUndefined();
+  });
+
+  it('skips the running rest', () => {
+    const draft = startRest(fresh(), 'we-a', 60, at(0));
+
+    expect(skipRest(draft).rest).toBeUndefined();
+    expect(skipRest(draft).exercises).toBe(draft.exercises);
+  });
+
+  it('tells running, just ended and stale apart', () => {
+    const rest = startRest(fresh(), 'we-a', 60, at(0)).rest!;
+
+    expect(restPhase(rest, at(59))).toBe('running');
+    expect(restPhase(rest, at(60))).toBe('ended');
+    expect(restPhase(rest, at(62))).toBe('ended');
+    expect(restPhase(rest, at(63))).toBe('stale');
+    expect(restRemainingSeconds(rest, at(15))).toBe(45);
+  });
+});
+
+describe('time and distance sets (spec 0021)', () => {
+  const plankRoutine: Routine = {
+    id: 'routine-core',
+    userId: 'u1',
+    name: 'Core',
+    exercises: [
+      {
+        id: 're-plank',
+        routineId: 'routine-core',
+        exerciseId: 'ex-plank',
+        exerciseName: 'Plank',
+        orderIndex: 1,
+        trackingType: 'duration',
+        sets: [1, 2, 3].map((setNumber) => ({
+          id: `s-plank-${setNumber}`,
+          routineExerciseId: 're-plank',
+          setNumber,
+          targetDurationSeconds: 45,
+          createdAt: '',
+          updatedAt: '',
+        })),
+        createdAt: '',
+        updatedAt: '',
+      },
+    ],
+    createdAt: '',
+    updatedAt: '',
+  };
+
+  const firstExercise = (draft: WorkoutSessionDraft) => draft.exercises[0]!;
+
+  it('shows a time target as m:ss on every set (AC-2)', () => {
+    const draft = buildWorkoutSessionDraft(plankRoutine);
+
+    expect(firstExercise(draft).trackingType).toBe('duration');
+    expect(firstExercise(draft).entries.map((set) => set.durationPlaceholder)).toEqual([
+      '0:45',
+      '0:45',
+      '0:45',
+    ]);
+  });
+
+  it('saves a 60 s plank as time only: no reps, no weight (AC-1)', () => {
+    const draft = buildWorkoutSessionDraft(plankRoutine);
+    const exercise = firstExercise(draft);
+    const set = exercise.entries[0]!;
+    const typed = updateWorkoutSetDraft(draft, exercise.id, set.id, 'duration', '60');
+    const done = toggleWorkoutSetDone(typed, exercise.id, set.id, 60);
+
+    const [saved, untouched] = toCreateWorkoutSessionInput(done).exercises[0]!.sets;
+
+    expect(saved).toMatchObject({ durationSeconds: 60 });
+    expect(saved?.reps).toBeUndefined();
+    expect(saved?.weightKg).toBeUndefined();
+    // An unedited set logs its target, like reps and weight do.
+    expect(untouched).toMatchObject({ durationSeconds: 45 });
+  });
+
+  it('reads a typed m:ss and keeps distance in metres', () => {
+    const draft = addExerciseToWorkout(buildWorkoutSessionDraft(plankRoutine), {
+      id: 'ex-row',
+      name: 'Rowing Machine',
+      trackingType: 'distance_duration',
+    });
+    const rower = draft.exercises[1]!;
+    const set = rower.entries[0]!;
+    let next = updateWorkoutSetDraft(draft, rower.id, set.id, 'distance', '500');
+    next = updateWorkoutSetDraft(next, rower.id, set.id, 'duration', '1:45');
+    // Values a weight & reps exercise would hold are not sent for this type.
+    next = updateWorkoutSetDraft(next, rower.id, set.id, 'reps', '12');
+
+    const saved = toCreateWorkoutSessionInput(next).exercises[1]!.sets[0]!;
+
+    expect(saved).toMatchObject({ distanceMeters: 500, durationSeconds: 105 });
+    expect(saved.reps).toBeUndefined();
+  });
+
+  it('weight & time saves the weight in kg and the time', () => {
+    const draft = addExerciseToWorkout(
+      { ...buildWorkoutSessionDraft(plankRoutine), unit: 'lb' },
+      { id: 'ex-carry', name: 'Carry', trackingType: 'weight_duration' },
+    );
+    const carry = draft.exercises[1]!;
+    const set = carry.entries[0]!;
+    let next = updateWorkoutSetDraft(draft, carry.id, set.id, 'weightKg', '100');
+    next = updateWorkoutSetDraft(next, carry.id, set.id, 'duration', '45');
+
+    const saved = toCreateWorkoutSessionInput(next).exercises[1]!.sets[0]!;
+
+    expect(saved).toMatchObject({ weightKg: 45.4, durationSeconds: 45 });
+  });
+
+  it('seeds last time’s time and carries it to a new set', () => {
+    const draft = applyLastPerformance(buildWorkoutSessionDraft(plankRoutine), 'ex-plank', {
+      performedAt: '2026-10-01T10:00:00.000Z',
+      sets: [{ order: 1, durationSeconds: 60 }],
+    });
+    const exercise = firstExercise(draft);
+
+    expect(exercise.entries[0]!.durationPlaceholder).toBe('1:00');
+
+    const typed = updateWorkoutSetDraft(
+      draft,
+      exercise.id,
+      exercise.entries[2]!.id,
+      'duration',
+      '75',
+    );
+    const withSet = addSetToWorkoutExercise(typed, exercise.id);
+
+    expect(firstExercise(withSet).entries[3]!.durationPlaceholder).toBe('1:15');
+  });
+});
+
+describe('unilateral sets (spec 0022)', () => {
+  const splitRoutine: Routine = {
+    id: 'routine-legs',
+    userId: 'u1',
+    name: 'Legs',
+    exercises: [
+      {
+        id: 're-split',
+        routineId: 'routine-legs',
+        exerciseId: 'ex-split',
+        exerciseName: 'Bulgarian split squat',
+        orderIndex: 1,
+        isUnilateral: true,
+        sets: [1, 2].map((setNumber) => ({
+          id: `s-split-${setNumber}`,
+          routineExerciseId: 're-split',
+          setNumber,
+          minReps: 8,
+          maxReps: 10,
+          targetWeight: 20,
+          createdAt: '',
+          updatedAt: '',
+        })),
+        createdAt: '',
+        updatedAt: '',
+      },
+    ],
+    createdAt: '',
+    updatedAt: '',
+  };
+
+  const split = (draft: WorkoutSessionDraft) => draft.exercises[0]!;
+
+  it('saves 10 L / 8 R at 20 kg with reps as their sum (AC-1)', () => {
+    const draft = buildWorkoutSessionDraft(splitRoutine);
+    const exercise = split(draft);
+    const set = exercise.entries[0]!;
+    expect(exercise.isUnilateral).toBe(true);
+
+    let next = updateWorkoutSetDraft(draft, exercise.id, set.id, 'repsLeft', '10');
+    next = updateWorkoutSetDraft(next, exercise.id, set.id, 'repsRight', '8');
+    next = toggleWorkoutSetDone(next, exercise.id, set.id, 90);
+
+    const saved = toCreateWorkoutSessionInput(next).exercises[0]!.sets[0]!;
+    expect(saved).toMatchObject({ weightKg: 20, repsLeft: 10, repsRight: 8, reps: 18 });
+  });
+
+  it('ghosts the routine target on both sides and logs it when untouched', () => {
+    const saved = toCreateWorkoutSessionInput(buildWorkoutSessionDraft(splitRoutine))
+      .exercises[0]!.sets[1]!;
+
+    expect(saved).toMatchObject({ repsLeft: 10, repsRight: 10, reps: 20 });
+  });
+
+  it('a side typed 0 is not done for that side (EF-1)', () => {
+    const draft = buildWorkoutSessionDraft(splitRoutine);
+    const exercise = split(draft);
+    const set = exercise.entries[0]!;
+    let next = updateWorkoutSetDraft(draft, exercise.id, set.id, 'repsLeft', '10');
+    next = updateWorkoutSetDraft(next, exercise.id, set.id, 'repsRight', '0');
+
+    const saved = toCreateWorkoutSessionInput(next).exercises[0]!.sets[0]!;
+    expect(saved).toMatchObject({ repsLeft: 10, reps: 10 });
+    expect(saved.repsRight).toBeUndefined();
+  });
+
+  it('a side with no value and no ghost is not done (EF-1)', () => {
+    const draft = addExerciseToWorkout(buildWorkoutSessionDraft(splitRoutine), {
+      id: 'ex-row',
+      name: 'One-arm row',
+      isUnilateral: true,
+    });
+    const row = draft.exercises[1]!;
+    const set = row.entries[0]!;
+    const next = updateWorkoutSetDraft(draft, row.id, set.id, 'repsRight', '12');
+
+    const saved = toCreateWorkoutSessionInput(next).exercises[1]!.sets[0]!;
+    expect(saved).toMatchObject({ repsRight: 12, reps: 12 });
+    expect(saved.repsLeft).toBeUndefined();
+
+    const empty = toCreateWorkoutSessionInput(draft).exercises[1]!.sets[0]!;
+    expect(empty.reps).toBeUndefined();
+  });
+
+  it('fills last time per side and carries the sides to a new set (FR-4)', () => {
+    const draft = applyLastPerformance(buildWorkoutSessionDraft(splitRoutine), 'ex-split', {
+      performedAt: '2026-10-01T10:00:00.000Z',
+      sets: [
+        { order: 1, reps: 18, repsLeft: 10, repsRight: 8, weightKg: 20 },
+        { order: 2, reps: 9, repsLeft: 9, weightKg: 20 },
+      ],
+    });
+    const [first, second] = split(draft).entries;
+
+    expect([first!.repsLeftPlaceholder, first!.repsRightPlaceholder]).toEqual(['10', '8']);
+    // A side not done last time ghosts the other side.
+    expect([second!.repsLeftPlaceholder, second!.repsRightPlaceholder]).toEqual(['9', '9']);
+
+    const typed = updateWorkoutSetDraft(draft, split(draft).id, second!.id, 'repsRight', '7');
+    const withSet = addSetToWorkoutExercise(typed, split(draft).id);
+    const added = split(withSet).entries[2]!;
+    expect([added.repsLeftPlaceholder, added.repsRightPlaceholder]).toEqual(['9', '7']);
+  });
+
+  it('a bilateral exercise saves exactly what it did before', () => {
+    const draft = buildWorkoutSessionDraft({
+      ...splitRoutine,
+      exercises: [{ ...splitRoutine.exercises[0]!, isUnilateral: undefined }],
+    });
+    const saved = toCreateWorkoutSessionInput(draft).exercises[0]!.sets[0]!;
+
+    expect(saved).toMatchObject({ reps: 10, weightKg: 20 });
+    expect('repsLeft' in saved).toBe(false);
+    expect('repsRight' in saved).toBe(false);
+  });
+});
+
+describe('completeSet (spec 0018 FR-1, spec 0025)', () => {
+  const at = (seconds: number) => new Date(Date.UTC(2026, 9, 17, 9, 0, seconds));
+
+  it('ticks the set and starts the exercise rest from the given instant', () => {
+    const base = buildWorkoutSessionDraft(routine);
+    const bench = base.exercises[0]!;
+    const draft = { ...base, exercises: [{ ...bench, restSeconds: 120 }, base.exercises[1]!] };
+
+    const next = completeSet(draft, bench.id, bench.entries[0]!.id, 90, at(10));
+
+    expect(next.exercises[0]!.entries[0]).toMatchObject({ done: true, restSeconds: 120 });
+    expect(next.rest).toEqual({
+      endsAt: at(130).toISOString(),
+      totalSeconds: 120,
+      workoutExerciseId: bench.id,
+    });
+  });
+
+  it('falls back to the default rest', () => {
+    const base = buildWorkoutSessionDraft(routine);
+    const bench = base.exercises[0]!;
+
+    const next = completeSet(base, bench.id, bench.entries[0]!.id, 90, at(0));
+
+    expect(next.rest?.totalSeconds).toBe(90);
+  });
+
+  it('leaves a done or unknown set as it is (EF-1)', () => {
+    const base = buildWorkoutSessionDraft(routine);
+    const bench = base.exercises[0]!;
+    const once = completeSet(base, bench.id, bench.entries[0]!.id, 90, at(0));
+
+    expect(completeSet(once, bench.id, bench.entries[0]!.id, 90, at(30))).toBe(once);
+    expect(completeSet(base, bench.id, 'nope', 90, at(0))).toBe(base);
+    expect(completeSet(base, 'nope', bench.entries[0]!.id, 90, at(0))).toBe(base);
   });
 });

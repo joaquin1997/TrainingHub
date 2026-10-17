@@ -12,9 +12,29 @@ export type HealthProviderId = 'apple-health' | 'android-health-connect';
 export interface HealthWorkoutPayload {
   workoutSessionId: string;
   routineId?: string;
+  routineName?: string;
   startedAt: ISODateString;
   completedAt?: ISODateString;
   exerciseCount: number;
+  /** Set while the workout is paused (spec 0011). */
+  pausedAt?: ISODateString;
+  /** Whole seconds of pauses already ended. */
+  pausedSeconds?: number;
+  /** Active energy since the start, in kcal; null when unknown (spec 0012). */
+  activeEnergyKcal?: number | null;
+  /** End of the running rest, absent when no rest runs (spec 0018). */
+  restEndsAt?: ISODateString;
+}
+
+/**
+ * What a live workout surface (e.g. the iOS Live Activity) currently shows. It
+ * can change outside the app, e.g. a pause tapped on the lock screen.
+ */
+export interface LiveWorkoutState {
+  workoutSessionId: string;
+  pausedAt?: ISODateString;
+  pausedSeconds: number;
+  updatedAt: ISODateString;
 }
 
 /**
@@ -25,6 +45,16 @@ export interface HealthIntegration {
   displayName: string;
   isAvailable(): Promise<boolean>;
   requestPermissions(): Promise<boolean>;
+  /**
+   * Active energy burned between two instants, in kcal (spec 0012). Resolves
+   * null when there is no data or no permission (the provider may not tell
+   * them apart); rejects when the data cannot be read right now, so callers
+   * can keep the last known value.
+   */
+  readActiveEnergyKcal(
+    since: ISODateString,
+    until?: ISODateString,
+  ): Promise<number | null>;
 }
 
 /**
@@ -36,12 +66,85 @@ export interface WorkoutSyncService {
 }
 
 /**
- * Mobile-side boundary for future live workout mirroring to watches or native health surfaces.
+ * Mobile-side boundary for mirroring the active workout to a live surface
+ * outside the app (the iOS Live Activity today; watches later).
  */
 export interface LiveWorkoutBridge {
   providerId: HealthProviderId;
   startLiveWorkout(payload: HealthWorkoutPayload): Promise<void>;
   updateLiveWorkout(payload: HealthWorkoutPayload): Promise<void>;
   finishLiveWorkout(payload: HealthWorkoutPayload): Promise<void>;
+  /** What the surface shows now, or null when nothing is shown. Optional: no-op bridges omit it. */
+  getLiveWorkoutState?(): Promise<LiveWorkoutState | null>;
+  /** Changes made on the surface itself; returns the unsubscribe. */
+  onLiveWorkoutStateChange?(listener: (state: LiveWorkoutState) => void): () => void;
+}
+
+/**
+ * The active workout as the watch shows it (spec 0025). Display-ready: the
+ * current set's target is the text the phone shows, already in the workout's
+ * display unit, so no weight number reaches the watch (constitution Art. 4).
+ */
+export interface WatchWorkoutSnapshot {
+  workoutSessionId: string;
+  routineName: string;
+  startedAt: ISODateString;
+  /** Set while the workout is paused. */
+  pausedAt?: ISODateString;
+  /** Whole seconds of pauses already ended. */
+  pausedSeconds: number;
+  /** End of the running rest, absent when none runs. */
+  restEndsAt?: ISODateString;
+  /** The set to do now; absent when every set is done. */
+  currentSet?: WatchWorkoutSet;
+}
+
+export interface WatchWorkoutSet {
+  workoutExerciseId: string;
+  workoutSetId: string;
+  exerciseName: string;
+  /** 1-based position of the set in its exercise. */
+  setNumber: number;
+  setCount: number;
+  /** Planned values as shown on the phone, e.g. "60 kg × 8"; empty when none. */
+  target: string;
+  /** The rest that ticking this set starts, in seconds; 0 starts none. */
+  restSeconds: number;
+}
+
+/**
+ * What the watch sends back (spec 0025). Requests carry a unique `id` and are
+ * applied in the order sent; applying one twice changes nothing (EF-1).
+ * `activeEnergy` is the kcal the watch measured for the workout so far (FR-3).
+ */
+export type WatchWorkoutEvent =
+  | {
+      kind: 'setDone';
+      id: string;
+      workoutSessionId: string;
+      workoutExerciseId: string;
+      workoutSetId: string;
+      at: ISODateString;
+    }
+  | { kind: 'pause' | 'resume'; id: string; workoutSessionId: string; at: ISODateString }
+  | { kind: 'finishRequested'; id: string; workoutSessionId: string }
+  | { kind: 'activeEnergy'; workoutSessionId: string; kcal: number };
+
+export type WatchWorkoutOutcome = 'finished' | 'discarded';
+
+/**
+ * Mobile-side boundary for running the active workout on a watch (spec 0025).
+ * The phone stays the source of the logged data: the watch mirrors snapshots
+ * and sends requests back as events.
+ */
+export interface WatchWorkoutBridge {
+  providerId: HealthProviderId;
+  /** Starts the workout on the watch, when its app is installed (FR-2). */
+  startWatchWorkout(snapshot: WatchWorkoutSnapshot): Promise<void>;
+  updateWatchWorkout(snapshot: WatchWorkoutSnapshot): Promise<void>;
+  /** Ends it on the watch: saved to Health when finished, dropped when discarded. */
+  endWatchWorkout(workoutSessionId: string, outcome: WatchWorkoutOutcome): Promise<void>;
+  /** Events from the watch, in the order sent; returns the unsubscribe. */
+  onWatchWorkoutEvent(listener: (event: WatchWorkoutEvent) => void): () => void;
 }
 

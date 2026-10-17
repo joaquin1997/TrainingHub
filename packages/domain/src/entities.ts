@@ -37,6 +37,17 @@ export interface UpdateUserSettingsInput {
   language?: AppLanguage | null;
 }
 
+/**
+ * What a set of an exercise records (spec 0021). Existing exercises are
+ * `weight_reps`; time is whole seconds and distance is metres.
+ */
+export type ExerciseTrackingType =
+  | 'weight_reps'
+  | 'reps'
+  | 'duration'
+  | 'weight_duration'
+  | 'distance_duration';
+
 export interface Exercise {
   id: EntityId;
   name: string;
@@ -54,8 +65,55 @@ export interface Exercise {
   lastSourceUpdate?: ISODateString;
   isSystemDefined: boolean;
   createdByUserId?: EntityId;
+  /** What its sets record; absent from older servers, meaning `weight_reps`. */
+  trackingType?: ExerciseTrackingType;
+  /**
+   * Done one side at a time: its sets record left and right reps (spec 0022).
+   * Applies to rep-based tracking types. Absent from older servers = false.
+   */
+  isUnilateral?: boolean;
   createdAt: ISODateString;
   updatedAt: ISODateString;
+}
+
+/** Body of `POST /exercises`: a custom exercise with its muscle groups. */
+export interface CreateExerciseInput {
+  name: string;
+  primaryMuscleGroupIds: EntityId[];
+  secondaryMuscleGroupIds: EntityId[];
+}
+
+/**
+ * Write contract for creating a custom exercise.
+ */
+export interface CreateExerciseInput {
+  name: string;
+  primaryMuscleGroupIds: string[];
+  secondaryMuscleGroupIds: string[];
+  /** Defaults to `weight_reps` (spec 0021 FR-2). */
+  trackingType?: ExerciseTrackingType;
+  /** Defaults to false (spec 0022 FR-1). */
+  isUnilateral?: boolean;
+}
+
+/** Body of `PUT /exercises/:id/unilateral` (spec 0022 FR-1). */
+export interface SetExerciseUnilateralInput {
+  isUnilateral: boolean;
+}
+
+/** Body of `PUT /exercises/:id/tracking-type` (spec 0030 FR-12). */
+export interface SetExerciseTrackingTypeInput {
+  trackingType: ExerciseTrackingType;
+}
+
+/**
+ * What deleting a custom exercise touches, counted over its creator's own
+ * data only (spec 0033 FR-3): routines and saved workouts that contain it.
+ * The active workout lives on the device, which checks it itself (FR-4).
+ */
+export interface ExerciseDeletionImpact {
+  routineCount: number;
+  workoutCount: number;
 }
 
 /**
@@ -78,9 +136,30 @@ export interface Routine {
   description?: string;
   /** Optional folder/grouping label for organizing routines. */
   folder?: string;
+  /** Mobility, cardio or activation items done first (spec 0024). Absent from older servers. */
+  warmUpItems?: RoutineWarmUpItem[];
   exercises: RoutineExercise[];
   createdAt: ISODateString;
   updatedAt: ISODateString;
+}
+
+/**
+ * One item of a routine's warm-up block (spec 0024): ticked off in the
+ * workout, never logged as lifting. Time or reps is an optional target.
+ */
+export interface RoutineWarmUpItem {
+  /** 1-based position in the block. */
+  order: number;
+  name: string;
+  targetDurationSeconds?: number;
+  targetReps?: number;
+}
+
+/** Write contract for one warm-up block item of a routine. */
+export interface RoutineWarmUpItemInput {
+  name: string;
+  targetDurationSeconds?: number;
+  targetReps?: number;
 }
 
 /**
@@ -96,6 +175,15 @@ export interface RoutineExercise {
   restSeconds?: number;
   /** Exercises sharing a superset group number are performed together. */
   supersetGroup?: number;
+  /** The exercise's tracking type, read from the exercise (spec 0021). */
+  trackingType?: ExerciseTrackingType;
+  /** Whether the exercise is unilateral, read from the exercise (spec 0022). */
+  isUnilateral?: boolean;
+  /**
+   * Its creator deleted the exercise (spec 0033 FR-7): the slot keeps it, but
+   * it is no longer in the catalog. Absent when it is not deleted.
+   */
+  exerciseDeleted?: boolean;
   sets: RoutineExerciseSet[];
   createdAt: ISODateString;
   updatedAt: ISODateString;
@@ -111,6 +199,14 @@ export interface RoutineExerciseSet {
   minReps?: number;
   maxReps?: number;
   targetWeight?: number;
+  /** Target time in whole seconds (spec 0021). */
+  targetDurationSeconds?: number;
+  /** Target distance in metres (spec 0021). */
+  targetDistanceMeters?: number;
+  /** A warm-up (approach) set in the plan (spec 0024); absent = working set. */
+  isWarmup?: boolean;
+  /** Added by the warm-up action and not changed since (spec 0031); only with isWarmup. */
+  isGeneratedWarmup?: boolean;
   createdAt: ISODateString;
   updatedAt: ISODateString;
 }
@@ -124,6 +220,12 @@ export interface RoutineSetInput {
   minReps?: number;
   maxReps?: number;
   targetWeight?: number;
+  targetDurationSeconds?: number;
+  targetDistanceMeters?: number;
+  /** A warm-up (approach) set (spec 0024). */
+  isWarmup?: boolean;
+  /** A generated warm-up (spec 0031); ignored unless `isWarmup` is true. */
+  isGeneratedWarmup?: boolean;
 }
 
 /**
@@ -145,6 +247,11 @@ export interface CreateRoutineInput {
   name: string;
   description?: string;
   folder?: string;
+  /**
+   * The warm-up block, in order (spec 0024). On update, absent keeps the
+   * stored block and `[]` clears it.
+   */
+  warmUpItems?: RoutineWarmUpItemInput[];
   exercises: RoutineExerciseInput[];
 }
 
@@ -163,10 +270,34 @@ export interface WorkoutSession {
   status: WorkoutSessionStatus;
   startedAt: ISODateString;
   completedAt?: ISODateString;
+  /** Whole seconds the workout was paused; active duration = elapsed − this (spec 0011). */
+  pausedSeconds?: number;
   notes?: string;
+  /** The warm-up block as performed, each item ticked or not (spec 0024). */
+  warmUpItems?: WorkoutWarmUpItem[];
   exercises: WorkoutExercise[];
   createdAt: ISODateString;
   updatedAt: ISODateString;
+}
+
+/**
+ * One warm-up block item of a performed workout (spec 0024), copied from the
+ * routine when the workout started, so routine edits never change it.
+ */
+export interface WorkoutWarmUpItem {
+  order: number;
+  name: string;
+  targetDurationSeconds?: number;
+  targetReps?: number;
+  done: boolean;
+}
+
+/** Write contract for one warm-up block item of a saved workout. */
+export interface WorkoutWarmUpItemInput {
+  name: string;
+  targetDurationSeconds?: number;
+  targetReps?: number;
+  done: boolean;
 }
 
 /**
@@ -195,7 +326,11 @@ export interface WorkoutSet {
   workoutExerciseId: EntityId;
   order: number;
   type: WorkoutSetType;
+  /** For a set with sides, the sum of both (spec 0022), so volume reads it as is. */
   reps?: number;
+  /** Reps per side of a unilateral exercise's set (spec 0022); absent = not done. */
+  repsLeft?: number;
+  repsRight?: number;
   weightKg?: number;
   durationSeconds?: number;
   distanceMeters?: number;
@@ -219,7 +354,11 @@ export interface WorkoutSet {
 export interface WorkoutSetInput {
   order: number;
   type?: WorkoutSetType;
+  /** Replaced by the server with `repsLeft + repsRight` when a side is sent. */
   reps?: number;
+  /** Reps per side (spec 0022); the same weight for both sides. */
+  repsLeft?: number;
+  repsRight?: number;
   weightKg?: number;
   durationSeconds?: number;
   distanceMeters?: number;
@@ -245,10 +384,21 @@ export interface WorkoutExerciseInput {
  * the live values local during the session and sends the whole session at the end.
  */
 export interface CreateWorkoutSessionInput {
+  /**
+   * Workout identity chosen on the device when the workout starts, unique per
+   * user. Saving it again returns the workout saved first instead of creating
+   * a duplicate (spec 0014). Absent from older clients.
+   */
+  clientId?: string;
+  /** Optional provenance: dropped by the server unless it is the user's own. */
   routineId?: EntityId;
   startedAt: ISODateString;
   completedAt?: ISODateString;
+  /** Whole seconds paused, ≤ completedAt − startedAt (spec 0011). Absent from older clients. */
+  pausedSeconds?: number;
   notes?: string;
+  /** The warm-up block with what was ticked (spec 0024). Absent from older clients. */
+  warmUpItems?: WorkoutWarmUpItemInput[];
   exercises: WorkoutExerciseInput[];
 }
 
@@ -261,6 +411,10 @@ export interface ExerciseProgressPoint {
   bestReps?: number;
   totalVolume: number;
   estimatedOneRepMax?: number;
+  /** Longest working set, in seconds (spec 0021). */
+  bestDurationSeconds?: number;
+  /** Longest working set, in metres (spec 0021). */
+  bestDistanceMeters?: number;
 }
 
 /**
@@ -276,8 +430,69 @@ export interface ExerciseProgressSummary {
   personalBestWeightKg?: number;
   personalBestReps?: number;
   bestEstimatedOneRepMax?: number;
-  /** True when the most recent session set a new max-weight record. */
+  /** The exercise's current tracking type (spec 0021). */
+  trackingType?: ExerciseTrackingType;
+  latestDurationSeconds?: number;
+  latestDistanceMeters?: number;
+  personalBestDurationSeconds?: number;
+  personalBestDistanceMeters?: number;
+  /**
+   * True when the most recent session beat a record of any type (spec 0023),
+   * longest time and distance included (spec 0021).
+   */
   isRecordSession: boolean;
+}
+
+/**
+ * The kinds of personal record (spec 0023). Records are derived from performed
+ * working sets on every read, never stored.
+ */
+export type RecordType =
+  | 'heaviestWeight'
+  | 'mostReps'
+  | 'repsAtWeight'
+  | 'bestSetVolume'
+  | 'bestSessionVolume'
+  | 'bestEstimatedOneRepMax'
+  /** Longest time in one set, from timed sets (spec 0021 FR-6). */
+  | 'longestTime'
+  /** Longest distance in one set (spec 0021 FR-6). */
+  | 'longestDistance';
+
+/**
+ * One record of an exercise: its current best, or a best a session beat.
+ */
+export interface ExerciseRecord {
+  type: RecordType;
+  /**
+   * kg for weight, volume and 1RM types; a rep count for mostReps / repsAtWeight;
+   * seconds for longestTime; metres for longestDistance.
+   */
+  value: number;
+  /** The set behind the record when one set made it; for repsAtWeight, the weight. */
+  weightKg?: number;
+  reps?: number;
+  /** When the session that reached it was performed. */
+  date: ISODateString;
+}
+
+/**
+ * A record a workout beat, naming its exercise.
+ */
+export interface SessionRecord extends ExerciseRecord {
+  exerciseId: EntityId;
+  exerciseName: string;
+}
+
+/**
+ * The records one saved workout beat. Only workouts that beat at least one
+ * are listed.
+ */
+export interface SessionRecords {
+  workoutId: EntityId;
+  /** The workout identity chosen on the device (spec 0014), when it had one. */
+  clientId?: string;
+  records: SessionRecord[];
 }
 
 /**
@@ -285,6 +500,11 @@ export interface ExerciseProgressSummary {
  */
 export interface ExerciseProgressDetail extends ExerciseProgressSummary {
   points: ExerciseProgressPoint[];
+  /**
+   * Current best of each record type, then most reps at the three heaviest
+   * weights (spec 0023). Absent from older servers.
+   */
+  records?: ExerciseRecord[];
 }
 
 /**
@@ -311,7 +531,14 @@ export interface MuscleGroupVolumePoint {
 export interface ExerciseLastSet {
   order: number;
   reps?: number;
+  /** Per side, for "last time" placeholders (spec 0022 FR-4). */
+  repsLeft?: number;
+  repsRight?: number;
   weightKg?: number;
+  durationSeconds?: number;
+  distanceMeters?: number;
+  /** Last time's set was a warm-up (spec 0031): "last time" pairs by kind. */
+  isWarmup?: boolean;
 }
 
 /**

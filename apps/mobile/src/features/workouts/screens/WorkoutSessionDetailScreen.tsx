@@ -1,19 +1,53 @@
-import { Link, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { TFunction } from 'i18next';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { progressClient } from '@/features/progress/api/progressClient';
+import { RecordsCard } from '@/features/progress/components/RecordsCard';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
+import { WarmUpChecklist } from '@/features/workouts/components/WarmUpChecklist';
+import { isPerformedSet } from '@/features/workouts/utils/performedSet';
+import { formatWorkoutShareText, shareRecords } from '@/features/workouts/utils/shareText';
+import { shareWorkoutText } from '@/features/workouts/utils/shareWorkout';
+import { exerciseVolumeKg, summarizeSession } from '@/features/workouts/utils/sessionStats';
 import {
-  durationSecondsBetween,
-  formatDateTime,
+  activeDurationSeconds,
+  formatDayHeading,
   formatDuration,
+  formatTime,
 } from '@/lib/format';
-import { formatWeightValue, fromKg, roundWeight } from '@/lib/weight';
-import { colors, commonStyles, radii, spacing } from '@/ui/theme';
-import type { WorkoutSession, WorkoutSet } from '@workout/domain';
+import { formatDistance, formatSetValues, sideLabels } from '@/lib/tracking';
+import { formatWeightValue } from '@/lib/weight';
+import { Button } from '@/ui/Button';
+import { Chip } from '@/ui/Chip';
+import { StatTile } from '@/ui/StatTile';
+import { StateView } from '@/ui/StateView';
+import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import type { SessionRecord, WeightUnit, WorkoutSession, WorkoutSet } from '@workout/domain';
+
+/**
+ * The figure beside an exercise: its volume, or for time and distance work
+ * (no volume) its total time and distance (spec 0021 FR-5).
+ */
+function exerciseHeadline(exercise: { sets: WorkoutSet[] }, unit: WeightUnit) {
+  const volumeKg = exerciseVolumeKg(exercise);
+  const { durationSeconds, distanceMeters } = summarizeSession({ exercises: [exercise] });
+
+  if (volumeKg > 0 || (durationSeconds === 0 && distanceMeters === 0)) {
+    return `${formatWeightValue(volumeKg, unit)} ${unit}`;
+  }
+
+  return [
+    distanceMeters > 0 ? formatDistance(distanceMeters) : null,
+    durationSeconds > 0 ? formatDuration(durationSeconds) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
 
 function setTypeLabel(type: WorkoutSet['type'], t: TFunction) {
   switch (type) {
@@ -28,41 +62,12 @@ function setTypeLabel(type: WorkoutSet['type'], t: TFunction) {
   }
 }
 
-const isDone = (set: WorkoutSet) => Boolean(set.completedAt);
-const setVolume = (set: WorkoutSet) => (set.reps ?? 0) * (set.weightKg ?? 0);
-
-function summarize(session: WorkoutSession) {
-  let totalSets = 0;
-  let doneSets = 0;
-  let volume = 0;
-  let restSeconds = 0;
-
-  for (const exercise of session.exercises) {
-    for (const set of exercise.sets) {
-      totalSets += 1;
-      if (isDone(set)) {
-        doneSets += 1;
-        volume += setVolume(set);
-        restSeconds += set.restSeconds ?? 0;
-      }
-    }
-  }
-
-  return { totalSets, doneSets, volume: Math.round(volume), restSeconds };
-}
-
-const exerciseVolume = (exercise: WorkoutSession['exercises'][number]) =>
-  Math.round(
-    exercise.sets.reduce(
-      (sum, set) => sum + (isDone(set) ? setVolume(set) : 0),
-      0,
-    ),
-  );
-
 export function WorkoutSessionDetailScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const router = useRouter();
   const { workoutId } = useLocalSearchParams<{ workoutId?: string }>();
   const [session, setSession] = useState<WorkoutSession | null>(null);
+  const [records, setRecords] = useState<SessionRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
   const { settings } = useSettings();
@@ -74,6 +79,7 @@ export function WorkoutSessionDetailScreen() {
         setIsLoading(true);
         setErrorMessage(undefined);
         setSession(null);
+        setRecords([]);
       }
 
       if (!workoutId) {
@@ -85,7 +91,11 @@ export function WorkoutSessionDetailScreen() {
       }
 
       try {
-        const nextSession = await workoutsClient.getById(workoutId);
+        // The records it beat (spec 0023); failing to load them hides only the card.
+        const [nextSession, sessionRecords] = await Promise.all([
+          workoutsClient.getById(workoutId),
+          progressClient.sessionRecords().catch(() => []),
+        ]);
 
         if (shouldUpdate()) {
           if (!nextSession) {
@@ -94,6 +104,9 @@ export function WorkoutSessionDetailScreen() {
           }
 
           setSession(nextSession);
+          setRecords(
+            sessionRecords.find((entry) => entry.workoutId === nextSession.id)?.records ?? [],
+          );
         }
       } catch (error) {
         if (shouldUpdate()) {
@@ -122,106 +135,178 @@ export function WorkoutSessionDetailScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.meta}>{t('workouts.loadingWorkout')}</Text>
+      <View style={styles.screen}>
+        <StateView kind="loading" message={t('workouts.loadingWorkout')} />
       </View>
     );
   }
 
   if (!session) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.error}>
-          {errorMessage ?? t('workouts.notFound')}
-        </Text>
-        <Link href="/history" style={styles.link}>
-          {t('workouts.backToHistory')}
-        </Link>
+      <View style={styles.screen}>
+        <StateView
+          kind="error"
+          message={errorMessage ?? t('workouts.notFound')}
+          actionLabel={t('common.retry')}
+          onAction={() => void loadSession()}
+        />
+        <Button
+          label={t('workouts.backToHistory')}
+          variant="ghost"
+          onPress={() => router.replace('/history')}
+          style={styles.centered}
+        />
       </View>
     );
   }
 
-  const totals = summarize(session);
+  const totals = summarizeSession(session);
+  const when = session.completedAt ?? session.startedAt;
+  const timeRange = session.completedAt
+    ? `${formatTime(session.startedAt, i18n.language)} – ${formatTime(session.completedAt, i18n.language)}`
+    : formatTime(session.startedAt, i18n.language);
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
-      <Text style={styles.body}>
-        {formatDateTime(session.completedAt ?? session.startedAt)}
-      </Text>
-      {session.notes ? (
-        <Text style={styles.notes}>{session.notes}</Text>
-      ) : null}
-
-      {/* Session summary of what was actually done. */}
-      <View style={styles.summaryRow}>
-        <View style={styles.summaryTile}>
-          <Text style={styles.summaryValue}>
-            {session.completedAt
-              ? formatDuration(
-                  durationSecondsBetween(session.startedAt, session.completedAt),
-                )
-              : '–'}
-          </Text>
-          <Text style={styles.summaryLabel}>{t('workouts.duration')}</Text>
-        </View>
-        <View style={styles.summaryTile}>
-          <Text style={styles.summaryValue}>
-            {totals.doneSets}/{totals.totalSets}
-          </Text>
-          <Text style={styles.summaryLabel}>{t('workouts.setsDone')}</Text>
-        </View>
-        <View style={styles.summaryTile}>
-          <Text style={styles.summaryValue}>
-            {roundWeight(fromKg(totals.volume, unit))}
-          </Text>
-          <Text style={styles.summaryLabel}>{t('workouts.volume', { unit })}</Text>
-        </View>
-        <View style={styles.summaryTile}>
-          <Text style={styles.summaryValue}>
-            {totals.restSeconds > 0 ? formatDuration(totals.restSeconds) : '–'}
-          </Text>
-          <Text style={styles.summaryLabel}>{t('workouts.restLabel')}</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>{formatDayHeading(when, i18n.language)}</Text>
+        <View style={styles.metaRow}>
+          <Ionicons name="time-outline" size={14} color={colors.textMuted} />
+          <Text style={styles.meta}>{timeRange}</Text>
         </View>
       </View>
 
+      {/* Session summary of what was actually done. */}
+      <View style={styles.tiles}>
+        <StatTile
+          label={t('workouts.duration')}
+          value={
+            session.completedAt
+              ? formatDuration(
+                  activeDurationSeconds(
+                    session.startedAt,
+                    session.completedAt,
+                    session.pausedSeconds,
+                  ),
+                )
+              : '–'
+          }
+        />
+        <StatTile
+          label={t('workouts.setsLabel')}
+          value={String(totals.doneSets)}
+          caption={t('workouts.setsOfTotal', { total: totals.totalSets })}
+        />
+      </View>
+      <View style={styles.tiles}>
+        <StatTile
+          label={t('workouts.volumeLabel')}
+          value={formatWeightValue(totals.volumeKg, unit)}
+          unit={unit}
+        />
+        <StatTile
+          label={t('workouts.restLabel')}
+          value={totals.restSeconds > 0 ? formatDuration(totals.restSeconds) : '–'}
+        />
+      </View>
+      {totals.durationSeconds > 0 || totals.distanceMeters > 0 ? (
+        <View style={styles.tiles}>
+          {totals.durationSeconds > 0 ? (
+            <StatTile label={t('workouts.setTimeLabel')} value={formatDuration(totals.durationSeconds)} />
+          ) : null}
+          {totals.distanceMeters > 0 ? (
+            <StatTile label={t('workouts.distanceLabel')} value={formatDistance(totals.distanceMeters)} />
+          ) : null}
+        </View>
+      ) : null}
+
+      <RecordsCard
+        title={t('progress.records.beaten')}
+        unit={unit}
+        items={records.map((record, index) => ({
+          key: `${record.exerciseId}-${record.type}-${index}`,
+          record,
+          meta: record.exerciseName,
+        }))}
+      />
+
+      {session.notes ? (
+        <View style={styles.notesCard}>
+          <View style={styles.metaRow}>
+            <Ionicons name="document-text-outline" size={14} color={colors.textMuted} />
+            <Text style={styles.sectionLabel}>{t('workouts.notesLabel')}</Text>
+          </View>
+          <Text style={styles.notes}>{session.notes}</Text>
+        </View>
+      ) : null}
+
+      <Button
+        label={t('workouts.share.action')}
+        icon="share-outline"
+        variant="secondary"
+        fullWidth
+        onPress={() =>
+          void shareWorkoutText(
+            formatWorkoutShareText({
+              when,
+              durationSeconds: session.completedAt
+                ? activeDurationSeconds(session.startedAt, session.completedAt, session.pausedSeconds)
+                : null,
+              volumeKg: totals.volumeKg,
+              unit,
+              language: i18n.language,
+              exercises: session.exercises.map((exercise) => ({
+                name: exercise.exerciseName,
+                sets: exercise.sets.map((set) => ({ ...set, performed: isPerformedSet(set) })),
+              })),
+              notes: session.notes,
+              records: shareRecords(records, unit, t),
+              t,
+            }),
+          )
+        }
+      />
+
+      {/* What the warm-up block ticked (spec 0024 FR-7). */}
+      <WarmUpChecklist
+        items={(session.warmUpItems ?? []).map((item) => ({ ...item, key: String(item.order) }))}
+      />
+
+      <Text style={styles.sectionLabel}>{t('workouts.exercisesDone')}</Text>
       {session.exercises.map((exercise) => (
         <View key={exercise.id} style={styles.card}>
           <View style={styles.exerciseHeader}>
-            <Text style={styles.cardTitle}>
-              {exercise.order}. {exercise.exerciseName}
-            </Text>
+            <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
             <Text style={styles.exerciseVolume}>
-              {roundWeight(fromKg(exerciseVolume(exercise), unit))} {unit}
+              {exerciseHeadline(exercise, unit)}
             </Text>
           </View>
           {exercise.sets.map((set) => {
             const type = setTypeLabel(set.type, t);
-            const done = isDone(set);
+            const done = isPerformedSet(set);
             return (
-              <View key={set.id} style={styles.setRow}>
-                <Text style={[styles.setCheck, done ? styles.setCheckDone : null]}>
-                  {done ? '✓' : '○'}
-                </Text>
+              <View key={set.id} style={[styles.setRow, done ? null : styles.setRowSkipped]}>
+                <Ionicons
+                  name={done ? 'checkmark-circle' : 'ellipse-outline'}
+                  size={18}
+                  color={done ? colors.success : colors.textSubtle}
+                />
                 <Text style={styles.setNum}>{set.order}</Text>
-                {type ? <Text style={styles.typeTag}>{type}</Text> : null}
                 <Text style={styles.setValue}>
-                  {formatWeightValue(set.weightKg, unit)} {unit} × {set.reps ?? '–'}
+                  {formatSetValues(set, unit, sideLabels(t))}
                 </Text>
+                {type ? (
+                  <Chip label={type} size="sm" tone={set.type === 'failure' ? 'record' : 'neutral'} />
+                ) : null}
+                <View style={styles.spacer} />
                 {set.restSeconds ? (
-                  <Text style={styles.setRest}>
-                    {t('workouts.setRest', {
-                      duration: formatDuration(set.restSeconds),
-                    })}
-                  </Text>
+                  <Text style={styles.setRest}>{formatDuration(set.restSeconds)}</Text>
                 ) : null}
               </View>
             );
           })}
         </View>
       ))}
-      <Link href="/history" style={styles.link}>
-        {t('workouts.backToHistory')}
-      </Link>
     </ScrollView>
   );
 }
@@ -233,104 +318,90 @@ const styles = StyleSheet.create({
   container: {
     ...commonStyles.scrollContent,
   },
+  centered: {
+    alignSelf: 'center',
+  },
+  header: {
+    gap: spacing.xs,
+  },
   title: {
-    ...commonStyles.title,
+    ...commonStyles.heading,
+    fontSize: 26,
+    lineHeight: 32,
   },
-  body: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  notes: {
-    ...commonStyles.meta,
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   meta: {
     ...commonStyles.meta,
   },
-  error: {
-    ...commonStyles.error,
+  sectionLabel: {
+    ...commonStyles.sectionLabel,
   },
-  summaryRow: {
+  tiles: {
     flexDirection: 'row',
     gap: spacing.sm,
   },
-  summaryTile: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 2,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceRaised,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xs,
+  notesCard: {
+    ...commonStyles.card,
   },
-  summaryValue: {
-    color: colors.primary,
-    fontSize: 18,
-    fontWeight: '900',
-    fontVariant: ['tabular-nums'],
-  },
-  summaryLabel: {
-    color: colors.textMuted,
-    fontSize: 11,
-    fontWeight: '600',
+  notes: {
+    ...commonStyles.body,
+    color: colors.text,
   },
   card: {
     ...commonStyles.card,
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   exerciseHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
   },
   cardTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '700',
-    flexShrink: 1,
+    ...commonStyles.cardTitle,
+    flex: 1,
   },
   exerciseVolume: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontWeight: '700',
+    ...commonStyles.figureUnit,
+    color: colors.text,
+    paddingTop: 2,
   },
   setRow: {
+    minHeight: 40,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    borderRadius: radii.sm,
+    backgroundColor: colors.surfaceRaised,
+    paddingHorizontal: spacing.md,
   },
-  setCheck: {
-    color: colors.textSubtle,
-    fontSize: 15,
-    width: 16,
-  },
-  setCheckDone: {
-    color: colors.success,
+  setRowSkipped: {
+    opacity: 0.55,
   },
   setNum: {
+    width: 18,
     color: colors.textMuted,
+    fontFamily: fonts.displayBold,
     fontSize: 14,
-    fontWeight: '700',
-    width: 16,
-  },
-  typeTag: {
-    color: colors.accent,
-    fontSize: 11,
-    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
   },
   setValue: {
     color: colors.text,
-    fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.displayBold,
+    fontSize: 15,
+    fontVariant: ['tabular-nums'],
+  },
+  spacer: {
     flex: 1,
   },
   setRest: {
     color: colors.textSubtle,
+    fontFamily: fonts.display,
     fontSize: 12,
-  },
-  link: {
-    ...commonStyles.link,
+    fontVariant: ['tabular-nums'],
   },
 });
