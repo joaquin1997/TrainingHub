@@ -18,7 +18,7 @@ mobile → docs. The migration is additive; no native rebuild.
 | 2 | [x] Domain `SetExerciseTrackingTypeInput`; `Exercise.trackingTypeSetBy` + migration `20261018130000_add_exercise_tracking_type_set_by`; `PUT /exercises/:id/tracking-type` (new route/repository files, one line in `routes/index.ts`); route tests | domain, api | tests; `migrate deploy` + `migrate diff` on local PGlite | `feat(exercises): change an exercise's tracking type by hand` |
 | 3 | [x] Pure classifier: normalisation, multilingual rules, 0021 list moved to `curated.ts` (old script reads it), corrections first; tests on real catalog names | api | unit tests (AC-2, AC-8) | `feat(exercises): classify catalog exercises into tracking types` |
 | 4 | [x] Pure sweep: `parseCorrections`, `planSweep` (rows, totals, used-first order, person skips, EF-7 flags, missing ids), `toCsv`, `planUndo`; tests | api | unit tests (AC-1, AC-3, AC-5, AC-9, EF-1, EF-2, EF-7) | `feat(exercises): plan a tracking type sweep` |
-| 5 | [ ] Script `sweep-tracking-types.ts` (report / apply / undo), corrections JSON, npm scripts | api | typecheck; run on local PGlite with hand-inserted rows (`SWEEP_WITHOUT_TRANSLATIONS=true`) | `feat(exercises): tracking type sweep with report, apply and undo` |
+| 5 | [x] Script `sweep-tracking-types.ts` (report / apply / undo), corrections JSON, npm scripts | api | typecheck; run on local PGlite with hand-inserted rows (`SWEEP_WITHOUT_TRANSLATIONS=true`) | `feat(exercises): tracking type sweep with report, apply and undo` |
 | 6 | [ ] Records use only the values of the exercise's current type | api | aggregate tests (AC-6, FR-17) | `feat(progress): records follow the exercise's current tracking type` |
 | 7 | [ ] Mobile: `setTrackingType` client, `TrackingTypeControl` on the exercise detail, confirm sheet when the exercise has sessions, rollback; i18n | mobile | typecheck; **[DEVICE]** FR-12, FR-14 | `feat(exercises): change the tracking type from the exercise detail` |
 | 8 | [ ] Progress log, definition of done | docs | — | `docs(sdd): record 0030 implementation` |
@@ -94,6 +94,21 @@ it before the sweep (harmless; the sweep re-decides those 44).
   totals = catalog size, used changes first), person-set skips, EF-7 flags,
   missing override ids, corrections parsing with an error per bad entry, CSV,
   run log and undo plan; 15 tests.
+- 2026-10-17 — Task 5. `sweep-tracking-types.ts` + npm scripts
+  `catalog:tracking-sweep`, `:apply`, `:undo`; corrections file with a
+  `_readme` note only. Local PGlite (all migrations, 10 wger rows + a custom
+  "Plank", "Mountain climbers" set to time by a person), with
+  `SWEEP_WITHOUT_TRANSLATIONS=true` (wger unreachable): report → 10 rows,
+  7 would change, Mountain climbers skipped (set by a person), the unilateral
+  isometric squat flagged (EF-7), the 0021 ids absent listed (EF-1), no
+  write; apply → 7 changed with a run file; apply again → "0 changed"
+  (AC-3); Burpees then set by a person, undo → 6 reverted, Burpees left
+  (AC-9); a correction with type `weight_distance` stopped the apply before
+  any write, naming the entry (EF-2); a correction Burpees → time reported
+  with reason "owner correction" (AC-8); the custom "Plank" stayed
+  weight & reps throughout (AC-4). Note: PGlite's socket server needs
+  `pgbouncer=true` in the local `DATABASE_URL` (prepared statements); not
+  needed on the real server.
 
 ## Definition of done
 

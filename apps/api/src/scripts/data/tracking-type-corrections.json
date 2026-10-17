@@ -1,0 +1,3 @@
+{
+  "_readme": "Owner corrections for the tracking type sweep (spec 0030), keyed by wger source_id from tmp/tracking-type-sweep.csv: \"1234\": { \"type\": \"duration\", \"name\": \"Burpees\" }. Types: weight_reps, reps, duration, weight_duration, distance_duration."
+}
