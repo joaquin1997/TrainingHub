@@ -18,7 +18,7 @@ Each task leaves the tree green (`pnpm -r typecheck` and `pnpm -r test`).
 | 4 | [x] Matching script, matcher tests, alias file, npm scripts | api | unit tests; run on PGlite | `feat(exercises): match catalog images from free-exercise-db` |
 | 5 | [x] Reuse 0027's picker helper (no new dependency); `resolveImageSource`; `exercisesClient` upload; `ExerciseThumb`/detail fallback on error | mobile | unit tests | `feat(exercises): load images with auth and fall back to the tile` |
 | 6 | [x] `ExercisePhotoField` in the create form, "Add/Change photo" on the detail, thumb in the active workout card; i18n | mobile | web preview: AC-2 | `feat(exercises): add a photo to a custom exercise` |
-| 7 | [ ] Progress log, definition of done, spec status | docs | | `docs(sdd): close spec 0026 implementation` |
+| 7 | [x] Progress log, definition of done, spec status | docs | | `docs(sdd): close spec 0026 implementation` |
 
 ### Commands for tomorrow with the owner (server) — not run by the agent
 
@@ -63,11 +63,26 @@ After deploying the API (the container applies the migration on start):
   FROM "WorkoutExercise" we JOIN "Exercise" e ON e.id = we."exerciseId"
   GROUP BY e.id ORDER BY uses DESC LIMIT 50;
   ```
+- 2026-10-17 - After merging feat/sdd-batch (spec 0027): photos aligned with
+  the profile photo: base64 JPEG upload (`decodeJpegBase64`, 512 KB), the
+  0027 picker/resizer and dependencies reused, no new dependency. Kept a
+  separate `ExercisePhoto` table and a binary `GET` so the exercise list is
+  not bloated by inline photos.
+- 2026-10-17 - Tasks 5-6: `ExerciseImage` (auth headers on native, blob URL
+  on web, tile fallback on error), photo field in the create form, "Add/Change
+  photo" on the detail (creator only), thumb in the active workout header.
+  Verification on local PGlite + API + web preview: curl (register, create,
+  PUT photo 204, GET 200 image/jpeg, no token 401, other user 403); web: the
+  custom exercise shows its photo in the list, a catalog exercise (Press
+  Arnold, via alias) shows its free-exercise-db image, the detail shows
+  "Change photo" for the creator. Picker and workout card reuse the same
+  component (not screenshotted separately). Camera: not offered (library
+  only, like 0027). Picker/library, EF-2 offline: owner [DEVICE].
 
 ## Definition of done
 
-- [ ] Every functional requirement and acceptance criterion met or deferred
-- [ ] `pnpm -r typecheck` and `pnpm -r test` green
+- [x] Every functional requirement and acceptance criterion met or deferred (AC-1 pending the server run, AC-2 device check)
+- [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [ ] Migration deployed and matching script run on the server (owner, tomorrow)
 - [ ] Device rebuild; camera and library checked on device
 - [ ] Roadmap 06 and backlog updated (coordinator)
