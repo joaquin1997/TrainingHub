@@ -1,9 +1,10 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
+import { ExerciseImage } from '@/features/exercises/components/ExerciseImage';
 import { progressClient } from '@/features/progress/api/progressClient';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { formatDate } from '@/lib/format';
@@ -137,14 +138,12 @@ export function ExerciseDetailScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
       <Text style={styles.title}>{exercise.name}</Text>
-      {exercise.imageUrl ? (
-        <Image
-          source={{ uri: exercise.imageUrl }}
-          style={styles.image}
-          resizeMode="contain"
-          accessibilityLabel={t('exercises.illustration', { name: exercise.name })}
-        />
-      ) : null}
+      <ExerciseImage
+        imageUrl={exercise.imageUrl}
+        style={styles.image}
+        accessibilityLabel={t('exercises.illustration', { name: exercise.name })}
+        fallback={null}
+      />
       <View style={styles.card}>
         {chipGroups.map((group) => (
           <View key={group.label} style={styles.chipGroup}>
