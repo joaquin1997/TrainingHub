@@ -74,6 +74,8 @@ the device goes in the same batch, with a Metro reload.
   - [ASSUMPTION: the lock-screen and Dynamic Island rest row uses a timer symbol in the accent colour and no "Rest" word, so the activity attributes stay unchanged; the start payload also carries the rest end, for an activity restarted mid-rest.]
   - [ASSUMPTION: Spanish "Off" on the rest chip reads "Sin descanso".]
 - 2026-10-17 — Task 10: this log; roadmap `02-rest-timer.md`, backlog and 0019's bar-countdown note are handed to the coordinator (parallel agents). Spec stays `in-progress`: device checks pending (below).
+- 2026-10-17 — Coordinator: roadmap 02 (checklist + log) and 08 (rest alert
+  under notifications), backlog row, 0019's bar-countdown note updated.
 
 ### Pending on the owner's iOS device (after `expo prebuild` + rebuild)
 
@@ -91,6 +93,7 @@ the device goes in the same batch, with a Metro reload.
 - [x] Every functional requirement and acceptance criterion in `spec.md` is met
       or explicitly deferred with a TODO (device checks pending above)
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
-- [ ] Relevant `docs/roadmap/NN-*.md` checklist and progress log updated
-- [ ] `spec.md` status set to `done`; `../backlog.md` updated
+- [x] Relevant `docs/roadmap/NN-*.md` checklist and progress log updated
+- [ ] `spec.md` status set to `done`; `../backlog.md` updated (backlog row
+      updated 2026-10-17; `done` waits for the device checks)
 - [x] Constitution amended if this work settled a new invariant (none settled)

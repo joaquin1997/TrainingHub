@@ -74,6 +74,9 @@ Not verifiable in CI: the migration and the catalog script on the server
   - a second workout shows last time's `1:00` in PREVIOUS.
   First preview showed distance & time and weight & time rows too tight
   ("1:4" clipped); fixed with a compact layout for two fields + timer.
+- 2026-10-17 — Coordinator: roadmap 01 (checklist + log) and backlog row
+  updated; the migration and catalog script are in the backlog's owner
+  server steps.
 
 ## Definition of done
 
@@ -81,6 +84,7 @@ Not verifiable in CI: the migration and the catalog script on the server
       or explicitly deferred with a TODO
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [x] Roadmap/backlog updates handed to the coordinator
+- [x] Roadmap 01 and backlog updated (coordinator, 2026-10-17)
 - [ ] Timed rows, timer vibration and keyboard (`numbers-and-punctuation`)
       checked on the owner's iOS device
 - [ ] Migration applied and catalog script run on the server (owner)

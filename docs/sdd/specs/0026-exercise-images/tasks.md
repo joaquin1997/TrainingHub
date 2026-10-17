@@ -78,6 +78,9 @@ After deploying the API (the container applies the migration on start):
   "Change photo" for the creator. Picker and workout card reuse the same
   component (not screenshotted separately). Camera: not offered (library
   only, like 0027). Picker/library, EF-2 offline: owner [DEVICE].
+- 2026-10-17 - Coordinator: roadmap 06 (checklist + log) and backlog row
+  updated; the migration and the matching commands are in the backlog's
+  owner server steps.
 
 ## Definition of done
 
@@ -85,4 +88,4 @@ After deploying the API (the container applies the migration on start):
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [ ] Migration deployed and matching script run on the server (owner, tomorrow)
 - [ ] Device rebuild; camera and library checked on device
-- [ ] Roadmap 06 and backlog updated (coordinator)
+- [x] Roadmap 06 and backlog updated (coordinator)

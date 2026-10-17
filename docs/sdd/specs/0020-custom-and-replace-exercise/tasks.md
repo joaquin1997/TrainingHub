@@ -66,12 +66,15 @@ page sheet (owner's device batch, Metro reload).
 - 2026-10-17 — Task 7: spec stays `in-progress` until the picker steps are
   checked on the owner's iOS device. Backlog, roadmap 06 and glossary updates
   handed to the coordinator.
+- 2026-10-17 — Coordinator: roadmap 06 (checklist + log) and backlog row
+  updated.
 
 ## Definition of done
 
 - [x] Every functional requirement and acceptance criterion in `spec.md` is met
       or explicitly deferred with a TODO
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
-- [ ] Roadmap 06 checklist and log updated (coordinator)
-- [ ] `spec.md` status set to `done`; `../backlog.md` updated (coordinator)
+- [x] Roadmap 06 checklist and log updated (coordinator)
+- [ ] `spec.md` status set to `done`; `../backlog.md` updated (coordinator;
+      backlog row updated 2026-10-17, `done` waits for the device check)
 - [ ] Picker steps checked on the owner's iOS device

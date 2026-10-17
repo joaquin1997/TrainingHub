@@ -68,6 +68,9 @@ deploy that makes them show data.
   warm-up, so ticking it logs the warm-up weight as a working set.
 - 2026-10-17 — Task 6: definition of done. Spec stays `in-progress` until the
   API is deployed and the owner checks the screens on the device.
+- 2026-10-17 — Coordinator: roadmap 04 (checklist + log) and backlog row
+  updated; the warm-up placeholder finding is in the backlog's follow-ups.
+  Glossary not touched in this pass.
 
 ## Definition of done
 
@@ -75,4 +78,5 @@ deploy that makes them show data.
       or explicitly deferred with a TODO
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [x] Roadmap 04, backlog and glossary updates handed to the coordinator
+- [x] Roadmap 04 and backlog updated (coordinator, 2026-10-17)
 - [ ] `spec.md` status set to `done` (after the owner's device check)

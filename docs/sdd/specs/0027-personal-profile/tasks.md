@@ -78,15 +78,19 @@ Not verifiable in CI or here:
     phone (permission prompt, square crop, AC-5 after relaunch).
   - **[DEPLOY]** An API redeploy, which applies
     `20261016190000_add_profile_and_body_measurements`.
+- 2026-10-17 — Coordinator: roadmap 03 (account / profile screen ticked +
+  log) and backlog row updated; the migration is in the backlog's owner
+  server steps. The proposed Article 4 amendment (lengths in cm) is still
+  open.
 
 ## Definition of done
 
 - [x] Every functional requirement and acceptance criterion in `spec.md` is met
       or explicitly deferred with a TODO (AC-5 on device pending)
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
-- [ ] Relevant `docs/roadmap/NN-*.md` checklist and progress log updated
+- [x] Relevant `docs/roadmap/NN-*.md` checklist and progress log updated
       (coordinator)
 - [ ] `spec.md` status set to `done`; `../backlog.md` updated (coordinator,
-      after device and deploy checks)
+      after device and deploy checks; backlog row updated 2026-10-17)
 - [ ] Constitution amended if this work settled a new invariant (Article 4
       extended to lengths in cm: proposed to the coordinator)
