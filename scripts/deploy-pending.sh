@@ -170,11 +170,12 @@ PREBUILD_STEP=prebuild
 if is_done "$PREBUILD_STEP"; then
   step "iOS: prebuild already done for $COMMIT"
 else
-  step "iOS: expo prebuild"
+  # --clean: @bacons/apple-targets 5.0.0 crashes updating an existing target.
+  step "iOS: expo prebuild --clean"
   if [ "${WATCH_APP:-0}" = "1" ]; then
-    TRAININGHUB_WATCH_APP=1 npx expo prebuild --platform ios
+    TRAININGHUB_WATCH_APP=1 npx expo prebuild --platform ios --clean
   else
-    npx expo prebuild --platform ios
+    npx expo prebuild --platform ios --clean
   fi
   mark_done "$PREBUILD_STEP"
 fi
