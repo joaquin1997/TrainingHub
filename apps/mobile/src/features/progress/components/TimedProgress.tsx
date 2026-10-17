@@ -102,7 +102,7 @@ export function TimedProgressDetail({
           tone="record"
         />
       </View>
-      {series.bars.length > 0 ? (
+      {series.points.length > 0 ? (
         <ProgressChart
           title={distance ? t('progress.longestDistance') : t('progress.longestTime')}
           unit={distance ? 'm' : 's'}

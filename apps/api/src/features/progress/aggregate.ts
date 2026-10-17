@@ -84,6 +84,11 @@ type ProgressAccumulator = {
   exerciseName: string;
   trackingType?: ExerciseTrackingType;
   points: ExerciseProgressPoint[];
+  /**
+   * `pointSessions[i]`: index of point `i`'s workout in the chronological
+   * session list. Internal, never sent: it lets the detail flag record points.
+   */
+  pointSessions: number[];
 };
 
 function maxDefined(values: Array<number | null | undefined>): number | undefined {
@@ -96,12 +101,13 @@ function buildAccumulators(
 ): Map<string, ProgressAccumulator> {
   const byExercise = new Map<string, ProgressAccumulator>();
 
-  for (const session of ordered) {
+  ordered.forEach((session, sessionIndex) => {
     for (const exercise of session.exercises) {
       const accumulator = byExercise.get(exercise.exerciseId) ?? {
         exerciseId: exercise.exerciseId,
         exerciseName: exercise.exerciseName,
         points: [],
+        pointSessions: [],
       };
 
       // Warmups add volume but never set a best, a 1RM or a record.
@@ -124,10 +130,11 @@ function buildAccumulators(
         bestDurationSeconds: maxDefined(workingSets.map((set) => set.durationSeconds)),
         bestDistanceMeters: maxDefined(workingSets.map((set) => set.distanceMeters)),
       });
+      accumulator.pointSessions.push(sessionIndex);
 
       byExercise.set(exercise.exerciseId, accumulator);
     }
-  }
+  });
 
   return byExercise;
 }
@@ -265,6 +272,27 @@ export function buildExerciseProgressSummaries(
     );
 }
 
+/**
+ * Marks the points whose workout beat at least one of the exercise's records
+ * (spec 0034 FR-22, any record type, as `isRecordSession`). Records are per
+ * workout, so two entries of the exercise in one workout are both flagged.
+ * The flag is present only when true.
+ */
+function flagRecordPoints(
+  accumulator: ProgressAccumulator,
+  records: ExerciseRecordSessions | undefined,
+): ExerciseProgressPoint[] {
+  if (!records) {
+    return accumulator.points;
+  }
+
+  return accumulator.points.map((point, index) => {
+    const position = records.sessionIndexes.indexOf(accumulator.pointSessions[index]!);
+    const hits = position >= 0 ? records.history.hits[position] ?? [] : [];
+    return hits.length > 0 ? { ...point, isRecord: true as const } : point;
+  });
+}
+
 export function buildExerciseProgressDetail(
   sessions: ProgressSessionInput[],
   exerciseId: string,
@@ -280,7 +308,7 @@ export function buildExerciseProgressDetail(
 
   return {
     ...toSummary(accumulator, records),
-    points: accumulator.points,
+    points: flagRecordPoints(accumulator, records),
     records: records?.history.bests ?? [],
   };
 }

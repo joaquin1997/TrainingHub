@@ -495,5 +495,13 @@ export const es: TranslationCatalog = {
       repsValue_one: '{{count}} rep',
       repsValue_other: '{{count}} reps',
     },
+    chart: {
+      // A selected point on a progress chart (spec 0034 FR-22).
+      readout: '{{date}} · {{value}}',
+      record: 'Récord',
+      // What a screen reader says for each point.
+      pointLabel: '{{date}}, {{value}}',
+      pointLabelRecord: '{{date}}, {{value}}, récord',
+    },
   },
 };
