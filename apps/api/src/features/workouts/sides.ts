@@ -29,11 +29,8 @@ export function withSideTotal<T extends SidedReps>(set: T): T {
   return { ...set, reps: (set.repsLeft ?? 0) + (set.repsRight ?? 0) };
 }
 
-/** Reps for records and estimated 1RM: the better side of a set with sides. */
-export function recordReps(set: SidedReps): number | undefined {
-  if (set.repsLeft == null && set.repsRight == null) {
-    return set.reps ?? undefined;
-  }
-
-  return Math.max(set.repsLeft ?? 0, set.repsRight ?? 0);
-}
+/**
+ * Reps for records and estimated 1RM: the better side of a set with sides.
+ * Shared with the phone's live record badges (spec 0032).
+ */
+export { recordReps } from '@workout/domain';

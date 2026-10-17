@@ -7,6 +7,9 @@
       "@workout/domain": [
         "../../packages/domain/src/index.ts"
       ],
+      "@workout/domain/records": [
+        "../../packages/domain/src/records.ts"
+      ],
       "@/*": [
         "./src/*"
       ]

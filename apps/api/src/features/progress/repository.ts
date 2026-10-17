@@ -9,6 +9,7 @@ import {
   selectPerformedWork,
   type ProgressSessionInput,
 } from './aggregate.js';
+import { buildStartingRecords } from './startingRecords.js';
 
 async function loadSessionInputs(
   userPublicId: string,
@@ -79,4 +80,9 @@ export async function listMuscleGroupVolume(userPublicId: string) {
 
 export async function listSessionRecords(userPublicId: string) {
   return buildSessionRecords(await loadSessionInputs(userPublicId));
+}
+
+/** Starting records for the active workout's exercises (spec 0032). */
+export async function listStartingRecords(userPublicId: string, exerciseIds: string[]) {
+  return buildStartingRecords(await loadSessionInputs(userPublicId), exerciseIds);
 }

@@ -23,6 +23,9 @@ import {
   WorkoutSetRow,
 } from '@/features/workouts/components/WorkoutSetRow';
 import { useExerciseReplacement } from '@/features/workouts/hooks/useExerciseReplacement';
+import { RecordBadge } from '@/features/workouts/liveRecords/RecordBadge';
+import { RecordNotice } from '@/features/workouts/liveRecords/RecordNotice';
+import { useLiveRecords } from '@/features/workouts/liveRecords/useLiveRecords';
 import {
   canAddApproachSets,
   confirmApproachSets,
@@ -155,6 +158,8 @@ export function ActiveWorkoutScreen() {
   >({});
   const { settings } = useSettings();
   const { user } = useAuth();
+  // Record badges and the notice while logging (spec 0032).
+  const liveRecords = useLiveRecords(workoutDraft);
 
   useEffect(() => {
     const entry = resolveActiveWorkoutEntry(getActiveWorkout(), routineId);
@@ -715,6 +720,12 @@ export function ActiveWorkoutScreen() {
                 onPress={() => setRestEditorFor(exercise.id)}
               />
             </View>
+            {liveRecords.badges.sessionVolumeByExercise[exercise.exerciseId] ? (
+              <RecordBadge
+                hits={[liveRecords.badges.sessionVolumeByExercise[exercise.exerciseId]!]}
+                unit={unit}
+              />
+            ) : null}
           </View>
           <View style={styles.reorderRow}>
             <Pressable
@@ -786,6 +797,9 @@ export function ActiveWorkoutScreen() {
               />
               {upNext?.workoutSetId === set.id ? (
                 <View pointerEvents="none" style={styles.upNextRing} />
+              ) : null}
+              {liveRecords.badges.bySet[set.id] ? (
+                <RecordBadge hits={liveRecords.badges.bySet[set.id]!} unit={unit} />
               ) : null}
             </View>
             );
@@ -999,6 +1013,7 @@ export function ActiveWorkoutScreen() {
         onConfirm={confirmApproachPreview}
         onCancel={() => setApproachPreview(null)}
       />
+      <RecordNotice notice={liveRecords.notice} unit={unit} />
       <RestEditorSheet
         visible={restEditorExercise !== undefined}
         exerciseName={restEditorExercise?.exerciseName ?? ''}

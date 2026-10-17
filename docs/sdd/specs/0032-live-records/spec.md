@@ -1,7 +1,7 @@
 ---
 id: 0032
 title: Live record badges while logging
-status: ready
+status: in-progress
 roadmap: docs/roadmap/04-progress-and-prs.md
 created: 2026-10-17
 decided: 2026-10-17

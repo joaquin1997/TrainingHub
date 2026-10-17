@@ -154,6 +154,13 @@ export type WorkoutSessionDraft = {
   lastTickedExerciseId?: string;
   /** The warm-up block's checklist; absent when the routine has none (spec 0024). */
   warmUp?: WarmUpItemDraft[];
+  /**
+   * Each exercise's starting records, by exercise id (spec 0032): loaded once
+   * when it joins the workout, kept so badges work offline after a restart,
+   * never changed by this workout. Absent = not loaded (no badges). See
+   * `features/workouts/liveRecords`.
+   */
+  startingRecords?: Record<string, import('@workout/domain').StartingRecords>;
   exercises: WorkoutExerciseDraft[];
 };
 
