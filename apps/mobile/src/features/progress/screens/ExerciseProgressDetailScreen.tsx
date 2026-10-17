@@ -134,11 +134,14 @@ export function ExerciseProgressDetailScreen() {
         : point.estimatedOneRepMax,
   }));
 
-  const oneRepMaxSeries = buildProgressSeries(
-    displayPoints,
-    'estimatedOneRepMax',
-  );
-  const volumeSeries = buildProgressSeries(displayPoints, 'totalVolume');
+  // A session without a 1RM or with no volume (reps-only, timed) is a gap in
+  // the line, never a zero (spec 0034 EF-7); record sessions keep their flag.
+  const oneRepMaxSeries = buildProgressSeries(displayPoints, 'estimatedOneRepMax', {
+    positiveOnly: true,
+  });
+  const volumeSeries = buildProgressSeries(displayPoints, 'totalVolume', {
+    positiveOnly: true,
+  });
   const personalRecords = extractPersonalRecords(progress.points);
   // Current best of each record type (spec 0023); absent from older servers.
   const records = progress.records ?? [];
@@ -188,6 +191,7 @@ export function ExerciseProgressDetailScreen() {
           unit={unit}
           series={oneRepMaxSeries}
           formatLabel={formatAxisDate}
+          formatValue={(value) => String(roundWeight(value))}
         />
       ) : volumeSeries.points.length > 0 ? (
         <ProgressChart
