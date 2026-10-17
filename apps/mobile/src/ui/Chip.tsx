@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
 
 /**
  * Tones follow the colour meanings of spec 0017 FR-1: `record` (orange) for a
@@ -46,7 +46,7 @@ export function Chip({
         <Ionicons name={icon} size={size === 'sm' ? 12 : 14} color={palette.text} />
       ) : null}
       <Text
-        style={[styles.label, size === 'sm' ? styles.labelSmall : null, { color: palette.text }]}
+        style={[styles.label, { color: palette.text }]}
         numberOfLines={1}
       >
         {label}
@@ -85,11 +85,11 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     borderRadius: radii.pill,
     paddingHorizontal: spacing.md,
-    paddingVertical: 6,
+    paddingVertical: spacing.xs,
   },
   chipSmall: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
+    paddingVertical: spacing.xxs,
   },
   pressable: {
     minHeight: 36,
@@ -98,12 +98,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  // Both sizes use Caption (the closed scale has no smaller text); the small
+  // chip is set apart by its tighter padding.
   label: {
+    ...typeScale.caption,
     fontFamily: fonts.display,
-    fontSize: 14,
     fontVariant: ['tabular-nums'],
-  },
-  labelSmall: {
-    fontSize: 12,
   },
 });

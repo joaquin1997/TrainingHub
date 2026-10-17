@@ -32,8 +32,6 @@ const TOKENS = 'ui/tokens.ts';
  * may still have. Shrinks with every migration commit; must end empty.
  */
 const BASELINE: Record<string, number> = {
-  'app/(tabs)/_layout.tsx': 1,
-  'features/auth/screens/AuthLandingScreen.tsx': 7,
   'features/exercises/components/CustomExerciseForm.tsx': 2,
   'features/exercises/components/CustomExerciseModal.tsx': 1,
   'features/exercises/components/ExercisePhotoField.tsx': 1,
@@ -74,12 +72,6 @@ const BASELINE: Record<string, number> = {
   'features/workouts/screens/WorkoutHistoryScreen.tsx': 6,
   'features/workouts/screens/WorkoutSessionDetailScreen.tsx': 6,
   'features/workouts/screens/WorkoutSummaryScreen.tsx': 3,
-  'ui/ActionSheet.tsx': 7,
-  'ui/Button.tsx': 1,
-  'ui/Chip.tsx': 4,
-  'ui/ScreenTitle.tsx': 1,
-  'ui/StatTile.tsx': 3,
-  'ui/StateView.tsx': 3,
 };
 
 describe('scanStyleSource', () => {

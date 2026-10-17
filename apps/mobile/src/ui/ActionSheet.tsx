@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, fonts, radii, spacing } from '@/ui/theme';
+import { colors, fonts, radii, spacing, typeScale } from '@/ui/theme';
 
 export interface SheetAction {
   label: string;
@@ -92,8 +92,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderColor: colors.border,
-    borderTopLeftRadius: radii.lg + 8,
-    borderTopRightRadius: radii.lg + 8,
+    borderTopLeftRadius: radii.lg,
+    borderTopRightRadius: radii.lg,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     gap: spacing.xs,
@@ -102,19 +102,19 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: 40,
     height: 4,
-    borderRadius: 2,
+    borderRadius: radii.pill,
     backgroundColor: colors.borderStrong,
     marginBottom: spacing.sm,
   },
   title: {
+    ...typeScale.body,
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 17,
     paddingVertical: spacing.sm,
   },
   message: {
+    ...typeScale.caption,
     color: colors.textMuted,
-    fontSize: 13,
     paddingBottom: spacing.sm,
   },
   action: {
@@ -127,9 +127,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceRaised,
   },
   actionText: {
+    ...typeScale.body,
     color: colors.text,
     fontFamily: fonts.display,
-    fontSize: 17,
   },
   destructive: {
     color: colors.danger,
@@ -143,8 +143,8 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   cancelText: {
+    ...typeScale.body,
     color: colors.textMuted,
     fontFamily: fonts.displayBold,
-    fontSize: 16,
   },
 });

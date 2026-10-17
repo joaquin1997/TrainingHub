@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/ui/Button';
-import { colors, fonts, spacing } from '@/ui/theme';
+import { colors, fonts, spacing, typeScale } from '@/ui/theme';
 
 interface StateViewProps {
   kind: 'loading' | 'empty' | 'error';
@@ -58,15 +58,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   title: {
+    ...typeScale.heading,
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 18,
     textAlign: 'center',
   },
   message: {
+    ...typeScale.caption,
     color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 20,
     textAlign: 'center',
   },
   errorMessage: {

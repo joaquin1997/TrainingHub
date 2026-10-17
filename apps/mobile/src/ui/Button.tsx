@@ -7,7 +7,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
 
 /**
  * `primary` is the screen's one primary action (spec 0017 FR-6); `ghost` is a
@@ -108,8 +108,8 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   label: {
+    ...typeScale.body,
     fontFamily: fonts.displayBold,
-    fontSize: 16,
     flexShrink: 1,
     textAlign: 'center',
   },

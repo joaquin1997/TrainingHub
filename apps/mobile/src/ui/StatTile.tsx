@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, commonStyles, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, radii, spacing, typeScale } from '@/ui/theme';
 
 interface StatTileProps {
   label: string;
@@ -58,7 +58,6 @@ const styles = StyleSheet.create({
   },
   label: {
     ...commonStyles.sectionLabel,
-    fontSize: 11,
     flexShrink: 1,
   },
   valueLine: {
@@ -71,8 +70,7 @@ const styles = StyleSheet.create({
     ...commonStyles.figureUnit,
   },
   caption: {
+    ...typeScale.caption,
     color: colors.textMuted,
-    fontSize: 12,
-    lineHeight: 16,
   },
 });
