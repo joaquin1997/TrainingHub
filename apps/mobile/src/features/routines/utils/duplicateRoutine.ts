@@ -24,6 +24,7 @@ export function buildRoutineCopyInput(routine: Routine): CreateRoutineInput {
             targetWeight: set.targetWeight,
             targetDurationSeconds: set.targetDurationSeconds,
             targetDistanceMeters: set.targetDistanceMeters,
+            isWarmup: set.isWarmup,
           })),
       })),
   };

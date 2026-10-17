@@ -48,3 +48,26 @@ describe('effectiveRoutineSetValue', () => {
     expect(effectiveRoutineSetValue(sets, 2, 'targetWeight')).toBe('65');
   });
 });
+
+describe('warm-up sets (spec 0024)', () => {
+  const withWarmups = [
+    { minReps: '10', maxReps: '10', targetWeight: '20', isWarmup: true },
+    { minReps: '5', maxReps: '5', targetWeight: '60', isWarmup: true },
+    { minReps: '', maxReps: '5', targetWeight: '100' },
+    { minReps: '', maxReps: '', targetWeight: '' },
+  ];
+
+  it('never lets a working set inherit from a warm-up', () => {
+    expect(inheritedSetValue(withWarmups, 2, 'minReps')).toBe('');
+    expect(effectiveRoutineSetValue(withWarmups, 3, 'targetWeight')).toBe('100');
+    expect(effectiveRoutineSetValue(withWarmups, 3, 'minReps')).toBe('');
+  });
+
+  it('lets a warm-up inherit from the warm-up before it', () => {
+    const rows = [
+      ...withWarmups.slice(0, 2),
+      { minReps: '', maxReps: '', targetWeight: '', isWarmup: true },
+    ];
+    expect(inheritedSetValue(rows, 2, 'targetWeight')).toBe('60');
+  });
+});

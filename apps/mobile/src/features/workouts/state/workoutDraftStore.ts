@@ -194,7 +194,8 @@ function buildExerciseDrafts(
               ? String(set.targetDistanceMeters)
               : undefined,
           done: false,
-          type: 'normal',
+          // A routine warm-up set (spec 0024) is a warm-up in the workout.
+          type: set.isWarmup ? 'warmup' : 'normal',
           minReps: set.minReps,
           maxReps: set.maxReps,
           targetWeight: set.targetWeight,

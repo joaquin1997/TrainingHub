@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { addApproachSets, canAddApproachSets } from './approachSetsDraft';
 import {
+  buildWorkoutSessionDraft,
   toCreateWorkoutSessionInput,
   type WorkoutSessionDraft,
   type WorkoutSetDraft,
@@ -108,6 +109,34 @@ describe('addApproachSets', () => {
   it('adds nothing for a working weight at the bar (EF-2)', () => {
     const draft = draftWith([set({ id: 'w-1', weightKg: '20', reps: '10' })]);
     expect(addApproachSets(draft, 'we-squat')).toEqual({ draft, outcome: 'tooLight' });
+  });
+
+  it('starts a routine warm-up set as a warm-up in the workout', () => {
+    const at = '2026-10-17T08:00:00.000Z';
+    const draft = buildWorkoutSessionDraft({
+      id: 'r1',
+      userId: 'u1',
+      name: 'Legs',
+      exercises: [
+        {
+          id: 're-1',
+          routineId: 'r1',
+          exerciseId: 'ex-squat',
+          exerciseName: 'Squat',
+          orderIndex: 1,
+          sets: [
+            { id: 's1', routineExerciseId: 're-1', setNumber: 1, targetWeight: 20, isWarmup: true, createdAt: at, updatedAt: at },
+            { id: 's2', routineExerciseId: 're-1', setNumber: 2, targetWeight: 140, createdAt: at, updatedAt: at },
+          ],
+          createdAt: at,
+          updatedAt: at,
+        },
+      ],
+      createdAt: at,
+      updatedAt: at,
+    });
+
+    expect(entriesOf(draft).map((entry) => entry.type)).toEqual(['warmup', 'normal']);
   });
 
   it('is offered for weight & reps exercises only', () => {

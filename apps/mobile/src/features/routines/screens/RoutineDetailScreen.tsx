@@ -8,6 +8,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { exerciseBlockLabels } from '@/features/routines/utils/exerciseBlockLabels';
 import { buildRoutineCopyInput } from '@/features/routines/utils/duplicateRoutine';
+import { routineSetLabel } from '@/features/routines/utils/routineApproachSets';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
 import { useRoutineStart } from '@/features/workouts/hooks/useRoutineStart';
@@ -246,9 +247,11 @@ export function RoutineDetailScreen() {
                 {t('routineDetail.colTarget')}
               </Text>
             </View>
-            {sets.map((set) => (
+            {sets.map((set, setIndex) => (
               <View key={set.id} style={styles.setRow}>
-                <Text style={styles.setNumber}>{set.setNumber}</Text>
+                <Text style={styles.setNumber}>
+                  {routineSetLabel(sets, setIndex, t('workouts.setType.warmup'))}
+                </Text>
                 <Text style={styles.setTarget}>
                   {set.targetWeight !== undefined && tracksField(exercise.trackingType, 'weight') ? (
                     <>
