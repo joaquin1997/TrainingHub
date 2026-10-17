@@ -29,6 +29,8 @@ import {
   type ApproachSetsOutcome,
 } from '@/features/workouts/state/approachSetsDraft';
 import { RestBar } from '@/features/workouts/components/RestBar';
+import { WarmUpChecklist } from '@/features/workouts/components/WarmUpChecklist';
+import { toggleWarmUpItem } from '@/features/workouts/state/warmUpDraft';
 import { RestEditorSheet } from '@/features/workouts/components/RestEditorSheet';
 import { nextSetToDo } from '@/features/workouts/restTimer/nextSetToDo';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -793,6 +795,11 @@ export function ActiveWorkoutScreen() {
             </View>
             <Text style={styles.hint}>{t('workouts.autosaveHint')}</Text>
           </View>
+          {/* The warm-up block first; ticking is not a set (spec 0024 FR-6). */}
+          <WarmUpChecklist
+            items={(workoutDraft.warmUp ?? []).map((item) => ({ ...item, key: item.id }))}
+            onToggle={(itemId) => applyDraft(toggleWarmUpItem(workoutDraft, itemId))}
+          />
           {blocks.map((members) => {
             const first = blockLabels[members[0] ?? 0];
             const key = workoutDraft.exercises[members[0] ?? 0]?.id ?? String(members[0]);
