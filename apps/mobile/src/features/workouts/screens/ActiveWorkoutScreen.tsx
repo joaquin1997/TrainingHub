@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import type { TFunction } from 'i18next';
-import { useEffect, useRef, useState } from 'react';
+import { type ComponentRef, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Pressable,
@@ -121,10 +121,10 @@ export function ActiveWorkoutScreen() {
   // Set below, after the early returns; lets the link effects reach them.
   const finishRef = useRef<(() => Promise<boolean>) | null>(null);
   const switchRef = useRef<((nextId: string) => Promise<void>) | null>(null);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   // For bringing the next set into view when a rest ends (spec 0018 FR-5).
-  const contentRef = useRef<View>(null);
-  const setRowRefs = useRef(new Map<string, View>());
+  const contentRef = useRef<ComponentRef<typeof View>>(null);
+  const setRowRefs = useRef(new Map<string, ComponentRef<typeof View>>());
   const viewportHeightRef = useRef(0);
   const workoutDraft = useActiveWorkout();
   const lastRestRef = useRef<RunningRest | undefined>(workoutDraft?.rest);

@@ -23,7 +23,7 @@ checked against. Per-area backlog lives in [docs/roadmap/](docs/roadmap/).
 
 ## Prerequisites
 
-- Node 20.19+ and pnpm 9
+- Node 22.13+ (Expo SDK 58 / React Native 0.88) and pnpm 9
 - Access to the dev PostgreSQL database (see below)
 
 ## Setup
