@@ -8,7 +8,7 @@ production.
 
 | Term | Meaning | Not to be confused with |
 |---|---|---|
-| **Exercise** | A movement in the catalog (e.g. "Back Squat"). System-defined (seeded from wger) or user-defined. | `RoutineExercise`, `WorkoutExercise` |
+| **Exercise** | A movement in the catalog (e.g. "Back Squat"). System-defined (seeded from wger) and visible to everyone, or user-defined (custom) and visible only to its creator (spec 0015). | `RoutineExercise`, `WorkoutExercise` |
 | **Generated warm-up set** | A warm-up set the warm-up action added and nobody changed since (ticking it done is fine); editing a value or its type makes it the person's own. Only generated sets are removed by the action's remove toggle (spec 0031). | Warm-up set typed by the person |
 | **Routine** | A reusable *template* describing intended training. | `WorkoutSession` — a routine is never a record of anything performed |
 | **RoutineExercise** | An exercise slot inside a routine template, with intended sets, target values and rest. May belong to a superset group. | `WorkoutExercise` |
@@ -33,6 +33,7 @@ production.
 | **Tracking type sweep** | A reviewed, repeatable classification of the catalog into tracking types. Changes only catalog exercises whose type the system set; a type set by a person (at creation or by hand) is never overridden (spec 0030). | Changing one exercise's type by hand |
 | **Warm-up block** | A checklist of non-lifting warm-up items (mobility, cardio, activation) at the start of a routine; ticked in the workout, never counted as sets, volume or records (spec 0024). | Warm-up set |
 | **Deleted exercise** | A custom exercise its creator has deleted. Gone from the catalog and every picker, but kept, with its name, for the saved workouts and routines that already contain it (spec 0033). | An exercise removed outright, which history could no longer name |
+| **Held exercise** | Another person's custom exercise that someone's routines or saved workouts already contained before custom exercises became private. Readable there, under its name, and still usable in that routine; never shown in the catalog or pickers, never addable anew (spec 0015). | A custom exercise of my own |
 | **Unilateral exercise** | An exercise done one side at a time, logged per side (spec 0022). | — |
 
 ## Progress

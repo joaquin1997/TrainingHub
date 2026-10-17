@@ -34,17 +34,18 @@ Verified against the current behaviour (2026-10-17):
   sits in the active workout would make that workout unsaveable.
 - Favourites and the custom photo (spec 0026) belong to the exercise and
   would go with it.
-- Custom exercises are not yet private (spec 0015): other people may have
-  picked someone's custom exercise into their own routines and workouts, and
-  creating an exercise with the same name as an existing one returns that
-  existing exercise instead of a new one.
+- Custom exercises become private with spec 0015 (owner decision
+  2026-10-17), which this spec depends on: only the creator sees and uses a
+  custom exercise. The only other people who can still have it are those who
+  already held it in their routines or saved workouts before 0015 (a **held
+  exercise**, readable there and never pickable).
 
 ## Why now
 
 It does not block anything — the owner marked it as *later*. It is written
 now so the decision about history is recorded while spec 0020 and 0026 are
-fresh, and so it can be planned next to spec 0015, which touches the same
-ownership rules. Each new custom exercise created by mistake makes the
+fresh. It is planned after spec 0015, which sets the ownership rules it
+relies on. Each new custom exercise created by mistake makes the
 catalog a little noisier until this ships.
 
 ## Users and scenarios
@@ -88,8 +89,9 @@ catalog a little noisier until this ships.
 - **FR-1.** The creator of a custom exercise MUST be able to delete it from
   the exercise's detail.
 - **FR-2.** The system MUST NOT offer deletion of a catalog exercise, nor of a
-  custom exercise created by someone else, and MUST refuse such a deletion if
-  it is attempted anyway.
+  held exercise (spec 0015), and MUST refuse such a deletion if it is
+  attempted anyway. For anyone but its creator a custom exercise does not
+  exist (0015 FR-2), so their deletion attempt is answered as not found.
 - **FR-3.** Before deleting, the system MUST ask for confirmation, naming the
   exercise and its impact on the person's own data: the number of their
   routines that contain it and the number of their saved workouts that
@@ -125,7 +127,8 @@ catalog a little noisier until this ships.
   the system MUST treat the deletion as done and refresh the lists, not show
   an error.
 - **EF-3.** When someone who is not the creator attempts a deletion, the
-  system MUST refuse it and change nothing.
+  system MUST answer as for an exercise that does not exist (spec 0015) and
+  change nothing.
 - **EF-4.** When the photo cannot be removed but the exercise can, the
   deletion still succeeds and the photo is never shown again.
 - **EF-5.** A workout whose save was waiting (offline or retrying) when one of
@@ -170,8 +173,8 @@ catalog a little noisier until this ships.
   are still there, and finishing saves them.
 - **AC-6.** Given a deleted exercise that had a photo, when I view a workout
   that used it, then the neutral tile shows instead of the photo.
-- **AC-7.** Given a catalog exercise, or a custom exercise created by someone
-  else, when I open its detail, then there is no delete option.
+- **AC-7.** Given a catalog exercise, or a held exercise in my history, when
+  I view it, then there is no delete option.
 - **AC-8.** Given I deleted "Hammer row", when I create a new custom exercise
   named "Hammer row", then a new, empty exercise is created and the old
   history stays with the deleted one.
@@ -205,14 +208,15 @@ catalog a little noisier until this ships.
   still shows the exercise.]** The person is asking to get rid of it; the name
   is what keeps history readable, the photo is not.
 - **[ASSUMPTION: counts cover only the creator's own routines and workouts.]**
-  Until spec 0015 ships, other people may use the exercise too; their counts
-  are not shown (that would leak their data), and archive guarantees nothing
-  of theirs breaks — their routines and history keep the exercise exactly as
-  the creator's do.
-- **[ASSUMPTION: this spec does not depend on 0015 and can ship before or
-  after it.]** Ownership ("only the creator") already exists for photos
-  (spec 0026). Once 0015 ships, a deleted exercise remains private like any
-  other custom exercise.
+  With spec 0015 nobody else can pick the exercise. The only others who may
+  have it are those holding it from before 0015; their counts are not shown
+  (that would leak their data), and archive guarantees nothing of theirs
+  breaks — the exercise stays a held exercise for them, readable exactly as
+  in the creator's history.
+- **[ASSUMPTION: this spec depends on 0015 and ships after it.]** Decided by
+  the owner's privacy rule of 2026-10-17 (spec 0015), which closes the
+  question of other people using a deleted exercise. A deleted exercise
+  remains private like any other custom exercise.
 - **[ASSUMPTION: a custom exercise whose creator no longer exists cannot be
   deleted by anyone.]** Rare, and no one has the right to decide for it.
 - **[ASSUMPTION: no undo after confirming.]** Kept out of scope to keep the
@@ -234,7 +238,8 @@ assumption, cheap to reverse):
 
 - Builds on: 0007 (exercise catalog), 0020 (create and replace; deletion was
   its follow-up), 0026 (custom photo, creator-only).
-- Related: 0015 (custom exercises are private — not written yet), 0013
-  (performed work), 0014 (workout save integrity), 0028 (share).
+- Depends on: 0015 (custom exercises are private; held exercises).
+- Related: 0013 (performed work), 0014 (workout save integrity), 0028
+  (share).
 - Roadmap: docs/roadmap/06-exercises-advanced.md
 - Constitution articles engaged: 1, 2, 3, 5.

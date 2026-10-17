@@ -15,7 +15,7 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0012](specs/0012-workout-live-activity/spec.md) | Live workout status on the lock screen | `in-progress` — code complete on `feat/sdd-0013-0012`; awaiting a device rebuild and device checks | 8 — Integrations & platform |
 | [0013](specs/0013-progress-performed-work/spec.md) | Progress counts only performed work | `in-progress` — code complete on `feat/sdd-0013-0012`; awaiting the owner's redeploy and device checks (task 6) | 4 — Progress |
 | [0014](specs/0014-workout-save-integrity/spec.md) | Workout save integrity | `in-progress` — code complete on `feat/sdd-0013-0012`; awaiting the migration, redeploy and device checks (task 7); needed before 0010 task 7 | 1 — Live workout logging |
-| 0015 | Custom exercises are private | `draft` — not written yet; ships alongside 0001 | 6 — Exercises |
+| [0015](specs/0015-private-custom-exercises/spec.md) | Custom exercises are private | `ready` — owner decision 2026-10-17: visible only to their creator; existing references to someone else's exercise stay readable (held exercise); ships alongside 0001, before 0033. Open item, not blocking: catalog settings (unilateral, tracking type) shared or per person | 6 — Exercises |
 | 0016 | Claude connector (MCP) to manage training data | `draft` — not written yet; on hold until the owner has tested 0010–0014 on the device (2026-10-16). Decided: full access (log workouts, routines, custom exercises, incl. edits and deletes). Open: which Claude surface — a local MCP server for Desktop/Code (API stays tailnet-only) or a remote claude.ai connector (API exposed to the internet, OAuth; touches roadmap 9) | 8 — Integrations & platform |
 | [0017](specs/0017-visual-redesign/spec.md) | Visual redesign | `in-progress` — code complete on `feat/sdd-0017-redesign` (2026-10-16), every screen restyled and checked on the web build; awaiting the owner's device pass (AC-2, 6, 8, 12, 13) | cross-cutting |
 | [0018](specs/0018-rest-timer/spec.md) | Rest timer that keeps running | `in-progress` — code complete (2026-10-17); awaiting a device rebuild (new local module `rest-alert`, rest countdown in the widget) and device checks (alert on phone and watch, skip, denied permission, restart, lock-screen countdown) | 2 — Rest timer |
@@ -33,7 +33,7 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0030](specs/0030-tracking-type-sweep/spec.md) | Tracking type sweep of the catalog | `ready` — from the device test 2026-10-17: most timed/distance/bodyweight exercises are still weight & reps; report first, then apply; adds a type control on the exercise detail | 6 — Exercises |
 | [0031](specs/0031-warm-up-preview-and-undo/spec.md) | Warm-up button: preview, mark and undo | `ready` — amends 0024 after the device test 2026-10-17; also fixes "last time" matching shifted by warm-ups | 1 — Live workout logging |
 | [0032](specs/0032-live-records/spec.md) | Records shown live while logging | `ready` — from the device test 2026-10-17: badge on a done set that beats the starting records; stored only on save | 4 — Progress |
-| [0033](specs/0033-delete-custom-exercises/spec.md) | Delete my custom exercises | `ready` — later priority (owner, 2026-10-17); hides rather than blocks; open: wait for 0015 if others use the server | 6 — Exercises |
+| [0033](specs/0033-delete-custom-exercises/spec.md) | Delete my custom exercises | `ready` — later priority (owner, 2026-10-17); hides rather than blocks; depends on 0015 | 6 — Exercises |
 
 Execution order agreed 2026-09-24: 0013 → 0014 → 0010 → 0011 → 0012 →
 visual redesign (to be specified; "functional first, then pretty") → 0001 →
@@ -113,7 +113,9 @@ Writing these surfaced four things nobody had recorded. Status as of the
   where muscle data comes from *is* the spec.
 - **Are custom exercises private to their creator?** — *answered* (0007): no,
   every user sees every custom exercise. Decided 2026-09-24 that they should be
-  private — spec 0015.
+  private; confirmed by the owner 2026-10-17 (*"Los ejercicios propios deben
+  ser solamente visibles por cada usuario que lo creó"*): private — spec 0015
+  (`ready`).
 
 ## Follow-ups found while implementing
 
