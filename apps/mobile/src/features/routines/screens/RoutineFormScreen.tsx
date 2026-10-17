@@ -33,6 +33,16 @@ import {
   type RoutineApproachSetsOutcome,
 } from '@/features/routines/utils/routineApproachSets';
 import { replaceRoutineRowExercise } from '@/features/routines/utils/replaceRoutineExercise';
+import { exerciseBlockLabels } from '@/features/routines/utils/exerciseBlockLabels';
+import {
+  joinWithNext,
+  leaveSuperset,
+  moveInGroups,
+  normalizeSupersetGroups,
+  removeKeepingGroups,
+  supersetRuns,
+} from '@/features/routines/utils/supersetGroups';
+import { SupersetHeader } from '@/features/routines/components/SupersetHeader';
 import {
   effectiveRoutineSetValue,
   type NumericSetField,
@@ -66,7 +76,8 @@ type EditableRoutineExercise = {
   exerciseId?: string;
   exerciseQuery: string;
   restSeconds: string;
-  supersetGroup: string;
+  /** Joined by actions, never typed (spec 0029 FR-16); kept normalised. */
+  supersetGroup?: number;
   /** The selected exercise's tracking type; decides the set columns (spec 0021). */
   trackingType?: ExerciseTrackingType;
   sets: EditableRoutineSet[];
@@ -98,7 +109,6 @@ function createEmptyExerciseRow(): EditableRoutineExercise {
     exerciseId: undefined,
     exerciseQuery: '',
     restSeconds: '',
-    supersetGroup: '',
     sets: [createEmptySetRow()],
   };
 }
@@ -140,10 +150,7 @@ function toEditableExercise(
       routineExercise.restSeconds !== undefined
         ? String(routineExercise.restSeconds)
         : '',
-    supersetGroup:
-      routineExercise.supersetGroup !== undefined
-        ? String(routineExercise.supersetGroup)
-        : '',
+    supersetGroup: routineExercise.supersetGroup,
     sets:
       routineExercise.sets.length > 0
         ? routineExercise.sets
@@ -294,10 +301,12 @@ export function RoutineFormScreen({
           );
           setExercises(
             nextRoutine.exercises.length > 0
-              ? nextRoutine.exercises
-                  .slice()
-                  .sort((left, right) => left.orderIndex - right.orderIndex)
-                  .map((exercise) => toEditableExercise(exercise, unit))
+              ? normalizeSupersetGroups(
+                  nextRoutine.exercises
+                    .slice()
+                    .sort((left, right) => left.orderIndex - right.orderIndex)
+                    .map((exercise) => toEditableExercise(exercise, unit)),
+                )
               : [createEmptyExerciseRow()],
           );
         }
@@ -416,14 +425,14 @@ export function RoutineFormScreen({
     );
   }
 
-  function updateExerciseSuperset(exerciseId: string, value: string) {
-    setExercises((currentExercises) =>
-      currentExercises.map((exercise) =>
-        exercise.id === exerciseId
-          ? { ...exercise, supersetGroup: value }
-          : exercise,
-      ),
-    );
+  // Supersets are made by joining neighbours and taken apart one exercise at
+  // a time; no group number is typed (spec 0029 FR-16, FR-17).
+  function joinExerciseWithNext(index: number) {
+    setExercises((currentExercises) => joinWithNext(currentExercises, index));
+  }
+
+  function takeExerciseOutOfSuperset(index: number) {
+    setExercises((currentExercises) => leaveSuperset(currentExercises, index));
   }
 
   function addExerciseRow() {
@@ -435,26 +444,19 @@ export function RoutineFormScreen({
 
   function removeExerciseRow(exerciseId: string) {
     setExercises((currentExercises) => {
-      const nextExercises = currentExercises.filter(
-        (exercise) => exercise.id !== exerciseId,
+      const nextExercises = removeKeepingGroups(
+        currentExercises,
+        currentExercises.findIndex((exercise) => exercise.id === exerciseId),
       );
 
       return nextExercises.length > 0 ? nextExercises : [createEmptyExerciseRow()];
     });
   }
 
+  // Superset-aware: inside the superset, out of it at its edge, or past it
+  // whole — never into one (spec 0029 FR-18 to FR-20).
   function moveExerciseRow(index: number, direction: 'up' | 'down') {
-    setExercises((currentExercises) => {
-      const target = direction === 'up' ? index - 1 : index + 1;
-      if (target < 0 || target >= currentExercises.length) {
-        return currentExercises;
-      }
-      const next = currentExercises.slice();
-      const moved = next[index]!;
-      next[index] = next[target]!;
-      next[target] = moved;
-      return next;
-    });
+    setExercises((currentExercises) => moveInGroups(currentExercises, index, direction));
   }
 
   function addSetRow(exerciseId: string) {
@@ -526,7 +528,7 @@ export function RoutineFormScreen({
 
       const routineExercises: RoutineExerciseInput[] = [];
 
-      for (const [exerciseIndex, exercise] of exercises.entries()) {
+      for (const [exerciseIndex, exercise] of normalizeSupersetGroups(exercises).entries()) {
         if (!exercise.exerciseId) {
           setErrorMessage(t('routineForm.selectExercise'));
           return;
@@ -536,13 +538,6 @@ export function RoutineFormScreen({
 
         if (restSeconds === null) {
           setErrorMessage(t('routineForm.restWholeNumber'));
-          return;
-        }
-
-        const supersetGroup = parseOptionalInteger(exercise.supersetGroup);
-
-        if (supersetGroup === null) {
-          setErrorMessage(t('routineForm.supersetWholeNumber'));
           return;
         }
 
@@ -598,7 +593,7 @@ export function RoutineFormScreen({
           exerciseId: exercise.exerciseId,
           orderIndex: exerciseIndex + 1,
           restSeconds,
-          supersetGroup,
+          supersetGroup: exercise.supersetGroup,
           sets,
         });
       }
@@ -619,10 +614,12 @@ export function RoutineFormScreen({
 
         setRoutine(updatedRoutine);
         setExercises(
-          updatedRoutine.exercises
-            .slice()
-            .sort((left, right) => left.orderIndex - right.orderIndex)
-            .map((exercise) => toEditableExercise(exercise, unit)),
+          normalizeSupersetGroups(
+            updatedRoutine.exercises
+              .slice()
+              .sort((left, right) => left.orderIndex - right.orderIndex)
+              .map((exercise) => toEditableExercise(exercise, unit)),
+          ),
         );
         router.replace(`/routines/${updatedRoutine.id}`);
         return;
@@ -689,6 +686,7 @@ export function RoutineFormScreen({
   };
 
   const totalSets = exercises.reduce((sum, exercise) => sum + exercise.sets.length, 0);
+  const blockLabels = exerciseBlockLabels(exercises);
 
   return (
     <>
@@ -759,187 +757,216 @@ export function RoutineFormScreen({
             onAction={retryExercises}
           />
         ) : null}
-        {exercises.map((exercise, index) => {
-          const selectedName = exercise.exerciseId ? exercise.exerciseQuery : null;
+        {supersetRuns(exercises).map((run) => {
+          // Drawn as in the routine detail: a superset is one group with a
+          // header, a rail and lettered badges (spec 0029 FR-15).
+          const cards = exercises.slice(run.start, run.end).map((exercise, offset) => {
+            const index = run.start + offset;
+            const selectedName = exercise.exerciseId ? exercise.exerciseQuery : null;
+            const inSuperset = run.isSuperset;
 
-          return (
-            <View key={exercise.id} style={styles.card}>
-              <View style={styles.exerciseHeader}>
-                <View style={styles.indexBadge}>
-                  <Text style={styles.indexBadgeText}>{index + 1}</Text>
-                </View>
-                <Text style={styles.exerciseTitle}>
-                  {selectedName || t('routineForm.exerciseN', { number: index + 1 })}
-                </Text>
-                <View style={styles.reorderRow}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="↑"
-                    onPress={() => moveExerciseRow(index, 'up')}
-                    hitSlop={6}
-                    style={styles.iconButton}
-                  >
-                    <Ionicons name="arrow-up" size={18} color={colors.textMuted} />
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="↓"
-                    onPress={() => moveExerciseRow(index, 'down')}
-                    hitSlop={6}
-                    style={styles.iconButton}
-                  >
-                    <Ionicons name="arrow-down" size={18} color={colors.textMuted} />
-                  </Pressable>
-                </View>
-              </View>
-              <View style={styles.iconInput}>
-                <Ionicons name="search" size={18} color={colors.textMuted} />
-                <TextInput
-                  value={exercise.exerciseQuery}
-                  onChangeText={(value) => updateExerciseQuery(exercise.id, value)}
-                  onFocus={() => {
-                    if (exercise.exerciseQuery.trim()) {
-                      setActiveExerciseSelectorRowId(exercise.id);
-                    }
-                  }}
-                  placeholder={t('routineForm.searchExercise')}
-                  placeholderTextColor={colors.textSubtle}
-                  style={styles.iconInputField}
-                />
-              </View>
-              {exercise.exerciseId ? (
-                <Chip icon="checkmark-circle" tone="done" size="sm" label={t('routineForm.exerciseSelected')} />
-              ) : null}
-              {activeExerciseSelectorRowId === exercise.id &&
-              exercise.exerciseQuery.trim() ? (
-                (() => {
-                  const normalizedQuery = exercise.exerciseQuery.trim().toLowerCase();
-                  const matchingExercises = availableExercises
-                    .filter((candidate) =>
-                      candidate.name.toLowerCase().includes(normalizedQuery),
-                    )
-                    .slice(0, 5);
-
-                  return (
-                    <View style={styles.searchResults}>
-                      {matchingExercises.map((candidate) => (
-                        <Pressable
-                          key={candidate.id}
-                          accessibilityRole="button"
-                          onPress={() => selectExercise(exercise.id, candidate)}
-                          style={({ pressed }) => [
-                            styles.searchResult,
-                            pressed ? styles.pressed : null,
-                          ]}
-                        >
-                          <Text style={styles.searchResultTitle}>{candidate.name}</Text>
-                          <Text style={styles.meta}>
-                            {candidate.isSystemDefined
-                              ? t('routineForm.existingExercise')
-                              : t('routineForm.customExercise')}
-                          </Text>
-                        </Pressable>
-                      ))}
-                      {/* Offered for any search, not only an empty one (spec 0020 FR-2). */}
-                      {!isExercisesLoading && !exerciseLoadError ? (
-                        <Button
-                          label={t('routineForm.createCustomExercise')}
-                          icon="add-circle-outline"
-                          variant="secondary"
-                          fullWidth
-                          onPress={() => openCustomExerciseModal(exercise.id)}
-                        />
-                      ) : null}
-                    </View>
-                  );
-                })()
-              ) : null}
-              <View style={styles.metaInputsRow}>
-                <View style={styles.metaField}>
-                  <View style={styles.metaFieldLabel}>
-                    <Ionicons name="timer-outline" size={14} color={colors.textMuted} />
-                    <Text style={styles.fieldLabel}>{t('routineForm.restBetweenSets')}</Text>
+            return (
+              <View key={exercise.id} style={styles.card}>
+                <View style={styles.exerciseHeader}>
+                  <View style={[styles.indexBadge, inSuperset ? styles.indexBadgeSuperset : null]}>
+                    <Text style={styles.indexBadgeText}>
+                      {blockLabels[index]?.label ?? index + 1}
+                    </Text>
                   </View>
+                  <Text style={styles.exerciseTitle}>
+                    {selectedName || t('routineForm.exerciseN', { number: index + 1 })}
+                  </Text>
+                  <View style={styles.reorderRow}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="↑"
+                      onPress={() => moveExerciseRow(index, 'up')}
+                      hitSlop={6}
+                      style={styles.iconButton}
+                    >
+                      <Ionicons name="arrow-up" size={18} color={colors.textMuted} />
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="↓"
+                      onPress={() => moveExerciseRow(index, 'down')}
+                      hitSlop={6}
+                      style={styles.iconButton}
+                    >
+                      <Ionicons name="arrow-down" size={18} color={colors.textMuted} />
+                    </Pressable>
+                  </View>
+                </View>
+                <View style={styles.iconInput}>
+                  <Ionicons name="search" size={18} color={colors.textMuted} />
                   <TextInput
-                    value={exercise.restSeconds}
-                    onChangeText={(value) => updateExerciseRest(exercise.id, value)}
-                    placeholder={t('routineForm.restPlaceholder')}
+                    value={exercise.exerciseQuery}
+                    onChangeText={(value) => updateExerciseQuery(exercise.id, value)}
+                    onFocus={() => {
+                      if (exercise.exerciseQuery.trim()) {
+                        setActiveExerciseSelectorRowId(exercise.id);
+                      }
+                    }}
+                    placeholder={t('routineForm.searchExercise')}
                     placeholderTextColor={colors.textSubtle}
-                    keyboardType="number-pad"
-                    style={[styles.input, styles.cellInput]}
+                    style={styles.iconInputField}
                   />
                 </View>
-                <View style={styles.metaField}>
-                  <View style={styles.metaFieldLabel}>
-                    <Ionicons name="flash-outline" size={14} color={colors.textMuted} />
-                    <Text style={styles.fieldLabel}>{t('routineForm.supersetGroup')}</Text>
-                  </View>
-                  <TextInput
-                    value={exercise.supersetGroup}
-                    onChangeText={(value) => updateExerciseSuperset(exercise.id, value)}
-                    placeholder={t('routineForm.supersetPlaceholder')}
-                    placeholderTextColor={colors.textSubtle}
-                    keyboardType="number-pad"
-                    style={[styles.input, styles.cellInput]}
-                  />
-                </View>
-              </View>
-              <RoutineSetTable
-                sets={exercise.sets}
-                trackingType={exercise.trackingType}
-                unit={unit}
-                onChange={(setId, field, value) =>
-                  updateSetField(exercise.id, setId, field, value)
-                }
-                onRemove={(setId) => removeSetRow(exercise.id, setId)}
-              />
-              <View style={styles.cardActions}>
-                <Button
-                  label={t('routineForm.addSet')}
-                  icon="add"
-                  variant="ghost"
-                  onPress={() => addSetRow(exercise.id)}
-                  style={styles.compactButton}
-                />
-                {exercise.exerciseId &&
-                tracksField(exercise.trackingType, 'weight') &&
-                tracksField(exercise.trackingType, 'reps') ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={t('workouts.addApproachSets')}
-                    onPress={() => addApproachSetRows(exercise.id)}
-                    hitSlop={6}
-                    style={styles.iconButton}
-                  >
-                    <Ionicons name="flame-outline" size={18} color={colors.textMuted} />
-                  </Pressable>
-                ) : null}
                 {exercise.exerciseId ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={t('workouts.replaceExercise')}
-                    onPress={() => setReplaceRowId(exercise.id)}
-                    hitSlop={6}
-                    style={styles.iconButton}
-                  >
-                    <Ionicons name="swap-horizontal" size={18} color={colors.textMuted} />
-                  </Pressable>
+                  <Chip icon="checkmark-circle" tone="done" size="sm" label={t('routineForm.exerciseSelected')} />
                 ) : null}
-                <Button
-                  label={t('routineForm.removeExercise')}
-                  variant="ghost"
-                  destructive
-                  onPress={() => removeExerciseRow(exercise.id)}
-                  style={styles.compactButton}
+                {activeExerciseSelectorRowId === exercise.id &&
+                exercise.exerciseQuery.trim() ? (
+                  (() => {
+                    const normalizedQuery = exercise.exerciseQuery.trim().toLowerCase();
+                    const matchingExercises = availableExercises
+                      .filter((candidate) =>
+                        candidate.name.toLowerCase().includes(normalizedQuery),
+                      )
+                      .slice(0, 5);
+
+                    return (
+                      <View style={styles.searchResults}>
+                        {matchingExercises.map((candidate) => (
+                          <Pressable
+                            key={candidate.id}
+                            accessibilityRole="button"
+                            onPress={() => selectExercise(exercise.id, candidate)}
+                            style={({ pressed }) => [
+                              styles.searchResult,
+                              pressed ? styles.pressed : null,
+                            ]}
+                          >
+                            <Text style={styles.searchResultTitle}>{candidate.name}</Text>
+                            <Text style={styles.meta}>
+                              {candidate.isSystemDefined
+                                ? t('routineForm.existingExercise')
+                                : t('routineForm.customExercise')}
+                            </Text>
+                          </Pressable>
+                        ))}
+                        {/* Offered for any search, not only an empty one (spec 0020 FR-2). */}
+                        {!isExercisesLoading && !exerciseLoadError ? (
+                          <Button
+                            label={t('routineForm.createCustomExercise')}
+                            icon="add-circle-outline"
+                            variant="secondary"
+                            fullWidth
+                            onPress={() => openCustomExerciseModal(exercise.id)}
+                          />
+                        ) : null}
+                      </View>
+                    );
+                  })()
+                ) : null}
+                <View style={styles.metaInputsRow}>
+                  <View style={styles.metaField}>
+                    <View style={styles.metaFieldLabel}>
+                      <Ionicons name="timer-outline" size={14} color={colors.textMuted} />
+                      <Text style={styles.fieldLabel}>{t('routineForm.restBetweenSets')}</Text>
+                    </View>
+                    <TextInput
+                      value={exercise.restSeconds}
+                      onChangeText={(value) => updateExerciseRest(exercise.id, value)}
+                      placeholder={t('routineForm.restPlaceholder')}
+                      placeholderTextColor={colors.textSubtle}
+                      keyboardType="number-pad"
+                      style={[styles.input, styles.cellInput]}
+                    />
+                  </View>
+                </View>
+                <RoutineSetTable
+                  sets={exercise.sets}
+                  trackingType={exercise.trackingType}
+                  unit={unit}
+                  onChange={(setId, field, value) =>
+                    updateSetField(exercise.id, setId, field, value)
+                  }
+                  onRemove={(setId) => removeSetRow(exercise.id, setId)}
                 />
+                <View style={styles.cardActions}>
+                  <Button
+                    label={t('routineForm.addSet')}
+                    icon="add"
+                    variant="ghost"
+                    onPress={() => addSetRow(exercise.id)}
+                    style={styles.compactButton}
+                  />
+                  {exercise.exerciseId &&
+                  tracksField(exercise.trackingType, 'weight') &&
+                  tracksField(exercise.trackingType, 'reps') ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t('workouts.addApproachSets')}
+                      onPress={() => addApproachSetRows(exercise.id)}
+                      hitSlop={6}
+                      style={styles.iconButton}
+                    >
+                      <Ionicons name="flame-outline" size={18} color={colors.textMuted} />
+                    </Pressable>
+                  ) : null}
+                  {index < exercises.length - 1 ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t('supersets.joinNext')}
+                      onPress={() => joinExerciseWithNext(index)}
+                      hitSlop={6}
+                      style={styles.iconButton}
+                    >
+                      <Ionicons name="link" size={18} color={colors.textMuted} />
+                    </Pressable>
+                  ) : null}
+                  {inSuperset ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t('supersets.leave')}
+                      onPress={() => takeExerciseOutOfSuperset(index)}
+                      hitSlop={6}
+                      style={styles.iconButton}
+                    >
+                      <Ionicons name="unlink" size={18} color={colors.textMuted} />
+                    </Pressable>
+                  ) : null}
+                  {exercise.exerciseId ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t('workouts.replaceExercise')}
+                      onPress={() => setReplaceRowId(exercise.id)}
+                      hitSlop={6}
+                      style={styles.iconButton}
+                    >
+                      <Ionicons name="swap-horizontal" size={18} color={colors.textMuted} />
+                    </Pressable>
+                  ) : null}
+                  <Button
+                    label={t('routineForm.removeExercise')}
+                    variant="ghost"
+                    destructive
+                    onPress={() => removeExerciseRow(exercise.id)}
+                    style={styles.compactButton}
+                  />
+                </View>
+                {approachNotice?.exerciseRowId === exercise.id ? (
+                  <Text style={styles.meta}>
+                    {approachNotice.outcome === 'noWeight'
+                      ? t('workouts.approachNoWeight')
+                      : t('workouts.approachTooLight')}
+                  </Text>
+                ) : null}
               </View>
-              {approachNotice?.exerciseRowId === exercise.id ? (
-                <Text style={styles.meta}>
-                  {approachNotice.outcome === 'noWeight'
-                    ? t('workouts.approachNoWeight')
-                    : t('workouts.approachTooLight')}
-                </Text>
-              ) : null}
+            );
+          });
+
+          if (!run.isSuperset) {
+            return cards;
+          }
+          return (
+            <View key={`superset-${exercises[run.start]?.id}`} style={styles.supersetGroup}>
+              <SupersetHeader size={run.end - run.start} />
+              <View style={styles.supersetBody}>
+                <View style={styles.rail} />
+                <View style={styles.supersetMembers}>{cards}</View>
+              </View>
             </View>
           );
         })}
@@ -1079,6 +1106,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radii.sm,
     backgroundColor: colors.surfaceRaised,
+  },
+  indexBadgeSuperset: {
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.textMuted,
+    paddingHorizontal: 4,
+  },
+  supersetGroup: {
+    gap: spacing.sm,
+  },
+  supersetBody: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  rail: {
+    width: 2,
+    borderRadius: 1,
+    backgroundColor: colors.borderStrong,
+    marginVertical: spacing.lg,
+  },
+  supersetMembers: {
+    flex: 1,
+    minWidth: 0,
+    gap: spacing.md,
   },
   indexBadgeText: {
     color: colors.text,
