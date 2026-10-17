@@ -21,7 +21,7 @@ be deployed before saved routines keep the mark.
 | 3 | [x] `generatedWarmup` on draft sets, cleared on value or type change; `approachSetsDraft.ts` rewritten (`warmUpActionFor`, `previewApproachSets`, `confirmApproachSets`, `removeGeneratedWarmUps`); `ApproachSetsPreviewSheet`; toggle button and sheet on the active screen; generated mark on the set marker; i18n en/es | mobile | unit tests (AC-1–AC-8, AC-12, EF-1, EF-3, EF-4, EF-6) | `feat(workouts): preview, mark and undo warm-up sets in the active workout` |
 | 4 | [x] Domain `isGeneratedWarmup` on routine sets; column + migration `20261018110000_add_routine_set_generated_warmup`; routines API reads/writes it (only with `isWarmup`); route test | domain + api | route test; `migrate diff` SQL | `feat(routines): routine sets remember generated warm-ups` |
 | 5 | [x] Routine editor: `routineApproachSets.ts` rewritten around the toggle; mark in `RoutineSetTable`; button + preview sheet in `RoutineFormScreen`; load/save/clear the mark; duplicate copies it; workout from a routine carries it; i18n | mobile | unit tests (AC-9, FR-13, FR-14, FR-15) | `feat(routines): preview, mark and undo warm-up sets in the routine editor` |
-| 6 | [ ] Progress log, definition of done | docs | — | `docs(sdd): close spec 0031 implementation` |
+| 6 | [x] Progress log, definition of done | docs | — | `docs(sdd): close spec 0031 implementation` |
 | 7 | [ ] [DEVICE] Preview sheet with one hand during a set; mark legible in light and dark; action reads add/remove (VoiceOver too); restart keeps the mark; routine saved and reopened keeps it; workout from that routine; History shows plain warm-ups; "last time" after inserting the ramp | device | owner, iOS | — |
 | 8 | [ ] (owner: migration/deploy) Apply `20261018110000_add_routine_set_generated_warmup` and deploy the API | ops | `npm run db:deploy` | — |
 
@@ -85,13 +85,21 @@ Not verifiable in CI: tasks 7–8.
   it, and `buildExerciseDrafts` turns a generated routine warm-up into a
   generated draft set (FR-15). Replacing a row's exercise keeps its rows and
   marks as they are (0020 behaviour, not changed here).
+- 2026-10-17 — Task 6: code complete. Every FR and AC is covered by a unit
+  or route test except what only a screen shows (sheet ergonomics, the
+  mark's legibility, VoiceOver labels, a real restart, History), which is
+  task 7. Not checked on a web preview. Left for the owner: task 7 (device)
+  and task 8 (migration + API deploy). For the coordinator: backlog row
+  (0031 `in-progress`; close the 0023 follow-up "warm-up taken as last
+  time's first set"), roadmap 01, the glossary term "generated warm-up set",
+  and the migration in the owner's server steps.
 
 ## Definition of done
 
-- [ ] Every functional requirement and acceptance criterion in `spec.md` is met
+- [x] Every functional requirement and acceptance criterion in `spec.md` is met
       or explicitly deferred with a TODO
-- [ ] `pnpm -r typecheck` and `pnpm -r test` green
-- [ ] Roadmap 01, backlog (incl. closing the 0023 follow-up) and glossary
+- [x] `pnpm -r typecheck` and `pnpm -r test` green
+- [x] Roadmap 01, backlog (incl. closing the 0023 follow-up) and glossary
       ("generated warm-up set") updates handed to the coordinator
 - [ ] Checked on the owner's device (task 7)
 - [ ] Migration applied on the server (task 8)
