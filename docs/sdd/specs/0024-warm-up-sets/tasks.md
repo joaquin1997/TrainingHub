@@ -17,7 +17,7 @@ be deployed before routine warm-up sets and the warm-up block persist.
 | # | Task | Area | Verify | Commit message |
 |---|---|---|---|---|
 | 1 | [x] Plan and tasks; spec status `in-progress` | docs | — | `docs(sdd): plan and tasks for 0024` |
-| 2 | [ ] `lib/approachSets.ts`: scheme, bar, step per unit, rounding, drop rule | mobile | unit tests (AC-1, AC-2, FR-3, EF-2) | `feat(workouts): work out approach sets from the working weight` |
+| 2 | [x] `lib/approachSets.ts`: scheme, bar, step per unit, rounding, drop rule | mobile | unit tests (AC-1, AC-2, FR-3, EF-2) | `feat(workouts): work out approach sets from the working weight` |
 | 3 | [ ] `approachSetsDraft.ts` (`addApproachSets`, outcomes, replace rule); export `nextDraftId`; flame button + notice on the active screen; i18n en/es | mobile | unit tests (AC-1 order and type, EF-1, FR-2 save as warm-up) | `feat(workouts): add approach sets in the active workout` |
 | 4 | [ ] Domain `isWarmup` on routine sets; `RoutineExerciseSet.isWarmup` + migration `20261017140000_add_routine_set_warmup`; routines API reads/writes it; routine route test | domain + api | route test; `migrate diff` SQL | `feat(routines): routine sets can be warm-ups` |
 | 5 | [ ] Routine editor: `routineApproachSets.ts`, inheritance skips the other kind, `W` marker, button + notice, save `isWarmup`; routine detail `W`; duplicate copies it; workout draft types routine warm-ups `warmup`; i18n | mobile | unit tests | `feat(routines): approach sets in the routine editor` |
