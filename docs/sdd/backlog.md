@@ -22,9 +22,9 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0019](specs/0019-workout-always-at-hand/spec.md) | The workout in progress is always at hand | `in-progress` — code complete on `feat/sdd-0019` (2026-10-16), checked on the web preview; awaiting the owner's iOS check of the keyboard (AC-4). The bar's rest countdown landed with 0018 (2026-10-17) | 1 — Live workout logging |
 | [0020](specs/0020-custom-and-replace-exercise/spec.md) | Create and replace exercises where they are needed | `in-progress` — code complete (2026-10-17), checked on the web preview; awaiting the owner's device check of the picker's create and confirm steps (Metro reload, no rebuild) | 6 — Exercises |
 | [0021](specs/0021-timed-and-distance-sets/spec.md) | Timed and distance sets | `in-progress` — code complete (2026-10-17); awaiting the migration `add_exercise_tracking_type`, redeploy, the `catalog:tracking-types` script on the server, and device checks (timed rows, set-timer vibration, keyboard) | 1 — Live workout logging |
-| [0022](specs/0022-unilateral-exercises/spec.md) | Unilateral exercises (left / right) | `ready` — decided 2026-10-16: L/R side by side in one row | 1 — Live workout logging |
+| [0022](specs/0022-unilateral-exercises/spec.md) | Unilateral exercises (left / right) | `in-progress` — code complete (2026-10-17); awaiting the migration `add_unilateral_exercises`, redeploy, and device checks (L/R row at phone width, switches, watch target) | 1 — Live workout logging |
 | [0023](specs/0023-records-by-type/spec.md) | Personal records by type | `in-progress` — code complete (2026-10-17); awaiting the API redeploy (no migration; against an older API the app shows no records) and the device check of the screens | 4 — Progress |
-| [0024](specs/0024-warm-up-sets/spec.md) | Warm-up sets | `ready` — decided 2026-10-16: approach-set calculator + general warm-up block | 1 — Live workout logging |
+| [0024](specs/0024-warm-up-sets/spec.md) | Warm-up sets | `in-progress` — code complete (2026-10-17); awaiting the migrations `add_routine_set_warmup` and `add_warm_up_blocks`, redeploy, and device checks (approach-set button, warm-up checklist, History detail) | 1 — Live workout logging |
 | [0025](specs/0025-apple-watch/spec.md) | The workout on the Apple Watch | `in-progress` — code complete for Level 1 and Level 2 (2026-10-17); awaiting a device rebuild (Level 2 is opt-in with `TRAININGHUB_WATCH_APP=1`, needs the watchOS platform installed, and may need a paid team to sign HealthKit) and the device checks on iPhone + Apple Watch | 8 — Integrations & platform |
 | [0026](specs/0026-exercise-images/spec.md) | Exercise images | `in-progress` — code complete (2026-10-17); awaiting the migration `add_exercise_photo`, redeploy, the image-matching script on the server (dry run, review, apply; AC-1 depends on the owner's top 50), a device rebuild and the photo-library check | 6 — Exercises |
 | [0027](specs/0027-personal-profile/spec.md) | Personal profile and body measurements | `in-progress` — code complete (2026-10-16/17); awaiting the migration `add_profile_and_body_measurements` and redeploy (before the new app build), a device rebuild (image picker and manipulator) and the photo check (AC-5) | 3 — Auth & users |
@@ -46,7 +46,7 @@ distribution.
 ### Owner's server steps (pending, in order)
 
 Gathered 2026-10-17 from the open owner items of 0011, 0014, 0021, 0023,
-0026 and 0027 (0022 and 0024 are not included; they are still being built).
+0026 and 0027; 0022 and 0024 added once merged.
 
 1. **Redeploy the API** (`docker compose up -d --build`, see the root
    README). The container runs `prisma migrate deploy` on start, which
@@ -54,7 +54,10 @@ Gathered 2026-10-17 from the open owner items of 0011, 0014, 0021, 0023,
    `20261016142416_add_workout_session_paused_seconds` (0011),
    `20261016190000_add_profile_and_body_measurements` (0027),
    `20261017090000_add_exercise_tracking_type` (0021),
-   `20261017120000_add_exercise_photo` (0026). The same redeploy ships the
+   `20261017120000_add_exercise_photo` (0026),
+   `20261017140000_add_routine_set_warmup` (0024),
+   `20261017150000_add_unilateral_exercises` (0022),
+   `20261017160000_add_warm_up_blocks` (0024). The same redeploy ships the
    API side of 0013 and 0023 (no migration). It must go out before the new
    app build (0027).
 2. `/health`, then 0014's `curl` replay and parallel saves (AC-1, EF-2).
