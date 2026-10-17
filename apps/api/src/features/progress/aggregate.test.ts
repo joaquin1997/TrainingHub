@@ -640,3 +640,57 @@ describe('time and distance (spec 0021)', () => {
     });
   });
 });
+
+describe('unilateral sets (spec 0022)', () => {
+  const splitSquat = (date: string, sets: ProgressSessionInput['exercises'][number]['sets']) => ({
+    date,
+    exercises: [
+      { exerciseId: 'split', exerciseName: 'Bulgarian split squat', category: 'Legs', sets },
+    ],
+  });
+  // Stored as the API stores it: reps = left + right.
+  const tenEight = { reps: 18, repsLeft: 10, repsRight: 8, weightKg: 20 };
+
+  it('counts both sides in volume (AC-1: 10 L / 8 R at 20 kg = 360 kg)', () => {
+    const input = [splitSquat('2026-05-04T09:00:00.000Z', [tenEight])];
+
+    expect(buildExerciseProgressDetail(input, 'split')?.points[0]?.totalVolume).toBe(360);
+    expect(buildWeeklyVolume(input)[0]?.totalVolume).toBe(360);
+    expect(buildMuscleGroupVolume(input)).toEqual([{ group: 'Legs', totalVolume: 360 }]);
+  });
+
+  it('takes best reps and estimated 1RM from the better side', () => {
+    const detail = buildExerciseProgressDetail(
+      [splitSquat('2026-05-04T09:00:00.000Z', [tenEight])],
+      'split',
+    );
+
+    expect(detail?.points[0]?.bestReps).toBe(10);
+    // Epley on 20 kg × 10, not × 18.
+    expect(detail?.points[0]?.estimatedOneRepMax).toBe(26.7);
+    expect(detail?.records?.find((record) => record.type === 'mostReps')?.value).toBe(10);
+    expect(detail?.records?.find((record) => record.type === 'bestSetVolume')?.value).toBe(360);
+    expect(detail?.records?.find((record) => record.type === 'heaviestWeight')).toMatchObject({
+      weightKg: 20,
+      reps: 10,
+    });
+  });
+
+  it('sees the gap closing: more reps on the weaker side is more volume', () => {
+    const detail = buildExerciseProgressDetail(
+      [
+        splitSquat('2026-05-04T09:00:00.000Z', [tenEight]),
+        splitSquat('2026-05-11T09:00:00.000Z', [
+          { reps: 20, repsLeft: 10, repsRight: 10, weightKg: 20 },
+        ]),
+      ],
+      'split',
+    );
+
+    // Same better side (10), more total: a session volume record.
+    expect(detail?.isRecordSession).toBe(true);
+    expect(detail?.records?.find((record) => record.type === 'bestSessionVolume')?.value).toBe(
+      400,
+    );
+  });
+});

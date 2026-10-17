@@ -28,6 +28,7 @@ import {
   listWorkoutSessions,
 } from './repository.js';
 import { UnknownExerciseError } from './saveReferences.js';
+import { parseSideReps, withSideTotal } from './sides.js';
 import { resolveUserPublicId } from '../../infrastructure/userContext.js';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -97,17 +98,20 @@ function parseWorkoutSetInput(
 
   const completedAt = parseOptionalString(value.completedAt);
 
-  return {
+  // With a side sent, reps becomes the sum of the sides (spec 0022).
+  return withSideTotal({
     order: parseOptionalInteger(value.order) ?? fallbackOrder,
     type: parseWorkoutSetType(value.type),
     reps: parseOptionalInteger(value.reps),
+    repsLeft: parseSideReps(value.repsLeft),
+    repsRight: parseSideReps(value.repsRight),
     weightKg: parseOptionalNumber(value.weightKg),
     durationSeconds: parseOptionalInteger(value.durationSeconds),
     distanceMeters: parseOptionalNumber(value.distanceMeters),
     restSeconds: parseOptionalInteger(value.restSeconds),
     isWarmup: typeof value.isWarmup === 'boolean' ? value.isWarmup : undefined,
     completedAt,
-  };
+  });
 }
 
 function parseWorkoutExerciseInput(
