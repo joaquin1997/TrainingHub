@@ -13,13 +13,15 @@ interface RestBarProps {
   rest: RunningRest;
   onAdjust: (deltaSeconds: number) => void;
   onSkip: () => void;
+  /** The set to do after the rest, e.g. "Barbell row · set 2" (spec 0029 FR-10). */
+  next?: string | null;
 }
 
 /**
  * The running rest, pinned below the workout list (spec 0018 FR-4). It sits in
  * the layout flow, so it never covers the last set or the Finish button.
  */
-export function RestBar({ rest, onAdjust, onSkip }: RestBarProps) {
+export function RestBar({ rest, onAdjust, onSkip, next }: RestBarProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const remaining = useRestRemaining(rest);
@@ -34,6 +36,11 @@ export function RestBar({ rest, onAdjust, onSkip }: RestBarProps) {
       <View style={styles.track}>
         <View style={[styles.fill, { width: `${Math.round(progress * 100)}%` }]} />
       </View>
+      {next ? (
+        <Text style={styles.next} numberOfLines={1}>
+          {t('workouts.restNext', { set: next })}
+        </Text>
+      ) : null}
       <View style={styles.row}>
         <Ionicons name="timer-outline" size={18} color={colors.accent} />
         <View style={styles.text}>
@@ -90,6 +97,10 @@ const styles = StyleSheet.create({
     fontSize: 22,
     lineHeight: 26,
     color: colors.accent,
+  },
+  next: {
+    ...commonStyles.meta,
+    color: colors.text,
   },
   step: {
     minHeight: 40,
