@@ -16,7 +16,7 @@ API ships before the app (the app's delete action needs the endpoints).
 |---|---|---|---|---|
 | 1 | [x] Plan and tasks; spec status `in-progress` | docs | — | `docs(sdd): plan and tasks for 0033` |
 | 2 | [x] `Exercise.deletedAt` + migration `20261018150000_add_exercise_deleted_at`; `visibility.ts`: visible excludes deleted custom exercises, usable keeps the creator's own whatever its lifecycle, classifier `isDeleted` → hidden; `findAccessibleExercise` passes it; tests | api | unit tests; `prisma:generate` | `feat(exercises): deleted lifecycle for custom exercises` |
-| 3 | [ ] `ExerciseDeletionImpact` (domain); `deletion.ts` (`planExerciseDeletion`, `deletionImpactWhere`) + tests; repository `getExerciseDeletionImpact`, `deleteCustomExercise` (remove or archive, favourites, photo best effort, `P2003` fallback); `GET /exercises/:id/deletion-impact`, `DELETE /exercises/:id`; route tests | domain / api | unit + route tests (AC-1, 2, 5, 7, EF-2, EF-3) | `feat(exercises): delete custom exercises` |
+| 3 | [x] `ExerciseDeletionImpact` (domain); `deletion.ts` (`planExerciseDeletion`, `deletionImpactWhere`) + tests; repository `getExerciseDeletionImpact`, `deleteCustomExercise` (remove or archive, favourites, photo best effort, `P2003` fallback); `GET /exercises/:id/deletion-impact`, `DELETE /exercises/:id`; route tests | domain / api | unit + route tests (AC-1, 2, 5, 7, EF-2, EF-3) | `feat(exercises): delete custom exercises` |
 | 4 | [ ] `RoutineExercise.exerciseDeleted` (domain); routine reads set it | domain / api | typecheck; e2e (task 7) | `feat(exercises): routines mark deleted exercises` |
 | 5 | [ ] Mobile: client methods; `exerciseDeletion.ts` (`describeDeletionImpact`, `isAlreadyDeleted`) + tests; delete action on the custom exercise detail (impact → confirm → delete; EF-1, EF-2, EF-6); i18n en/es | mobile | unit tests; typecheck | `feat(exercises): delete a custom exercise from its detail` |
 | 6 | [ ] Mobile: "Deleted exercise" chip in routine detail and routine form | mobile | typecheck | `feat(exercises): show deleted exercises in routines` |
@@ -65,6 +65,18 @@ device pass (task 8), the deploy (task 9).
   held branches. The classifier takes an optional `isDeleted` (deleted custom
   → hidden), passed by `findAccessibleExercise`, so photo writes and
   unilateral answer 404 for a deleted exercise. 4 new rule tests.
+- 2026-10-17 — Task 3: `deletion.ts` holds the decision
+  (`planExerciseDeletion`: not-found / forbidden / already-deleted / remove /
+  archive) and the creator-only count filters (`deletionImpactWhere`); the
+  repository only carries them out. `GET /exercises/:id/deletion-impact` and
+  `DELETE /exercises/:id?inActiveWorkout=true`, both authenticated. Route
+  tests live in a new `deletion.routes.test.ts` (not `routes.test.ts`, which
+  0030 edits): the real routes and repositories run against an in-memory
+  stand-in for Prisma that evaluates the repositories' own `where` objects —
+  so creator-only, same-as-unknown for others, counts of the creator's data
+  only, history/progress still named, and same-name create are checked
+  through the real code, not through mocks of it. 30 new tests (11 unit, 19
+  route).
 
 ## Definition of done
 

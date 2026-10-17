@@ -212,15 +212,24 @@ Unit (API, vitest):
 - `deletion.test.ts` — `planExerciseDeletion` table above;
   `deletionImpactWhere` scopes both counts to the person and the exercise and
   never names anyone else.
-- `routes.test.ts` — a "delete custom exercises (spec 0033)" block whose
-  repository mock applies the real `classifyExerciseAccess` +
-  `planExerciseDeletion` to an in-memory world (Ana's live exercise, Ana's
-  deleted one, a catalog one), like 0015's leak block: auth required; creator
-  gets impact and 204; Ben's answers for Ana's exercise equal an unknown id
-  (status, body, content type) on impact and delete; catalog → 403 on both;
-  already deleted → 204 again; `inActiveWorkout` parsed and passed; impact
-  counts are the repository's (called with the acting person); never 403 for
-  someone else's.
+- `deletion.routes.test.ts` (new; kept out of `routes.test.ts`, which spec
+  0030 edits in parallel) — the real routes **and the real repositories**
+  against a small in-memory stand-in for Prisma that evaluates the same
+  `where` objects the repositories build (OR, nested relations, `some`,
+  `in`, insensitive `equals`, `null`). Two people, Ana's never-used and used
+  exercises, a catalog one, Ben holding Ana's from before 0015. Checks: auth
+  required; Ben's answers for Ana's exercise equal an unknown id (status,
+  body, content type) on impact and delete, and change nothing; catalog → 403
+  for everyone; impact counts only Ana's routines and workouts (Ben's
+  references excluded); never-used → removed with photo and favourites;
+  in active workout → archived; remove race (`P2003`) → archived; used →
+  archived, out of list/detail/favourites/photo, favourites gone for
+  everyone; saved workouts, history and progress still name it with its
+  sets, Ben's too; routine and workout rows unchanged; photo failure still
+  204 and never served (EF-4); second delete 204 (EF-2); writes to a deleted
+  exercise 404; same-name create after delete → a new id, old history stays
+  (FR-11). A mutation check (dropping `deletedAt: null` from the visible
+  rule) fails 5 of them.
 
 Unit (mobile): `describeDeletionImpact` (unused, routines only, workouts only,
 both, active workout, singular/plural counts) and `isAlreadyDeleted`.
@@ -235,7 +244,7 @@ unaffected. Logged in `tasks.md`.
 | Spec AC | Verified by |
 |---|---|
 | AC-1 | planner test (remove); routes test (204); e2e (row gone, list/search exclude it, impact said 0/0) |
-| AC-2 | `deletionImpactWhere` test; routes test (counts passed through); e2e counts 1 routine / N workouts, Ben's references not counted |
+| AC-2 | `deletionImpactWhere` test; routes test (Ana 1 routine / 3 workouts, Ben's excluded); e2e counts 1 routine / N workouts, Ben's references not counted |
 | AC-3 | visible/usable rule tests; e2e history, workout detail and progress name it with its sets |
 | AC-4 | e2e routine read has `exerciseDeleted`, PUT saves, workout from it saves; device for the chip [DEVICE] |
 | AC-5 | planner test (archive when in active workout); routes test (flag passed); `describeDeletionImpact` test; device [DEVICE] |
@@ -257,7 +266,8 @@ unaffected. Logged in `tasks.md`.
 - `apps/api/src/features/exercises/visibility.ts` + `visibility.test.ts`
 - `apps/api/src/features/exercises/deletion.ts` (new) + `deletion.test.ts` (new)
 - `apps/api/src/features/exercises/repository.ts` — `getExerciseDeletionImpact`, `deleteCustomExercise`; `findAccessibleExercise` passes `isDeleted`
-- `apps/api/src/features/exercises/routes.ts` + `routes.test.ts` — two routes, tests
+- `apps/api/src/features/exercises/routes.ts` — two routes
+- `apps/api/src/features/exercises/deletion.routes.test.ts` (new)
 - `apps/api/src/features/routines/repository.ts` — `exerciseDeleted`
 - `packages/domain/src/entities.ts` — `ExerciseDeletionImpact`, `RoutineExercise.exerciseDeleted`
 - `apps/mobile/src/features/exercises/api/exercisesClient.ts`

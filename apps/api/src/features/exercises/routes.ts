@@ -3,9 +3,11 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import {
   addFavoriteExercise,
   createExercise,
+  deleteCustomExercise,
   deleteExercisePhoto,
   findExerciseById,
   findExercisePhoto,
+  getExerciseDeletionImpact,
   InvalidMuscleGroupSelectionError,
   listExercises,
   listFavoriteExerciseIds,
@@ -15,6 +17,7 @@ import {
   setExerciseUnilateral,
 } from './repository.js';
 import { decodeJpegBase64 } from '../profile/validation.js';
+import { parseInActiveWorkoutFlag } from './deletion.js';
 import { isExerciseTrackingType } from './trackingTypes.js';
 import { resolveUserPublicId } from '../../infrastructure/userContext.js';
 
@@ -66,6 +69,23 @@ function sendPhotoWriteResult(
   return reply.code(204).send();
 }
 
+/**
+ * Spec 0033: someone else's custom exercise answers exactly like an unknown
+ * one (FR-2, EF-3); a catalog exercise exists for everyone but is nobody's to
+ * delete. Returns `undefined` when the request was not refused.
+ */
+function sendDeletionRefusal(reply: FastifyReply, result: unknown) {
+  if (result === 'not-found') {
+    return reply.code(404).send({ message: 'Exercise not found' });
+  }
+
+  if (result === 'forbidden') {
+    return reply.code(403).send({ message: 'Catalog exercises cannot be deleted' });
+  }
+
+  return undefined;
+}
+
 export async function registerExerciseRoutes(app: FastifyInstance) {
   // Catalog plus the acting person's own custom exercises (spec 0015).
   app.get('/exercises', async (request) => {
@@ -104,6 +124,35 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
         request.params.id,
       );
       return reply.code(204).send();
+    },
+  );
+
+  // Spec 0033: what deleting the creator's custom exercise touches (FR-3).
+  app.get<{ Params: { id: string } }>(
+    '/exercises/:id/deletion-impact',
+    { preHandler: app.authenticate },
+    async (request, reply) => {
+      const result = await getExerciseDeletionImpact(
+        await resolveUserPublicId(request),
+        request.params.id,
+      );
+
+      return sendDeletionRefusal(reply, result) ?? result;
+    },
+  );
+
+  // Spec 0033: delete the creator's custom exercise; already deleted is done (EF-2).
+  app.delete<{ Params: { id: string }; Querystring: { inActiveWorkout?: string } }>(
+    '/exercises/:id',
+    { preHandler: app.authenticate },
+    async (request, reply) => {
+      const result = await deleteCustomExercise(
+        await resolveUserPublicId(request),
+        request.params.id,
+        { inActiveWorkout: parseInActiveWorkoutFlag(request.query.inActiveWorkout) },
+      );
+
+      return sendDeletionRefusal(reply, result) ?? reply.code(204).send();
     },
   );
 
