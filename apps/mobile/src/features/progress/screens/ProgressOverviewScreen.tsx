@@ -23,6 +23,7 @@ import { TimedProgressFigures } from '@/features/progress/components/TimedProgre
 import { isTimedOrDistance } from '@/lib/tracking';
 import { formatWeightValue, fromKg, roundWeight } from '@/lib/weight';
 import { useRefresh } from '@/lib/useRefresh';
+import { CardHeader } from '@/ui/CardHeader';
 import { Chip } from '@/ui/Chip';
 import { ScreenTitle } from '@/ui/ScreenTitle';
 import { StateView } from '@/ui/StateView';
@@ -153,13 +154,17 @@ export function ProgressOverviewScreen() {
               onPress={() => router.push(`/progress/exercises/${exercise.exerciseId}`)}
               style={({ pressed }) => [styles.card, pressed ? styles.cardPressed : null]}
             >
-              <View style={styles.cardTitleRow}>
-                <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
-                {exercise.isRecordSession ? (
-                  <Chip icon="trophy" tone="record" size="sm" label={t('progress.pr')} />
-                ) : null}
-                <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
-              </View>
+              <CardHeader
+                title={exercise.exerciseName}
+                trailing={
+                  <View style={styles.cardTrailing}>
+                    {exercise.isRecordSession ? (
+                      <Chip icon="trophy" tone="record" size="sm" label={t('progress.pr')} />
+                    ) : null}
+                    <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
+                  </View>
+                }
+              />
               {isTimedOrDistance(exercise.trackingType) ? (
                 <TimedProgressFigures summary={exercise} />
               ) : (
@@ -240,14 +245,10 @@ const styles = StyleSheet.create({
   cardPressed: {
     ...commonStyles.pressed,
   },
-  cardTitleRow: {
+  cardTrailing: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-  },
-  cardTitle: {
-    ...commonStyles.cardTitle,
-    flex: 1,
   },
   figures: {
     flexDirection: 'row',

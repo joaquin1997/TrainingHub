@@ -25,6 +25,7 @@ import { Chip } from '@/ui/Chip';
 import { ScreenTitle } from '@/ui/ScreenTitle';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, fonts, spacing, typeScale } from '@/ui/theme';
+import { ListRow } from '@/ui/ListRow';
 import type { Exercise } from '@workout/domain';
 
 const PAGE_SIZE = 50;
@@ -265,37 +266,29 @@ export function ExercisesListScreen() {
             ].filter(Boolean);
 
             return (
-              <View key={exercise.id} style={styles.row}>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => router.push(`/exercises/${exercise.id}`)}
-                  style={({ pressed }) => [styles.rowMain, pressed ? styles.pressed : null]}
-                >
-                  <ExerciseThumb imageUrl={exercise.imageUrl} />
-                  <View style={styles.rowText}>
-                    <Text style={styles.rowTitle}>{exercise.name}</Text>
-                    {details.length > 0 ? (
-                      <Text style={styles.meta} numberOfLines={1}>
-                        {details.join(' · ')}
-                      </Text>
-                    ) : null}
-                  </View>
-                </Pressable>
-                <Pressable
-                  onPress={() => toggleFavorite(exercise.id)}
-                  hitSlop={8}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: isFavorite }}
-                  accessibilityLabel={t('exercises.favorites')}
-                  style={styles.starButton}
-                >
-                  <Ionicons
-                    name={isFavorite ? 'star' : 'star-outline'}
-                    size={22}
-                    color={isFavorite ? colors.primary : colors.textSubtle}
-                  />
-                </Pressable>
-              </View>
+              <ListRow
+                key={exercise.id}
+                variant="card"
+                title={exercise.name}
+                subtitle={details.length > 0 ? details.join(' · ') : undefined}
+                leading={<ExerciseThumb imageUrl={exercise.imageUrl} />}
+                onPress={() => router.push(`/exercises/${exercise.id}`)}
+                trailing={
+                  <Pressable
+                    onPress={() => toggleFavorite(exercise.id)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isFavorite }}
+                    accessibilityLabel={t('exercises.favorites')}
+                    style={styles.starButton}
+                  >
+                    <Ionicons
+                      name={isFavorite ? 'star' : 'star-outline'}
+                      size={22}
+                      color={isFavorite ? colors.primary : colors.textSubtle}
+                    />
+                  </Pressable>
+                }
+              />
             );
           })}
         </View>
@@ -328,9 +321,6 @@ const styles = StyleSheet.create({
   centered: {
     alignSelf: 'center',
   },
-  pressed: {
-    ...commonStyles.pressed,
-  },
   search: {
     ...commonStyles.input,
     flexDirection: 'row',
@@ -362,35 +352,10 @@ const styles = StyleSheet.create({
   list: {
     gap: spacing.sm,
   },
-  row: {
-    ...commonStyles.card,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.md,
-  },
-  rowMain: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  rowText: {
-    flex: 1,
-    gap: spacing.xxs,
-  },
-  rowTitle: {
-    color: colors.text,
-    fontFamily: fonts.displayBold,
-    ...typeScale.body,
-  },
   starButton: {
     width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  meta: {
-    ...commonStyles.meta,
   },
 });

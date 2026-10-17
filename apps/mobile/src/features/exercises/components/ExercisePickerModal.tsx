@@ -23,6 +23,7 @@ import {
 import { Button } from '@/ui/Button';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { ListRow } from '@/ui/ListRow';
 import type { Exercise } from '@workout/domain';
 
 const MAX_VISIBLE = 50;
@@ -276,24 +277,18 @@ export function ExercisePickerModal({
                 ].filter(Boolean);
 
                 return (
-                  <Pressable
+                  <ListRow
                     key={exercise.id}
-                    accessibilityRole="button"
+                    variant="card"
+                    title={exercise.name}
+                    subtitle={details.length > 0 ? details.join(' · ') : undefined}
+                    leading={<ExerciseThumb imageUrl={exercise.imageUrl} />}
+                    trailing={
+                      <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+                    }
                     onPress={() => void choose(exercise)}
                     disabled={checkingId !== undefined}
-                    style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
-                  >
-                    <ExerciseThumb imageUrl={exercise.imageUrl} />
-                    <View style={styles.rowText}>
-                      <Text style={styles.rowTitle}>{exercise.name}</Text>
-                      {details.length > 0 ? (
-                        <Text style={styles.meta} numberOfLines={1}>
-                          {details.join(' · ')}
-                        </Text>
-                      ) : null}
-                    </View>
-                    <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
-                  </Pressable>
+                  />
                 );
               })}
               {filtered.length > MAX_VISIBLE ? (
@@ -379,24 +374,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingBottom: spacing.xxl,
   },
-  row: {
-    ...commonStyles.card,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.md,
-  },
   rowPressed: {
     ...commonStyles.pressed,
-  },
-  rowText: {
-    flex: 1,
-    gap: spacing.xxs,
-  },
-  rowTitle: {
-    color: colors.text,
-    fontFamily: fonts.displayBold,
-    ...typeScale.body,
   },
   meta: {
     color: colors.textMuted,

@@ -72,6 +72,7 @@ import { formatDuration } from '@/lib/format';
 import { isPermanentRejection } from '@/lib/http';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { colors, commonStyles, fonts, layout, radii, spacing, typeScale } from '@/ui/theme';
+import { CardHeader } from '@/ui/CardHeader';
 import type { Exercise, ExerciseLastPerformance } from '@workout/domain';
 import { syncWorkoutCompletionToAppleHealth } from '@/features/health/integrations/appleWorkoutIntegration';
 import {
@@ -698,56 +699,61 @@ export function ActiveWorkoutScreen() {
 
     return (
       <View key={exercise.id} style={styles.exercise}>
-        <View style={styles.exerciseHeader}>
-          <View style={[styles.blockBadge, inSuperset ? styles.blockBadgeSuperset : null]}>
-            <Text style={[styles.blockBadgeText, inSuperset ? styles.blockBadgeTextSuperset : null]}>
-              {label.label}
-            </Text>
-          </View>
-          {imageByExercise[exercise.exerciseId] ? (
-            <ExerciseThumb imageUrl={imageByExercise[exercise.exerciseId]} size={40} />
-          ) : null}
-          <View style={styles.exerciseTitleColumn}>
-            <Text style={styles.exerciseTitle}>{exercise.exerciseName}</Text>
-            <View style={styles.restChipRow}>
-              <Chip
-                icon="timer-outline"
-                size="sm"
-                label={restChipLabel(
-                  resolveRestSeconds(exercise, settings.defaultRestSeconds),
-                  t,
-                )}
-                onPress={() => setRestEditorFor(exercise.id)}
-              />
+        <CardHeader
+          title={exercise.exerciseName}
+          leading={
+            <>
+              <View style={[styles.blockBadge, inSuperset ? styles.blockBadgeSuperset : null]}>
+                <Text style={[styles.blockBadgeText, inSuperset ? styles.blockBadgeTextSuperset : null]}>
+                  {label.label}
+                </Text>
+              </View>
+              {imageByExercise[exercise.exerciseId] ? (
+                <ExerciseThumb imageUrl={imageByExercise[exercise.exerciseId]} size={40} />
+              ) : null}
+            </>
+          }
+          trailing={
+            <View style={styles.reorderRow}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="↑"
+                onPress={() => handleMoveExercise(exercise.id, 'up')}
+                hitSlop={6}
+                style={styles.iconButton}
+              >
+                <Ionicons name="arrow-up" size={18} color={colors.textMuted} />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="↓"
+                onPress={() => handleMoveExercise(exercise.id, 'down')}
+                hitSlop={6}
+                style={styles.iconButton}
+              >
+                <Ionicons name="arrow-down" size={18} color={colors.textMuted} />
+              </Pressable>
             </View>
-            {liveRecords.badges.sessionVolumeByExercise[exercise.exerciseId] ? (
-              <RecordBadge
-                hits={[liveRecords.badges.sessionVolumeByExercise[exercise.exerciseId]!]}
-                unit={unit}
-              />
-            ) : null}
+          }
+        >
+          <View style={styles.restChipRow}>
+            <Chip
+              icon="timer-outline"
+              size="sm"
+              label={restChipLabel(
+                resolveRestSeconds(exercise, settings.defaultRestSeconds),
+                t,
+              )}
+              onPress={() => setRestEditorFor(exercise.id)}
+            />
           </View>
-          <View style={styles.reorderRow}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="↑"
-              onPress={() => handleMoveExercise(exercise.id, 'up')}
-              hitSlop={6}
-              style={styles.iconButton}
-            >
-              <Ionicons name="arrow-up" size={18} color={colors.textMuted} />
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="↓"
-              onPress={() => handleMoveExercise(exercise.id, 'down')}
-              hitSlop={6}
-              style={styles.iconButton}
-            >
-              <Ionicons name="arrow-down" size={18} color={colors.textMuted} />
-            </Pressable>
-          </View>
-        </View>
+          {liveRecords.badges.sessionVolumeByExercise[exercise.exerciseId] ? (
+            <RecordBadge
+              hits={[liveRecords.badges.sessionVolumeByExercise[exercise.exerciseId]!]}
+              unit={unit}
+            />
+          ) : null}
+        </CardHeader>
         <View style={[styles.setList, inSuperset ? styles.indented : null]}>
           <WorkoutSetHeader
             trackingType={exercise.trackingType}
@@ -1197,11 +1203,6 @@ const styles = StyleSheet.create({
   exercise: {
     gap: spacing.sm,
   },
-  exerciseHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-  },
   blockBadge: {
     minWidth: 28,
     height: 28,
@@ -1225,14 +1226,6 @@ const styles = StyleSheet.create({
   blockBadgeTextSuperset: {
     color: colors.text,
     ...typeScale.caption,
-  },
-  exerciseTitleColumn: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  exerciseTitle: {
-    ...commonStyles.cardTitle,
-    paddingTop: spacing.xxs,
   },
   restChipRow: {
     flexDirection: 'row',

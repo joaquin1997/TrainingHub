@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import type { ChartSeries } from '@/features/progress/utils/chartData';
 import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { CardHeader } from '@/ui/CardHeader';
 
 const CHART_AREA_HEIGHT = 120;
 
@@ -34,14 +35,16 @@ export function ProgressChart({
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.range}>
-          {formatValue(series.min)}
-          {series.min !== series.max ? `-${formatValue(series.max)}` : ''}
-          {unit ? ` ${unit}` : ''}
-        </Text>
-      </View>
+      <CardHeader
+        title={title}
+        trailing={
+          <Text style={styles.range}>
+            {formatValue(series.min)}
+            {series.min !== series.max ? `-${formatValue(series.max)}` : ''}
+            {unit ? ` ${unit}` : ''}
+          </Text>
+        }
+      />
       <View style={styles.chart}>
         {series.bars.map((bar, index) => {
           // The latest bar is the one that matters; the rest give context.
@@ -75,16 +78,6 @@ const styles = StyleSheet.create({
   container: {
     ...commonStyles.card,
     gap: spacing.md,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    gap: spacing.sm,
-  },
-  title: {
-    ...commonStyles.cardTitle,
-    flexShrink: 1,
   },
   range: {
     color: colors.textMuted,

@@ -18,6 +18,7 @@ import { Chip } from '@/ui/Chip';
 import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { CardHeader } from '@/ui/CardHeader';
 import type { ExerciseProgressDetail, WeightUnit } from '@workout/domain';
 
 function formatValue(value?: number) {
@@ -207,7 +208,7 @@ export function ExerciseProgressDetailScreen() {
       />
       {personalRecords.length > 0 ? (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>{t('progress.heaviestOverTime')}</Text>
+          <CardHeader title={t('progress.heaviestOverTime')} />
           {personalRecords
             .slice()
             .reverse()
@@ -276,10 +277,6 @@ const styles = StyleSheet.create({
   },
   card: {
     ...commonStyles.card,
-  },
-  cardTitle: {
-    ...commonStyles.cardTitle,
-    marginBottom: spacing.xs,
   },
   recordRow: {
     minHeight: 40,

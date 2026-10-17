@@ -23,6 +23,7 @@ import { Chip } from '@/ui/Chip';
 import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { CardHeader } from '@/ui/CardHeader';
 import type { SessionRecord, WorkoutSetType } from '@workout/domain';
 
 function setTypeLabel(type: WorkoutSetType, t: TFunction) {
@@ -153,7 +154,7 @@ export function WorkoutSummaryScreen() {
       <Text style={styles.sectionLabel}>{t('workouts.exercisesDone')}</Text>
       {workoutSession.exercises.map((exercise, exerciseIndex) => (
         <View key={exercise.id} style={styles.card}>
-          <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
+          <CardHeader title={exercise.exerciseName} />
           {exercise.sets.map((set, setIndex) => {
             const done = isDone(exerciseIndex, setIndex);
             const type = setTypeLabel(set.type, t);
@@ -270,10 +271,6 @@ const styles = StyleSheet.create({
   card: {
     ...commonStyles.card,
     gap: spacing.xs,
-  },
-  cardTitle: {
-    ...commonStyles.cardTitle,
-    marginBottom: spacing.xs,
   },
   setRow: {
     minHeight: 40,

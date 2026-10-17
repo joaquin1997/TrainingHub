@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { describeRecord } from '@/features/progress/utils/recordLabels';
 import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { CardHeader } from '@/ui/CardHeader';
 import type { ExerciseRecord, WeightUnit } from '@workout/domain';
 
 export interface RecordsCardItem {
@@ -29,7 +30,7 @@ export function RecordsCard({ title, items, unit }: RecordsCardProps) {
 
   return (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>{title}</Text>
+      <CardHeader title={title} />
       {items.map(({ key, record, meta }) => {
         const label = describeRecord(record, unit, t);
         const caption = [label.set, meta].filter(Boolean).join(' · ');
@@ -54,10 +55,6 @@ export function RecordsCard({ title, items, unit }: RecordsCardProps) {
 const styles = StyleSheet.create({
   card: {
     ...commonStyles.card,
-  },
-  cardTitle: {
-    ...commonStyles.cardTitle,
-    marginBottom: spacing.xs,
   },
   row: {
     minHeight: 44,

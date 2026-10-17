@@ -64,6 +64,7 @@ import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { CardHeader } from '@/ui/CardHeader';
 import type {
   Exercise,
   ExerciseTrackingType,
@@ -816,10 +817,10 @@ export function RoutineFormScreen({
           createId={() => createRowId('warm-up-row')}
         />
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{t('routineForm.routineExercises')}</Text>
-          <Chip label={String(exercises.length)} size="sm" />
-        </View>
+        <CardHeader
+          title={t('routineForm.routineExercises')}
+          trailing={<Chip label={String(exercises.length)} size="sm" />}
+        />
         <Text style={styles.meta}>{t('routineForm.exercisesHint')}</Text>
         {isExercisesLoading ? (
           <StateView kind="loading" message={t('routineForm.loadingExercises')} />
@@ -842,36 +843,38 @@ export function RoutineFormScreen({
 
             return (
               <View key={exercise.id} style={styles.card}>
-                <View style={styles.exerciseHeader}>
-                  <View style={[styles.indexBadge, inSuperset ? styles.indexBadgeSuperset : null]}>
-                    <Text style={styles.indexBadgeText}>
-                      {blockLabels[index]?.label ?? index + 1}
-                    </Text>
-                  </View>
-                  <Text style={styles.exerciseTitle}>
-                    {selectedName || t('routineForm.exerciseN', { number: index + 1 })}
-                  </Text>
-                  <View style={styles.reorderRow}>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="↑"
-                      onPress={() => moveExerciseRow(index, 'up')}
-                      hitSlop={6}
-                      style={styles.iconButton}
-                    >
-                      <Ionicons name="arrow-up" size={18} color={colors.textMuted} />
-                    </Pressable>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="↓"
-                      onPress={() => moveExerciseRow(index, 'down')}
-                      hitSlop={6}
-                      style={styles.iconButton}
-                    >
-                      <Ionicons name="arrow-down" size={18} color={colors.textMuted} />
-                    </Pressable>
-                  </View>
-                </View>
+                <CardHeader
+                  title={selectedName || t('routineForm.exerciseN', { number: index + 1 })}
+                  leading={
+                    <View style={[styles.indexBadge, inSuperset ? styles.indexBadgeSuperset : null]}>
+                      <Text style={styles.indexBadgeText}>
+                        {blockLabels[index]?.label ?? index + 1}
+                      </Text>
+                    </View>
+                  }
+                  trailing={
+                    <View style={styles.reorderRow}>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="↑"
+                        onPress={() => moveExerciseRow(index, 'up')}
+                        hitSlop={6}
+                        style={styles.iconButton}
+                      >
+                        <Ionicons name="arrow-up" size={18} color={colors.textMuted} />
+                      </Pressable>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="↓"
+                        onPress={() => moveExerciseRow(index, 'down')}
+                        hitSlop={6}
+                        style={styles.iconButton}
+                      >
+                        <Ionicons name="arrow-down" size={18} color={colors.textMuted} />
+                      </Pressable>
+                    </View>
+                  }
+                />
                 <View style={styles.iconInput}>
                   <Ionicons name="search" size={18} color={colors.textMuted} />
                   <TextInput
@@ -1176,20 +1179,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     ...typeScale.body,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  sectionTitle: {
-    ...commonStyles.heading,
-  },
-  exerciseHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-  },
   indexBadge: {
     minWidth: 28,
     height: 28,
@@ -1227,11 +1216,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontFamily: fonts.displayBold,
     ...typeScale.caption,
-  },
-  exerciseTitle: {
-    ...commonStyles.cardTitle,
-    flex: 1,
-    paddingTop: spacing.xxs,
   },
   reorderRow: {
     flexDirection: 'row',

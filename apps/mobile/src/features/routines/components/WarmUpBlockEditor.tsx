@@ -8,6 +8,7 @@ import { parseDurationInput } from '@/lib/tracking';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { CardHeader } from '@/ui/CardHeader';
 
 type Props = {
   items: EditableWarmUpItem[];
@@ -38,10 +39,7 @@ export function WarmUpBlockEditor({ items, onChange, createId }: Props) {
 
   return (
     <View style={styles.card}>
-      <View style={styles.header}>
-        <Ionicons name="flame-outline" size={18} color={colors.textMuted} />
-        <Text style={styles.title}>{t('warmUp.title')}</Text>
-      </View>
+      <CardHeader icon="flame-outline" title={t('warmUp.title')} />
       <Text style={styles.meta}>{t('warmUp.hint')}</Text>
       {items.map((item) => (
         <View key={item.id} style={styles.row}>
@@ -100,14 +98,6 @@ const styles = StyleSheet.create({
   card: {
     ...commonStyles.card,
     gap: spacing.sm,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  title: {
-    ...commonStyles.cardTitle,
   },
   meta: {
     ...commonStyles.meta,

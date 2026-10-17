@@ -24,6 +24,7 @@ import {
 import { formatDistance } from '@/lib/tracking';
 import { formatWeightValue } from '@/lib/weight';
 import { useRefresh } from '@/lib/useRefresh';
+import { CardHeader } from '@/ui/CardHeader';
 import { Chip } from '@/ui/Chip';
 import { ScreenTitle } from '@/ui/ScreenTitle';
 import { StateView } from '@/ui/StateView';
@@ -137,13 +138,11 @@ export function WorkoutHistoryScreen() {
                 onPress={() => router.push(`/workouts/${session.id}`)}
                 style={({ pressed }) => [styles.card, pressed ? styles.cardPressed : null]}
               >
-                <View style={styles.cardHeader}>
-                  <View style={styles.cardHeading}>
-                    <Text style={styles.cardTitle}>{formatDayHeading(when, i18n.language)}</Text>
-                    <Text style={styles.meta}>{formatTime(session.startedAt, i18n.language)}</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
-                </View>
+                <CardHeader
+                  title={formatDayHeading(when, i18n.language)}
+                  caption={formatTime(session.startedAt, i18n.language)}
+                  trailing={<Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />}
+                />
                 <View style={styles.chips}>
                   {session.completedAt ? (
                     <Chip
@@ -237,18 +236,6 @@ const styles = StyleSheet.create({
   },
   cardPressed: {
     ...commonStyles.pressed,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  cardHeading: {
-    flex: 1,
-    gap: spacing.xxs,
-  },
-  cardTitle: {
-    ...commonStyles.cardTitle,
   },
   meta: {
     ...commonStyles.meta,

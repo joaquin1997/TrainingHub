@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { formatWarmUpTarget } from '@/features/routines/utils/warmUpItems';
 import { colors, commonStyles, spacing, typeScale } from '@/ui/theme';
+import { CardHeader } from '@/ui/CardHeader';
 
 type Item = {
   key: string;
@@ -33,10 +34,7 @@ export function WarmUpChecklist({ items, onToggle }: Props) {
 
   return (
     <View style={styles.card}>
-      <View style={styles.header}>
-        <Ionicons name="flame-outline" size={18} color={colors.textMuted} />
-        <Text style={styles.title}>{t('warmUp.title')}</Text>
-      </View>
+      <CardHeader icon="flame-outline" title={t('warmUp.title')} />
       {items.map((item) => {
         const target = formatWarmUpTarget(item);
         const icon =
@@ -80,14 +78,6 @@ const styles = StyleSheet.create({
   card: {
     ...commonStyles.card,
     gap: spacing.sm,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  title: {
-    ...commonStyles.cardTitle,
   },
   row: {
     flexDirection: 'row',

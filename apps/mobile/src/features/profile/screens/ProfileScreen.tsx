@@ -25,6 +25,7 @@ import { Button } from '@/ui/Button';
 import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, spacing, typeScale } from '@/ui/theme';
+import { ListRow } from '@/ui/ListRow';
 
 /** The person's profile (spec 0027), reached from the Settings account card. */
 export function ProfileScreen() {
@@ -193,19 +194,19 @@ function BodySection({
           {measured.map(({ key }) => {
             const point = latest[key]!;
             return (
-              <Pressable
+              <ListRow
                 key={key}
-                accessibilityRole="button"
+                divider
+                title={t(`profile.kinds.${key}`)}
+                trailing={
+                  <View style={styles.latestValue}>
+                    <Text style={commonStyles.label}>{formatMeasurement(key, point.value, unit)}</Text>
+                    <Text style={styles.latestDate}>{formatDate(point.measuredAt, locale)}</Text>
+                  </View>
+                }
+                chevron
                 onPress={() => onOpen(key)}
-                style={({ pressed }) => [styles.latestRow, pressed ? commonStyles.pressed : null]}
-              >
-                <Text style={styles.latestLabel}>{t(`profile.kinds.${key}`)}</Text>
-                <View style={styles.latestValue}>
-                  <Text style={commonStyles.label}>{formatMeasurement(key, point.value, unit)}</Text>
-                  <Text style={styles.latestDate}>{formatDate(point.measuredAt, locale)}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-              </Pressable>
+              />
             );
           })}
         </View>
@@ -262,18 +263,6 @@ const styles = StyleSheet.create({
   },
   note: {
     ...commonStyles.meta,
-  },
-  latestRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  latestLabel: {
-    ...commonStyles.meta,
-    flex: 1,
   },
   latestValue: {
     alignItems: 'flex-end',

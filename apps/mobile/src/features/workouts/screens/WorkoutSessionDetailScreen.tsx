@@ -27,6 +27,7 @@ import { Chip } from '@/ui/Chip';
 import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { CardHeader } from '@/ui/CardHeader';
 import type { SessionRecord, WeightUnit, WorkoutSession, WorkoutSet } from '@workout/domain';
 
 /**
@@ -275,12 +276,10 @@ export function WorkoutSessionDetailScreen() {
       <Text style={styles.sectionLabel}>{t('workouts.exercisesDone')}</Text>
       {session.exercises.map((exercise) => (
         <View key={exercise.id} style={styles.card}>
-          <View style={styles.exerciseHeader}>
-            <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
-            <Text style={styles.exerciseVolume}>
-              {exerciseHeadline(exercise, unit)}
-            </Text>
-          </View>
+          <CardHeader
+            title={exercise.exerciseName}
+            trailing={<Text style={styles.exerciseVolume}>{exerciseHeadline(exercise, unit)}</Text>}
+          />
           {exercise.sets.map((set) => {
             const type = setTypeLabel(set.type, t);
             const done = isPerformedSet(set);
@@ -352,16 +351,6 @@ const styles = StyleSheet.create({
   card: {
     ...commonStyles.card,
     gap: spacing.xs,
-  },
-  exerciseHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  cardTitle: {
-    ...commonStyles.cardTitle,
-    flex: 1,
   },
   exerciseVolume: {
     ...commonStyles.figureUnit,

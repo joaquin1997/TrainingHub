@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { formatWeightValue } from '@/lib/weight';
 import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { CardHeader } from '@/ui/CardHeader';
 import type { MuscleGroupVolumePoint, WeightUnit } from '@workout/domain';
 
 interface MuscleDistributionProps {
@@ -23,7 +24,7 @@ export function MuscleDistribution({ points, unit }: MuscleDistributionProps) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{t('progress.volumeByCategory')}</Text>
+      <CardHeader title={t('progress.volumeByCategory')} />
       {points.map((point) => (
         <View key={point.group} style={styles.row}>
           <Text numberOfLines={1} style={styles.label}>
@@ -48,9 +49,6 @@ const styles = StyleSheet.create({
   container: {
     ...commonStyles.card,
     gap: spacing.md,
-  },
-  title: {
-    ...commonStyles.cardTitle,
   },
   row: {
     flexDirection: 'row',

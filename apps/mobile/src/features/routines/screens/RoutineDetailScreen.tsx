@@ -23,6 +23,7 @@ import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, fonts, layout, radii, spacing, typeScale } from '@/ui/theme';
+import { CardHeader } from '@/ui/CardHeader';
 import type { RoutineExerciseSet, Routine } from '@workout/domain';
 
 function formatReps(set: RoutineExerciseSet, t: TFunction) {
@@ -222,25 +223,31 @@ export function RoutineDetailScreen() {
 
     return (
       <View key={exercise.id} style={styles.exercise}>
-        <View style={styles.exerciseHeader}>
-          <View style={[styles.blockBadge, inSuperset ? styles.blockBadgeSuperset : null]}>
-            <Text style={[styles.blockBadgeText, inSuperset ? styles.blockBadgeTextSuperset : null]}>
-              {label.label}
-            </Text>
-          </View>
-          <Text style={styles.exerciseTitle}>{exercise.exerciseName}</Text>
-          {/* Spec 0033 FR-7: kept in the routine, but no longer in the catalog. */}
-          {exercise.exerciseDeleted ? (
-            <Chip icon="trash-outline" label={t('exerciseDeletion.deleted')} size="sm" />
-          ) : null}
-          {exercise.restSeconds !== undefined ? (
-            <Chip
-              icon="timer-outline"
-              label={formatDuration(exercise.restSeconds)}
-              size="sm"
-            />
-          ) : null}
-        </View>
+        <CardHeader
+          title={exercise.exerciseName}
+          leading={
+            <View style={[styles.blockBadge, inSuperset ? styles.blockBadgeSuperset : null]}>
+              <Text style={[styles.blockBadgeText, inSuperset ? styles.blockBadgeTextSuperset : null]}>
+                {label.label}
+              </Text>
+            </View>
+          }
+          trailing={
+            <View style={styles.exerciseChips}>
+              {/* Spec 0033 FR-7: kept in the routine, but no longer in the catalog. */}
+              {exercise.exerciseDeleted ? (
+                <Chip icon="trash-outline" label={t('exerciseDeletion.deleted')} size="sm" />
+              ) : null}
+              {exercise.restSeconds !== undefined ? (
+                <Chip
+                  icon="timer-outline"
+                  label={formatDuration(exercise.restSeconds)}
+                  size="sm"
+                />
+              ) : null}
+            </View>
+          }
+        />
         {sets.length === 0 ? (
           <Text style={[styles.meta, inSuperset ? styles.setTableIndented : null]}>
             {t('routineDetail.noTargetSets')}
@@ -451,10 +458,10 @@ const styles = StyleSheet.create({
   exercise: {
     gap: spacing.sm,
   },
-  exerciseHeader: {
+  exerciseChips: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   blockBadge: {
     minWidth: 28,
@@ -479,11 +486,6 @@ const styles = StyleSheet.create({
   blockBadgeTextSuperset: {
     color: colors.text,
     ...typeScale.caption,
-  },
-  exerciseTitle: {
-    ...commonStyles.cardTitle,
-    flex: 1,
-    paddingTop: spacing.xxs,
   },
   setTable: {
     gap: spacing.xs,
