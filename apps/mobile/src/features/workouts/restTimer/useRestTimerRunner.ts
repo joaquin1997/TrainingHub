@@ -1,15 +1,15 @@
 import type { TFunction } from 'i18next';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AppState, Vibration } from 'react-native';
+import { AppState } from 'react-native';
 
 import type { WorkoutSessionDraft } from '@/features/workouts/state/workoutDraftStore';
 
 import { nextSetLabel } from './nextSetLabel';
 import { restAlertsForThisDevice, type RestAlertContent } from './restAlerts';
 import { startRestTimerRunner } from './restTimerRunner';
+import { haptics } from '@/ui/haptics';
 
-const REST_OVER_VIBRATION = [0, 400, 200, 400];
 
 /** "Rest over" — "Next: {exercise} · set {n}", the set to do now (spec 0029 FR-10). */
 function restOverContent(draft: WorkoutSessionDraft, t: TFunction): RestAlertContent {
@@ -46,7 +46,9 @@ export function useRestTimerRunner(enabled: boolean) {
       // known to set one, but this is unverified; check on the device, and if
       // it shows, have the runner skip the in-app vibration while the alert is
       // scheduled.
-      vibrate: () => Vibration.vibrate(REST_OVER_VIBRATION),
+      // The haptic language's "rest over" (spec 0034 FR-4); the background
+      // notification of 0018 is unchanged.
+      vibrate: () => haptics.restOver(),
       isAppActive: () => AppState.currentState === 'active',
     });
     const subscription = AppState.addEventListener('change', (state) => {

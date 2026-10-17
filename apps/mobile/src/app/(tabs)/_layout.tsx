@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import type { ColorValue } from 'react-native';
 
 import { WorkoutBar } from '@/features/workouts/components/WorkoutBar';
-import { colors, fonts } from '@/ui/theme';
+import { colors, fonts, typeScale } from '@/ui/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -37,7 +37,8 @@ export default function TabsLayout() {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
         },
-        tabBarLabelStyle: { fontSize: 11, fontFamily: fonts.display },
+        // Caption size without its line height: the bar sizes the label itself.
+        tabBarLabelStyle: { fontSize: typeScale.caption.fontSize, fontFamily: fonts.display },
         sceneStyle: { backgroundColor: colors.background },
       }}
     >

@@ -17,7 +17,8 @@ import { formatWeightValue, fromKg, roundWeight } from '@/lib/weight';
 import { Chip } from '@/ui/Chip';
 import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { CardHeader } from '@/ui/CardHeader';
 import type { ExerciseProgressDetail, WeightUnit } from '@workout/domain';
 
 function formatValue(value?: number) {
@@ -133,11 +134,14 @@ export function ExerciseProgressDetailScreen() {
         : point.estimatedOneRepMax,
   }));
 
-  const oneRepMaxSeries = buildProgressSeries(
-    displayPoints,
-    'estimatedOneRepMax',
-  );
-  const volumeSeries = buildProgressSeries(displayPoints, 'totalVolume');
+  // A session without a 1RM or with no volume (reps-only, timed) is a gap in
+  // the line, never a zero (spec 0034 EF-7); record sessions keep their flag.
+  const oneRepMaxSeries = buildProgressSeries(displayPoints, 'estimatedOneRepMax', {
+    positiveOnly: true,
+  });
+  const volumeSeries = buildProgressSeries(displayPoints, 'totalVolume', {
+    positiveOnly: true,
+  });
   const personalRecords = extractPersonalRecords(progress.points);
   // Current best of each record type (spec 0023); absent from older servers.
   const records = progress.records ?? [];
@@ -181,14 +185,15 @@ export function ExerciseProgressDetailScreen() {
           unit={unit}
         />
       </View>
-      {oneRepMaxSeries.bars.length > 0 ? (
+      {oneRepMaxSeries.points.length > 0 ? (
         <ProgressChart
           title={t('progress.estimated1rm')}
           unit={unit}
           series={oneRepMaxSeries}
           formatLabel={formatAxisDate}
+          formatValue={(value) => String(roundWeight(value))}
         />
-      ) : volumeSeries.bars.length > 0 ? (
+      ) : volumeSeries.points.length > 0 ? (
         <ProgressChart
           title={t('progress.volumePerSession')}
           unit={unit}
@@ -207,7 +212,7 @@ export function ExerciseProgressDetailScreen() {
       />
       {personalRecords.length > 0 ? (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>{t('progress.heaviestOverTime')}</Text>
+          <CardHeader title={t('progress.heaviestOverTime')} />
           {personalRecords
             .slice()
             .reverse()
@@ -260,9 +265,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   title: {
-    ...commonStyles.heading,
-    fontSize: 28,
-    lineHeight: 34,
+    ...commonStyles.title,
   },
   headerMeta: {
     flexDirection: 'row',
@@ -279,10 +282,6 @@ const styles = StyleSheet.create({
   card: {
     ...commonStyles.card,
   },
-  cardTitle: {
-    ...commonStyles.cardTitle,
-    marginBottom: spacing.xs,
-  },
   recordRow: {
     minHeight: 40,
     flexDirection: 'row',
@@ -294,19 +293,19 @@ const styles = StyleSheet.create({
     height: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 14,
+    borderRadius: radii.round,
     backgroundColor: colors.accentSoft,
   },
   recordValue: {
     flex: 1,
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
     fontVariant: ['tabular-nums'],
   },
   recordDate: {
     color: colors.textMuted,
-    fontSize: 13,
+    ...typeScale.caption,
   },
   sectionLabel: {
     ...commonStyles.sectionLabel,
@@ -325,22 +324,22 @@ const styles = StyleSheet.create({
   sessionDate: {
     width: 96,
     color: colors.textMuted,
-    fontSize: 13,
+    ...typeScale.caption,
   },
   sessionFigures: {
     flex: 1,
     alignItems: 'flex-end',
-    gap: 2,
+    gap: spacing.xxs,
   },
   sessionValue: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
     fontVariant: ['tabular-nums'],
   },
   sessionMeta: {
     color: colors.textSubtle,
-    fontSize: 12,
+    ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
 });

@@ -9,9 +9,15 @@ import { progressClient } from '@/features/progress/api/progressClient';
 import { RecordsCard } from '@/features/progress/components/RecordsCard';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
+import { ShareSheet } from '@/features/workouts/components/ShareSheet';
 import { WarmUpChecklist } from '@/features/workouts/components/WarmUpChecklist';
 import { isPerformedSet } from '@/features/workouts/utils/performedSet';
-import { formatWorkoutShareText, shareRecords } from '@/features/workouts/utils/shareText';
+import { buildShareCard } from '@/features/workouts/utils/shareCard';
+import {
+  formatWorkoutShareText,
+  shareRecords,
+  type ShareWorkoutInput,
+} from '@/features/workouts/utils/shareText';
 import { shareWorkoutText } from '@/features/workouts/utils/shareWorkout';
 import { exerciseVolumeKg, summarizeSession } from '@/features/workouts/utils/sessionStats';
 import {
@@ -26,7 +32,8 @@ import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { CardHeader } from '@/ui/CardHeader';
 import type { SessionRecord, WeightUnit, WorkoutSession, WorkoutSet } from '@workout/domain';
 
 /**
@@ -70,6 +77,7 @@ export function WorkoutSessionDetailScreen() {
   const [records, setRecords] = useState<SessionRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
+  const [isShareOpen, setIsShareOpen] = useState(false);
   const { settings } = useSettings();
   const unit = settings.unit;
 
@@ -162,6 +170,23 @@ export function WorkoutSessionDetailScreen() {
 
   const totals = summarizeSession(session);
   const when = session.completedAt ?? session.startedAt;
+  // One input for both share formats: the 0028 text and the image card (FR-25).
+  const shareInput: ShareWorkoutInput = {
+    when,
+    durationSeconds: session.completedAt
+      ? activeDurationSeconds(session.startedAt, session.completedAt, session.pausedSeconds)
+      : null,
+    volumeKg: totals.volumeKg,
+    unit,
+    language: i18n.language,
+    exercises: session.exercises.map((exercise) => ({
+      name: exercise.exerciseName,
+      sets: exercise.sets.map((set) => ({ ...set, performed: isPerformedSet(set) })),
+    })),
+    notes: session.notes,
+    records: shareRecords(records, unit, t),
+    t,
+  };
   const timeRange = session.completedAt
     ? `${formatTime(session.startedAt, i18n.language)} – ${formatTime(session.completedAt, i18n.language)}`
     : formatTime(session.startedAt, i18n.language);
@@ -245,27 +270,16 @@ export function WorkoutSessionDetailScreen() {
         icon="share-outline"
         variant="secondary"
         fullWidth
-        onPress={() =>
-          void shareWorkoutText(
-            formatWorkoutShareText({
-              when,
-              durationSeconds: session.completedAt
-                ? activeDurationSeconds(session.startedAt, session.completedAt, session.pausedSeconds)
-                : null,
-              volumeKg: totals.volumeKg,
-              unit,
-              language: i18n.language,
-              exercises: session.exercises.map((exercise) => ({
-                name: exercise.exerciseName,
-                sets: exercise.sets.map((set) => ({ ...set, performed: isPerformedSet(set) })),
-              })),
-              notes: session.notes,
-              records: shareRecords(records, unit, t),
-              t,
-            }),
-          )
-        }
+        onPress={() => setIsShareOpen(true)}
       />
+      {isShareOpen ? (
+        <ShareSheet
+          visible
+          card={buildShareCard(shareInput)}
+          onShareText={() => void shareWorkoutText(formatWorkoutShareText(shareInput))}
+          onClose={() => setIsShareOpen(false)}
+        />
+      ) : null}
 
       {/* What the warm-up block ticked (spec 0024 FR-7). */}
       <WarmUpChecklist
@@ -275,12 +289,10 @@ export function WorkoutSessionDetailScreen() {
       <Text style={styles.sectionLabel}>{t('workouts.exercisesDone')}</Text>
       {session.exercises.map((exercise) => (
         <View key={exercise.id} style={styles.card}>
-          <View style={styles.exerciseHeader}>
-            <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
-            <Text style={styles.exerciseVolume}>
-              {exerciseHeadline(exercise, unit)}
-            </Text>
-          </View>
+          <CardHeader
+            title={exercise.exerciseName}
+            trailing={<Text style={styles.exerciseVolume}>{exerciseHeadline(exercise, unit)}</Text>}
+          />
           {exercise.sets.map((set) => {
             const type = setTypeLabel(set.type, t);
             const done = isPerformedSet(set);
@@ -325,9 +337,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   title: {
-    ...commonStyles.heading,
-    fontSize: 26,
-    lineHeight: 32,
+    ...commonStyles.title,
   },
   metaRow: {
     flexDirection: 'row',
@@ -355,20 +365,10 @@ const styles = StyleSheet.create({
     ...commonStyles.card,
     gap: spacing.xs,
   },
-  exerciseHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  cardTitle: {
-    ...commonStyles.cardTitle,
-    flex: 1,
-  },
   exerciseVolume: {
     ...commonStyles.figureUnit,
     color: colors.text,
-    paddingTop: 2,
+    paddingTop: spacing.xxs,
   },
   setRow: {
     minHeight: 40,
@@ -386,13 +386,13 @@ const styles = StyleSheet.create({
     width: 18,
     color: colors.textMuted,
     fontFamily: fonts.displayBold,
-    fontSize: 14,
+    ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
   setValue: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
     fontVariant: ['tabular-nums'],
   },
   spacer: {
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
   setRest: {
     color: colors.textSubtle,
     fontFamily: fonts.display,
-    fontSize: 12,
+    ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
 });

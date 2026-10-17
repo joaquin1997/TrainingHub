@@ -91,11 +91,11 @@ export const en = {
     repsUpTo: 'up to {{max}} reps',
     repsNone: '- reps',
     repsExact: '{{reps}} reps',
-    colTarget: 'TARGET',
+    colTarget: 'Target',
   },
   routineForm: {
-    colMin: 'MIN',
-    colMax: 'MAX',
+    colMin: 'Min',
+    colMax: 'Max',
     workoutInProgress:
       'This routine has a workout in progress. Finish or discard it before editing.',
     backToRoutine: 'Back to routine',
@@ -298,6 +298,7 @@ export const en = {
     emptyMatchesTitle: 'No matches',
     emptyFavoritesSubtitle: 'Tap the star on an exercise to save it here.',
     emptyMatchesSubtitle: 'Try a different search or clear the filters.',
+    clearFilters: 'Clear filters',
     loadMore: 'Load more ({{count}} left)',
     missingId: 'Missing exercise id.',
     detailLoadError: 'Unable to load exercise.',
@@ -350,6 +351,24 @@ export const en = {
       volume: 'Volume',
       notes: 'Notes',
       records: 'Records',
+      // The share image (spec 0034 FR-25).
+      cardFooter: 'Logged with TrainingHub',
+      moreRecords: '+{{count}} more',
+      sheetTitle: 'Share workout',
+      image: 'Share image',
+      asText: 'Share as text',
+      imageFailed: 'Couldn’t create the image — share as text instead.',
+    },
+    // Volume versus last time on the summary (spec 0034 FR-24).
+    comparison: {
+      up: '{{delta}} more than {{date}}',
+      down: '{{delta}} less than {{date}}',
+      same: 'Same as {{date}}',
+      chipUp: '+{{delta}}',
+      chipDown: '−{{delta}}',
+      chipSame: 'Same',
+      captionUp: '+{{delta}} vs {{date}}',
+      captionDown: '−{{delta}} vs {{date}}',
     },
     setType: {
       warmup: 'Warmup',
@@ -384,12 +403,12 @@ export const en = {
     watchWaiting: 'Start a workout on your iPhone',
     min: 'min',
     sec: 'sec',
-    colSet: 'SET',
-    colPrev: 'PREVIOUS',
-    colReps: 'REPS',
+    colSet: 'Set',
+    colPrev: 'Previous',
+    colReps: 'Reps',
     // Time and distance sets (spec 0021).
-    colTime: 'TIME',
-    colDistance: 'DIST',
+    colTime: 'Time',
+    colDistance: 'Dist',
     // Left and right of a unilateral exercise (spec 0022); also in "10 L / 8 R".
     colLeft: 'L',
     colRight: 'R',
@@ -429,6 +448,7 @@ export const en = {
     loadError: 'Unable to load workouts.',
     emptyTitle: 'No workouts yet',
     emptySubtitle: 'Finish a workout and it will show up here.',
+    emptyAction: 'Start from a routine',
     noExercises: 'No exercises',
     setsCount: '{{count}} sets',
     missingId: 'Missing workout id.',
@@ -441,6 +461,23 @@ export const en = {
     // Time and distance sets (spec 0021).
     setTimeLabel: 'Set time',
     distanceLabel: 'Distance',
+    // A set row's one status area and its second line (spec 0034 FR-19).
+    setStatus: {
+      last: 'Last {{value}}',
+      record: 'Done, record',
+      done: 'Done',
+      generatedWarmup: 'Generated warm-up, not done',
+      upNext: 'Up next',
+      none: 'Not done',
+    },
+    // The compact header while the workout is scrolled (spec 0034 FR-21).
+    stickyHeader: {
+      upNext: 'Up next',
+      set: 'Set {{number}}',
+      warmup: 'Warm-up',
+      allDone: 'All sets done',
+      scrollHint: 'Shows the set in the list',
+    },
   },
   progress: {
     est1rmShort: 'Est. 1RM',
@@ -457,6 +494,7 @@ export const en = {
     loading: 'Loading progress…',
     emptyTitle: 'No progress yet',
     emptySubtitle: 'Finish a workout to start tracking your lifts.',
+    emptyAction: 'Start from a routine',
     pr: 'PR',
     weeklyVolume: 'Weekly volume',
     estimated1rm: 'Estimated 1RM',
@@ -475,6 +513,7 @@ export const en = {
     records: {
       title: 'Records',
       beaten: 'Records beaten',
+      today: 'Records today',
       count_one: '{{count}} record',
       count_other: '{{count}} records',
       heaviestWeight: 'Heaviest weight',
@@ -488,6 +527,14 @@ export const en = {
       liveMore: '+{{count}}',
       repsValue_one: '{{count}} rep',
       repsValue_other: '{{count}} reps',
+    },
+    chart: {
+      // A selected point on a progress chart (spec 0034 FR-22).
+      readout: '{{date}} · {{value}}',
+      record: 'Record',
+      // What a screen reader says for each point.
+      pointLabel: '{{date}}, {{value}}',
+      pointLabelRecord: '{{date}}, {{value}}, record',
     },
   },
 };

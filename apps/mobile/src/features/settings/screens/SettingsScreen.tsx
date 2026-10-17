@@ -14,7 +14,9 @@ import {
 import { confirmAction } from '@/lib/confirmAction';
 import { formatDuration } from '@/lib/format';
 import { Button } from '@/ui/Button';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, fontScaleCap, radii, spacing, typeScale } from '@/ui/theme';
+import { ListRow } from '@/ui/ListRow';
+import { CardHeader } from '@/ui/CardHeader';
 import { ScreenTitle } from '@/ui/ScreenTitle';
 import type { AppLanguage, WeightUnit } from '@workout/domain';
 
@@ -101,7 +103,9 @@ export function SettingsScreen() {
           >
             <Ionicons name="remove" size={22} color={colors.text} />
           </Pressable>
-          <Text style={styles.restValue}>{formatDuration(settings.defaultRestSeconds)}</Text>
+          <Text maxFontSizeMultiplier={fontScaleCap.largeFigure} style={styles.restValue}>
+            {formatDuration(settings.defaultRestSeconds)}
+          </Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="+15 s"
@@ -118,30 +122,20 @@ export function SettingsScreen() {
       <View style={styles.section}>
         <SectionHeader icon="person-circle-outline" title={t('settings.account')} />
         {/* The profile is reached from the account card (spec 0027). */}
-        <Pressable
-          accessibilityRole="button"
+        <ListRow
           accessibilityLabel={t('profile.open')}
           onPress={() => router.push('/settings/profile')}
-          style={({ pressed }) => [styles.profileRow, pressed ? styles.pressed : null]}
-        >
-          <ProfileAvatar
-            photoDataUrl={profile?.photoDataUrl}
-            name={profile?.displayName ?? user?.displayName}
-            size={48}
-          />
-          <View style={styles.profileText}>
-            <Text style={styles.profileName} numberOfLines={1}>
-              {profile?.displayName ?? user?.displayName ?? ''}
-            </Text>
-            {(profile?.email ?? user?.email) ? (
-              <Text style={styles.email} numberOfLines={1}>
-                {profile?.email ?? user?.email}
-              </Text>
-            ) : null}
-            <Text style={styles.profileLink}>{t('profile.open')}</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-        </Pressable>
+          leading={
+            <ProfileAvatar
+              photoDataUrl={profile?.photoDataUrl}
+              name={profile?.displayName ?? user?.displayName}
+              size={48}
+            />
+          }
+          title={profile?.displayName ?? user?.displayName ?? ''}
+          subtitle={profile?.email ?? user?.email ?? t('profile.open')}
+          chevron
+        />
         <Button
           label={t('settings.logOut')}
           icon="log-out-outline"
@@ -162,12 +156,14 @@ function SectionHeader({
   title: string;
 }) {
   return (
-    <View style={styles.sectionHeader}>
-      <View style={styles.sectionIcon}>
-        <Ionicons name={icon} size={18} color={colors.textMuted} />
-      </View>
-      <Text style={styles.sectionTitle}>{title}</Text>
-    </View>
+    <CardHeader
+      title={title}
+      leading={
+        <View style={styles.sectionIcon}>
+          <Ionicons name={icon} size={18} color={colors.textMuted} />
+        </View>
+      }
+    />
   );
 }
 
@@ -213,11 +209,6 @@ const styles = StyleSheet.create({
     ...commonStyles.card,
     gap: spacing.md,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
   sectionIcon: {
     width: 32,
     height: 32,
@@ -226,16 +217,12 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm,
     backgroundColor: colors.surfaceRaised,
   },
-  sectionTitle: {
-    ...commonStyles.cardTitle,
-    flexShrink: 1,
-  },
   segment: {
     flexDirection: 'row',
-    gap: 4,
+    gap: spacing.xs,
     borderRadius: radii.md,
     backgroundColor: colors.background,
-    padding: 4,
+    padding: spacing.xs,
   },
   segmentItem: {
     flex: 1,
@@ -251,7 +238,7 @@ const styles = StyleSheet.create({
   segmentText: {
     color: colors.textMuted,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
   },
   segmentTextActive: {
     color: colors.onPrimary,
@@ -275,35 +262,10 @@ const styles = StyleSheet.create({
   },
   restValue: {
     ...commonStyles.figureLarge,
-    fontSize: 32,
-    lineHeight: 38,
     textAlign: 'center',
   },
   hint: {
     color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  profileRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  profileText: {
-    flex: 1,
-    gap: 2,
-  },
-  profileName: {
-    ...commonStyles.label,
-    fontSize: 16,
-  },
-  email: {
-    color: colors.textMuted,
-    fontSize: 14,
-  },
-  profileLink: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: '700',
+    ...typeScale.caption,
   },
 });

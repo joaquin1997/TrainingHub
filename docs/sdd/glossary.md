@@ -53,7 +53,13 @@ production.
 
 | Term | Meaning |
 |---|---|
-| **Primary action** | The one action a screen is for (start, finish, save), drawn as the filled lime button. At most one per screen (spec 0017). | 
+| **Primary action** | The one action a screen is for (start, finish, save), drawn as the filled lime button. At most one per screen (spec 0017). |
+| **Type scale** | The closed set of six named text styles (title, heading, body, caption, figure large, figure). No text uses a size outside it (spec 0034). |
+| **Shape scale** | The closed sets of corner radii and spacing steps. No screen uses a value outside them (spec 0034). |
+| **Haptic language** | The fixed set of haptic patterns and the events that trigger them — set done, record, rest over, destructive confirm — and nothing else (spec 0034). |
+| **Skeleton** | Neutral placeholder shapes shown while a list's first load is in flight, laid out like the content to come; never invented data (spec 0034). |
+| **Set status area** | The one fixed place on an active-workout set row that shows its state: record, done, generated warm-up, up next, or nothing (spec 0034). |
+| **Up next** | The first set of the active workout, in workout order, not yet done — in a superset, the next set of the current round. At most one at a time (spec 0034). |
 
 ## Identity and preferences
 

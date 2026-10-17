@@ -1,5 +1,7 @@
 import { Alert, Platform } from 'react-native';
 
+import { haptics } from '@/ui/haptics';
+
 interface ConfirmOptions {
   title: string;
   message: string;
@@ -9,10 +11,19 @@ interface ConfirmOptions {
 }
 
 /**
- * Asks the person to confirm an action; resolves `true` when they do.
- * `Alert.alert` does nothing on web, so web uses the browser's confirm.
+ * Asks the person to confirm an action; resolves `true` when they do. A
+ * confirmed destructive action gives the warning haptic (spec 0034 FR-4).
  */
-export function confirmAction({
+export async function confirmAction(options: ConfirmOptions): Promise<boolean> {
+  const confirmed = await ask(options);
+  if (confirmed && options.destructive) {
+    haptics.destructiveConfirm();
+  }
+  return confirmed;
+}
+
+/** `Alert.alert` does nothing on web, so web uses the browser's confirm. */
+function ask({
   title,
   message,
   confirmLabel,

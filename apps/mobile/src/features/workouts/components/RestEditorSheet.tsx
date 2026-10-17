@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { WheelPicker } from '@/features/workouts/components/WheelPicker';
 import { Button } from '@/ui/Button';
-import { colors, fonts, radii, spacing } from '@/ui/theme';
+import { colors, fonts, radii, spacing, typeScale } from '@/ui/theme';
 
 const REST_MINUTES = Array.from({ length: 11 }, (_, i) => i); // 0–10 min
 const REST_SECONDS = Array.from({ length: 12 }, (_, i) => i * 5); // 0,5,…,55
@@ -105,8 +105,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderColor: colors.border,
-    borderTopLeftRadius: radii.lg + 8,
-    borderTopRightRadius: radii.lg + 8,
+    borderTopLeftRadius: radii.lg,
+    borderTopRightRadius: radii.lg,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     gap: spacing.md,
@@ -115,17 +115,17 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: 40,
     height: 4,
-    borderRadius: 2,
+    borderRadius: radii.pill,
     backgroundColor: colors.borderStrong,
   },
   title: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 17,
+    ...typeScale.body,
   },
   message: {
     color: colors.textMuted,
-    fontSize: 13,
+    ...typeScale.caption,
   },
   wheelRow: {
     flexDirection: 'row',
@@ -136,17 +136,16 @@ const styles = StyleSheet.create({
   wheelGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
   },
   wheelUnit: {
     color: colors.textMuted,
-    fontSize: 13,
+    ...typeScale.caption,
     fontWeight: '700',
   },
   wheelColon: {
+    ...typeScale.figure,
     color: colors.text,
-    fontFamily: fonts.displayBold,
-    fontSize: 22,
   },
   actions: {
     flexDirection: 'row',

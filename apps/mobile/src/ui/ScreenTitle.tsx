@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
 
 interface ScreenTitleProps {
   title: string;
@@ -67,8 +67,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   actionLabel: {
+    ...typeScale.body,
     color: colors.primary,
     fontFamily: fonts.displayBold,
-    fontSize: 14,
   },
 });

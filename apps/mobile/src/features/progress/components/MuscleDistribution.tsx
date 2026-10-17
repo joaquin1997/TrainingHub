@@ -2,7 +2,8 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { formatWeightValue } from '@/lib/weight';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { CardHeader } from '@/ui/CardHeader';
 import type { MuscleGroupVolumePoint, WeightUnit } from '@workout/domain';
 
 interface MuscleDistributionProps {
@@ -23,7 +24,7 @@ export function MuscleDistribution({ points, unit }: MuscleDistributionProps) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{t('progress.volumeByCategory')}</Text>
+      <CardHeader title={t('progress.volumeByCategory')} />
       {points.map((point) => (
         <View key={point.group} style={styles.row}>
           <Text numberOfLines={1} style={styles.label}>
@@ -49,9 +50,6 @@ const styles = StyleSheet.create({
     ...commonStyles.card,
     gap: spacing.md,
   },
-  title: {
-    ...commonStyles.cardTitle,
-  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -60,18 +58,18 @@ const styles = StyleSheet.create({
   label: {
     width: 88,
     color: colors.text,
-    fontSize: 13,
+    ...typeScale.caption,
   },
   track: {
     flex: 1,
     height: 8,
-    borderRadius: 4,
+    borderRadius: radii.pill,
     backgroundColor: colors.surfaceRaised,
     overflow: 'hidden',
   },
   bar: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: radii.pill,
     backgroundColor: colors.textMuted,
   },
   value: {
@@ -79,7 +77,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     color: colors.textMuted,
     fontFamily: fonts.display,
-    fontSize: 12,
+    ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
 });

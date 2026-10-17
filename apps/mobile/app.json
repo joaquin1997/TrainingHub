@@ -3,10 +3,14 @@
     "name": "TrainingHub",
     "slug": "traininghub",
     "scheme": "traininghub",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#101418",
     "ios": {
       "appleTeamId": "23X2PC36Y7",
       "bundleIdentifier": "com.joaquin.traininghub",
       "supportsTablet": true,
+      "userInterfaceStyle": "dark",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true,
@@ -20,13 +24,35 @@
       }
     },
     "android": {
-      "package": "com.joaquin.traininghub"
+      "package": "com.joaquin.traininghub",
+      "userInterfaceStyle": "dark",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "monochromeImage": "./assets/adaptive-icon-monochrome.png",
+        "backgroundColor": "#101418"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-router",
       "expo-secure-store",
       "expo-localization",
       "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#101418",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#101418"
+          }
+        }
+      ],
       [
         "expo-image-picker",
         {

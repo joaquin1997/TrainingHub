@@ -22,7 +22,8 @@ import { ActionSheet } from '@/ui/ActionSheet';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, layout, radii, spacing, typeScale } from '@/ui/theme';
+import { CardHeader } from '@/ui/CardHeader';
 import type { RoutineExerciseSet, Routine } from '@workout/domain';
 
 function formatReps(set: RoutineExerciseSet, t: TFunction) {
@@ -222,25 +223,31 @@ export function RoutineDetailScreen() {
 
     return (
       <View key={exercise.id} style={styles.exercise}>
-        <View style={styles.exerciseHeader}>
-          <View style={[styles.blockBadge, inSuperset ? styles.blockBadgeSuperset : null]}>
-            <Text style={[styles.blockBadgeText, inSuperset ? styles.blockBadgeTextSuperset : null]}>
-              {label.label}
-            </Text>
-          </View>
-          <Text style={styles.exerciseTitle}>{exercise.exerciseName}</Text>
-          {/* Spec 0033 FR-7: kept in the routine, but no longer in the catalog. */}
-          {exercise.exerciseDeleted ? (
-            <Chip icon="trash-outline" label={t('exerciseDeletion.deleted')} size="sm" />
-          ) : null}
-          {exercise.restSeconds !== undefined ? (
-            <Chip
-              icon="timer-outline"
-              label={formatDuration(exercise.restSeconds)}
-              size="sm"
-            />
-          ) : null}
-        </View>
+        <CardHeader
+          title={exercise.exerciseName}
+          leading={
+            <View style={[styles.blockBadge, inSuperset ? styles.blockBadgeSuperset : null]}>
+              <Text style={[styles.blockBadgeText, inSuperset ? styles.blockBadgeTextSuperset : null]}>
+                {label.label}
+              </Text>
+            </View>
+          }
+          trailing={
+            <View style={styles.exerciseChips}>
+              {/* Spec 0033 FR-7: kept in the routine, but no longer in the catalog. */}
+              {exercise.exerciseDeleted ? (
+                <Chip icon="trash-outline" label={t('exerciseDeletion.deleted')} size="sm" />
+              ) : null}
+              {exercise.restSeconds !== undefined ? (
+                <Chip
+                  icon="timer-outline"
+                  label={formatDuration(exercise.restSeconds)}
+                  size="sm"
+                />
+              ) : null}
+            </View>
+          }
+        />
         {sets.length === 0 ? (
           <Text style={[styles.meta, inSuperset ? styles.setTableIndented : null]}>
             {t('routineDetail.noTargetSets')}
@@ -393,9 +400,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   title: {
-    ...commonStyles.heading,
-    fontSize: 28,
-    lineHeight: 34,
+    ...commonStyles.title,
   },
   description: {
     ...commonStyles.body,
@@ -421,12 +426,12 @@ const styles = StyleSheet.create({
   },
   lockText: {
     flex: 1,
-    gap: 2,
+    gap: spacing.xxs,
   },
   lockTitle: {
     color: colors.primary,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
   },
   blockList: {
     gap: spacing.md,
@@ -444,7 +449,7 @@ const styles = StyleSheet.create({
     top: 14,
     bottom: 14,
     width: 2,
-    borderRadius: 1,
+    borderRadius: radii.pill,
     backgroundColor: colors.borderStrong,
   },
   supersetMembers: {
@@ -453,10 +458,10 @@ const styles = StyleSheet.create({
   exercise: {
     gap: spacing.sm,
   },
-  exerciseHeader: {
+  exerciseChips: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   blockBadge: {
     minWidth: 28,
@@ -465,10 +470,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radii.sm,
     backgroundColor: colors.surfaceRaised,
-    paddingHorizontal: 4,
+    paddingHorizontal: spacing.xs,
   },
   blockBadgeSuperset: {
-    borderRadius: 14,
+    borderRadius: radii.round,
     backgroundColor: colors.background,
     borderWidth: 1.5,
     borderColor: colors.textMuted,
@@ -476,22 +481,17 @@ const styles = StyleSheet.create({
   blockBadgeText: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 13,
+    ...typeScale.caption,
   },
   blockBadgeTextSuperset: {
     color: colors.text,
-    fontSize: 12,
-  },
-  exerciseTitle: {
-    ...commonStyles.cardTitle,
-    flex: 1,
-    paddingTop: 2,
+    ...typeScale.caption,
   },
   setTable: {
     gap: spacing.xs,
   },
   setTableIndented: {
-    marginLeft: 36,
+    marginLeft: layout.setMarker,
   },
   setHeaderRow: {
     flexDirection: 'row',
@@ -499,8 +499,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   columnLabel: {
-    ...commonStyles.sectionLabel,
-    fontSize: 11,
+    ...commonStyles.columnLabel,
   },
   columnRight: {
     textAlign: 'right',
@@ -517,22 +516,20 @@ const styles = StyleSheet.create({
   setNumber: {
     color: colors.textMuted,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
     fontVariant: ['tabular-nums'],
   },
   setTarget: {
     textAlign: 'right',
   },
   setFigure: {
+    ...typeScale.figure,
     color: colors.text,
-    fontFamily: fonts.displayBold,
-    fontSize: 18,
-    fontVariant: ['tabular-nums'],
   },
   setUnit: {
     color: colors.textMuted,
     fontFamily: fonts.display,
-    fontSize: 13,
+    ...typeScale.caption,
   },
   actions: {
     gap: spacing.md,

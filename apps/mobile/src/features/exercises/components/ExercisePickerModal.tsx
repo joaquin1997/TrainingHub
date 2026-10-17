@@ -22,7 +22,8 @@ import {
 } from '@/features/exercises/utils/exerciseAvailability';
 import { Button } from '@/ui/Button';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { ListRow } from '@/ui/ListRow';
 import type { Exercise } from '@workout/domain';
 
 const MAX_VISIBLE = 50;
@@ -233,6 +234,7 @@ export function ExercisePickerModal({
             <View style={styles.search}>
               <Ionicons name="search" size={18} color={colors.textMuted} />
               <TextInput
+                keyboardAppearance="dark"
                 value={query}
                 onChangeText={setQuery}
                 placeholder={t('exercises.searchPlaceholder')}
@@ -275,24 +277,18 @@ export function ExercisePickerModal({
                 ].filter(Boolean);
 
                 return (
-                  <Pressable
+                  <ListRow
                     key={exercise.id}
-                    accessibilityRole="button"
+                    variant="card"
+                    title={exercise.name}
+                    subtitle={details.length > 0 ? details.join(' · ') : undefined}
+                    leading={<ExerciseThumb imageUrl={exercise.imageUrl} />}
+                    trailing={
+                      <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+                    }
                     onPress={() => void choose(exercise)}
                     disabled={checkingId !== undefined}
-                    style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
-                  >
-                    <ExerciseThumb imageUrl={exercise.imageUrl} />
-                    <View style={styles.rowText}>
-                      <Text style={styles.rowTitle}>{exercise.name}</Text>
-                      {details.length > 0 ? (
-                        <Text style={styles.meta} numberOfLines={1}>
-                          {details.join(' · ')}
-                        </Text>
-                      ) : null}
-                    </View>
-                    <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
-                  </Pressable>
+                  />
                 );
               })}
               {filtered.length > MAX_VISIBLE ? (
@@ -330,7 +326,7 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 22,
+    borderRadius: radii.round,
     backgroundColor: colors.surfaceRaised,
   },
   search: {
@@ -345,24 +341,21 @@ const styles = StyleSheet.create({
     minWidth: 0,
     minHeight: 46,
     color: colors.text,
-    fontSize: 16,
+    ...typeScale.body,
   },
   confirm: {
     gap: spacing.md,
   },
   confirmTitle: {
+    ...typeScale.heading,
     color: colors.text,
-    fontFamily: fonts.displayBold,
-    fontSize: 18,
-    lineHeight: 24,
   },
   centered: {
     alignSelf: 'center',
   },
   notice: {
     color: colors.danger,
-    fontSize: 14,
-    lineHeight: 20,
+    ...typeScale.caption,
   },
   createRow: {
     minHeight: 44,
@@ -375,35 +368,18 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.primary,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
   },
   list: {
     gap: spacing.sm,
     paddingBottom: spacing.xxl,
   },
-  row: {
-    ...commonStyles.card,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.md,
-  },
   rowPressed: {
     ...commonStyles.pressed,
   },
-  rowText: {
-    flex: 1,
-    gap: 2,
-  },
-  rowTitle: {
-    color: colors.text,
-    fontFamily: fonts.displayBold,
-    fontSize: 16,
-    lineHeight: 21,
-  },
   meta: {
     color: colors.textMuted,
-    fontSize: 13,
+    ...typeScale.caption,
   },
   more: {
     ...commonStyles.meta,

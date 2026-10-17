@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { colors } from '@/ui/theme';
+import { colors, radii } from '@/ui/theme';
 
 interface WarmUpActionButtonProps {
   /** Add (with a preview) or remove the generated warm-up sets (spec 0031). */
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     right: 4,
     width: 13,
     height: 13,
-    borderRadius: 7,
+    borderRadius: radii.round,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surfaceRaised,

@@ -7,7 +7,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
 
 /**
  * `primary` is the screen's one primary action (spec 0017 FR-6); `ghost` is a
@@ -27,6 +27,8 @@ interface ButtonProps {
   /** Stretch to the container width instead of hugging the label. */
   fullWidth?: boolean;
   style?: ViewStyle;
+  /** Caps the label's growth with the system text size (fixed bars, spec 0034 FR-18). */
+  maxFontScale?: number;
 }
 
 const labelColor: Record<ButtonVariant, string> = {
@@ -50,6 +52,7 @@ export function Button({
   disabled = false,
   fullWidth = false,
   style,
+  maxFontScale,
 }: ButtonProps) {
   const color = destructive ? colors.danger : labelColor[variant];
 
@@ -69,7 +72,9 @@ export function Button({
       ]}
     >
       {icon ? <Ionicons name={icon} size={18} color={color} /> : null}
-      <Text style={[styles.label, { color }]}>{label}</Text>
+      <Text maxFontSizeMultiplier={maxFontScale} style={[styles.label, { color }]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -108,8 +113,8 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   label: {
+    ...typeScale.body,
     fontFamily: fonts.displayBold,
-    fontSize: 16,
     flexShrink: 1,
     textAlign: 'center',
   },

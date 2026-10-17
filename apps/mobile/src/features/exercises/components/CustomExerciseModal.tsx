@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
   },
   sheet: {
     maxHeight: '85%',
-    borderRadius: radii.lg + 4,
+    borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,

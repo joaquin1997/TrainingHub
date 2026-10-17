@@ -9,7 +9,7 @@ import { useRestRemaining } from '@/features/workouts/restTimer/useRestRemaining
 import type { WorkoutSessionDraft } from '@/features/workouts/state/workoutDraftStore';
 import { formatDuration } from '@/lib/format';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
-import { colors, commonStyles, fonts, spacing } from '@/ui/theme';
+import { colors, commonStyles, fontScaleCap, fonts, radii, spacing, typeScale } from '@/ui/theme';
 
 interface WorkoutBarProps {
   /** Pad for the home indicator; only where no tab bar sits below the bar. */
@@ -67,16 +67,16 @@ function ActiveWorkoutBar({
     >
       <View style={[styles.dot, isPaused ? styles.dotPaused : null]} />
       <View style={styles.text}>
-        <Text style={[styles.label, isResting ? styles.labelResting : null]}>
+        <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn} style={[styles.label, isResting ? styles.labelResting : null]}>
           {isResting
             ? t('workouts.rest')
             : t(isPaused ? 'routines.pausedLabel' : 'routines.activeLabel')}
         </Text>
-        <Text style={styles.name} numberOfLines={1}>
+        <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn} style={styles.name} numberOfLines={1}>
           {workout.routineName}
         </Text>
       </View>
-      <Text
+      <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn}
         style={[
           styles.clock,
           isPaused ? styles.clockPaused : null,
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   dot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: radii.round,
     backgroundColor: colors.primary,
   },
   dotPaused: {
@@ -115,21 +115,18 @@ const styles = StyleSheet.create({
   },
   text: {
     flex: 1,
-    gap: 1,
+    gap: spacing.xxs,
   },
   label: {
     ...commonStyles.sectionLabel,
-    fontSize: 10,
   },
   name: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
   },
   clock: {
     ...commonStyles.figure,
-    fontSize: 18,
-    lineHeight: 22,
     color: colors.primary,
   },
   clockPaused: {

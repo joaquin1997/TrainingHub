@@ -31,7 +31,7 @@ import { confirmAction } from '@/lib/confirmAction';
 import { formatDayHeading } from '@/lib/format';
 import { Button } from '@/ui/Button';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, radii, spacing, typeScale } from '@/ui/theme';
 
 const COMPOSITION = MEASUREMENT_KINDS.filter((kind) => kind.dimension !== 'length');
 const CIRCUMFERENCES = MEASUREMENT_KINDS.filter((kind) => kind.dimension === 'length');
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
   dateText: {
     flex: 1,
     alignItems: 'center',
-    gap: 2,
+    gap: spacing.xxs,
   },
   dayButton: {
     width: 44,
@@ -286,6 +286,5 @@ const styles = StyleSheet.create({
   },
   hint: {
     ...commonStyles.meta,
-    fontSize: 13,
   },
 });

@@ -415,6 +415,12 @@ export interface ExerciseProgressPoint {
   bestDurationSeconds?: number;
   /** Longest working set, in metres (spec 0021). */
   bestDistanceMeters?: number;
+  /**
+   * This point's workout beat at least one of the exercise's records (spec
+   * 0023 record types; charted as a highlighted point, spec 0034 FR-22).
+   * Present only when true; absent from older servers.
+   */
+  isRecord?: true;
 }
 
 /**

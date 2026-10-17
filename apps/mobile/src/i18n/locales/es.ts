@@ -93,11 +93,11 @@ export const es: TranslationCatalog = {
     repsUpTo: 'hasta {{max}} reps',
     repsNone: '- reps',
     repsExact: '{{reps}} reps',
-    colTarget: 'OBJETIVO',
+    colTarget: 'Objetivo',
   },
   routineForm: {
-    colMin: 'MÍN',
-    colMax: 'MÁX',
+    colMin: 'Mín',
+    colMax: 'Máx',
     workoutInProgress:
       'Esta rutina tiene un entrenamiento en curso. Termínalo o descártalo antes de editar.',
     backToRoutine: 'Volver a la rutina',
@@ -301,6 +301,7 @@ export const es: TranslationCatalog = {
     emptyMatchesTitle: 'Sin coincidencias',
     emptyFavoritesSubtitle: 'Toca la estrella de un ejercicio para guardarlo aquí.',
     emptyMatchesSubtitle: 'Prueba otra búsqueda o borra los filtros.',
+    clearFilters: 'Borrar filtros',
     loadMore: 'Cargar más (quedan {{count}})',
     missingId: 'Falta el id del ejercicio.',
     detailLoadError: 'No se ha podido cargar el ejercicio.',
@@ -353,6 +354,24 @@ export const es: TranslationCatalog = {
       volume: 'Volumen',
       notes: 'Notas',
       records: 'Récords',
+      // La imagen para compartir (spec 0034 FR-25).
+      cardFooter: 'Registrado con TrainingHub',
+      moreRecords: '+{{count}} más',
+      sheetTitle: 'Compartir entrenamiento',
+      image: 'Compartir imagen',
+      asText: 'Compartir como texto',
+      imageFailed: 'No se ha podido crear la imagen; compártelo como texto.',
+    },
+    // Volumen frente a la última vez en el resumen (spec 0034 FR-24).
+    comparison: {
+      up: '{{delta}} más que el {{date}}',
+      down: '{{delta}} menos que el {{date}}',
+      same: 'Igual que el {{date}}',
+      chipUp: '+{{delta}}',
+      chipDown: '−{{delta}}',
+      chipSame: 'Igual',
+      captionUp: '+{{delta}} vs. {{date}}',
+      captionDown: '−{{delta}} vs. {{date}}',
     },
     setType: {
       warmup: 'Calentamiento',
@@ -387,12 +406,12 @@ export const es: TranslationCatalog = {
     watchWaiting: 'Empieza un entrenamiento en el iPhone',
     min: 'min',
     sec: 'seg',
-    colSet: 'SERIE',
-    colPrev: 'ANTERIOR',
-    colReps: 'REPS',
+    colSet: 'Serie',
+    colPrev: 'Anterior',
+    colReps: 'Reps',
     // Series de tiempo y distancia (spec 0021).
-    colTime: 'TIEMPO',
-    colDistance: 'DIST',
+    colTime: 'Tiempo',
+    colDistance: 'Dist',
     // Izquierda y derecha de un ejercicio unilateral (spec 0022); también en "10 I / 8 D".
     colLeft: 'I',
     colRight: 'D',
@@ -432,6 +451,7 @@ export const es: TranslationCatalog = {
     loadError: 'No se han podido cargar los entrenamientos.',
     emptyTitle: 'Aún no hay entrenamientos',
     emptySubtitle: 'Termina un entrenamiento y aparecerá aquí.',
+    emptyAction: 'Empezar desde una rutina',
     noExercises: 'Sin ejercicios',
     setsCount: '{{count}} series',
     missingId: 'Falta el id del entrenamiento.',
@@ -444,6 +464,23 @@ export const es: TranslationCatalog = {
     // Series de tiempo y distancia (spec 0021).
     setTimeLabel: 'Tiempo en series',
     distanceLabel: 'Distancia',
+    // El área de estado de una serie y su segunda línea (spec 0034 FR-19).
+    setStatus: {
+      last: 'Última vez {{value}}',
+      record: 'Hecha, récord',
+      done: 'Hecha',
+      generatedWarmup: 'Calentamiento generado, sin hacer',
+      upNext: 'Siguiente',
+      none: 'Sin hacer',
+    },
+    // La cabecera compacta al desplazar el entrenamiento (spec 0034 FR-21).
+    stickyHeader: {
+      upNext: 'Siguiente',
+      set: 'Serie {{number}}',
+      warmup: 'Calentamiento',
+      allDone: 'Todas las series hechas',
+      scrollHint: 'Muestra la serie en la lista',
+    },
   },
   progress: {
     est1rmShort: '1RM est.',
@@ -460,6 +497,7 @@ export const es: TranslationCatalog = {
     loading: 'Cargando progreso…',
     emptyTitle: 'Aún no hay progreso',
     emptySubtitle: 'Termina un entrenamiento para empezar a seguir tus levantamientos.',
+    emptyAction: 'Empezar desde una rutina',
     pr: 'PR',
     weeklyVolume: 'Volumen semanal',
     estimated1rm: '1RM estimado',
@@ -478,6 +516,7 @@ export const es: TranslationCatalog = {
     records: {
       title: 'Récords',
       beaten: 'Récords batidos',
+      today: 'Récords de hoy',
       count_one: '{{count}} récord',
       count_other: '{{count}} récords',
       heaviestWeight: 'Peso máximo',
@@ -491,6 +530,14 @@ export const es: TranslationCatalog = {
       liveMore: '+{{count}}',
       repsValue_one: '{{count}} rep',
       repsValue_other: '{{count}} reps',
+    },
+    chart: {
+      // A selected point on a progress chart (spec 0034 FR-22).
+      readout: '{{date}} · {{value}}',
+      record: 'Récord',
+      // What a screen reader says for each point.
+      pointLabel: '{{date}}, {{value}}',
+      pointLabelRecord: '{{date}}, {{value}}, récord',
     },
   },
 };

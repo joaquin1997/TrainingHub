@@ -7,7 +7,7 @@ import type { WeightUnit } from '@workout/domain';
 
 import type { ApproachSet } from '@/lib/approachSets';
 import { Button } from '@/ui/Button';
-import { colors, fonts, radii, spacing } from '@/ui/theme';
+import { colors, fonts, radii, spacing, typeScale } from '@/ui/theme';
 
 export type ApproachSetsPreviewContent = {
   exerciseName: string;
@@ -112,8 +112,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderColor: colors.border,
-    borderTopLeftRadius: radii.lg + 8,
-    borderTopRightRadius: radii.lg + 8,
+    borderTopLeftRadius: radii.lg,
+    borderTopRightRadius: radii.lg,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     gap: spacing.md,
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: 40,
     height: 4,
-    borderRadius: 2,
+    borderRadius: radii.pill,
     backgroundColor: colors.borderStrong,
   },
   titleRow: {
@@ -134,11 +134,11 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 17,
+    ...typeScale.body,
   },
   message: {
     color: colors.textMuted,
-    fontSize: 13,
+    ...typeScale.caption,
   },
   list: {
     gap: spacing.xs,
@@ -152,13 +152,13 @@ const styles = StyleSheet.create({
     width: 24,
     color: colors.textMuted,
     fontFamily: fonts.displayBold,
-    fontSize: 14,
+    ...typeScale.caption,
     textAlign: 'center',
   },
   setText: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 16,
+    ...typeScale.body,
     fontVariant: ['tabular-nums'],
   },
   actions: {
