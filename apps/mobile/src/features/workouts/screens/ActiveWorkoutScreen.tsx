@@ -65,7 +65,8 @@ import {
   resolveActiveWorkoutEntry,
   resolveSwitchOutcome,
 } from '@/features/workouts/utils/activeWorkoutEntry';
-import { parseWorkoutAction } from '@/features/workouts/utils/workoutAction';
+import { discardMessage } from '@/features/workouts/utils/discardMessage';
+import { parseWorkoutAction, resolveDiscardLink } from '@/features/workouts/utils/workoutAction';
 import { exerciseBlockLabels } from '@/features/routines/utils/exerciseBlockLabels';
 import { SupersetHeader } from '@/features/routines/components/SupersetHeader';
 import { Button } from '@/ui/Button';
@@ -74,6 +75,7 @@ import { StateView } from '@/ui/StateView';
 import { confirmAction } from '@/lib/confirmAction';
 import { formatDuration } from '@/lib/format';
 import { isPermanentRejection } from '@/lib/http';
+import { notify } from '@/lib/notify';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { colors, commonStyles, fonts, fontScaleCap, layout, radii, spacing, typeScale } from '@/ui/theme';
 import { tickFeedback } from '@/features/workouts/liveRecords/tickFeedback';
@@ -115,11 +117,13 @@ function restChipLabel(seconds: number, t: TFunction) {
 
 export function ActiveWorkoutScreen() {
   const { t } = useTranslation();
-  const { routineId, action, nextRoutineId } = useLocalSearchParams<{
+  const { routineId, action, nextRoutineId, workoutId } = useLocalSearchParams<{
     routineId?: string;
     action?: string;
     /** With `action=switch`: the routine to start after this one (spec 0019). */
     nextRoutineId?: string;
+    /** With `action=discard`: the workout the lock-screen status was for (spec 0035). */
+    workoutId?: string;
   }>();
   const linkAction = parseWorkoutAction(action);
   // Set below, after the early returns; lets the link effects reach them.
@@ -239,6 +243,54 @@ export function ActiveWorkoutScreen() {
     });
     // Runs once per link; the draft is read through the ref at confirm time.
   }, [linkAction, status, workoutDraft === null]);
+
+  // Discarding loses every logged set, so it always asks first, naming the
+  // sets done (spec 0035 FR-20). From a link it asks only for the workout the
+  // link names, and confirming checks it is still the one in progress (EF-9).
+  const discardWithConfirmation = async (clientId: string) => {
+    const draft = getActiveWorkout();
+    if (!draft || draft.clientId !== clientId) {
+      notify(t('workouts.alreadyEnded'));
+      return;
+    }
+    const confirmed = await confirmAction({
+      title: t('workouts.discardTitle'),
+      message: discardMessage(draft, t),
+      confirmLabel: t('workouts.discardWorkout'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (!confirmed) {
+      return;
+    }
+    if (getActiveWorkout()?.clientId !== clientId) {
+      notify(t('workouts.alreadyEnded'));
+      return;
+    }
+    clearActiveWorkout();
+    router.replace('/routines');
+  };
+
+  // "Discard" on the lock-screen status opens this screen with action=discard
+  // and the workout's identity: confirm in the app, never discard from the
+  // link itself (FR-20). A stale link touches nothing (EF-6).
+  useEffect(() => {
+    if (linkAction !== 'discard' || status === 'loading') {
+      return;
+    }
+
+    router.setParams({ action: undefined, workoutId: undefined });
+    const draft = getActiveWorkout();
+    if (resolveDiscardLink(draft?.clientId, workoutId) === 'ended' || !draft) {
+      notify(t('workouts.alreadyEnded'));
+      if (!draft) {
+        router.replace('/routines');
+      }
+      return;
+    }
+    void discardWithConfirmation(draft.clientId);
+    // Runs once per link, like the finish link above.
+  }, [linkAction, status]);
 
   // "Finish and start" from a routine, already confirmed there (spec 0019).
   useEffect(() => {
@@ -695,22 +747,7 @@ export function ActiveWorkoutScreen() {
     setActiveWorkout(nextDraft);
   };
 
-  // Discarding loses every logged set, so it always asks first.
-  const handleDiscard = async () => {
-    const confirmed = await confirmAction({
-      title: t('workouts.discardTitle'),
-      message: t('workouts.discardConfirm'),
-      confirmLabel: t('workouts.discardWorkout'),
-      cancelLabel: t('common.cancel'),
-      destructive: true,
-    });
-    if (!confirmed) {
-      return;
-    }
-
-    clearActiveWorkout();
-    router.replace('/routines');
-  };
+  const handleDiscard = () => discardWithConfirmation(workoutDraft.clientId);
 
   const restEditorExercise = restEditorFor
     ? workoutDraft.exercises.find((exercise) => exercise.id === restEditorFor)

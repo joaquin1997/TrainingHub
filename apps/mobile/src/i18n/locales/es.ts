@@ -458,7 +458,6 @@ export const es: TranslationCatalog = {
     resume: 'Reanudar',
     paused: 'En pausa',
     discardTitle: '¿Descartar este entrenamiento?',
-    discardConfirm: 'Se perderá todo lo registrado en él. No se puede deshacer.',
     saveRefusedHint: 'El servidor no acepta este entrenamiento, así que reintentar no servirá. Puedes corregirlo arriba o descartarlo.',
     noCompleted: 'Aún no hay ningún entrenamiento completado en el flujo local.',
     savedToHistory: 'Guardado en el historial',

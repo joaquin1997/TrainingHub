@@ -455,7 +455,6 @@ export const en = {
     resume: 'Resume',
     paused: 'Paused',
     discardTitle: 'Discard this workout?',
-    discardConfirm: 'Everything logged in it will be lost. This can\'t be undone.',
     saveRefusedHint: 'The server won\'t accept this workout, so retrying won\'t help. You can fix it above or discard it.',
     noCompleted: 'No completed workout is stored in the local mock flow yet.',
     savedToHistory: 'Saved to history',
