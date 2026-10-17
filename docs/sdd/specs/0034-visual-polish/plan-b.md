@@ -612,6 +612,51 @@ Filled in by each workstream as it lands (own subsection).
 
 ### B1
 
+- **Figure large is 28/34, not 30/36.** Measured on the web export at
+  375 pt: a two-column row leaves each value 78 pt; "102.5" needs 81 pt at
+  30 pt and 75 pt at 28 pt. The clock, the Settings rest stepper and the
+  measurement "latest" figure follow; the clock now shares its size with the
+  set values (still the largest figure in its card).
+- **Compact rows** (L/R + weight, weight + time, distance + time) keep Figure
+  large, with a 4 pt gap between inputs instead of 8 (each input has its own
+  edge). Measured fits at 375 pt: "1:30" / "7:45" in the time column, two
+  digits of reps per side. Does **not** fit, and scrolls inside its field:
+  a 4–5 character weight beside L/R ("32.5", "102.5" in 51 pt), "102.5"
+  beside a time (64 pt), a 4-digit distance (64 pt), and "102.5" in a
+  superset-indented two-column row (60 pt). The pre-B1 row already clipped
+  "102.5" at 20 pt (47 pt column). `TODO(sdd): decide whether compact and
+  indented rows may drop to Figure (20 pt) for values wider than their
+  column — needs an owner call on FR-19 ("in Figure large") for those rows,
+  informed by the device check (B1.6).`
+- **Row geometry**: marker 32 × 32 (`hitSlop` 6 → 44 × 44) in a 44 pt slot;
+  inputs 44 pt tall with no inner padding; status area 44 × 44; remove
+  32 × 44 with `hitSlop` `{ left: 4, right: 8 }` → 44 × 44; timer 32
+  (`hitSlop` 6 → 44). The row has a hairline `border` outline; line 2 sits
+  under the inputs (marker on the left of both lines), Caption, unclamped.
+  `layout.setMarker` (36) is unchanged: it is the superset indent and the
+  round-tag slot, not the marker any more.
+- **Status area**: `SetStatusArea` owns the done fade (`useDoneTransition`,
+  moved from the row; the row's tint uses it too) and the record pop
+  (`usePop`, extracted from `RecordBadge` — the badge's behaviour is
+  unchanged, the hook also replays when `pop` turns true again). An untick
+  of a record set fades out the orange fill, not a green one. The
+  accessibility label of a record reads "Done, record: Heaviest weight, …"
+  (every record beaten).
+- **Line 2** uses `previousSetLabel`, now spaced ("100 × 8", "500m · 1:45");
+  the record part is `recordBadgeLabel` in `accent`, bold.
+- **Sticky header**: threshold = the header card's bottom in the list
+  (`onLayout` y + height + the list's top padding); `onScroll` at 16 ms
+  flips one boolean only on crossing. Clock and round chip stack on the
+  left; the up-next button (≥ 44 pt, chevron) holds the exercise name on one
+  line and "Up next · 2B · Set 2 · 60 kg × 8" (non-breaking inside the
+  target, so a wrap never splits "60 kg"). Hidden, it is `pointerEvents`
+  none and out of the accessibility tree. `RecordNotice` takes a `top` prop
+  (header height + 12 while the header shows).
+- i18n: `workouts.setStatus` (`last`, five state labels) and
+  `workouts.stickyHeader` (`upNext`, `set`, `warmup`, `allDone`,
+  `scrollHint`), en and es, at the end of `workouts`. `workouts.colPrev` is
+  unused now and left in place.
+
 ### B2
 
 ### B3
