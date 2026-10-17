@@ -1,7 +1,7 @@
 ---
 id: 0037
 title: First run and record celebration
-status: ready
+status: in-progress
 roadmap: docs/roadmap/08-integrations-and-platform.md#settings (Onboarding); docs/roadmap/04-progress-and-prs.md
 created: 2026-10-18
 decided: 2026-10-18
