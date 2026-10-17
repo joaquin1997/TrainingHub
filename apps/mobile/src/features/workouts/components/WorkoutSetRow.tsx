@@ -376,7 +376,7 @@ export function WorkoutSetRow({
         hitSlop={4}
         style={[styles.checkBox, set.done ? styles.checkBoxDone : null]}
       >
-        <Ionicons name="checkmark" size={20} color={set.done ? colors.onPrimary : colors.borderStrong} />
+        <Ionicons name="checkmark" size={20} color={set.done ? colors.onPrimary : colors.controlBorder} />
       </Pressable>
       <Pressable
         accessibilityRole="button"
@@ -549,7 +549,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radii.sm,
     borderWidth: 1.5,
-    borderColor: colors.borderStrong,
+    // An undone box must stand out from its fill at 3:1 (spec 0034 FR-16).
+    borderColor: colors.controlBorder,
     backgroundColor: colors.surfaceRaised,
   },
   checkBoxDone: {

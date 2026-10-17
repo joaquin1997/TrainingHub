@@ -31,9 +31,12 @@ export const colors = {
   dangerSoft: 'rgba(255, 107, 107, 0.14)',
   text: '#F7FAF2',
   textMuted: '#A7B0BE',
-  textSubtle: '#6E7B8E',
+  /** Placeholders, captions, chevrons: ≥ 4.5:1 on every surface and tint (0034 FR-16). */
+  textSubtle: '#8E9BAE',
   border: '#2C3543',
   borderStrong: '#3D4A5C',
+  /** Edge of a control whose fill does not set it apart, e.g. the undone done box (≥ 3:1). */
+  controlBorder: '#6C7A8F',
   overlay: 'rgba(4, 8, 13, 0.76)',
   /** Behind catalog images, which are line drawings on white. */
   imageBackdrop: '#FFFFFF',
