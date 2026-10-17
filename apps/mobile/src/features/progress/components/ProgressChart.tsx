@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import type { ChartSeries } from '@/features/progress/utils/chartData';
+import { barHeightRatio, type ChartSeries } from '@/features/progress/utils/chartData';
 import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
 import { CardHeader } from '@/ui/CardHeader';
 
@@ -29,7 +29,7 @@ export function ProgressChart({
   formatLabel,
   formatValue = roundValue,
 }: ProgressChartProps) {
-  if (series.bars.length === 0) {
+  if (series.points.length === 0) {
     return null;
   }
 
@@ -46,9 +46,9 @@ export function ProgressChart({
         }
       />
       <View style={styles.chart}>
-        {series.bars.map((bar, index) => {
+        {series.points.map((bar, index) => {
           // The latest bar is the one that matters; the rest give context.
-          const isLatest = index === series.bars.length - 1;
+          const isLatest = index === series.points.length - 1;
           return (
             <View key={`${bar.date}-${index}`} style={styles.column}>
               <Text numberOfLines={1} style={[styles.value, isLatest ? styles.valueLatest : null]}>
@@ -59,7 +59,7 @@ export function ProgressChart({
                   style={[
                     styles.bar,
                     isLatest ? styles.barLatest : null,
-                    { height: Math.max(2, bar.heightRatio * CHART_AREA_HEIGHT) },
+                    { height: Math.max(2, barHeightRatio(bar.value, series.min, series.max) * CHART_AREA_HEIGHT) },
                   ]}
                 />
               </View>

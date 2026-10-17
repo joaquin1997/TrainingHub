@@ -124,7 +124,7 @@ export function ProgressOverviewScreen() {
       ) : (
         <>
           <FrequencySummary summary={frequency} />
-          {weeklyVolumeSeries.bars.length > 0 ? (
+          {weeklyVolumeSeries.points.length > 0 ? (
             <ProgressChart
               title={t('progress.weeklyVolume')}
               unit={unit}

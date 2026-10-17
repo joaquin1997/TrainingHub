@@ -182,14 +182,14 @@ export function ExerciseProgressDetailScreen() {
           unit={unit}
         />
       </View>
-      {oneRepMaxSeries.bars.length > 0 ? (
+      {oneRepMaxSeries.points.length > 0 ? (
         <ProgressChart
           title={t('progress.estimated1rm')}
           unit={unit}
           series={oneRepMaxSeries}
           formatLabel={formatAxisDate}
         />
-      ) : volumeSeries.bars.length > 0 ? (
+      ) : volumeSeries.points.length > 0 ? (
         <ProgressChart
           title={t('progress.volumePerSession')}
           unit={unit}
