@@ -1,6 +1,7 @@
 import type {
   CreateExerciseInput,
   Exercise,
+  ExerciseDeletionImpact,
   MuscleGroup,
   SetExerciseUnilateralInput,
   SetProfilePhotoInput,
@@ -40,6 +41,18 @@ export const exercisesClient = {
   },
   removePhoto(exerciseId: string) {
     return apiRequest<void>(`/exercises/${exerciseId}/photo`, { method: 'DELETE' });
+  },
+  /** What deleting the creator's custom exercise touches (spec 0033 FR-3). */
+  getDeletionImpact(exerciseId: string) {
+    return apiRequest<ExerciseDeletionImpact>(`/exercises/${exerciseId}/deletion-impact`);
+  },
+  /**
+   * Deletes the creator's custom exercise (spec 0033). `inActiveWorkout` keeps
+   * it for the workout in progress on this device even if it was never saved.
+   */
+  remove(exerciseId: string, options: { inActiveWorkout: boolean }) {
+    const query = options.inActiveWorkout ? '?inActiveWorkout=true' : '';
+    return apiRequest<void>(`/exercises/${exerciseId}${query}`, { method: 'DELETE' });
   },
   listFavorites() {
     return apiRequest<string[]>('/exercises/favorites');

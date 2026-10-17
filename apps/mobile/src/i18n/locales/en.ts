@@ -143,6 +143,22 @@ export const en = {
     done: 'Done',
     notDone: 'Not done',
   },
+  // Deleting a custom exercise (spec 0033).
+  exerciseDeletion: {
+    action: 'Delete exercise',
+    confirmTitle: 'Delete “{{name}}”?',
+    confirm: 'Delete',
+    unused: 'It is not used in any routine or workout.',
+    inRoutines_one: 'In {{count}} routine: it stays there, marked as deleted.',
+    inRoutines_other: 'In {{count}} routines: it stays there, marked as deleted.',
+    inWorkouts_one: 'In {{count}} saved workout: your history keeps it.',
+    inWorkouts_other: 'In {{count}} saved workouts: your history keeps it.',
+    inActiveWorkout: 'It is in your workout in progress: its sets stay and are saved.',
+    disappears: 'It disappears from your exercises and pickers, with its photo.',
+    impactError: 'Could not check where this exercise is used. Nothing was deleted. Try again.',
+    deleteError: 'The exercise could not be deleted. Check your connection and try again.',
+    deleted: 'Deleted exercise',
+  },
   customExercise: {
     title: 'Create Custom Exercise',
     namePlaceholder: 'Exercise name',

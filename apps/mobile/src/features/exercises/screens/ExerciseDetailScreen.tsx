@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
+import { DeleteExerciseButton } from '@/features/exercises/components/DeleteExerciseButton';
 import { ExerciseImage } from '@/features/exercises/components/ExerciseImage';
 import { UnilateralSwitch } from '@/features/exercises/components/UnilateralSwitch';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -266,6 +267,15 @@ export function ExerciseDetailScreen() {
             onPress={() => router.push(`/progress/exercises/${exercise.id}`)}
           />
         </View>
+      ) : null}
+      {/* Spec 0033: only the creator's own custom exercise can be deleted (AC-7). */}
+      {!exercise.isSystemDefined && exercise.createdByUserId === user?.id ? (
+        <DeleteExerciseButton
+          exercise={exercise}
+          onDeleted={() =>
+            router.canGoBack() ? router.back() : router.replace('/exercises')
+          }
+        />
       ) : null}
     </ScrollView>
   );

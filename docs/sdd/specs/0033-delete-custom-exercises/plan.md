@@ -119,9 +119,12 @@ unsaveable (spec 0014 rejects unknown exercises permanently).
 - `features/exercises/utils/exerciseDeletion.ts` (+ test):
   `describeDeletionImpact(impact, inActiveWorkout)` → the i18n keys and counts
   of the confirmation lines (unused / routines / workouts / active workout /
-  history kept); `isAlreadyDeleted(error)` (404).
-- `ExerciseDetailScreen` — a ghost destructive "Delete exercise" button at the
-  bottom, creator only (same condition as the photo button), so catalog and
+  what disappears); `isInActiveWorkout(draft, id)`. "Already deleted" reuses
+  0015's `isExerciseGone` (404).
+- `DeleteExerciseButton` (new component, so `ExerciseDetailScreen` — also
+  edited by 0030 — only gains one import and one element) — a ghost
+  destructive "Delete exercise" button at the bottom of the detail, creator
+  only (same condition as the photo button), so catalog and
   held exercises never offer it (AC-7; a held exercise's detail is 404 anyway).
   Tap → fetch impact (busy) → on 404 leave to the list (EF-2); on other
   failure show "impact could not be checked" with retry, delete nothing
@@ -194,7 +197,8 @@ should pass `isDeleted`.
 
 - `features/exercises/api/exercisesClient.ts` — two methods.
 - `features/exercises/utils/exerciseDeletion.ts` (new) + test.
-- `features/exercises/screens/ExerciseDetailScreen.tsx` — delete block.
+- `features/exercises/components/DeleteExerciseButton.tsx` (new) — the flow.
+- `features/exercises/screens/ExerciseDetailScreen.tsx` — renders it.
 - `features/routines/screens/RoutineDetailScreen.tsx`,
   `features/routines/screens/RoutineFormScreen.tsx` — deleted chip.
 - `i18n/locales/{en,es}.ts` — `exerciseDeletion` namespace.
@@ -232,7 +236,7 @@ Unit (API, vitest):
   rule) fails 5 of them.
 
 Unit (mobile): `describeDeletionImpact` (unused, routines only, workouts only,
-both, active workout, singular/plural counts) and `isAlreadyDeleted`.
+both, active workout) and `isInActiveWorkout`.
 
 End-to-end (local PGlite, not CI): fresh migrated DB, built API, two users;
 covers the DB-side behaviour the mocks cannot: counts only the creator's,
@@ -253,7 +257,7 @@ unaffected. Logged in `tasks.md`.
 | AC-8 | visible rule test; e2e same-name create → new id, old history stays with the old |
 | AC-9 | screen keeps the exercise on a failed call (code); device offline check [DEVICE] |
 | EF-1 | as AC-9 |
-| EF-2 | planner test (already-deleted → 204); `isAlreadyDeleted` test |
+| EF-2 | planner test (already-deleted → 204); `isExerciseGone` (0015 test) |
 | EF-3 | routes "same as unknown" tests |
 | EF-4 | photo removal outside the transaction, logged; photo read filtered by visible (rule test) |
 | EF-5 | usable rule test; e2e workout save with the deleted exercise → 201 |
@@ -272,7 +276,8 @@ unaffected. Logged in `tasks.md`.
 - `packages/domain/src/entities.ts` — `ExerciseDeletionImpact`, `RoutineExercise.exerciseDeleted`
 - `apps/mobile/src/features/exercises/api/exercisesClient.ts`
 - `apps/mobile/src/features/exercises/utils/exerciseDeletion.ts` (new) + test
-- `apps/mobile/src/features/exercises/screens/ExerciseDetailScreen.tsx`
+- `apps/mobile/src/features/exercises/components/DeleteExerciseButton.tsx` (new)
+- `apps/mobile/src/features/exercises/screens/ExerciseDetailScreen.tsx` — one import, one element
 - `apps/mobile/src/features/routines/screens/RoutineDetailScreen.tsx`, `RoutineFormScreen.tsx`
 - `apps/mobile/src/i18n/locales/{en,es}.ts`
 - `docs/sdd/specs/0033-delete-custom-exercises/{spec,plan,tasks}.md`
