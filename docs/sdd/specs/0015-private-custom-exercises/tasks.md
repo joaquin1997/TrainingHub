@@ -19,7 +19,7 @@ older apps (fewer rows, 404 instead of 403 on paths they cannot reach).
 | 2 | [x] `exercises/visibility.ts`: `visibleExerciseWhere`, `usableExerciseWhere`, `classifyExerciseAccess`; tests | api | unit tests | `feat(exercises): visibility rule for custom exercises` |
 | 3 | [x] Exercises API scoped to the person: list, detail, same-name dedupe (catalog first), favourites (add, list), photo read; photo writes and unilateral answer 404 for someone else's custom exercise; route tests incl. "no existence leak" | api | route tests (AC-1, 2, 7, 8, 9) | `feat(exercises): custom exercises visible only to their creator` |
 | 4 | [x] `findUsableExercises`; routines create/update and workout save accept catalog, own and held exercises only; route tests | api | route tests (AC-5, AC-6, EF-1, EF-2) | `feat(exercises): routines and workouts keep held exercises only` |
-| 5 | [ ] Mobile EF-4: `isExerciseGone`; picker checks a custom exercise before choosing (notice + reload); routine form message + catalog reload on unknown exercises; i18n en/es | mobile | unit test; typecheck | `feat(exercises): handle exercises that are no longer available` |
+| 5 | [x] Mobile EF-4: `isExerciseGone`; picker checks a custom exercise before choosing (notice + reload); routine form message + catalog reload on unknown exercises; i18n en/es | mobile | unit test; typecheck | `feat(exercises): handle exercises that are no longer available` |
 | 6 | [ ] Local end-to-end check on PGlite (two users, curl through AC-1…AC-9); progress log; definition of done | docs | log | `docs(sdd): record 0015 implementation` |
 | 7 | [ ] [DEVICE] Ben's app: held exercise in a routine and its workout show the neutral tile and the name; not in pickers; a stale picker shows the notice | mobile | device | — |
 | 8 | [ ] (owner: deploy) Redeploy the API (no migration) | ops | `/health`; Ana/Ben check of AC-1 on the server | — |
@@ -68,6 +68,16 @@ device pass (task 7), the redeploy (task 8).
   tests: acting person passed once, a foreign not-held id → 400 on POST and
   PUT, a held one saved under its name. The DB side of "held" is checked end
   to end in task 6.
+- 2026-10-17 — Task 5: `exerciseAvailability.ts` (`needsAvailabilityCheck`,
+  `isExerciseGone`, `isUnknownRoutineExerciseError`; 5 tests). The picker
+  (add/replace in the workout, replace in the routine form) re-checks a custom
+  exercise with `GET /exercises/:id` before applying it; 404 drops it, shows a
+  notice and reloads the list; any other failure lets the choice through
+  (offline). Catalog exercises and one just created skip the check. The
+  routine form maps the unknown-exercises refusal to a translated message and
+  reloads its search list. Held exercises needed no app change: the active
+  workout's thumbnail already falls back to the neutral tile when the detail
+  is 404, and the routine form edits a row from the routine's own id and name.
 
 ## Definition of done
 

@@ -125,6 +125,8 @@ export const en = {
     setValuesInvalid: 'Routine set values must be valid numbers.',
     notAvailableEdit: 'Routine not available for editing.',
     saveError: 'Unable to save routine.',
+    unknownExercise:
+      'One of the exercises is no longer available. Choose another one; the list has been refreshed.',
   },
   // Warm-up block (spec 0024).
   warmUp: {
@@ -277,6 +279,7 @@ export const en = {
     newExercise: 'New exercise',
     createExercise: 'Create exercise',
     createNamed: 'Create "{{name}}"',
+    noLongerAvailable: 'This exercise is no longer available. The list has been refreshed.',
   },
   workouts: {
     barLabel: '{{routine}}, {{clock}}. Open the workout in progress',
