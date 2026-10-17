@@ -1,7 +1,7 @@
 ---
 id: 0030
 title: Tracking type sweep of the catalog
-status: ready        # self-approved under the delegated gates, 2026-10-17
+status: in-progress  # self-approved under the delegated gates, 2026-10-17
 roadmap: docs/roadmap/06-exercises-advanced.md
 created: 2026-10-17
 ---

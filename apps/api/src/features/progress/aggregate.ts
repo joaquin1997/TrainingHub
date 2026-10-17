@@ -145,8 +145,40 @@ function chronological(sessions: ProgressSessionInput[]): ProgressSessionInput[]
 }
 
 /**
+ * A set reduced to the values its exercise's tracking type records (spec
+ * 0030 FR-17): after a reclassification, records read only the new type's
+ * values, so an old "0 kg × 60" plank set gives no record once the plank is
+ * timed. Without a known type the set is read as it is.
+ */
+export function recordValuesOf(
+  set: ProgressSetInput,
+  trackingType: ExerciseTrackingType | undefined,
+): RecordSet {
+  switch (trackingType) {
+    case undefined:
+      return set;
+    case 'weight_reps':
+      return {
+        weightKg: set.weightKg,
+        reps: set.reps,
+        repsLeft: set.repsLeft,
+        repsRight: set.repsRight,
+      };
+    case 'reps':
+      return { reps: set.reps, repsLeft: set.repsLeft, repsRight: set.repsRight };
+    case 'duration':
+      return { durationSeconds: set.durationSeconds };
+    case 'weight_duration':
+      return { weightKg: set.weightKg, durationSeconds: set.durationSeconds };
+    case 'distance_duration':
+      return { distanceMeters: set.distanceMeters, durationSeconds: set.durationSeconds };
+  }
+}
+
+/**
  * Records per exercise (spec 0023), from working sets only: warmups never
- * count. An exercise logged twice in one workout is one session here.
+ * count. An exercise logged twice in one workout is one session here. Sets
+ * are read through the exercise's current tracking type (spec 0030).
  */
 export function buildRecordHistories(
   ordered: ProgressSessionInput[],
@@ -159,7 +191,9 @@ export function buildRecordHistories(
   ordered.forEach((session, sessionIndex) => {
     for (const exercise of session.exercises) {
       const entry = work.get(exercise.exerciseId) ?? { sessionIndexes: [], sessions: [] };
-      const workingSets = exercise.sets.filter((set) => !isWarmupSet(set));
+      const workingSets = exercise.sets
+        .filter((set) => !isWarmupSet(set))
+        .map((set) => recordValuesOf(set, exercise.trackingType));
       const last = entry.sessions.length - 1;
 
       if (entry.sessionIndexes[last] === sessionIndex) {

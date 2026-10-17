@@ -178,6 +178,13 @@ export const es: TranslationCatalog = {
     unilateralTitle: 'Izquierda y derecha',
     unilateralHint: 'Se hace un lado cada vez: cada serie registra las repeticiones de cada lado.',
     unilateralError: 'No se ha podido cambiar el ejercicio.',
+    // Cambiar el tipo de registro desde el detalle (spec 0030).
+    trackingHint: 'Los entrenamientos guardados no cambian.',
+    trackingChangeTitle: '¿Registrar como «{{type}}»?',
+    trackingChangeMessage:
+      'Los entrenamientos anteriores conservan lo que se registró. «La última vez» y los récords solo usarán las series con los valores del nuevo tipo.',
+    trackingChangeConfirm: 'Cambiar a «{{type}}»',
+    trackingError: 'No se ha podido cambiar qué registra el ejercicio.',
     loadError: 'No se han podido cargar los grupos musculares.',
     validation: 'El nombre y al menos un grupo muscular primario son obligatorios.',
     createError: 'No se ha podido crear el ejercicio.',

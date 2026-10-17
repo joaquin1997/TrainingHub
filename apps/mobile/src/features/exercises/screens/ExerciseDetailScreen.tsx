@@ -5,6 +5,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
 import { ExerciseImage } from '@/features/exercises/components/ExerciseImage';
+import { TrackingTypeControl } from '@/features/exercises/components/TrackingTypeControl';
 import { UnilateralSwitch } from '@/features/exercises/components/UnilateralSwitch';
 import { useAuth } from '@/features/auth/AuthContext';
 import { pickProfilePhoto } from '@/features/profile/photo/pickProfilePhoto';
@@ -13,11 +14,12 @@ import { useSettings } from '@/features/settings/SettingsContext';
 import { formatDate } from '@/lib/format';
 import { formatSetValues, tracksField } from '@/lib/tracking';
 import { formatWeightValue } from '@/lib/weight';
+import { ActionSheet } from '@/ui/ActionSheet';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
-import type { Exercise, ExerciseProgressPoint } from '@workout/domain';
+import type { Exercise, ExerciseProgressPoint, ExerciseTrackingType } from '@workout/domain';
 
 const MAX_HISTORY = 8;
 
@@ -39,6 +41,10 @@ export function ExerciseDetailScreen() {
   const [photoError, setPhotoError] = useState<string>();
   const [unilateralBusy, setUnilateralBusy] = useState(false);
   const [unilateralError, setUnilateralError] = useState<string>();
+  const [trackingBusy, setTrackingBusy] = useState(false);
+  const [trackingError, setTrackingError] = useState<string>();
+  /** The type waiting for the person's confirmation (FR-14). */
+  const [pendingTrackingType, setPendingTrackingType] = useState<ExerciseTrackingType>();
   const unit = settings.unit;
 
   const loadExercise = useCallback(
@@ -153,6 +159,34 @@ export function ExerciseDetailScreen() {
     }
   }
 
+  /** Changes what the exercise's sets record, by hand (spec 0030 FR-12). */
+  async function changeTrackingType(trackingType: ExerciseTrackingType) {
+    if (!exercise) {
+      return;
+    }
+    const previous = exercise;
+    try {
+      setTrackingError(undefined);
+      setTrackingBusy(true);
+      setExercise({ ...exercise, trackingType });
+      setExercise(await exercisesClient.setTrackingType(exercise.id, { trackingType }));
+    } catch {
+      setExercise(previous);
+      setTrackingError(t('customExercise.trackingError'));
+    } finally {
+      setTrackingBusy(false);
+    }
+  }
+
+  /** With saved workouts, the person is told what changes first (FR-14). */
+  function requestTrackingType(trackingType: ExerciseTrackingType) {
+    if (history.length > 0) {
+      setPendingTrackingType(trackingType);
+    } else {
+      void changeTrackingType(trackingType);
+    }
+  }
+
   if (isLoading) {
     return (
       <View style={styles.screen}>
@@ -204,6 +238,41 @@ export function ExerciseDetailScreen() {
           {photoError ? <Text style={styles.meta}>{photoError}</Text> : null}
         </>
       ) : null}
+      {/* Same rule as the unilateral switch: catalog for anyone, custom for its creator. */}
+      {exercise.isSystemDefined || exercise.createdByUserId === user?.id ? (
+        <View style={styles.card}>
+          <TrackingTypeControl
+            value={exercise.trackingType ?? 'weight_reps'}
+            onChange={requestTrackingType}
+            disabled={trackingBusy}
+          />
+          {trackingError ? <Text style={styles.meta}>{trackingError}</Text> : null}
+        </View>
+      ) : null}
+      <ActionSheet
+        visible={pendingTrackingType !== undefined}
+        title={
+          pendingTrackingType
+            ? t('customExercise.trackingChangeTitle', {
+                type: t(`customExercise.trackingTypes.${pendingTrackingType}`),
+              })
+            : undefined
+        }
+        message={t('customExercise.trackingChangeMessage')}
+        actions={
+          pendingTrackingType
+            ? [
+                {
+                  label: t('customExercise.trackingChangeConfirm', {
+                    type: t(`customExercise.trackingTypes.${pendingTrackingType}`),
+                  }),
+                  onPress: () => void changeTrackingType(pendingTrackingType),
+                },
+              ]
+            : []
+        }
+        onClose={() => setPendingTrackingType(undefined)}
+      />
       {tracksField(exercise.trackingType, 'reps') &&
       (exercise.isSystemDefined || exercise.createdByUserId === user?.id) ? (
         <View style={styles.card}>

@@ -18,7 +18,10 @@
     "import:wger:db": "IMPORT_TO_DB=true npm run import:wger",
     "import:images": "npm run build && node --env-file-if-exists=.env dist/apps/api/src/scripts/match-free-exercise-images.js",
     "import:images:db": "IMPORT_TO_DB=true npm run import:images",
-    "catalog:tracking-types": "npm run build && node --env-file-if-exists=.env dist/apps/api/src/scripts/set-catalog-tracking-types.js"
+    "catalog:tracking-types": "npm run build && node --env-file-if-exists=.env dist/apps/api/src/scripts/set-catalog-tracking-types.js",
+    "catalog:tracking-sweep": "npm run build && node --env-file-if-exists=.env dist/apps/api/src/scripts/sweep-tracking-types.js",
+    "catalog:tracking-sweep:apply": "SWEEP_APPLY=true npm run catalog:tracking-sweep",
+    "catalog:tracking-sweep:undo": "SWEEP_MODE=undo npm run catalog:tracking-sweep"
   },
   "dependencies": {
     "@fastify/jwt": "^10.1.0",

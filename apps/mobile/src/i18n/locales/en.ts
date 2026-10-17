@@ -183,6 +183,13 @@ export const en = {
     unilateralTitle: 'Left and right',
     unilateralHint: 'Done one side at a time: each set records left and right reps.',
     unilateralError: 'The exercise could not be changed.',
+    // Changing the tracking type from the detail (spec 0030).
+    trackingHint: 'Saved workouts do not change.',
+    trackingChangeTitle: 'Log as “{{type}}”?',
+    trackingChangeMessage:
+      'Past workouts keep what was logged. “Last time” and records will only use sets with the new type’s values.',
+    trackingChangeConfirm: 'Change to “{{type}}”',
+    trackingError: 'What the exercise records could not be changed.',
   },
   settings: {
     language: 'Language',
