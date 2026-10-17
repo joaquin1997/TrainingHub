@@ -15,6 +15,7 @@ import {
   type RoutineWriteInput,
 } from './repository.js';
 import { resolveUserPublicId } from '../../infrastructure/userContext.js';
+import { parseWarmUpItemFields, parseWarmUpItemsField } from './warmUpItems.js';
 
 function normalizeRoutineBody(body: unknown) {
   if (typeof body !== 'string') {
@@ -128,10 +129,20 @@ function parseRoutineWriteInput(body: unknown): CreateRoutineInput | null {
     return null;
   }
 
+  // Spec 0024: absent keeps the stored block on update; malformed is refused.
+  const warmUpItems = parseWarmUpItemsField(
+    normalizedBody.warmUpItems,
+    parseWarmUpItemFields,
+  );
+  if (warmUpItems === null) {
+    return null;
+  }
+
   return {
     name: normalizedBody.name.trim(),
     description: parseOptionalString(normalizedBody.description),
     folder: parseOptionalString(normalizedBody.folder),
+    warmUpItems,
     exercises,
   };
 }
@@ -170,6 +181,7 @@ async function hydrateRoutineWriteInput(
     name: input.name,
     description: input.description,
     folder: input.folder,
+    warmUpItems: input.warmUpItems,
     exercises: exercises.filter(
       (exercise): exercise is RoutineWriteInput['exercises'][number] =>
         exercise !== null,

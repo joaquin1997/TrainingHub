@@ -5,6 +5,7 @@ import type {
   WorkoutExerciseInput,
   WorkoutSetInput,
   WorkoutSetType,
+  WorkoutWarmUpItemInput,
 } from '@workout/domain';
 
 const WORKOUT_SET_TYPES: WorkoutSetType[] = [
@@ -28,6 +29,7 @@ import {
   listWorkoutSessions,
 } from './repository.js';
 import { UnknownExerciseError } from './saveReferences.js';
+import { parseWarmUpItemFields, parseWarmUpItemsField } from '../routines/warmUpItems.js';
 import { resolveUserPublicId } from '../../infrastructure/userContext.js';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -110,6 +112,16 @@ function parseWorkoutSetInput(
   };
 }
 
+/** A performed warm-up item: name and targets, ticked or not (spec 0024). */
+function parseWorkoutWarmUpItemInput(value: unknown): WorkoutWarmUpItemInput | null {
+  const fields = parseWarmUpItemFields(value);
+  if (!fields || !isRecord(value)) {
+    return null;
+  }
+
+  return { ...fields, done: value.done === true };
+}
+
 function parseWorkoutExerciseInput(
   value: unknown,
   fallbackOrder: number,
@@ -180,6 +192,11 @@ function parseCreateWorkoutSessionInput(
     return null;
   }
 
+  const warmUpItems = parseWarmUpItemsField(body.warmUpItems, parseWorkoutWarmUpItemInput);
+  if (warmUpItems === null) {
+    return null;
+  }
+
   return {
     clientId,
     routineId: parseOptionalString(body.routineId),
@@ -187,6 +204,7 @@ function parseCreateWorkoutSessionInput(
     completedAt,
     pausedSeconds,
     notes: parseOptionalString(body.notes),
+    warmUpItems,
     exercises,
   };
 }

@@ -12,21 +12,22 @@ export type RoutineWriteInput = Omit<CreateRoutineInput, 'exercises'> & {
   exercises: Array<RoutineExerciseInput & { exerciseName: string }>;
 };
 
-type RoutineRecord = Prisma.RoutineGetPayload<{
-  include: {
-    exercises: {
-      include: {
-        exercise: {
-          select: {
-            publicId: true;
-            trackingType: true;
-          };
-        };
-        sets: true;
-      };
-    };
-  };
-}>;
+const routineInclude = {
+  exercises: {
+    include: {
+      exercise: {
+        select: {
+          publicId: true,
+          trackingType: true,
+        },
+      },
+      sets: true,
+    },
+  },
+  warmUpItems: true,
+} satisfies Prisma.RoutineInclude;
+
+type RoutineRecord = Prisma.RoutineGetPayload<{ include: typeof routineInclude }>;
 
 function logRepository(action: string, payload?: Record<string, unknown>) {
   console.info('[routinesRepository]', action, payload ?? {});
@@ -39,6 +40,15 @@ function mapRoutine(userPublicId: string, record: RoutineRecord): Routine {
     name: record.name,
     description: record.description ?? undefined,
     folder: record.folder ?? undefined,
+    warmUpItems: record.warmUpItems
+      .slice()
+      .sort((left, right) => left.orderIndex - right.orderIndex)
+      .map((item) => ({
+        order: item.orderIndex,
+        name: item.name,
+        targetDurationSeconds: item.targetDurationSeconds ?? undefined,
+        targetReps: item.targetReps ?? undefined,
+      })),
     exercises: record.exercises
       .slice()
       .sort((left, right) => left.orderIndex - right.orderIndex)
@@ -102,6 +112,16 @@ function toRoutineExerciseCreateInput(
   };
 }
 
+/** The block's rows, numbered from 1 in the order sent (spec 0024). */
+function toWarmUpItemsCreateInput(items: NonNullable<RoutineWriteInput['warmUpItems']>) {
+  return items.map((item, index) => ({
+    orderIndex: index + 1,
+    name: item.name,
+    targetDurationSeconds: item.targetDurationSeconds,
+    targetReps: item.targetReps,
+  }));
+}
+
 export async function listRoutines(userPublicId: string) {
   logRepository('list:start');
 
@@ -112,19 +132,7 @@ export async function listRoutines(userPublicId: string) {
       },
     },
     orderBy: { createdAt: 'asc' },
-    include: {
-      exercises: {
-        include: {
-          exercise: {
-            select: {
-              publicId: true,
-              trackingType: true,
-            },
-          },
-          sets: true,
-        },
-      },
-    },
+    include: routineInclude,
   });
 
   const mappedRoutines = routines.map((routine) =>
@@ -146,19 +154,7 @@ export async function findRoutineById(userPublicId: string, id: string) {
         publicId: userPublicId,
       },
     },
-    include: {
-      exercises: {
-        include: {
-          exercise: {
-            select: {
-              publicId: true,
-              trackingType: true,
-            },
-          },
-          sets: true,
-        },
-      },
-    },
+    include: routineInclude,
   });
 
   const mappedRoutine = routine ? mapRoutine(userPublicId, routine) : null;
@@ -190,23 +186,14 @@ export async function createRoutine(
       name: input.name,
       description: input.description,
       folder: input.folder,
+      warmUpItems: input.warmUpItems
+        ? { create: toWarmUpItemsCreateInput(input.warmUpItems) }
+        : undefined,
       exercises: {
         create: input.exercises.map(toRoutineExerciseCreateInput),
       },
     },
-    include: {
-      exercises: {
-        include: {
-          exercise: {
-            select: {
-              publicId: true,
-              trackingType: true,
-            },
-          },
-          sets: true,
-        },
-      },
-    },
+    include: routineInclude,
   });
 
   const mappedRoutine = mapRoutine(userPublicId, routine);
@@ -252,29 +239,27 @@ export async function updateRoutine(
       where: { routineId: existingRoutine.id },
     });
 
+    // An update without the block (older apps) keeps it (spec 0024).
+    if (input.warmUpItems) {
+      await transaction.routineWarmUpItem.deleteMany({
+        where: { routineId: existingRoutine.id },
+      });
+    }
+
     return transaction.routine.update({
       where: { id: existingRoutine.id },
       data: {
         name: input.name,
         description: input.description,
         folder: input.folder,
+        warmUpItems: input.warmUpItems
+          ? { create: toWarmUpItemsCreateInput(input.warmUpItems) }
+          : undefined,
         exercises: {
           create: input.exercises.map(toRoutineExerciseCreateInput),
         },
       },
-      include: {
-      exercises: {
-        include: {
-          exercise: {
-            select: {
-              publicId: true,
-              trackingType: true,
-            },
-          },
-          sets: true,
-        },
-      },
-      },
+      include: routineInclude,
     });
   });
 

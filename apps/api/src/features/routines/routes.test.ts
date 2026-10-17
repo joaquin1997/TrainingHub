@@ -194,6 +194,76 @@ describe('POST /routines warm-up sets (spec 0024)', () => {
   });
 });
 
+describe('routine warm-up block (spec 0024)', () => {
+  const exercises = [{ exerciseId: 'ex1', orderIndex: 1, sets: [{ setNumber: 1 }] }];
+
+  beforeEach(() => {
+    vi.mocked(findExerciseById).mockResolvedValue({ id: 'ex1', name: 'Squat' } as never);
+    vi.mocked(createRoutine).mockResolvedValue({ id: 'r4', name: 'Legs' } as never);
+    vi.mocked(updateRoutine).mockResolvedValue({ id: 'r4', name: 'Legs' } as never);
+  });
+
+  it('passes the block, in order, trimmed, to the repository', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/routines',
+      payload: {
+        name: 'Legs',
+        warmUpItems: [
+          { name: ' Bike ', targetDurationSeconds: 300 },
+          { name: 'Band pull-aparts', targetReps: 15 },
+        ],
+        exercises,
+      },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(vi.mocked(createRoutine).mock.calls[0]?.[1].warmUpItems).toEqual([
+      { name: 'Bike', targetDurationSeconds: 300, targetReps: undefined },
+      { name: 'Band pull-aparts', targetDurationSeconds: undefined, targetReps: 15 },
+    ]);
+  });
+
+  it('leaves the block out of an update that does not send it (older apps)', async () => {
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/routines/r4',
+      payload: { name: 'Legs', exercises },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(vi.mocked(updateRoutine).mock.calls[0]?.[2].warmUpItems).toBeUndefined();
+  });
+
+  it('passes an empty block, which clears it', async () => {
+    await app.inject({
+      method: 'PUT',
+      url: '/routines/r4',
+      payload: { name: 'Legs', warmUpItems: [], exercises },
+    });
+
+    expect(vi.mocked(updateRoutine).mock.calls[0]?.[2].warmUpItems).toEqual([]);
+  });
+
+  it.each([
+    ['not a list', { name: 'Bike' }],
+    ['an item without a name', [{ name: '  ' }]],
+    ['a negative target', [{ name: 'Bike', targetDurationSeconds: -1 }]],
+    ['a fractional target', [{ name: 'Bike', targetReps: 1.5 }]],
+    ['a name that is too long', [{ name: 'x'.repeat(81) }]],
+    ['too many items', Array.from({ length: 21 }, (_, index) => ({ name: `Item ${index}` }))],
+  ])('refuses %s (400)', async (_label, warmUpItems) => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/routines',
+      payload: { name: 'Legs', warmUpItems, exercises },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(createRoutine).not.toHaveBeenCalled();
+  });
+});
+
 describe('DELETE /routines/:id', () => {
   it('returns 204 when the routine was deleted', async () => {
     vi.mocked(deleteRoutine).mockResolvedValue(true as never);

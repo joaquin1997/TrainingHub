@@ -372,3 +372,55 @@ describe('GET /workouts/exercises/:exerciseId/last', () => {
     expect(response.json()).toEqual({ message: 'No previous performance' });
   });
 });
+
+describe('POST /workouts warm-up block (spec 0024)', () => {
+  const warmUpItems = [
+    { name: 'Bike', targetDurationSeconds: 300, done: true },
+    { name: 'Band pull-aparts', targetReps: 15, done: false },
+  ];
+
+  it('passes every item with whether it was done (FR-7)', async () => {
+    vi.mocked(createWorkoutSession).mockResolvedValue({
+      session: { id: 'w1' },
+      created: true,
+    } as never);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/workouts',
+      payload: { ...validPayload, warmUpItems },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(vi.mocked(createWorkoutSession).mock.calls[0]?.[1].warmUpItems).toEqual([
+      { name: 'Bike', targetDurationSeconds: 300, targetReps: undefined, done: true },
+      { name: 'Band pull-aparts', targetDurationSeconds: undefined, targetReps: 15, done: false },
+    ]);
+  });
+
+  it('does not count ticked items as completed sets (FR-6)', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/workouts',
+      payload: {
+        ...validPayload,
+        warmUpItems,
+        exercises: [{ exerciseId: 'ex1', order: 1, sets: [{ order: 1, reps: 8 }] }],
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(createWorkoutSession).not.toHaveBeenCalled();
+  });
+
+  it('refuses a malformed block (400)', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/workouts',
+      payload: { ...validPayload, warmUpItems: [{ done: true }] },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({ message: 'Invalid workout payload' });
+  });
+});

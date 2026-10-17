@@ -27,19 +27,6 @@ import {
  */
 const LAST_PERFORMANCE_LOOKBACK = 10;
 
-type WorkoutSessionRecord = Prisma.WorkoutSessionGetPayload<{
-  include: {
-    routine: { select: { publicId: true } };
-    exercises: {
-      include: {
-        exercise: { select: { publicId: true; name: true } };
-        routineExercise: { select: { publicId: true } };
-        sets: true;
-      };
-    };
-  };
-}>;
-
 const workoutSessionInclude = {
   routine: { select: { publicId: true } },
   exercises: {
@@ -49,7 +36,12 @@ const workoutSessionInclude = {
       sets: true,
     },
   },
+  warmUpItems: true,
 } satisfies Prisma.WorkoutSessionInclude;
+
+type WorkoutSessionRecord = Prisma.WorkoutSessionGetPayload<{
+  include: typeof workoutSessionInclude;
+}>;
 
 function logRepository(action: string, payload?: Record<string, unknown>) {
   console.info('[workoutsRepository]', action, payload ?? {});
@@ -72,6 +64,20 @@ function mapWorkoutSession(
     completedAt: record.completedAt?.toISOString() ?? undefined,
     pausedSeconds: record.pausedSeconds,
     notes: record.notes ?? undefined,
+    // Spec 0024: listed only when the workout had a warm-up block.
+    warmUpItems:
+      record.warmUpItems.length > 0
+        ? record.warmUpItems
+            .slice()
+            .sort((left, right) => left.order - right.order)
+            .map((item) => ({
+              order: item.order,
+              name: item.name,
+              targetDurationSeconds: item.targetDurationSeconds ?? undefined,
+              targetReps: item.targetReps ?? undefined,
+              done: item.done,
+            }))
+        : undefined,
     exercises: record.exercises
       .slice()
       .sort((left, right) => left.order - right.order)
@@ -326,6 +332,17 @@ export async function createWorkoutSession(
         completedAt: linked.completedAt ? new Date(linked.completedAt) : undefined,
         pausedSeconds: linked.pausedSeconds ?? 0,
         notes: linked.notes,
+        warmUpItems: linked.warmUpItems?.length
+          ? {
+              create: linked.warmUpItems.map((item, index) => ({
+                order: index + 1,
+                name: item.name,
+                targetDurationSeconds: item.targetDurationSeconds,
+                targetReps: item.targetReps,
+                done: item.done,
+              })),
+            }
+          : undefined,
         exercises: {
           create: linked.exercises.map(toWorkoutExerciseCreateInput),
         },

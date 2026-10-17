@@ -143,9 +143,25 @@ model Routine {
   updatedAt   DateTime          @updatedAt
   user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   exercises       RoutineExercise[]
+  warmUpItems     RoutineWarmUpItem[]
   workoutSessions WorkoutSession[]
 
   @@index([userId, createdAt])
+}
+
+/// One item of a routine's warm-up block (spec 0024): ticked, not logged.
+model RoutineWarmUpItem {
+  id                    BigInt   @id @default(autoincrement())
+  routineId             BigInt
+  orderIndex            Int
+  name                  String
+  targetDurationSeconds Int?
+  targetReps            Int?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  routine               Routine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
+
+  @@index([routineId, orderIndex])
 }
 
 model RoutineExercise {
@@ -207,9 +223,25 @@ model WorkoutSession {
   user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   routine     Routine?          @relation(fields: [routineId], references: [id], onDelete: SetNull)
   exercises   WorkoutExercise[]
+  warmUpItems WorkoutWarmUpItem[]
 
   @@unique([userId, clientId])
   @@index([userId, startedAt])
+}
+
+/// A warm-up block item as performed, copied from the routine (spec 0024).
+model WorkoutWarmUpItem {
+  id                    BigInt         @id @default(autoincrement())
+  workoutSessionId      BigInt
+  order                 Int
+  name                  String
+  targetDurationSeconds Int?
+  targetReps            Int?
+  done                  Boolean        @default(false)
+  createdAt             DateTime       @default(now())
+  workoutSession        WorkoutSession @relation(fields: [workoutSessionId], references: [id], onDelete: Cascade)
+
+  @@index([workoutSessionId, order])
 }
 
 model WorkoutExercise {
