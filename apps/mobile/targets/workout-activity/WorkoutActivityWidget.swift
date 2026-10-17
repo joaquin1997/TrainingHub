@@ -49,7 +49,7 @@ private func discardWorkoutURL(_ workoutId: String) -> URL {
 
 /// The app's brand mark: the pulse of the app icon (spec 0035 FR-13), drawn
 /// as a line so it stays sharp at any size and takes the tint it is given.
-private struct BrandMarkShape: Shape {
+struct BrandMarkShape: Shape {
   /// The pulse of the Ionicons glyph, traced on a 280 × 250 box.
   static let points: [CGPoint] = [
     CGPoint(x: 0, y: 165), CGPoint(x: 48, y: 165), CGPoint(x: 85, y: 0),
@@ -72,7 +72,7 @@ private struct BrandMarkShape: Shape {
 }
 
 /// The dot that ends the pulse.
-private struct BrandMarkDot: Shape {
+struct BrandMarkDot: Shape {
   func path(in rect: CGRect) -> Path {
     let box = BrandMarkShape.box
     let scale = min(rect.width / box.width, rect.height / box.height)
