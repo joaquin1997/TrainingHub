@@ -247,6 +247,12 @@ export function RoutineFormScreen({
     preview: RoutineApproachSetsPreview;
   } | null>(null);
   const activeWorkout = useActiveWorkout();
+  // Exercises of this routine their creator deleted (spec 0033 FR-7).
+  const deletedExerciseIds = new Set(
+    (routine?.exercises ?? [])
+      .filter((routineExercise) => routineExercise.exerciseDeleted)
+      .map((routineExercise) => routineExercise.exerciseId),
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -873,7 +879,9 @@ export function RoutineFormScreen({
                   style={styles.iconInputField}
                 />
               </View>
-              {exercise.exerciseId ? (
+              {exercise.exerciseId && deletedExerciseIds.has(exercise.exerciseId) ? (
+                <Chip icon="trash-outline" size="sm" label={t('exerciseDeletion.deleted')} />
+              ) : exercise.exerciseId ? (
                 <Chip icon="checkmark-circle" tone="done" size="sm" label={t('routineForm.exerciseSelected')} />
               ) : null}
               {activeExerciseSelectorRowId === exercise.id &&

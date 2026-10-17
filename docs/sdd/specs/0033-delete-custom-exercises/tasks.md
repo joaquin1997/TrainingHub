@@ -19,7 +19,7 @@ API ships before the app (the app's delete action needs the endpoints).
 | 3 | [x] `ExerciseDeletionImpact` (domain); `deletion.ts` (`planExerciseDeletion`, `deletionImpactWhere`) + tests; repository `getExerciseDeletionImpact`, `deleteCustomExercise` (remove or archive, favourites, photo best effort, `P2003` fallback); `GET /exercises/:id/deletion-impact`, `DELETE /exercises/:id`; route tests | domain / api | unit + route tests (AC-1, 2, 5, 7, EF-2, EF-3) | `feat(exercises): delete custom exercises` |
 | 4 | [x] `RoutineExercise.exerciseDeleted` (domain); routine reads set it | domain / api | typecheck; e2e (task 7) | `feat(exercises): routines mark deleted exercises` |
 | 5 | [x] Mobile: client methods; `exerciseDeletion.ts` (`describeDeletionImpact`, `isInActiveWorkout`) + tests; `DeleteExerciseButton` on the custom exercise detail (impact → confirm → delete; EF-1, EF-2, EF-6); i18n en/es | mobile | unit tests; typecheck | `feat(exercises): delete a custom exercise from its detail` |
-| 6 | [ ] Mobile: "Deleted exercise" chip in routine detail and routine form | mobile | typecheck | `feat(exercises): show deleted exercises in routines` |
+| 6 | [x] Mobile: "Deleted exercise" chip in routine detail and routine form | mobile | typecheck | `feat(exercises): show deleted exercises in routines` |
 | 7 | [ ] Local end-to-end check on PGlite (two users; AC-1…AC-8, EF-5); progress log; definition of done | docs | log | `docs(sdd): record 0033 implementation` |
 | 8 | [ ] [DEVICE] Delete flow on a phone: confirmation texts (unused / counts / active workout), offline error, routine chip, active workout keeps sets and saves, neutral tile, no delete on catalog | mobile | device | — |
 | 9 | [ ] (owner: migration/deploy) Apply the migration and redeploy the API, before the app update | ops | `/health`; impact call on the server | — |
@@ -95,6 +95,13 @@ device pass (task 8), the deploy (task 9).
   reloads on focus; any other failure → error, the exercise stays. i18n
   en/es in a new `exerciseDeletion` namespace. "Already deleted" reuses
   0015's `isExerciseGone` instead of a second 404 helper.
+- 2026-10-17 — Task 6: routine detail shows a neutral "Deleted exercise"
+  chip next to the name of a slot whose exercise was deleted; the routine
+  form shows it in place of "Selected" for such a row (from the loaded
+  routine's flags, so a row re-pointed to another exercise loses it). Starting
+  the routine and the workout itself need no change (name from the routine,
+  thumbnail 404 → neutral tile); history, session detail, share and progress
+  read the name from the workout, so they show it as before.
 
 ## Definition of done
 
