@@ -12,8 +12,14 @@ import {
   getLatestCompletedWorkout,
   toWorkoutSessionSkeleton,
 } from '@/features/workouts/state/workoutDraftStore';
+import { ShareSheet } from '@/features/workouts/components/ShareSheet';
 import { useWorkoutComparison } from '@/features/workouts/hooks/useWorkoutComparison';
-import { formatWorkoutShareText, shareRecords } from '@/features/workouts/utils/shareText';
+import { buildShareCard } from '@/features/workouts/utils/shareCard';
+import {
+  formatWorkoutShareText,
+  shareRecords,
+  type ShareWorkoutInput,
+} from '@/features/workouts/utils/shareText';
 import { shareWorkoutText } from '@/features/workouts/utils/shareWorkout';
 import { summarizeSession } from '@/features/workouts/utils/sessionStats';
 import {
@@ -86,6 +92,7 @@ export function WorkoutSummaryScreen() {
   const workoutDraft = getLatestCompletedWorkout();
   const clientId = workoutDraft?.clientId;
   const [records, setRecords] = useState<SessionRecord[]>([]);
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   // The records this workout beat (spec 0023). The workout is already saved
   // when the summary shows; any failure just leaves the card out.
@@ -155,14 +162,33 @@ export function WorkoutSummaryScreen() {
   // placeholders included, formatted back into the session unit (spec 0013).
   // The skeleton stamps every set; "done" comes from the draft.
   const stats = summarizeSession(compared);
-  const routineComparison = comparison?.routine
-    ? describeComparison(comparison.routine, unit, i18n.language, t)
-    : null;
   const duration = activeDurationSeconds(
     workoutSession.startedAt,
     workoutSession.completedAt,
     workoutSession.pausedSeconds,
   );
+  // One input for both share formats: the 0028 text and the image card (FR-25).
+  const shareInput: ShareWorkoutInput = {
+    title: workoutDraft.routineName,
+    when: workoutSession.completedAt ?? workoutSession.startedAt,
+    durationSeconds: duration,
+    volumeKg: stats.volumeKg,
+    unit,
+    language: i18n.language,
+    exercises: workoutSession.exercises.map((exercise, exerciseIndex) => ({
+      name: exercise.exerciseName,
+      sets: exercise.sets.map((set, setIndex) => ({
+        ...set,
+        performed: isDone(exerciseIndex, setIndex),
+      })),
+    })),
+    notes: workoutSession.notes,
+    records: shareRecords(records, unit, t),
+    t,
+  };
+  const routineComparison = comparison?.routine
+    ? describeComparison(comparison.routine, unit, i18n.language, t)
+    : null;
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
@@ -190,7 +216,7 @@ export function WorkoutSummaryScreen() {
           label={t('workouts.volumeLabel')}
           value={formatWeightValue(stats.volumeKg, unit)}
           unit={unit}
-          caption={routineComparison?.sentence}
+          caption={routineComparison?.caption}
           captionIcon={comparison?.routine ? comparisonIcon[comparison.routine.direction] : undefined}
           captionTone={comparison?.routine?.direction === 'up' ? 'success' : 'muted'}
         />
@@ -263,28 +289,7 @@ export function WorkoutSummaryScreen() {
         icon="share-outline"
         variant="secondary"
         fullWidth
-        onPress={() =>
-          void shareWorkoutText(
-            formatWorkoutShareText({
-              title: workoutDraft.routineName,
-              when: workoutSession.completedAt ?? workoutSession.startedAt,
-              durationSeconds: duration,
-              volumeKg: stats.volumeKg,
-              unit,
-              language: i18n.language,
-              exercises: workoutSession.exercises.map((exercise, exerciseIndex) => ({
-                name: exercise.exerciseName,
-                sets: exercise.sets.map((set, setIndex) => ({
-                  ...set,
-                  performed: isDone(exerciseIndex, setIndex),
-                })),
-              })),
-              notes: workoutSession.notes,
-              records: shareRecords(records, unit, t),
-              t,
-            }),
-          )
-        }
+        onPress={() => setIsShareOpen(true)}
       />
       <Button
         label={t('workouts.viewHistory')}
@@ -302,6 +307,14 @@ export function WorkoutSummaryScreen() {
           leaveTo({ pathname: '/workouts/active', params: { routineId: workoutDraft.routineId } })
         }
       />
+      {isShareOpen ? (
+        <ShareSheet
+          visible
+          card={buildShareCard(shareInput)}
+          onShareText={() => void shareWorkoutText(formatWorkoutShareText(shareInput))}
+          onClose={() => setIsShareOpen(false)}
+        />
+      ) : null}
     </ScrollView>
   );
 }

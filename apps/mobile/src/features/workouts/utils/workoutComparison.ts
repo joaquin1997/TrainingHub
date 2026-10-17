@@ -149,7 +149,11 @@ export function formatComparisonDate(iso: string, language: string) {
   return new Date(iso).toLocaleDateString(language, { day: 'numeric', month: 'short' });
 }
 
-/** Words for a comparison: a sentence (tile caption, screen readers) and a short chip label. */
+/**
+ * Words for a comparison: a sentence (screen readers), a caption that fits a
+ * narrow tile, and a short chip label. Each carries the direction in words or
+ * a sign, never in colour alone (FR-17).
+ */
 export function describeComparison(
   comparison: VolumeComparison,
   unit: WeightUnit,
@@ -163,16 +167,19 @@ export function describeComparison(
     case 'up':
       return {
         sentence: t('workouts.comparison.up', { delta, date }),
+        caption: t('workouts.comparison.captionUp', { delta, date }),
         short: t('workouts.comparison.chipUp', { delta }),
       };
     case 'down':
       return {
         sentence: t('workouts.comparison.down', { delta, date }),
+        caption: t('workouts.comparison.captionDown', { delta, date }),
         short: t('workouts.comparison.chipDown', { delta }),
       };
     default:
       return {
         sentence: t('workouts.comparison.same', { date }),
+        caption: t('workouts.comparison.same', { date }),
         short: t('workouts.comparison.chipSame'),
       };
   }

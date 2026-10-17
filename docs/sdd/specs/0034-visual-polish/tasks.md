@@ -185,7 +185,7 @@ share until then).
 | B3.1 | [x] `compareWithPrevious` (routine: previous saved workout of the same routine strictly before; per exercise: its last earlier session; up/down/same; null without an earlier session or with a previous volume of 0) and `useWorkoutComparison` (one `workoutsClient.list()`, failure → null) — with tests | unit tests (AC-17 logic, EF-5) | `feat(workouts): compare a finished workout with the previous one` |
 | B3.2 | [x] Summary: records of the day as a highlighted block above the tiles (`RecordsCard variant="highlight"`), volume tile caption with the routine comparison (arrow + word), per-exercise comparison chip; nothing shown without data; i18n `workouts.comparison`, `progress.records.today` | typecheck; web export with a mock API: routine done before + two records; first workout (AC-17); list failing (EF-5) | `feat(workouts): summary leads with records and compares with last time` |
 | B3.3 | [x] `buildShareCard` (stats, up to 3 records, up to 5 exercises with their best set, display unit, language) — pure, with tests; `ShareCard` view (360 × 450, tokens, app mark, no font scaling) | unit tests; web screenshot of the card in English/kg and Spanish/lb | `feat(workouts): workout share card` |
-| B3.4 | [ ] Add `react-native-view-shot` 6.1.1 and `expo-sharing` ~58.0.19; `share/shareImage.ts` (availability with lazy `require`, capture 1080 × 1350 PNG, share sheet, failure result); `ShareSheet` (preview, Share image, Share as text, one-line failure); summary and session detail open the sheet; i18n inside `workouts.share` | typecheck; web export: image action hidden, text share works (EF-6) — **native rebuild** | `feat(workouts): share a workout as an image` |
+| B3.4 | [x] Add `react-native-view-shot` 6.1.1 and `expo-sharing` ~58.0.19; `share/shareImage.ts` (availability with lazy `require`, capture 1080 × 1350 PNG, share sheet, failure result); `ShareSheet` (preview, Share image, Share as text, one-line failure); summary and session detail open the sheet; i18n inside `workouts.share` | typecheck; web export: image action hidden, text share works (EF-6) — **native rebuild** | `feat(workouts): share a workout as an image` |
 | B3.5 | [ ] B3 progress log, `plan-b.md` *As built* (B3), web export | `expo export --platform web` | `docs(sdd): record 0034 phase B3` |
 | B3.6 | [ ] [DEVICE] After the rebuild: AC-18 — share the image card to Messages / WhatsApp on iPhone and Android, in Spanish with lb, and the text share still offered; AC-17 on real data (routine done before with less volume); summary offline (EF-5) | owner | — |
 
@@ -262,6 +262,30 @@ order); `expo prebuild` and a device build for `react-native-svg`,
   lines, footer; `allowFontScaling={false}` on every text; ref as a prop
   (React 19). i18n `workouts.share.cardFooter`, `moreRecords` added here (the
   card needs them); the sheet's keys come with B3.4.
+- 2026-10-18 — B3.4: `react-native-view-shot` 6.1.1 and `expo-sharing`
+  ~58.0.19 added with `pnpm --filter @workout/mobile add` (registry
+  reachable). `share/shareImage.ts`: availability = view-shot's native module
+  registered (`TurboModuleRegistry.get('RNViewShot') ?? NativeModules`) *and*
+  `require('expo-sharing')` not throwing, cached; capture 1080 × 1350 PNG to a
+  temp file, `shareAsync` with `image/png` / `public.png`; any error →
+  `failed`. **`share/shareImage.web.ts`** (new, not in the plan's list) is the
+  web build: always unavailable. It is needed because view-shot's web file
+  imports the optional `html2canvas-pro`, which Metro would fail to resolve in
+  the web bundle; with the split neither native module reaches it.
+  `ShareSheet` (Modal like `ActionSheet`): the card preview scaled to the
+  window (≤ 50 % of its height; the capture reads the unscaled card inside the
+  scaled wrapper), **Share image** (primary, hidden when unavailable), **Share
+  as text** (0028 text, primary when it is the only action), one-line failure
+  with an alert icon, Cancel. Summary and session detail build one
+  `ShareWorkoutInput` for both formats and open the sheet. i18n
+  `workouts.share.{sheetTitle,image,asText,imageFailed}`. Web export check
+  (mock API, `shots-b3`): image action hidden, text action shown and its
+  payload reaches `navigator.share` (EF-6 unavailable path); card fits its
+  frame in English/kg and Spanish/lb. Fixes from those screenshots: the
+  volume tile caption is now a short `captionUp/captionDown` ("+892 kg vs Oct
+  14", the full sentence stays for the chip's label) — the sentence was cut
+  off in a three-tile row; the card's volume is shown in whole units and its
+  stats take content width ("13635.6 lb" was cut off).
 
 ## Definition of done (Phase B)
 

@@ -1,6 +1,6 @@
 import { formatDayHeading, formatDuration } from '@/lib/format';
 import { formatSetValues, sideLabels } from '@/lib/tracking';
-import { formatWeightValue } from '@/lib/weight';
+import { fromKg } from '@/lib/weight';
 
 import type { ShareSet, ShareWorkoutInput } from './shareText';
 
@@ -106,7 +106,8 @@ export function buildShareCard(input: ShareCardInput): ShareCardModel {
     {
       key: 'volume',
       label: t('workouts.share.volume'),
-      value: formatWeightValue(input.volumeKg, unit),
+      // Whole units: the card has room for "13636 lb", not "13635.6 lb".
+      value: String(Math.round(fromKg(input.volumeKg, unit))),
       unit,
     },
     { key: 'sets', label: t('workouts.setsLabel'), value: String(setsDone) },

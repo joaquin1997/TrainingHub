@@ -287,16 +287,28 @@ describe('describeComparison', () => {
       'en',
       translator.getFixedT('en'),
     );
-    expect(words).toEqual({ sentence: '1250 kg more than Oct 12', short: '+1250 kg' });
+    expect(words).toEqual({
+      sentence: '1250 kg more than Oct 12',
+      caption: '+1250 kg vs Oct 12',
+      short: '+1250 kg',
+    });
   });
 
   it('uses the display unit and the language; down and same have their words', () => {
     const t = translator.getFixedT('es');
     expect(
       describeComparison({ deltaKg: -100, direction: 'down', previousDate: date }, 'lb', 'es', t),
-    ).toEqual({ sentence: '220.5 lb menos que el 12 oct', short: '−220.5 lb' });
+    ).toEqual({
+      sentence: '220.5 lb menos que el 12 oct',
+      caption: '−220.5 lb vs. 12 oct',
+      short: '−220.5 lb',
+    });
     expect(
       describeComparison({ deltaKg: 0, direction: 'same', previousDate: date }, 'kg', 'es', t),
-    ).toEqual({ sentence: 'Igual que el 12 oct', short: 'Igual' });
+    ).toEqual({
+      sentence: 'Igual que el 12 oct',
+      caption: 'Igual que el 12 oct',
+      short: 'Igual',
+    });
   });
 });

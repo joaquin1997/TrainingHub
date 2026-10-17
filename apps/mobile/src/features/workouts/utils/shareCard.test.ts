@@ -148,7 +148,7 @@ describe('buildShareCard', () => {
     expect(card.date).toBe('Jueves, 15 de octubre');
     expect(card.stats).toEqual([
       { key: 'duration', label: 'Duración', value: '52:10' },
-      { key: 'volume', label: 'Volumen', value: '5291.1', unit: 'lb' },
+      { key: 'volume', label: 'Volumen', value: '5291', unit: 'lb' },
       { key: 'sets', label: 'Series', value: '3' },
     ]);
     expect(card.exercises).toEqual([{ name: 'Bench press', best: '220.5 lb × 6' }]);

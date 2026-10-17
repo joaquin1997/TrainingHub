@@ -9,9 +9,15 @@ import { progressClient } from '@/features/progress/api/progressClient';
 import { RecordsCard } from '@/features/progress/components/RecordsCard';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
+import { ShareSheet } from '@/features/workouts/components/ShareSheet';
 import { WarmUpChecklist } from '@/features/workouts/components/WarmUpChecklist';
 import { isPerformedSet } from '@/features/workouts/utils/performedSet';
-import { formatWorkoutShareText, shareRecords } from '@/features/workouts/utils/shareText';
+import { buildShareCard } from '@/features/workouts/utils/shareCard';
+import {
+  formatWorkoutShareText,
+  shareRecords,
+  type ShareWorkoutInput,
+} from '@/features/workouts/utils/shareText';
 import { shareWorkoutText } from '@/features/workouts/utils/shareWorkout';
 import { exerciseVolumeKg, summarizeSession } from '@/features/workouts/utils/sessionStats';
 import {
@@ -71,6 +77,7 @@ export function WorkoutSessionDetailScreen() {
   const [records, setRecords] = useState<SessionRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
+  const [isShareOpen, setIsShareOpen] = useState(false);
   const { settings } = useSettings();
   const unit = settings.unit;
 
@@ -163,6 +170,23 @@ export function WorkoutSessionDetailScreen() {
 
   const totals = summarizeSession(session);
   const when = session.completedAt ?? session.startedAt;
+  // One input for both share formats: the 0028 text and the image card (FR-25).
+  const shareInput: ShareWorkoutInput = {
+    when,
+    durationSeconds: session.completedAt
+      ? activeDurationSeconds(session.startedAt, session.completedAt, session.pausedSeconds)
+      : null,
+    volumeKg: totals.volumeKg,
+    unit,
+    language: i18n.language,
+    exercises: session.exercises.map((exercise) => ({
+      name: exercise.exerciseName,
+      sets: exercise.sets.map((set) => ({ ...set, performed: isPerformedSet(set) })),
+    })),
+    notes: session.notes,
+    records: shareRecords(records, unit, t),
+    t,
+  };
   const timeRange = session.completedAt
     ? `${formatTime(session.startedAt, i18n.language)} – ${formatTime(session.completedAt, i18n.language)}`
     : formatTime(session.startedAt, i18n.language);
@@ -246,27 +270,16 @@ export function WorkoutSessionDetailScreen() {
         icon="share-outline"
         variant="secondary"
         fullWidth
-        onPress={() =>
-          void shareWorkoutText(
-            formatWorkoutShareText({
-              when,
-              durationSeconds: session.completedAt
-                ? activeDurationSeconds(session.startedAt, session.completedAt, session.pausedSeconds)
-                : null,
-              volumeKg: totals.volumeKg,
-              unit,
-              language: i18n.language,
-              exercises: session.exercises.map((exercise) => ({
-                name: exercise.exerciseName,
-                sets: exercise.sets.map((set) => ({ ...set, performed: isPerformedSet(set) })),
-              })),
-              notes: session.notes,
-              records: shareRecords(records, unit, t),
-              t,
-            }),
-          )
-        }
+        onPress={() => setIsShareOpen(true)}
       />
+      {isShareOpen ? (
+        <ShareSheet
+          visible
+          card={buildShareCard(shareInput)}
+          onShareText={() => void shareWorkoutText(formatWorkoutShareText(shareInput))}
+          onClose={() => setIsShareOpen(false)}
+        />
+      ) : null}
 
       {/* What the warm-up block ticked (spec 0024 FR-7). */}
       <WarmUpChecklist

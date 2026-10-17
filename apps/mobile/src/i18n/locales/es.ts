@@ -357,6 +357,10 @@ export const es: TranslationCatalog = {
       // La imagen para compartir (spec 0034 FR-25).
       cardFooter: 'Registrado con TrainingHub',
       moreRecords: '+{{count}} más',
+      sheetTitle: 'Compartir entrenamiento',
+      image: 'Compartir imagen',
+      asText: 'Compartir como texto',
+      imageFailed: 'No se ha podido crear la imagen; compártelo como texto.',
     },
     // Volumen frente a la última vez en el resumen (spec 0034 FR-24).
     comparison: {
@@ -366,6 +370,8 @@ export const es: TranslationCatalog = {
       chipUp: '+{{delta}}',
       chipDown: '−{{delta}}',
       chipSame: 'Igual',
+      captionUp: '+{{delta}} vs. {{date}}',
+      captionDown: '−{{delta}} vs. {{date}}',
     },
     setType: {
       warmup: 'Calentamiento',

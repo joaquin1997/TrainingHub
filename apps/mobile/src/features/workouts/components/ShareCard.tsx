@@ -158,9 +158,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     paddingVertical: spacing.md,
   },
+  // Widths follow the content, so a long volume takes the room it needs.
   stat: {
-    flex: 1,
-    minWidth: 0,
+    flexGrow: 1,
+    flexShrink: 1,
     gap: spacing.xxs,
   },
   statLabel: {

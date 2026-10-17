@@ -354,6 +354,10 @@ export const en = {
       // The share image (spec 0034 FR-25).
       cardFooter: 'Logged with TrainingHub',
       moreRecords: '+{{count}} more',
+      sheetTitle: 'Share workout',
+      image: 'Share image',
+      asText: 'Share as text',
+      imageFailed: 'Couldn’t create the image — share as text instead.',
     },
     // Volume versus last time on the summary (spec 0034 FR-24).
     comparison: {
@@ -363,6 +367,8 @@ export const en = {
       chipUp: '+{{delta}}',
       chipDown: '−{{delta}}',
       chipSame: 'Same',
+      captionUp: '+{{delta}} vs {{date}}',
+      captionDown: '−{{delta}} vs {{date}}',
     },
     setType: {
       warmup: 'Warmup',
