@@ -85,7 +85,7 @@ export function sideRepsPlaceholder(set: WorkoutSetDraft, side: Side): string | 
 }
 
 /** A side's effective reps as typed or ghosted (spec 0022). */
-function effectiveSideReps(set: WorkoutSetDraft, side: Side): string {
+export function effectiveSideReps(set: WorkoutSetDraft, side: Side): string {
   return effectiveSetValue(
     (side === 'left' ? set.repsLeft : set.repsRight) ?? '',
     sideRepsPlaceholder(set, side),

@@ -82,4 +82,27 @@ describe('formatWorkoutShareText', () => {
     expect(text).toContain('Plank\n1. 1:00');
     expect(text).toContain('Rowing Machine\n1. 500 m · 1:45');
   });
+
+  it('shows both sides of a unilateral set in the app language (spec 0022)', () => {
+    const exercises = [
+      {
+        name: 'Bulgarian split squat',
+        sets: [
+          { weightKg: 20, reps: 18, repsLeft: 10, repsRight: 8, type: 'normal' as const, performed: true },
+        ],
+      },
+    ];
+
+    expect(formatWorkoutShareText({ ...base, exercises })).toContain(
+      'Bulgarian split squat\n1. 20 kg × 10 L / 8 R',
+    );
+    expect(
+      formatWorkoutShareText({
+        ...base,
+        exercises,
+        language: 'es',
+        t: translator(es as Record<string, unknown>),
+      }),
+    ).toContain('1. 20 kg × 10 I / 8 D');
+  });
 });

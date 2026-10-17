@@ -50,6 +50,14 @@ describe('summarizeSession', () => {
     expect(summary.volumeKg).toBe(500);
   });
 
+  it('counts both sides of a unilateral set (spec 0022 AC-1: 360 kg)', () => {
+    // As saved: reps holds left + right beside the split.
+    const set = { reps: 18, repsLeft: 10, repsRight: 8, weightKg: 20, ...done };
+    const summary = summarizeSession({ exercises: [{ sets: [set] }] });
+
+    expect(summary.volumeKg).toBe(360);
+  });
+
   it('treats missing reps or weight as no volume', () => {
     expect(summarizeSession({ exercises: [{ sets: [{ reps: 10, ...done }] }] }).volumeKg).toBe(0);
   });

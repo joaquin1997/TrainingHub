@@ -20,7 +20,7 @@ migration is additive; an older app keeps logging one rep count.
 | 4 | [x] Workouts API: sides parsed, `reps` = their sum, stored and returned, in last performance; progress: best reps, e1RM, most reps, reps at weight from the better side, volume from both; tests | api | tests (AC-1 API side, EF-1, better side) | `feat(workouts): record left and right reps of a set` |
 | 5 | [x] Draft store: flag per exercise, side values and placeholders (target, previous set, last time), save sends sides + total; tests | mobile | tests (AC-1, FR-4, EF-1) | `feat(workouts): workout draft holds left and right reps` |
 | 6 | [x] Row and header with L and R side by side; previous `20×10/8`; flag carried by add / replace / start; i18n | mobile | typecheck; web preview if a local API runs | `feat(workouts): log left and right in one set row` |
-| 7 | [ ] Saved sets show both sides (`formatSetValues`, summary, History detail, exercise detail); share text (0028) and watch target (0025) with sides; tests | mobile | tests (AC-1 display, volume 360) | `feat(workouts): show both sides in history, share and watch` |
+| 7 | [x] Saved sets show both sides (`formatSetValues`, summary, History detail, exercise detail); share text (0028) and watch target (0025) with sides; tests | mobile | tests (AC-1 display, volume 360) | `feat(workouts): show both sides in history, share and watch` |
 | 8 | [ ] Custom exercise switch; exercise detail switch through `PUT /exercises/:id/unilateral`; client; i18n | mobile | typecheck; web preview if a local API runs | `feat(exercises): switch an exercise to left and right` |
 | 9 | [ ] Progress log, definition of done | docs | — | `docs(sdd): record 0022 implementation` |
 
