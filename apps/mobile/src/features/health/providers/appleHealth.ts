@@ -37,6 +37,12 @@ export interface LiveActivityLabels {
   pause: string;
   resume: string;
   finish: string;
+  /** Spec 0035: the discard link, "Next: …" during a rest, no set left. */
+  discard: string;
+  next: string;
+  allDone: string;
+  /** Spoken form of the sets ring, "9 of 20 sets done". */
+  setsDone: (done: number, total: number) => string;
 }
 
 let liveActivityLabels: LiveActivityLabels = {
@@ -44,6 +50,10 @@ let liveActivityLabels: LiveActivityLabels = {
   pause: 'Pause',
   resume: 'Resume',
   finish: 'Finish',
+  discard: 'Discard',
+  next: 'Next',
+  allDone: 'All sets done',
+  setsDone: (done, total) => `${done} of ${total} sets done`,
 };
 
 export function setLiveActivityLabels(labels: LiveActivityLabels) {
@@ -55,6 +65,18 @@ const toIso = (ms: number | null | undefined) =>
   ms == null ? undefined : new Date(ms).toISOString();
 const toKcal = (kcal: number | null | undefined) =>
   kcal == null ? null : Math.round(kcal);
+
+/** The progress fields of the activity (spec 0035). */
+function progressOf(payload: HealthWorkoutPayload) {
+  const done = payload.setsDone ?? 0;
+  const total = payload.setsTotal ?? 0;
+  return {
+    upNext: payload.upNext ?? null,
+    setsDone: done,
+    setsTotal: total,
+    setsLabel: liveActivityLabels.setsDone(done, total),
+  };
+}
 
 /** The module, only when this phone can show Live Activities right now (EF-1). */
 function liveActivity() {
@@ -91,10 +113,14 @@ export const appleHealthLiveWorkoutBridge: LiveWorkoutBridge = {
       pausedSeconds: payload.pausedSeconds ?? 0,
       activeKcal: toKcal(payload.activeEnergyKcal),
       restEndsAtMs: toMs(payload.restEndsAt),
+      ...progressOf(payload),
       pausedLabel: liveActivityLabels.paused,
       pauseLabel: liveActivityLabels.pause,
       resumeLabel: liveActivityLabels.resume,
       finishLabel: liveActivityLabels.finish,
+      discardLabel: liveActivityLabels.discard,
+      nextLabel: liveActivityLabels.next,
+      allDoneLabel: liveActivityLabels.allDone,
     });
   },
   async updateLiveWorkout(payload: HealthWorkoutPayload) {
@@ -111,6 +137,15 @@ export const appleHealthLiveWorkoutBridge: LiveWorkoutBridge = {
     await module.setKcal(payload.workoutSessionId, toKcal(payload.activeEnergyKcal));
     // Optional: a build from before spec 0018 has no rest on the activity.
     await module.setRest?.(payload.workoutSessionId, toMs(payload.restEndsAt));
+    // Optional: a build from before spec 0035 shows no progress.
+    const progress = progressOf(payload);
+    await module.setProgress?.(
+      payload.workoutSessionId,
+      progress.upNext,
+      progress.setsDone,
+      progress.setsTotal,
+      progress.setsLabel,
+    );
   },
   async finishLiveWorkout(_payload: HealthWorkoutPayload) {
     await WorkoutLiveActivity?.end();

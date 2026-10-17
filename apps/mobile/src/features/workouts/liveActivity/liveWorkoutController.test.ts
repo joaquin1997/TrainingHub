@@ -9,6 +9,7 @@ import {
   skipRest,
   startRest,
   startActiveWorkout,
+  toggleWorkoutSetDone,
   updateWorkoutSetDraft,
 } from '@/features/workouts/state/workoutDraftStore';
 
@@ -92,6 +93,24 @@ describe('startLiveWorkoutController', () => {
     expect(bridge.startLiveWorkout).toHaveBeenCalledTimes(1);
     expect(bridge.startLiveWorkout).toHaveBeenCalledWith(
       expect.objectContaining({ workoutSessionId: draft.clientId, routineName: 'Push' }),
+    );
+  });
+
+  it('pushes the progress when a set is ticked (spec 0035 FR-17)', async () => {
+    const { bridge } = fakeBridge();
+    const controller = startLiveWorkoutController({ bridge, upNext: () => 'Bench' });
+    stop = controller.stop;
+    const draft = startActiveWorkout(routine, 'kg', 'u1');
+    await controller.idle();
+    expect(bridge.startLiveWorkout).toHaveBeenCalledWith(
+      expect.objectContaining({ upNext: 'Bench', setsDone: 0, setsTotal: 1 }),
+    );
+
+    const exercise = draft.exercises[0]!;
+    setActiveWorkout(toggleWorkoutSetDone(draft, exercise.id, exercise.entries[0]!.id));
+    await controller.idle();
+    expect(bridge.updateLiveWorkout).toHaveBeenLastCalledWith(
+      expect.objectContaining({ setsDone: 1, setsTotal: 1 }),
     );
   });
 

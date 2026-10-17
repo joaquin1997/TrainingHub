@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import i18n from '@/i18n';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppState, Platform } from 'react-native';
@@ -22,6 +23,7 @@ import { publishActiveEnergy } from './activeEnergyStore';
 import { createKcalSources } from './kcalSources';
 
 import { startLiveWorkoutController } from './liveWorkoutController';
+import { liveUpNext } from './liveWorkoutPayload';
 
 /**
  * Runs the live workout status for the whole app (spec 0012) and the workout
@@ -45,6 +47,10 @@ export function useLiveWorkoutController(enabled: boolean) {
       pause: t('workouts.pause'),
       resume: t('workouts.resume'),
       finish: t('workouts.finish'),
+      discard: t('workouts.liveDiscard'),
+      next: t('workouts.liveNext'),
+      allDone: t('workouts.liveAllDone'),
+      setsDone: (done, total) => t('workouts.liveSetsDone', { done, total }),
     });
     setWatchLabels({
       done: t('workouts.watchDone'),
@@ -70,7 +76,11 @@ export function useLiveWorkoutController(enabled: boolean) {
       return;
     }
 
-    const controller = startLiveWorkoutController({ bridge });
+    const controller = startLiveWorkoutController({
+      bridge,
+      upNext: (draft) =>
+        liveUpNext(draft, (round) => i18n.t('workouts.liveRound', { round })),
+    });
     // The phone's Health reading until the watch measures the workout (0025).
     const kcal = createKcalSources((clientId, value) => {
       controller.setActiveEnergyKcal(value);

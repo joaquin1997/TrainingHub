@@ -9,10 +9,18 @@ export type StartActivityPayload = {
   activeKcal: number | null;
   /** End of the running rest (spec 0018); ignored by builds before it. */
   restEndsAtMs?: number | null;
+  /** Spec 0035; ignored by builds before it. */
+  upNext?: string | null;
+  setsDone?: number;
+  setsTotal?: number;
+  setsLabel?: string;
   pausedLabel: string;
   pauseLabel: string;
   resumeLabel: string;
   finishLabel: string;
+  discardLabel?: string;
+  nextLabel?: string;
+  allDoneLabel?: string;
 };
 
 export type ActivityState = {
@@ -40,6 +48,14 @@ type WorkoutLiveActivityNative = {
   setKcal(workoutId: string, kcal: number | null): Promise<void>;
   /** The running rest's end, or null (spec 0018). Absent in builds before it. */
   setRest?(workoutId: string, restEndsAtMs: number | null): Promise<void>;
+  /** Up-next set and sets done (spec 0035). Absent in builds before it. */
+  setProgress?(
+    workoutId: string,
+    upNext: string | null,
+    setsDone: number,
+    setsTotal: number,
+    setsLabel: string,
+  ): Promise<void>;
   end(): Promise<void>;
   getState(): Promise<ActivityState | null>;
   addListener(

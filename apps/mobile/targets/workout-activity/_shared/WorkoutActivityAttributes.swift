@@ -14,6 +14,14 @@ struct WorkoutActivityAttributes: ActivityAttributes {
     var activeKcal: Int?
     /// End of the running rest; nil when none runs (spec 0018).
     var restEndsAt: Date?
+    /// The up-next set as display text; nil when every set is done (spec 0035).
+    /// Optional, like the fields below, so an activity from an older build decodes.
+    var upNext: String?
+    /// Sets done and all sets of the workout (spec 0035).
+    var setsDone: Int?
+    var setsTotal: Int?
+    /// Spoken form of the sets ring, "9 of 20 sets done".
+    var setsLabel: String?
 
     /// Every update passes this as the stale date: the rest's end while it is
     /// ahead, so the system re-renders the activity without the countdown once
@@ -31,4 +39,8 @@ struct WorkoutActivityAttributes: ActivityAttributes {
   var pauseLabel: String
   var resumeLabel: String
   var finishLabel: String
+  /// Spec 0035; nil on activities started by an older build.
+  var discardLabel: String?
+  var nextLabel: String?
+  var allDoneLabel: String?
 }

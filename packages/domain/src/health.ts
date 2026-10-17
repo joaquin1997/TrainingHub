@@ -24,6 +24,14 @@ export interface HealthWorkoutPayload {
   activeEnergyKcal?: number | null;
   /** End of the running rest, absent when no rest runs (spec 0018). */
   restEndsAt?: ISODateString;
+  /**
+   * The up-next set as display text, e.g. "Bench press · 100 kg × 8", already
+   * in the workout's display unit; null when every set is done (spec 0035).
+   */
+  upNext?: string | null;
+  /** Sets done and all sets of the workout, warm-ups included (spec 0035). */
+  setsDone?: number;
+  setsTotal?: number;
 }
 
 /**

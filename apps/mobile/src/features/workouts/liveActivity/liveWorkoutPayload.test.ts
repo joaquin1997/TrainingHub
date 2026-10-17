@@ -1,9 +1,18 @@
 import type { LiveWorkoutState } from '@workout/domain';
 import { describe, expect, it } from 'vitest';
 
-import type { WorkoutSessionDraft } from '@/features/workouts/state/workoutDraftStore';
+import type {
+  WorkoutExerciseDraft,
+  WorkoutSessionDraft,
+} from '@/features/workouts/state/workoutDraftStore';
 
-import { reconcile, sameRest, toLiveWorkoutPayload } from './liveWorkoutPayload';
+import {
+  liveUpNext,
+  reconcile,
+  sameProgress,
+  sameRest,
+  toLiveWorkoutPayload,
+} from './liveWorkoutPayload';
 
 const draft = {
   id: 'workout-session-r1',
@@ -12,7 +21,7 @@ const draft = {
   routineName: 'Push',
   startedAt: '2026-10-16T09:00:00.000Z',
   pausedSeconds: 60,
-  exercises: [{}, {}],
+  exercises: [{ entries: [] }, { entries: [] }],
 } as unknown as WorkoutSessionDraft;
 
 const state = (partial: Partial<LiveWorkoutState> = {}): LiveWorkoutState => ({
@@ -31,6 +40,66 @@ describe('toLiveWorkoutPayload', () => {
       pausedSeconds: 60,
       activeEnergyKcal: 123,
     });
+  });
+});
+
+const exercise = (
+  id: string,
+  done: boolean[],
+  extra: Partial<WorkoutExerciseDraft> = {},
+): WorkoutExerciseDraft => ({
+  id,
+  exerciseId: `ex-${id}`,
+  exerciseName: id === 'b' ? 'Bench press' : 'Row',
+  order: 0,
+  entries: done.map((isDone, i) => ({
+    id: `${id}${i + 1}`,
+    order: i + 1,
+    reps: '',
+    weightKg: '',
+    weightPlaceholder: '100',
+    repsPlaceholder: '8',
+    done: isDone,
+    type: 'normal',
+  })),
+  ...extra,
+});
+
+const workout = (...exercises: WorkoutExerciseDraft[]): WorkoutSessionDraft => ({
+  ...draft,
+  unit: 'kg',
+  exercises,
+});
+
+describe('progress on the surface (spec 0035)', () => {
+  const round = (n: number) => `Round ${n}`;
+
+  it('names the up-next set with its target and counts the sets done (FR-14)', () => {
+    const payload = toLiveWorkoutPayload(workout(exercise('b', [true, false, false])), null, (d) =>
+      liveUpNext(d, round),
+    );
+    expect(payload).toMatchObject({ upNext: 'Bench press · 100 kg × 8', setsDone: 1, setsTotal: 3 });
+  });
+
+  it('adds the round inside a superset', () => {
+    const superset = workout(
+      exercise('b', [true, false], { supersetGroup: 1 }),
+      exercise('r', [true, false], { supersetGroup: 1 }),
+    );
+    expect(liveUpNext(superset, round)).toBe('Bench press · 100 kg × 8 · Round 2');
+  });
+
+  it('is null once every set is done', () => {
+    expect(liveUpNext(workout(exercise('b', [true])), round)).toBeNull();
+  });
+
+  it('tells whether the surface shows the same progress (FR-17)', () => {
+    const shown = { upNext: 'A', setsDone: 1, setsTotal: 3 };
+    expect(sameProgress(shown, { ...shown })).toBe(true);
+    expect(sameProgress(shown, { ...shown, setsDone: 2 })).toBe(false);
+    expect(sameProgress(shown, { ...shown, setsTotal: 4 })).toBe(false);
+    expect(sameProgress(shown, { ...shown, upNext: null })).toBe(false);
+    expect(sameProgress(null, shown)).toBe(false);
   });
 });
 
