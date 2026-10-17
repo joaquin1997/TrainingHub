@@ -21,7 +21,7 @@ follows in separate commits; its JS reaches native code through
 | **L2** | | | | |
 | 3 | [x] `WatchWorkoutSnapshot`, `WatchWorkoutEvent`, `WatchWorkoutBridge` in `packages/domain/src/health.ts` | domain | `pnpm -r typecheck` | `feat(domain): watch workout contract` |
 | 4 | [x] `completeSet` in `workoutDraftStore.ts` (done + rest from an instant; no-op when done or unknown) used by `handleToggleDone`; `watch/watchProtocol.ts`: `currentSetToDo`, `toWatchSnapshot`, `parseWatchEvent`, `applyWatchEvent` + tests | mobile | unit tests: tick → done + rest from the tick's instant (AC-3), replay is a no-op (EF-1), events for another workout dropped, unknown/malformed JSON ignored, target text in the session unit (Art. 4), superset order | `feat(workouts): apply watch requests to the active workout` |
-| 5 | [ ] `watch/watchWorkoutController.ts` (start / update / end finished-or-discarded; events → store; kcal and finish callbacks) + tests with a fake bridge | mobile | controller tests: start once per workout (FR-2), update only on snapshot change, end `finished` vs `discarded`, ordered apply of queued ticks (EF-1), kcal callback only for the current workout | `feat(workouts): mirror the active workout to a watch` |
+| 5 | [x] `watch/watchWorkoutController.ts` (start / update / end finished-or-discarded; events → store; kcal and finish callbacks) + tests with a fake bridge | mobile | controller tests: start once per workout (FR-2), update only on snapshot change, end `finished` vs `discarded`, ordered apply of queued ticks (EF-1), kcal callback only for the current workout | `feat(workouts): mirror the active workout to a watch` |
 | 6 | [ ] Local module `modules/watch-workout` (WCSession, `startWatchApp`, `sendContext`, buffered `onMessage`); Apple `WatchWorkoutBridge` adapter + labels; `findWatchWorkoutBridge`; wiring in `useLiveWorkoutController` (watch kcal wins, finish request → `action=finish`); i18n en/es | mobile (**native — rebuild**) | typecheck + tests (wire-format and labels); **[DEVICE]** FR-2, FR-3 | `feat(ios): talk to the watch app from the phone` |
 | 7 | [ ] Watch app target `targets/watch/` (`type: 'watch'`, watchOS 11, HealthKit entitlement, `workout-processing`): HK session + live builder from the phone's start, HR/kcal, context in, events out (queued), Done / rest + haptic / Pause / Resume / Finish request, save on `finished`, discard on `discarded`; wire-format test against the watch's `Codable` keys | watch (**native — rebuild**) | `swiftc -typecheck` against the watchOS 26.5 simulator SDK; wire-format test; `expo config` evaluates the target; **[DEVICE]** FR-2…FR-5, AC-2, AC-3, EF-1, EF-2 | `feat(watch): the workout on the Apple Watch` |
 | 8 | [ ] README (watch target, install on the watch), progress log, pending device steps | docs | links resolve | `docs(sdd): close spec 0025 implementation` |
@@ -73,6 +73,12 @@ Ultra 2.
   [ASSUMPTION: with no rest running, the watch offers the next set of the
   first block with a set left — the phone does not record which set was
   ticked last.]
+- 2026-10-17 — Task 5: `startWatchWorkoutController` — start on a new workout
+  identity, update only when the snapshot changes, end `finished` when
+  `getLatestCompletedWorkout()` is that workout, else `discarded`; requests
+  applied in arrival order, a repeated id dropped (last 200 kept); kcal and
+  Finish passed to callbacks. 7 tests with a fake bridge and store. Not
+  mounted yet (task 6).
 
 ## Definition of done
 
