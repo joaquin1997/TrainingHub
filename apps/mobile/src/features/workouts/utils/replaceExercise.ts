@@ -72,7 +72,12 @@ function emptySetLike(set: WorkoutSetDraft, order: number, exerciseId: string): 
 export function replaceExerciseInWorkout(
   workoutDraft: WorkoutSessionDraft,
   workoutExerciseId: string,
-  exercise: { id: string; name: string; trackingType?: ExerciseTrackingType },
+  exercise: {
+    id: string;
+    name: string;
+    trackingType?: ExerciseTrackingType;
+    isUnilateral?: boolean;
+  },
   doneSets: DoneSetsChoice,
 ): WorkoutSessionDraft {
   const index = workoutDraft.exercises.findIndex(
@@ -97,6 +102,7 @@ export function replaceExerciseInWorkout(
     exerciseName: exercise.name,
     // The replacement records what the new exercise tracks (spec 0021).
     trackingType: exercise.trackingType,
+    isUnilateral: exercise.isUnilateral,
     imagePlaceholderText: undefined,
     routineExerciseId: undefined,
     entries: template.map((set, setIndex) =>

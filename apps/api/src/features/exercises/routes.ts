@@ -12,6 +12,7 @@ import {
   listMuscleGroups,
   removeFavoriteExercise,
   saveExercisePhoto,
+  setExerciseUnilateral,
 } from './repository.js';
 import { decodeJpegBase64 } from '../profile/validation.js';
 import { isExerciseTrackingType } from './trackingTypes.js';
@@ -35,7 +36,8 @@ function parseCreateExerciseInput(body: unknown) {
     !body.name.trim() ||
     !isStringArray(body.primaryMuscleGroupIds) ||
     !isStringArray(body.secondaryMuscleGroupIds) ||
-    (body.trackingType !== undefined && !isExerciseTrackingType(body.trackingType))
+    (body.trackingType !== undefined && !isExerciseTrackingType(body.trackingType)) ||
+    (body.isUnilateral !== undefined && typeof body.isUnilateral !== 'boolean')
   ) {
     return null;
   }
@@ -45,6 +47,7 @@ function parseCreateExerciseInput(body: unknown) {
     primaryMuscleGroupIds: body.primaryMuscleGroupIds.map((id) => id.trim()),
     secondaryMuscleGroupIds: body.secondaryMuscleGroupIds.map((id) => id.trim()),
     trackingType: body.trackingType,
+    isUnilateral: body.isUnilateral,
   };
 }
 
@@ -129,6 +132,33 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
       throw error;
     }
   });
+
+  app.put<{ Params: { id: string }; Body: unknown }>(
+    '/exercises/:id/unilateral',
+    { preHandler: app.authenticate },
+    async (request, reply) => {
+      const body = request.body;
+      if (!isRecord(body) || typeof body.isUnilateral !== 'boolean') {
+        return reply.code(400).send({ message: 'Invalid exercise payload' });
+      }
+
+      const result = await setExerciseUnilateral(
+        await resolveUserPublicId(request),
+        request.params.id,
+        body.isUnilateral,
+      );
+
+      if (result === 'not-found') {
+        return reply.code(404).send({ message: 'Exercise not found' });
+      }
+
+      if (result === 'forbidden') {
+        return reply.code(403).send({ message: 'Only the creator can change this exercise' });
+      }
+
+      return result;
+    },
+  );
 
   // Same upload shape as the profile photo (spec 0027): a small JPEG, base64.
   app.put<{ Params: { id: string }; Body: unknown }>(

@@ -1,5 +1,7 @@
 import type { ExerciseRecord, RecordType } from '@workout/domain';
 
+import { recordReps } from '../workouts/sides.js';
+
 /**
  * Personal records by type (spec 0023). Pure: the input is one exercise's
  * sessions, oldest first, each holding only its working sets (performed and
@@ -10,10 +12,15 @@ import type { ExerciseRecord, RecordType } from '@workout/domain';
  * Time and distance (spec 0021) are entries there too; the weight-based types
  * read only lifting sets (no time, no distance), so a carry's 24 kg is never a
  * weight record — its record is the longest time (FR-6).
+ *
+ * A unilateral set (spec 0022) holds `reps` = left + right: volumes read that
+ * total, while reps, reps at weight and estimated 1RM read the better side.
  */
 
 export type RecordSet = {
   reps?: number | null;
+  repsLeft?: number | null;
+  repsRight?: number | null;
   weightKg?: number | null;
   durationSeconds?: number | null;
   distanceMeters?: number | null;
@@ -86,7 +93,7 @@ function bestSet(
       best = {
         value,
         weightKg: set.weightKg ?? undefined,
-        reps: set.reps ?? undefined,
+        reps: recordReps(set),
       };
     }
   }
@@ -98,7 +105,10 @@ export const heaviestWeight: SingleValueRecord = (sets) =>
   bestSet(sets, (set) => (positive(set.weightKg) ? set.weightKg : undefined));
 
 export const mostReps: SingleValueRecord = (sets) =>
-  bestSet(sets, (set) => (positive(set.reps) ? set.reps : undefined));
+  bestSet(sets, (set) => {
+    const reps = recordReps(set);
+    return positive(reps) ? reps : undefined;
+  });
 
 export const bestSetVolume: SingleValueRecord = (sets) =>
   bestSet(sets, (set) =>
@@ -118,7 +128,7 @@ export const bestSessionVolume: SingleValueRecord = (sets) => {
 };
 
 export const bestEstimatedOneRepMax: SingleValueRecord = (sets) =>
-  bestSet(sets, (set) => estimateOneRepMax(set.reps, set.weightKg));
+  bestSet(sets, (set) => estimateOneRepMax(recordReps(set), set.weightKg));
 
 export const longestTime: SingleValueRecord = (sets) =>
   bestSet(sets, (set) => (positive(set.durationSeconds) ? set.durationSeconds : undefined));
@@ -147,8 +157,9 @@ export function repsByWeight(sets: RecordSet[]): Map<number, number> {
   const byWeight = new Map<number, number>();
 
   for (const set of sets) {
-    if (positive(set.weightKg) && positive(set.reps)) {
-      byWeight.set(set.weightKg, Math.max(byWeight.get(set.weightKg) ?? 0, set.reps));
+    const reps = recordReps(set);
+    if (positive(set.weightKg) && positive(reps)) {
+      byWeight.set(set.weightKg, Math.max(byWeight.get(set.weightKg) ?? 0, reps));
     }
   }
 

@@ -19,7 +19,7 @@ import {
   formatDuration,
   formatTime,
 } from '@/lib/format';
-import { formatDistance, formatSetValues } from '@/lib/tracking';
+import { formatDistance, formatSetValues, sideLabels } from '@/lib/tracking';
 import { formatWeightValue } from '@/lib/weight';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
@@ -287,7 +287,7 @@ export function WorkoutSessionDetailScreen() {
                 />
                 <Text style={styles.setNum}>{set.order}</Text>
                 <Text style={styles.setValue}>
-                  {formatSetValues(set, unit)}
+                  {formatSetValues(set, unit, sideLabels(t))}
                 </Text>
                 {type ? (
                   <Chip label={type} size="sm" tone={set.type === 'failure' ? 'record' : 'neutral'} />

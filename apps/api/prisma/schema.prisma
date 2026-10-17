@@ -68,6 +68,8 @@ model Exercise {
   isSystemDefined           Boolean                      @default(true)
   /// What its sets record (spec 0021): weight_reps | reps | duration | weight_duration | distance_duration.
   trackingType              String                       @default("weight_reps")
+  /// Done one side at a time; its sets record left and right reps (spec 0022).
+  isUnilateral              Boolean                      @default(false)
   createdByUserId           BigInt?
   createdAt                 DateTime                     @default(now())
   updatedAt                 DateTime                     @updatedAt
@@ -235,7 +237,11 @@ model WorkoutSet {
   workoutExerciseId BigInt
   order             Int
   type              String          @default("normal")
+  /// For a set with sides, the sum of repsLeft and repsRight (spec 0022).
   reps              Int?
+  /// Reps per side of a unilateral exercise's set (spec 0022); null = not done.
+  repsLeft          Int?
+  repsRight         Int?
   weightKg          Float?
   durationSeconds   Int?
   distanceMeters    Float?

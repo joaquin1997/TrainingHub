@@ -8,6 +8,7 @@ import { nextSetToDo, type SetToDo } from '@/features/workouts/restTimer/nextSet
 import {
   completeSet,
   effectiveSetValue,
+  effectiveSideReps,
   pauseWorkout,
   resolveRestSeconds,
   resumeWorkout,
@@ -32,7 +33,8 @@ export function currentSetToDo(draft: WorkoutSessionDraft): SetToDo | null {
 
 /**
  * The planned values as the phone shows them, e.g. "60 kg × 8", "0:45" or
- * "500 m 1:45", following the exercise's tracking type (spec 0021). The
+ * "500 m 1:45", following the exercise's tracking type (spec 0021); a
+ * unilateral exercise's reps read "× 10/8", left then right (spec 0022). The
  * draft's strings are already in the workout's display unit, so nothing is
  * converted (constitution Art. 4).
  */
@@ -40,6 +42,7 @@ export function setTarget(
   set: WorkoutSetDraft,
   unit: string,
   trackingType?: ExerciseTrackingType,
+  isUnilateral = false,
 ): string {
   const parts = trackingFields(trackingType).map((field) => {
     switch (field) {
@@ -48,6 +51,11 @@ export function setTarget(
         return weight ? `${weight} ${unit}` : '';
       }
       case 'reps': {
+        if (isUnilateral) {
+          const left = effectiveSideReps(set, 'left');
+          const right = effectiveSideReps(set, 'right');
+          return left || right ? `× ${left || '–'}/${right || '–'}` : '';
+        }
         const reps = effectiveSetValue(set.reps, set.repsPlaceholder);
         return reps ? `× ${reps}` : '';
       }
@@ -89,7 +97,12 @@ export function toWatchSnapshot(
             exerciseName: exercise.exerciseName,
             setNumber: setIndex + 1,
             setCount: exercise.entries.length,
-            target: setTarget(set, draft.unit ?? 'kg', exercise.trackingType),
+            target: setTarget(
+              set,
+              draft.unit ?? 'kg',
+              exercise.trackingType,
+              exercise.isUnilateral,
+            ),
             restSeconds: resolveRestSeconds(exercise, defaultRestSeconds),
           }
         : undefined,

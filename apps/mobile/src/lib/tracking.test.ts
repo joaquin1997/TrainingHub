@@ -73,4 +73,13 @@ describe('formatSetValues', () => {
       '500 m · 1:45',
     );
   });
+
+  it('shows both sides of a unilateral set (spec 0022 AC-1, EF-1)', () => {
+    const set = { weightKg: 20, reps: 18, repsLeft: 10, repsRight: 8 };
+    expect(formatSetValues(set, 'kg')).toBe('20 kg × 10 L / 8 R');
+    expect(formatSetValues(set, 'kg', { left: 'I', right: 'D' })).toBe('20 kg × 10 I / 8 D');
+    expect(formatSetValues({ weightKg: 20, reps: 10, repsLeft: 10 }, 'kg')).toBe(
+      '20 kg × 10 L / – R',
+    );
+  });
 });

@@ -20,9 +20,13 @@ import {
   type ExerciseRecordHistory,
   type RecordSet,
 } from './records.js';
+import { recordReps } from '../workouts/sides.js';
 
 type ProgressSetInput = {
+  /** For a unilateral set, left + right (spec 0022): volume reads it as is. */
   reps?: number | null;
+  repsLeft?: number | null;
+  repsRight?: number | null;
   weightKg?: number | null;
   durationSeconds?: number | null;
   distanceMeters?: number | null;
@@ -108,13 +112,14 @@ function buildAccumulators(
       accumulator.points.push({
         date: session.date,
         bestWeightKg: maxDefined(workingSets.map((set) => set.weightKg)),
-        bestReps: maxDefined(workingSets.map((set) => set.reps)),
+        // The better side of a unilateral set (spec 0022 assumption).
+        bestReps: maxDefined(workingSets.map(recordReps)),
         totalVolume: exercise.sets.reduce(
           (sum, set) => sum + (set.reps ?? 0) * (set.weightKg ?? 0),
           0,
         ),
         estimatedOneRepMax: maxDefined(
-          workingSets.map((set) => estimateOneRepMax(set.reps, set.weightKg)),
+          workingSets.map((set) => estimateOneRepMax(recordReps(set), set.weightKg)),
         ),
         bestDurationSeconds: maxDefined(workingSets.map((set) => set.durationSeconds)),
         bestDistanceMeters: maxDefined(workingSets.map((set) => set.distanceMeters)),

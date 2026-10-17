@@ -122,6 +122,24 @@ describe('toWatchSnapshot', () => {
       setTarget({ ...set, weightPlaceholder: undefined, repsPlaceholder: undefined }, 'kg'),
     ).toBe('');
   });
+
+  it('shows left and right of a unilateral exercise (spec 0022)', () => {
+    const set = exercise('a', [false]).entries[0]!;
+    expect(setTarget({ ...set, repsLeft: '10', repsRightPlaceholder: '8' }, 'kg', undefined, true)).toBe(
+      '60 kg × 10/8',
+    );
+    // Both sides ghost the set's reps (routine target) when they have none.
+    expect(setTarget(set, 'kg', 'weight_reps', true)).toBe('60 kg × 8/8');
+    expect(setTarget({ ...set, repsPlaceholder: undefined, repsLeft: '9' }, 'kg', 'reps', true)).toBe(
+      '× 9/–',
+    );
+
+    const snapshot = toWatchSnapshot(
+      workout(exercise('a', [false], { isUnilateral: true })),
+      90,
+    );
+    expect(snapshot.currentSet?.target).toBe('60 lb × 8/8');
+  });
 });
 
 describe('applyWatchEvent (spec 0025 AC-3, EF-1)', () => {

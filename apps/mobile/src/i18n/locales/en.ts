@@ -152,6 +152,10 @@ export const en = {
       weight_duration: 'Weight & time',
       distance_duration: 'Distance & time',
     },
+    // Unilateral exercise (spec 0022).
+    unilateralTitle: 'Left and right',
+    unilateralHint: 'Done one side at a time: each set records left and right reps.',
+    unilateralError: 'The exercise could not be changed.',
   },
   settings: {
     language: 'Language',
@@ -319,6 +323,11 @@ export const en = {
     // Time and distance sets (spec 0021).
     colTime: 'TIME',
     colDistance: 'DIST',
+    // Left and right of a unilateral exercise (spec 0022); also in "10 L / 8 R".
+    colLeft: 'L',
+    colRight: 'R',
+    repsLeft: 'Left reps',
+    repsRight: 'Right reps',
     startSetTimer: 'Start set timer',
     stopSetTimer: 'Stop set timer',
     addSet: 'Add set',

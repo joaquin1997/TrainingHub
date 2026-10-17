@@ -47,6 +47,15 @@ export type WorkoutSetDraft = {
   distance?: string;
   durationPlaceholder?: string;
   distancePlaceholder?: string;
+  /**
+   * Reps per side of a unilateral exercise (spec 0022), side by side in the
+   * row. A side without its own placeholder ghosts `repsPlaceholder` (see
+   * {@link sideRepsPlaceholder}), so routine targets apply to each side.
+   */
+  repsLeft?: string;
+  repsRight?: string;
+  repsLeftPlaceholder?: string;
+  repsRightPlaceholder?: string;
   done: boolean;
   /** Rest configured when this set was marked done, in seconds. */
   restSeconds?: number;
@@ -59,7 +68,29 @@ export type WorkoutSetDraft = {
 };
 
 /** A set value the person types (the `Kg` field is in the display unit). */
-export type SetDraftField = 'reps' | 'weightKg' | 'duration' | 'distance';
+export type SetDraftField =
+  | 'reps'
+  | 'weightKg'
+  | 'duration'
+  | 'distance'
+  | 'repsLeft'
+  | 'repsRight';
+
+export type Side = 'left' | 'right';
+
+/** The ghosted reps of one side: its own, else the set's (target, previous set). */
+export function sideRepsPlaceholder(set: WorkoutSetDraft, side: Side): string | undefined {
+  return (side === 'left' ? set.repsLeftPlaceholder : set.repsRightPlaceholder) ??
+    set.repsPlaceholder;
+}
+
+/** A side's effective reps as typed or ghosted (spec 0022). */
+export function effectiveSideReps(set: WorkoutSetDraft, side: Side): string {
+  return effectiveSetValue(
+    (side === 'left' ? set.repsLeft : set.repsRight) ?? '',
+    sideRepsPlaceholder(set, side),
+  );
+}
 
 /** Trimmed actual value, falling back to the ghosted placeholder when empty. */
 export function effectiveSetValue(value: string, placeholder?: string): string {
@@ -76,6 +107,8 @@ export type WorkoutExerciseDraft = {
   supersetGroup?: number;
   /** Captured when the exercise joined the workout; absent = weight & reps. */
   trackingType?: ExerciseTrackingType;
+  /** Captured like the tracking type: its reps are logged per side (spec 0022). */
+  isUnilateral?: boolean;
   order: number;
   entries: WorkoutSetDraft[];
 };
@@ -166,6 +199,7 @@ function buildExerciseDrafts(
       restSeconds: routineExercise.restSeconds,
       supersetGroup: routineExercise.supersetGroup,
       trackingType: routineExercise.trackingType,
+      isUnilateral: routineExercise.isUnilateral,
       order: routineExercise.orderIndex,
       entries: routineExercise.sets
         .slice()
@@ -251,13 +285,19 @@ export function updateWorkoutSetDraft(
 
 export function addExerciseToWorkout(
   workoutDraft: WorkoutSessionDraft,
-  exercise: { id: string; name: string; trackingType?: ExerciseTrackingType },
+  exercise: {
+    id: string;
+    name: string;
+    trackingType?: ExerciseTrackingType;
+    isUnilateral?: boolean;
+  },
 ): WorkoutSessionDraft {
   const newExercise: WorkoutExerciseDraft = {
     id: nextDraftId('we'),
     exerciseId: exercise.id,
     exerciseName: exercise.name,
     trackingType: exercise.trackingType,
+    isUnilateral: exercise.isUnilateral,
     order: workoutDraft.exercises.length + 1,
     entries: [
       {
@@ -318,6 +358,12 @@ export function addSetToWorkoutExercise(
           ? effectiveSetValue(previousSet.distance ?? '', previousSet.distancePlaceholder) ||
             undefined
           : undefined,
+        repsLeftPlaceholder: previousSet
+          ? effectiveSideReps(previousSet, 'left') || undefined
+          : undefined,
+        repsRightPlaceholder: previousSet
+          ? effectiveSideReps(previousSet, 'right') || undefined
+          : undefined,
         done: false,
         type: 'normal',
       };
@@ -377,12 +423,23 @@ export function applyLastPerformance(
         last.distanceMeters !== undefined && last.distanceMeters !== null
           ? String(last.distanceMeters)
           : set.distancePlaceholder;
+      // Per side (spec 0022 FR-4); a side not done last time ghosts the other.
+      const lastLeft = last.repsLeft ?? last.repsRight;
+      const lastRight = last.repsRight ?? last.repsLeft;
+      const repsLeftPlaceholder =
+        lastLeft !== undefined && lastLeft !== null ? String(lastLeft) : set.repsLeftPlaceholder;
+      const repsRightPlaceholder =
+        lastRight !== undefined && lastRight !== null
+          ? String(lastRight)
+          : set.repsRightPlaceholder;
 
       if (
         repsPlaceholder === set.repsPlaceholder &&
         weightPlaceholder === set.weightPlaceholder &&
         durationPlaceholder === set.durationPlaceholder &&
-        distancePlaceholder === set.distancePlaceholder
+        distancePlaceholder === set.distancePlaceholder &&
+        repsLeftPlaceholder === set.repsLeftPlaceholder &&
+        repsRightPlaceholder === set.repsRightPlaceholder
       ) {
         return set;
       }
@@ -394,6 +451,8 @@ export function applyLastPerformance(
         weightPlaceholder,
         durationPlaceholder,
         distancePlaceholder,
+        repsLeftPlaceholder,
+        repsRightPlaceholder,
       };
     });
 
@@ -771,7 +830,7 @@ export function toCreateWorkoutSessionInput(
         order: set.order,
         type: set.type,
         isWarmup: set.type === 'warmup' || undefined,
-        ...setValuesToSave(set, exercise.trackingType, unit),
+        ...setValuesToSave(set, exercise.trackingType, unit, exercise.isUnilateral),
         restSeconds: set.done ? set.restSeconds : undefined,
         completedAt: set.done ? completedAt : undefined,
       })),
@@ -779,22 +838,35 @@ export function toCreateWorkoutSessionInput(
   };
 }
 
-type SetValues = Pick<WorkoutSetInput, 'reps' | 'weightKg' | 'durationSeconds' | 'distanceMeters'>;
+type SetValues = Pick<
+  WorkoutSetInput,
+  'reps' | 'repsLeft' | 'repsRight' | 'weightKg' | 'durationSeconds' | 'distanceMeters'
+>;
 
 /**
  * The set's effective values for the fields its exercise tracks, and only
  * those (spec 0021 FR-3): weight in canonical kg, time in whole seconds,
  * distance in metres. Empty or unreadable values are left out. A weight &
  * reps exercise saves exactly what it saved before (AC-3).
+ *
+ * A unilateral exercise (spec 0022) saves each side's reps and their sum as
+ * `reps`; a side with no value, or 0, is not done (EF-1).
  */
 export function setValuesToSave(
   set: WorkoutSetDraft,
   trackingType: ExerciseTrackingType | undefined,
   unit: WeightUnit,
+  isUnilateral = false,
 ): SetValues {
   const values: SetValues = {};
 
-  if (tracksField(trackingType, 'reps')) {
+  if (tracksField(trackingType, 'reps') && isUnilateral) {
+    const left = Number(effectiveSideReps(set, 'left')) || undefined;
+    const right = Number(effectiveSideReps(set, 'right')) || undefined;
+    values.repsLeft = left;
+    values.repsRight = right;
+    values.reps = left || right ? (left ?? 0) + (right ?? 0) : undefined;
+  } else if (tracksField(trackingType, 'reps')) {
     values.reps = Number(effectiveSetValue(set.reps, set.repsPlaceholder)) || undefined;
   }
   if (tracksField(trackingType, 'weight')) {
@@ -969,7 +1041,7 @@ export function toWorkoutSessionSkeleton(
         workoutExerciseId: exercise.id,
         order: set.order,
         type: set.type,
-        ...setValuesToSave(set, exercise.trackingType, unit),
+        ...setValuesToSave(set, exercise.trackingType, unit, exercise.isUnilateral),
         restSeconds: set.restSeconds,
         completedAt,
         createdAt: completedAt,

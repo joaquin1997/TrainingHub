@@ -14,6 +14,7 @@ vi.mock('./repository.js', () => {
     listFavoriteExerciseIds: vi.fn(),
     addFavoriteExercise: vi.fn(),
     removeFavoriteExercise: vi.fn(),
+    setExerciseUnilateral: vi.fn(),
     InvalidMuscleGroupSelectionError,
   };
 });
@@ -32,6 +33,7 @@ import {
   listExercises,
   listMuscleGroups,
   saveExercisePhoto,
+  setExerciseUnilateral,
 } from './repository.js';
 
 const app = createApp({ logger: false });
@@ -149,6 +151,33 @@ describe('POST /exercises', () => {
     expect(createExercise).not.toHaveBeenCalled();
   });
 
+  it('passes the unilateral flag through (spec 0022 FR-1)', async () => {
+    vi.mocked(createExercise).mockResolvedValue({ id: 'e3', name: 'Split squat' } as never);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/exercises',
+      payload: { ...validPayload, name: 'Split squat', isUnilateral: true },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(createExercise).toHaveBeenCalledWith(
+      'user-test',
+      expect.objectContaining({ name: 'Split squat', isUnilateral: true }),
+    );
+  });
+
+  it('returns 400 when the unilateral flag is not a boolean', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/exercises',
+      payload: { ...validPayload, isUnilateral: 'yes' },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(createExercise).not.toHaveBeenCalled();
+  });
+
   it('returns 400 on invalid muscle group selection', async () => {
     vi.mocked(createExercise).mockRejectedValue(
       new InvalidMuscleGroupSelectionError('Invalid muscle group selection'),
@@ -223,5 +252,48 @@ describe('exercise photo', () => {
       headers: { authorization: token() },
     });
     expect(response.statusCode).toBe(204);
+  });
+});
+
+describe('PUT /exercises/:id/unilateral (spec 0022)', () => {
+  const token = () => `Bearer ${app.jwt.sign({ sub: 'user-test' })}`;
+  const put = (payload: unknown, withAuth = true) =>
+    app.inject({
+      method: 'PUT',
+      url: '/exercises/e1/unilateral',
+      headers: withAuth ? { authorization: token() } : {},
+      payload: payload as Record<string, unknown>,
+    });
+
+  it('requires a signed-in user', async () => {
+    expect((await put({ isUnilateral: true }, false)).statusCode).toBe(401);
+    expect(setExerciseUnilateral).not.toHaveBeenCalled();
+  });
+
+  it('rejects a body without a boolean flag', async () => {
+    expect((await put({ isUnilateral: 'true' })).statusCode).toBe(400);
+    expect((await put({})).statusCode).toBe(400);
+    expect(setExerciseUnilateral).not.toHaveBeenCalled();
+  });
+
+  it('marks the exercise and returns it', async () => {
+    vi.mocked(setExerciseUnilateral).mockResolvedValue({
+      id: 'e1',
+      name: 'Bulgarian split squat',
+      isUnilateral: true,
+    } as never);
+
+    const response = await put({ isUnilateral: true });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({ id: 'e1', isUnilateral: true });
+    expect(setExerciseUnilateral).toHaveBeenCalledWith('user-test', 'e1', true);
+  });
+
+  it("refuses someone else's custom exercise (403) and unknown ones (404)", async () => {
+    vi.mocked(setExerciseUnilateral).mockResolvedValueOnce('forbidden');
+    expect((await put({ isUnilateral: false })).statusCode).toBe(403);
+    vi.mocked(setExerciseUnilateral).mockResolvedValueOnce('not-found');
+    expect((await put({ isUnilateral: false })).statusCode).toBe(404);
   });
 });

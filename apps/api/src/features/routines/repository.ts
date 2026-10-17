@@ -20,6 +20,7 @@ type RoutineRecord = Prisma.RoutineGetPayload<{
           select: {
             publicId: true;
             trackingType: true;
+            isUnilateral: true;
           };
         };
         sets: true;
@@ -51,6 +52,7 @@ function mapRoutine(userPublicId: string, record: RoutineRecord): Routine {
         restSeconds: exercise.restSeconds ?? undefined,
         supersetGroup: exercise.supersetGroup ?? undefined,
         trackingType: toExerciseTrackingType(exercise.exercise.trackingType),
+        isUnilateral: exercise.exercise.isUnilateral,
         sets: exercise.sets
           .slice()
           .sort((left, right) => left.setNumber - right.setNumber)
@@ -117,6 +119,7 @@ export async function listRoutines(userPublicId: string) {
             select: {
               publicId: true,
               trackingType: true,
+              isUnilateral: true,
             },
           },
           sets: true,
@@ -151,6 +154,7 @@ export async function findRoutineById(userPublicId: string, id: string) {
             select: {
               publicId: true,
               trackingType: true,
+              isUnilateral: true,
             },
           },
           sets: true,
@@ -199,6 +203,7 @@ export async function createRoutine(
             select: {
               publicId: true,
               trackingType: true,
+              isUnilateral: true,
             },
           },
           sets: true,
@@ -267,6 +272,7 @@ export async function updateRoutine(
             select: {
               publicId: true,
               trackingType: true,
+              isUnilateral: true,
             },
           },
           sets: true,

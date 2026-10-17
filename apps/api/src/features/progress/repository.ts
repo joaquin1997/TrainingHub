@@ -39,6 +39,8 @@ async function loadSessionInputs(
       trackingType: toExerciseTrackingType(exercise.exercise.trackingType),
       sets: exercise.sets.map((set) => ({
         reps: set.reps,
+        repsLeft: set.repsLeft,
+        repsRight: set.repsRight,
         weightKg: set.weightKg,
         durationSeconds: set.durationSeconds,
         distanceMeters: set.distanceMeters,

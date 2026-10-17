@@ -2,6 +2,7 @@ import type {
   CreateExerciseInput,
   Exercise,
   MuscleGroup,
+  SetExerciseUnilateralInput,
   SetProfilePhotoInput,
 } from '@workout/domain';
 
@@ -26,6 +27,13 @@ export const exercisesClient = {
   /** Sets the photo of a custom exercise (same JPEG/base64 upload as the profile photo). */
   setPhoto(exerciseId: string, input: SetProfilePhotoInput) {
     return apiRequest<void>(`/exercises/${exerciseId}/photo`, {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    });
+  },
+  /** Marks the exercise as done one side at a time, or not (spec 0022). */
+  setUnilateral(exerciseId: string, input: SetExerciseUnilateralInput) {
+    return apiRequest<Exercise>(`/exercises/${exerciseId}/unilateral`, {
       method: 'PUT',
       body: JSON.stringify(input),
     });

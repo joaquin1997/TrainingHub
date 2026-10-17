@@ -88,20 +88,50 @@ export function formatDistance(meters: number) {
 }
 
 type SetValues = {
-  [Key in 'reps' | 'weightKg' | 'durationSeconds' | 'distanceMeters']?: WorkoutSet[Key] | null;
+  [Key in
+    | 'reps'
+    | 'repsLeft'
+    | 'repsRight'
+    | 'weightKg'
+    | 'durationSeconds'
+    | 'distanceMeters']?: WorkoutSet[Key] | null;
 };
+
+/** Letters for the two sides of a unilateral set, e.g. L / R (spec 0022). */
+export type SideLabels = { left: string; right: string };
+
+const DEFAULT_SIDE_LABELS: SideLabels = { left: 'L', right: 'R' };
+
+/** The side letters in the app's language. */
+export function sideLabels(t: (key: string) => string): SideLabels {
+  return { left: t('workouts.colLeft'), right: t('workouts.colRight') };
+}
+
+/** "10 L / 8 R" for a set with sides; its reps otherwise. */
+function formatReps(set: SetValues, sides: SideLabels): string {
+  if (set.repsLeft == null && set.repsRight == null) {
+    return String(set.reps ?? '–');
+  }
+
+  return `${set.repsLeft ?? '–'} ${sides.left} / ${set.repsRight ?? '–'} ${sides.right}`;
+}
 
 /**
  * One line for a saved set, built from the values it holds rather than the
  * exercise's current type, so a later type change never alters history
- * (EF-1). A set with no time or distance reads as before: "60 kg × 8".
+ * (EF-1). A set with no time or distance reads as before: "60 kg × 8"; one
+ * with sides reads "20 kg × 10 L / 8 R" (spec 0022).
  */
-export function formatSetValues(set: SetValues, unit: WeightUnit) {
+export function formatSetValues(
+  set: SetValues,
+  unit: WeightUnit,
+  sides: SideLabels = DEFAULT_SIDE_LABELS,
+) {
   const hasTime = set.durationSeconds !== undefined && set.durationSeconds !== null;
   const hasDistance = set.distanceMeters !== undefined && set.distanceMeters !== null;
 
   if (!hasTime && !hasDistance) {
-    return `${formatWeightValue(set.weightKg, unit)} ${unit} × ${set.reps ?? '–'}`;
+    return `${formatWeightValue(set.weightKg, unit)} ${unit} × ${formatReps(set, sides)}`;
   }
 
   const parts: string[] = [];
@@ -112,7 +142,7 @@ export function formatSetValues(set: SetValues, unit: WeightUnit) {
     parts.push(`${formatWeightValue(set.weightKg, unit)} ${unit}`);
   }
   if (set.reps !== undefined && set.reps !== null) {
-    parts.push(`× ${set.reps}`);
+    parts.push(`× ${formatReps(set, sides)}`);
   }
   if (hasTime) {
     parts.push(formatDuration(set.durationSeconds!));

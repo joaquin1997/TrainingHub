@@ -147,6 +147,10 @@ export const es: TranslationCatalog = {
       weight_duration: 'Peso y tiempo',
       distance_duration: 'Distancia y tiempo',
     },
+    // Ejercicio unilateral (spec 0022).
+    unilateralTitle: 'Izquierda y derecha',
+    unilateralHint: 'Se hace un lado cada vez: cada serie registra las repeticiones de cada lado.',
+    unilateralError: 'No se ha podido cambiar el ejercicio.',
     loadError: 'No se han podido cargar los grupos musculares.',
     validation: 'El nombre y al menos un grupo muscular primario son obligatorios.',
     createError: 'No se ha podido crear el ejercicio.',
@@ -322,6 +326,11 @@ export const es: TranslationCatalog = {
     // Series de tiempo y distancia (spec 0021).
     colTime: 'TIEMPO',
     colDistance: 'DIST',
+    // Izquierda y derecha de un ejercicio unilateral (spec 0022); también en "10 I / 8 D".
+    colLeft: 'I',
+    colRight: 'D',
+    repsLeft: 'Repeticiones izquierda',
+    repsRight: 'Repeticiones derecha',
     startSetTimer: 'Iniciar cronómetro de la serie',
     stopSetTimer: 'Parar cronómetro de la serie',
     addSet: 'Añadir serie',

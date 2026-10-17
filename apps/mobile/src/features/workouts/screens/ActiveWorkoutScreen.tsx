@@ -476,6 +476,7 @@ export function ActiveWorkoutScreen() {
         id: exercise.id,
         name: exercise.name,
         trackingType: exercise.trackingType,
+        isUnilateral: exercise.isUnilateral,
       }),
     );
   };
@@ -636,7 +637,11 @@ export function ActiveWorkoutScreen() {
           </View>
         </View>
         <View style={[styles.setList, inSuperset ? styles.indented : null]}>
-          <WorkoutSetHeader trackingType={exercise.trackingType} unit={unit} />
+          <WorkoutSetHeader
+            trackingType={exercise.trackingType}
+            unilateral={exercise.isUnilateral}
+            unit={unit}
+          />
           {exercise.entries.map((set) => (
             // The row ref lets the screen scroll the next set into view (0018).
             <View
@@ -652,6 +657,7 @@ export function ActiveWorkoutScreen() {
               <WorkoutSetRow
                 set={set}
                 trackingType={exercise.trackingType}
+                unilateral={exercise.isUnilateral}
                 unit={unit}
                 previousLabel={previousSetLabel(
                   lastByExercise[exercise.exerciseId],

@@ -289,6 +289,43 @@ describe('POST /workouts', () => {
     );
   });
 
+  it('stores left and right with reps as their sum (spec 0022 AC-1, EF-1)', async () => {
+    vi.mocked(createWorkoutSession).mockResolvedValue({
+      session: { id: 'w1' },
+      created: true,
+    } as never);
+    const completedAt = '2026-05-30T09:10:00.000Z';
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/workouts',
+      payload: {
+        ...validPayload,
+        exercises: [
+          {
+            exerciseId: 'ex1',
+            order: 1,
+            sets: [
+              { order: 1, reps: 3, repsLeft: 10, repsRight: 8, weightKg: 20, completedAt },
+              { order: 2, repsLeft: 9, repsRight: 0, weightKg: 20, completedAt },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.statusCode).toBe(201);
+    const input = vi.mocked(createWorkoutSession).mock.calls[0]![1];
+    expect(input.exercises[0]!.sets[0]).toMatchObject({
+      reps: 18,
+      repsLeft: 10,
+      repsRight: 8,
+      weightKg: 20,
+    });
+    expect(input.exercises[0]!.sets[1]).toMatchObject({ reps: 9, repsLeft: 9 });
+    expect(input.exercises[0]!.sets[1]!.repsRight).toBeUndefined();
+  });
+
   it('answers 200 with the stored workout when the clientId was already saved', async () => {
     vi.mocked(createWorkoutSession).mockResolvedValue({
       session: { id: 'w-first' },
