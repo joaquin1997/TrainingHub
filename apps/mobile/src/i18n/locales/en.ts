@@ -276,6 +276,10 @@ export const en = {
     setsDoneShort: 'Sets done',
     setsCountOf: '{{done}} / {{total}}',
     autosaveHint: 'Saved as you go · pick it up any time',
+    // Approach sets (spec 0024).
+    addApproachSets: 'Add warm-up sets',
+    approachNoWeight: 'Enter the working weight first: warm-up sets are worked out from it.',
+    approachTooLight: 'The working weight is too close to the empty bar for warm-up sets.',
     share: {
       action: 'Share',
       duration: 'Duration',

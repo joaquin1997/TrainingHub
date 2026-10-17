@@ -279,6 +279,10 @@ export const es: TranslationCatalog = {
     setsDoneShort: 'Series hechas',
     setsCountOf: '{{done}} / {{total}}',
     autosaveHint: 'Se guarda sola · retómala cuando quieras',
+    // Series de aproximación (spec 0024).
+    addApproachSets: 'Añadir series de calentamiento',
+    approachNoWeight: 'Escribe primero el peso de trabajo: el calentamiento se calcula a partir de él.',
+    approachTooLight: 'El peso de trabajo está demasiado cerca de la barra vacía para calentar.',
     share: {
       action: 'Compartir',
       duration: 'Duración',

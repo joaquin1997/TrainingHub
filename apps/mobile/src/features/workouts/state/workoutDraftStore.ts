@@ -135,7 +135,7 @@ let draftIdCounter = 0;
  */
 const draftIdSeed = Date.now().toString(36);
 
-function nextDraftId(prefix: string) {
+export function nextDraftId(prefix: string) {
   draftIdCounter += 1;
   return `${prefix}-gen-${draftIdSeed}-${draftIdCounter}`;
 }
