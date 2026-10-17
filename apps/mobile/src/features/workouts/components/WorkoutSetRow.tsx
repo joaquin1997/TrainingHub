@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
   },
   doneTint: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: radii.md,
     backgroundColor: colors.successSoft,
   },
@@ -602,7 +602,7 @@ const styles = StyleSheet.create({
     borderColor: colors.success,
   },
   checkFill: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: radii.sm,
     backgroundColor: colors.success,
   },
