@@ -15,7 +15,9 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "import:wger": "npm run build && node --env-file-if-exists=.env dist/apps/api/src/scripts/import-wger-exercises.js",
-    "import:wger:db": "IMPORT_TO_DB=true npm run import:wger"
+    "import:wger:db": "IMPORT_TO_DB=true npm run import:wger",
+    "import:images": "npm run build && node --env-file-if-exists=.env dist/apps/api/src/scripts/match-free-exercise-images.js",
+    "import:images:db": "IMPORT_TO_DB=true npm run import:images"
   },
   "dependencies": {
     "@fastify/jwt": "^10.1.0",

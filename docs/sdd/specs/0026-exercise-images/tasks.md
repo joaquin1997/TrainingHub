@@ -15,7 +15,7 @@ Each task leaves the tree green (`pnpm -r typecheck` and `pnpm -r test`).
 | 1 | [x] Plan and tasks | docs | links resolve | `docs(sdd): plan and tasks for 0026` |
 | 2 | [x] `CreateExerciseInput` moved to `packages/domain`; API and mobile import it | domain, api, mobile | typecheck + tests | `refactor(exercises): share the create exercise contract` |
 | 3 | [x] `ExercisePhoto` model + migration; `PUT/GET/DELETE /exercises/:id/photo`; `imageUrl` from photo | api, data | API tests; `migrate deploy` on PGlite | `feat(exercises): photos for custom exercises` |
-| 4 | [ ] Matching script, matcher tests, alias file, npm scripts | api | unit tests; run on PGlite | `feat(exercises): match catalog images from free-exercise-db` |
+| 4 | [x] Matching script, matcher tests, alias file, npm scripts | api | unit tests; run on PGlite | `feat(exercises): match catalog images from free-exercise-db` |
 | 5 | [ ] `expo-image-picker` pinned + `app.json`; `resolveImageSource`; `exercisesClient` upload; `ExerciseThumb`/detail fallback on error | mobile | unit tests | `feat(exercises): load images with auth and fall back to the tile` |
 | 6 | [ ] `ExercisePhotoField` in the create form, "Add/Change photo" on the detail, thumb in the active workout card; i18n | mobile | web preview: AC-2 | `feat(exercises): add a photo to a custom exercise` |
 | 7 | [ ] Progress log, definition of done, spec status | docs | | `docs(sdd): close spec 0026 implementation` |
@@ -43,6 +43,26 @@ After deploying the API (the container applies the migration on start):
 
 - 2026-10-17 - Plan and tasks written and self-approved under the owner's
   delegation.
+- 2026-10-17 - Task 2: `CreateExerciseInput` now lives in `packages/domain`.
+- 2026-10-17 - Task 3: `ExercisePhoto` table (migration applied on local PGlite,
+  `migrate diff` clean); `PUT/GET/DELETE /exercises/:id/photo` with API tests
+  (auth, type, magic bytes, creator-only, private cache).
+- 2026-10-17 - Task 4: matching script. Local PGlite with the wger catalog
+  (932 exercises, 279 already with a wger image): exact name match on the
+  Spanish name or any wger translation found 22 of 653 without image; 16
+  hand-reviewed aliases brought it to 53 (15 + 38 over two runs; a re-run
+  matches 0, so it is idempotent). Catalog coverage ends near 36%
+  (332/932). **Honest note on AC-1:** the wger catalog is mostly Spanish and
+  obscure; exact matching is conservative. Whether 40 of the owner's top 50
+  show an image depends on his data; the report's `suggestion` column
+  (Jaccard hint, never applied) is for adding aliases on the server before
+  the real run. Read-only check for the top 50 (run on the server DB):
+
+  ```sql
+  SELECT e.name, e."imageUrl" IS NOT NULL AS has_image, count(*) AS uses
+  FROM "WorkoutExercise" we JOIN "Exercise" e ON e.id = we."exerciseId"
+  GROUP BY e.id ORDER BY uses DESC LIMIT 50;
+  ```
 
 ## Definition of done
 
