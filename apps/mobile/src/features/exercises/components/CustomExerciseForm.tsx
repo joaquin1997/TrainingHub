@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,21 +15,28 @@ import { TRACKING_TYPES } from '@/lib/tracking';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, spacing } from '@/ui/theme';
 
-type CustomExerciseModalProps = {
-  visible: boolean;
+type CustomExerciseFormProps = {
+  /** Prefilled name, usually the text searched (spec 0020 FR-2). */
   initialName: string;
-  onClose: () => void;
+  onCancel: () => void;
   onCreated: (exercise: Exercise) => void;
+  /** Hidden when the host already titles the step. */
+  showTitle?: boolean;
 };
 
-export function CustomExerciseModal({
-  visible,
+/**
+ * Creates a custom exercise: name, primary muscle groups (at least one) and
+ * secondary ones. Shared by the Exercises tab, the routine editor and the
+ * exercise picker (spec 0020). Starts fresh on every mount.
+ */
+export function CustomExerciseForm({
   initialName,
-  onClose,
+  onCancel,
   onCreated,
-}: CustomExerciseModalProps) {
+  showTitle = true,
+}: CustomExerciseFormProps) {
   const { t } = useTranslation();
   const [name, setName] = useState(initialName);
   const [muscleGroups, setMuscleGroups] = useState<MuscleGroup[]>([]);
@@ -42,19 +48,9 @@ export function CustomExerciseModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!visible) {
-      return;
-    }
-
     let isMounted = true;
 
-    setName(initialName);
-    setPrimaryMuscleGroupIds([]);
-    setSecondaryMuscleGroupIds([]);
-    setTrackingType('weight_reps');
-    setErrorMessage(undefined);
     setIsLoadingMuscleGroups(true);
-    setIsSubmitting(false);
 
     void exercisesClient
       .listMuscleGroups()
@@ -87,7 +83,8 @@ export function CustomExerciseModal({
     return () => {
       isMounted = false;
     };
-  }, [initialName, visible]);
+    // Loads once per mount; the host remounts the form for a fresh start.
+  }, []);
 
   function togglePrimaryMuscleGroup(muscleGroupId: string) {
     setPrimaryMuscleGroupIds((currentIds) =>
@@ -129,7 +126,6 @@ export function CustomExerciseModal({
         trackingType,
       });
       onCreated(createdExercise);
-      onClose();
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : t('customExercise.createError'),
@@ -160,90 +156,65 @@ export function CustomExerciseModal({
     );
 
   return (
-    <Modal
-      animationType="fade"
-      transparent
-      visible={visible}
-      onRequestClose={onClose}
+    <ScrollView
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
     >
-      <View style={styles.overlay}>
-        <View style={styles.sheet}>
-          <ScrollView
-            contentContainerStyle={styles.content}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            <Text style={styles.title}>{t('customExercise.title')}</Text>
-            <TextInput
-              value={name}
-              onChangeText={setName}
-              placeholder={t('customExercise.namePlaceholder')}
-              placeholderTextColor={colors.textSubtle}
-              style={styles.input}
+      {showTitle ? <Text style={styles.title}>{t('customExercise.title')}</Text> : null}
+      <TextInput
+        value={name}
+        onChangeText={setName}
+        placeholder={t('customExercise.namePlaceholder')}
+        placeholderTextColor={colors.textSubtle}
+        style={styles.input}
+      />
+      <View style={styles.section}>
+        <Text style={styles.sectionLabel}>{t('customExercise.trackingTitle')}</Text>
+        <View style={styles.optionList}>
+          {TRACKING_TYPES.map((type) => (
+            <Chip
+              key={type}
+              label={t(`customExercise.trackingTypes.${type}`)}
+              selected={trackingType === type}
+              onPress={() => setTrackingType(type)}
             />
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>{t('customExercise.trackingTitle')}</Text>
-              <View style={styles.optionList}>
-                {TRACKING_TYPES.map((type) => (
-                  <Chip
-                    key={type}
-                    label={t(`customExercise.trackingTypes.${type}`)}
-                    selected={trackingType === type}
-                    onPress={() => setTrackingType(type)}
-                  />
-                ))}
-              </View>
-            </View>
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>{t('customExercise.primaryTitle')}</Text>
-              <Text style={styles.sectionHint}>{t('customExercise.selectOneOrMore')}</Text>
-              {renderOptions(primaryMuscleGroupIds, togglePrimaryMuscleGroup, 'primary')}
-            </View>
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>{t('customExercise.secondaryTitle')}</Text>
-              <Text style={styles.sectionHint}>{t('customExercise.optional')}</Text>
-              {renderOptions(secondaryMuscleGroupIds, toggleSecondaryMuscleGroup, 'secondary')}
-            </View>
-            {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
-            <Button
-              label={isSubmitting ? t('routineForm.saving') : t('customExercise.saveExercise')}
-              icon="checkmark-circle-outline"
-              fullWidth
-              disabled={isSubmitting || isLoadingMuscleGroups}
-              onPress={() => void handleSubmit()}
-            />
-            <Button
-              label={t('common.cancel')}
-              variant="ghost"
-              disabled={isSubmitting}
-              onPress={onClose}
-              style={styles.centered}
-            />
-          </ScrollView>
+          ))}
         </View>
       </View>
-    </Modal>
+      <View style={styles.section}>
+        <Text style={styles.sectionLabel}>{t('customExercise.primaryTitle')}</Text>
+        <Text style={styles.sectionHint}>{t('customExercise.selectOneOrMore')}</Text>
+        {renderOptions(primaryMuscleGroupIds, togglePrimaryMuscleGroup, 'primary')}
+      </View>
+      <View style={styles.section}>
+        <Text style={styles.sectionLabel}>{t('customExercise.secondaryTitle')}</Text>
+        <Text style={styles.sectionHint}>{t('customExercise.optional')}</Text>
+        {renderOptions(secondaryMuscleGroupIds, toggleSecondaryMuscleGroup, 'secondary')}
+      </View>
+      {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+      <Button
+        label={isSubmitting ? t('routineForm.saving') : t('customExercise.saveExercise')}
+        icon="checkmark-circle-outline"
+        fullWidth
+        disabled={isSubmitting || isLoadingMuscleGroups}
+        onPress={() => void handleSubmit()}
+      />
+      <Button
+        label={t('common.cancel')}
+        variant="ghost"
+        disabled={isSubmitting}
+        onPress={onCancel}
+        style={styles.centered}
+      />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: colors.overlay,
-    justifyContent: 'center',
-    padding: spacing.lg,
-  },
-  sheet: {
-    maxHeight: '85%',
-    borderRadius: radii.lg + 4,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    paddingVertical: spacing.xl,
-  },
   content: {
     gap: spacing.lg,
-    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
   },
   title: {
     ...commonStyles.heading,

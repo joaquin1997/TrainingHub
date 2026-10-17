@@ -15,12 +15,14 @@ import {
 import {
   exercisesClient,
 } from '@/features/exercises/api/exercisesClient';
-import { CustomExerciseModal } from '@/features/routines/components/CustomExerciseModal';
+import { CustomExerciseModal } from '@/features/exercises/components/CustomExerciseModal';
+import { ExercisePickerModal } from '@/features/exercises/components/ExercisePickerModal';
 import {
   RoutineSetTable,
   type EditableRoutineSet,
 } from '@/features/routines/components/RoutineSetTable';
 import { routinesClient } from '@/features/routines/api/routinesClient';
+import { replaceRoutineRowExercise } from '@/features/routines/utils/replaceRoutineExercise';
 import {
   effectiveRoutineSetValue,
   type NumericSetField,
@@ -209,6 +211,8 @@ export function RoutineFormScreen({
   >(null);
   const [activeCustomExerciseDraft, setActiveCustomExerciseDraft] =
     useState<ActiveCustomExerciseDraft | null>(null);
+  // The row whose exercise is being replaced through the picker (spec 0020).
+  const [replaceRowId, setReplaceRowId] = useState<string | null>(null);
   const activeWorkout = useActiveWorkout();
 
   useEffect(() => {
@@ -315,17 +319,20 @@ export function RoutineFormScreen({
   function selectExercise(exerciseRowId: string, selectedExercise: Exercise) {
     setActiveExerciseSelectorRowId(null);
     setExercises((currentExercises) =>
-      currentExercises.map((exercise) =>
-        exercise.id === exerciseRowId
-          ? {
-              ...exercise,
-              exerciseId: selectedExercise.id,
-              exerciseQuery: selectedExercise.name,
-              trackingType: selectedExercise.trackingType,
-            }
-          : exercise,
-      ),
+      replaceRoutineRowExercise(currentExercises, exerciseRowId, selectedExercise),
     );
+  }
+
+  function handleReplaceExercise(selectedExercise: Exercise) {
+    if (!replaceRowId) {
+      return;
+    }
+
+    // The picker can create the exercise; keep the inline search aware of it.
+    setAvailableExercises((currentExercises) =>
+      upsertExercise(currentExercises, selectedExercise),
+    );
+    selectExercise(replaceRowId, selectedExercise);
   }
 
   function openCustomExerciseModal(exerciseRowId: string) {
@@ -776,9 +783,8 @@ export function RoutineFormScreen({
                           </Text>
                         </Pressable>
                       ))}
-                      {!isExercisesLoading &&
-                      !exerciseLoadError &&
-                      matchingExercises.length === 0 ? (
+                      {/* Offered for any search, not only an empty one (spec 0020 FR-2). */}
+                      {!isExercisesLoading && !exerciseLoadError ? (
                         <Button
                           label={t('routineForm.createCustomExercise')}
                           icon="add-circle-outline"
@@ -838,6 +844,17 @@ export function RoutineFormScreen({
                   onPress={() => addSetRow(exercise.id)}
                   style={styles.compactButton}
                 />
+                {exercise.exerciseId ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t('workouts.replaceExercise')}
+                    onPress={() => setReplaceRowId(exercise.id)}
+                    hitSlop={6}
+                    style={styles.iconButton}
+                  >
+                    <Ionicons name="swap-horizontal" size={18} color={colors.textMuted} />
+                  </Pressable>
+                ) : null}
                 <Button
                   label={t('routineForm.removeExercise')}
                   variant="ghost"
@@ -892,6 +909,14 @@ export function RoutineFormScreen({
           </View>
         </View>
       </ScrollView>
+      <ExercisePickerModal
+        visible={replaceRowId !== null}
+        title={t('workouts.replaceTitle', {
+          name: exercises.find((exercise) => exercise.id === replaceRowId)?.exerciseQuery ?? '',
+        })}
+        onClose={() => setReplaceRowId(null)}
+        onSelect={handleReplaceExercise}
+      />
       {activeCustomExerciseDraft ? (
         <CustomExerciseModal
           visible

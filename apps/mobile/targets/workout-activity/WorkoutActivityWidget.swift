@@ -41,13 +41,25 @@ struct WorkoutActivityWidget: Widget {
           ControlsRow(attributes: context.attributes, state: context.state)
         }
       } compactLeading: {
-        Image(systemName: context.state.pausedAt == nil ? "dumbbell.fill" : "pause.fill")
-          .foregroundStyle(primary)
+        if runningRest(context) != nil {
+          Image(systemName: "timer")
+            .foregroundStyle(accent)
+        } else {
+          Image(systemName: context.state.pausedAt == nil ? "dumbbell.fill" : "pause.fill")
+            .foregroundStyle(primary)
+        }
       } compactTrailing: {
-        ElapsedText(attributes: context.attributes, state: context.state)
-          .font(.caption.monospacedDigit())
-          .foregroundStyle(.white)
-          .frame(maxWidth: 56)
+        if let restEndsAt = runningRest(context) {
+          RestCountdown(endsAt: restEndsAt)
+            .font(.caption.monospacedDigit())
+            .foregroundStyle(accent)
+            .frame(maxWidth: 56)
+        } else {
+          ElapsedText(attributes: context.attributes, state: context.state)
+            .font(.caption.monospacedDigit())
+            .foregroundStyle(.white)
+            .frame(maxWidth: 56)
+        }
       } minimal: {
         Image(systemName: "dumbbell.fill")
           .foregroundStyle(primary)
@@ -74,6 +86,14 @@ private struct LockScreenView: View {
             .foregroundStyle(accent)
         }
       }
+      if let restEndsAt = runningRest(context) {
+        HStack(spacing: 6) {
+          Image(systemName: "timer")
+          RestCountdown(endsAt: restEndsAt)
+        }
+        .font(.title3.weight(.semibold).monospacedDigit())
+        .foregroundStyle(accent)
+      }
       HStack(alignment: .firstTextBaseline) {
         ElapsedText(attributes: context.attributes, state: context.state)
           .font(.system(size: 34, weight: .bold).monospacedDigit())
@@ -86,6 +106,28 @@ private struct LockScreenView: View {
       ControlsRow(attributes: context.attributes, state: context.state)
     }
     .padding(16)
+  }
+}
+
+/// The running rest's end, or nil once it has passed (spec 0018 FR-8). Every
+/// update sets the rest's end as the stale date, so the system re-renders the
+/// activity as stale at that instant even with the app suspended.
+///
+/// TODO(sdd): Live Activity after the rest ends with the app suspended relies
+/// on staleDate re-rendering the widget with isStale; unverified on the device
+/// — worst case the row shows 0:00 until the app next updates the activity.
+private func runningRest(_ context: ActivityViewContext<WorkoutActivityAttributes>) -> Date? {
+  guard let restEndsAt = context.state.restEndsAt, !context.isStale else { return nil }
+  return restEndsAt
+}
+
+/// Counts down to the end of the rest on the system clock.
+private struct RestCountdown: View {
+  let endsAt: Date
+
+  var body: some View {
+    // A range needs its start before its end, also when rendered just after it.
+    Text(timerInterval: min(Date(), endsAt)...endsAt, countsDown: true)
   }
 }
 

@@ -1,14 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import type { TFunction } from 'i18next';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { progressClient } from '@/features/progress/api/progressClient';
+import { RecordsCard } from '@/features/progress/components/RecordsCard';
 import {
   clearLatestCompletedWorkout,
   getLatestCompletedWorkout,
   toWorkoutSessionSkeleton,
 } from '@/features/workouts/state/workoutDraftStore';
+import { formatWorkoutShareText, shareRecords } from '@/features/workouts/utils/shareText';
+import { shareWorkoutText } from '@/features/workouts/utils/shareWorkout';
 import { summarizeSession } from '@/features/workouts/utils/sessionStats';
 import { activeDurationSeconds, formatDuration } from '@/lib/format';
 import { formatDistance, formatSetValues } from '@/lib/tracking';
@@ -18,7 +23,7 @@ import { Chip } from '@/ui/Chip';
 import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
-import type { WorkoutSetType } from '@workout/domain';
+import type { SessionRecord, WorkoutSetType } from '@workout/domain';
 
 function setTypeLabel(type: WorkoutSetType, t: TFunction) {
   switch (type) {
@@ -34,9 +39,35 @@ function setTypeLabel(type: WorkoutSetType, t: TFunction) {
 }
 
 export function WorkoutSummaryScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const workoutDraft = getLatestCompletedWorkout();
+  const clientId = workoutDraft?.clientId;
+  const [records, setRecords] = useState<SessionRecord[]>([]);
+
+  // The records this workout beat (spec 0023). The workout is already saved
+  // when the summary shows; any failure just leaves the card out.
+  useEffect(() => {
+    if (!clientId) {
+      return;
+    }
+
+    let isActive = true;
+
+    progressClient
+      .sessionRecords()
+      .then((sessions) => {
+        const match = sessions.find((session) => session.clientId === clientId);
+        if (isActive && match) {
+          setRecords(match.records);
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      isActive = false;
+    };
+  }, [clientId]);
 
   const leaveTo = (path: Parameters<typeof router.replace>[0]) => {
     clearLatestCompletedWorkout();
@@ -110,6 +141,15 @@ export function WorkoutSummaryScreen() {
           ) : null}
         </View>
       ) : null}
+      <RecordsCard
+        title={t('progress.records.beaten')}
+        unit={unit}
+        items={records.map((record, index) => ({
+          key: `${record.exerciseId}-${record.type}-${index}`,
+          record,
+          meta: record.exerciseName,
+        }))}
+      />
       <Text style={styles.sectionLabel}>{t('workouts.exercisesDone')}</Text>
       {workoutSession.exercises.map((exercise, exerciseIndex) => (
         <View key={exercise.id} style={styles.card}>
@@ -142,6 +182,34 @@ export function WorkoutSummaryScreen() {
         icon="checkmark-done"
         fullWidth
         onPress={() => leaveTo('/routines')}
+      />
+      <Button
+        label={t('workouts.share.action')}
+        icon="share-outline"
+        variant="secondary"
+        fullWidth
+        onPress={() =>
+          void shareWorkoutText(
+            formatWorkoutShareText({
+              title: workoutDraft.routineName,
+              when: workoutSession.completedAt ?? workoutSession.startedAt,
+              durationSeconds: duration,
+              volumeKg: stats.volumeKg,
+              unit,
+              language: i18n.language,
+              exercises: workoutSession.exercises.map((exercise, exerciseIndex) => ({
+                name: exercise.exerciseName,
+                sets: exercise.sets.map((set, setIndex) => ({
+                  ...set,
+                  performed: isDone(exerciseIndex, setIndex),
+                })),
+              })),
+              notes: workoutSession.notes,
+              records: shareRecords(records, unit, t),
+              t,
+            }),
+          )
+        }
       />
       <Button
         label={t('workouts.viewHistory')}

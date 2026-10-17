@@ -6,6 +6,8 @@ import {
   getActiveWorkout,
   pauseWorkout,
   setActiveWorkout,
+  skipRest,
+  startRest,
   startActiveWorkout,
   updateWorkoutSetDraft,
 } from '@/features/workouts/state/workoutDraftStore';
@@ -109,6 +111,32 @@ describe('startLiveWorkoutController', () => {
     await controller.idle();
     expect(bridge.updateLiveWorkout).toHaveBeenCalledWith(
       expect.objectContaining({ pausedAt: expect.any(String) }),
+    );
+  });
+
+  it('pushes the running rest when it starts, moves or ends (spec 0018 FR-8)', async () => {
+    const { bridge } = fakeBridge();
+    const controller = startLiveWorkoutController({ bridge });
+    stop = controller.stop;
+    const draft = startActiveWorkout(routine, 'kg', 'u1');
+    await controller.idle();
+
+    const resting = startRest(draft, draft.exercises[0]!.id, 90, new Date('2026-10-16T09:10:00.000Z'));
+    setActiveWorkout(resting);
+    await controller.idle();
+    expect(bridge.updateLiveWorkout).toHaveBeenLastCalledWith(
+      expect.objectContaining({ restEndsAt: '2026-10-16T09:11:30.000Z' }),
+    );
+
+    setActiveWorkout({ ...resting, notes: 'same rest' });
+    await controller.idle();
+    expect(bridge.updateLiveWorkout).toHaveBeenCalledTimes(1);
+
+    setActiveWorkout(skipRest(getActiveWorkout()!));
+    await controller.idle();
+    expect(bridge.updateLiveWorkout).toHaveBeenCalledTimes(2);
+    expect(bridge.updateLiveWorkout).toHaveBeenLastCalledWith(
+      expect.objectContaining({ restEndsAt: undefined }),
     );
   });
 

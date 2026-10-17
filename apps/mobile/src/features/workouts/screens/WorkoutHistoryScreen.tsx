@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 
+import { progressClient } from '@/features/progress/api/progressClient';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { summarizeSession } from '@/features/workouts/utils/sessionStats';
@@ -33,6 +34,8 @@ export function WorkoutHistoryScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
+  /** How many records each workout beat (spec 0023), by workout id. */
+  const [recordCounts, setRecordCounts] = useState<Map<string, number>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
   const { settings } = useSettings();
@@ -44,10 +47,17 @@ export function WorkoutHistoryScreen() {
       setErrorMessage(undefined);
 
       try {
-        const nextSessions = await workoutsClient.list();
+        // Records are a marker only: failing to load them never hides the list.
+        const [nextSessions, sessionRecords] = await Promise.all([
+          workoutsClient.list(),
+          progressClient.sessionRecords().catch(() => []),
+        ]);
 
         if (shouldUpdate()) {
           setSessions(nextSessions);
+          setRecordCounts(
+            new Map(sessionRecords.map((entry) => [entry.workoutId, entry.records.length])),
+          );
         }
       } catch (error) {
         if (shouldUpdate()) {
@@ -118,6 +128,7 @@ export function WorkoutHistoryScreen() {
               .slice()
               .sort((left, right) => left.order - right.order);
             const shown = exercises.slice(0, 3);
+            const recordCount = recordCounts.get(session.id) ?? 0;
 
             return (
               <Pressable
@@ -173,6 +184,14 @@ export function WorkoutHistoryScreen() {
                     size="sm"
                     label={t('workouts.setsCount', { count: totals.totalSets })}
                   />
+                  {recordCount > 0 ? (
+                    <Chip
+                      icon="trophy"
+                      tone="record"
+                      size="sm"
+                      label={t('progress.records.count', { count: recordCount })}
+                    />
+                  ) : null}
                 </View>
                 {shown.length === 0 ? (
                   <Text style={styles.meta}>{t('workouts.noExercises')}</Text>

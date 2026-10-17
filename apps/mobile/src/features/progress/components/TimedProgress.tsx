@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -10,8 +9,8 @@ import type {
 } from '@workout/domain';
 
 import { ProgressChart } from '@/features/progress/components/ProgressChart';
+import { RecordsCard } from '@/features/progress/components/RecordsCard';
 import { buildProgressSeries } from '@/features/progress/utils/chartData';
-import { extractMetricRecords } from '@/features/progress/utils/personalRecords';
 import { formatDate, formatDuration, formatShortDate } from '@/lib/format';
 import { formatDistance, formatSetValues } from '@/lib/tracking';
 import { Chip } from '@/ui/Chip';
@@ -72,7 +71,6 @@ export function TimedProgressDetail({
   const distance = isDistance(progress.trackingType);
   const metric = distance ? 'bestDistanceMeters' : 'bestDurationSeconds';
   const series = buildProgressSeries(progress.points, metric);
-  const records = extractMetricRecords(progress.points, metric);
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
@@ -112,25 +110,15 @@ export function TimedProgressDetail({
           formatLabel={(date) => formatShortDate(date, i18n.language)}
         />
       ) : null}
-      {records.length > 0 ? (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{t('progress.personalRecords')}</Text>
-          {records
-            .slice()
-            .reverse()
-            .map((record, index) => (
-              <View key={`${record.date}-${index}`} style={styles.recordRow}>
-                <View style={styles.recordIcon}>
-                  <Ionicons name="trophy" size={14} color={colors.accent} />
-                </View>
-                <Text style={styles.recordValue}>
-                  {formatMetric(progress.trackingType, record.value)}
-                </Text>
-                <Text style={styles.recordDate}>{formatDate(record.date, i18n.language)}</Text>
-              </View>
-            ))}
-        </View>
-      ) : null}
+      <RecordsCard
+        title={t('progress.records.title')}
+        unit={unit}
+        items={(progress.records ?? []).map((record, index) => ({
+          key: `${record.type}-${index}`,
+          record,
+          meta: formatDate(record.date, i18n.language),
+        }))}
+      />
       <Text style={styles.sectionLabel}>{t('progress.sessionsLabel')}</Text>
       {progress.points
         .slice()
@@ -201,37 +189,6 @@ const styles = StyleSheet.create({
   tiles: {
     flexDirection: 'row',
     gap: spacing.sm,
-  },
-  card: {
-    ...commonStyles.card,
-    gap: spacing.sm,
-  },
-  cardTitle: {
-    ...commonStyles.cardTitle,
-  },
-  recordRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  recordIcon: {
-    width: 24,
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    backgroundColor: colors.accentSoft,
-  },
-  recordValue: {
-    flex: 1,
-    color: colors.text,
-    fontFamily: fonts.displayBold,
-    fontSize: 15,
-    fontVariant: ['tabular-nums'],
-  },
-  recordDate: {
-    color: colors.textMuted,
-    fontSize: 13,
   },
   sectionLabel: {
     ...commonStyles.sectionLabel,

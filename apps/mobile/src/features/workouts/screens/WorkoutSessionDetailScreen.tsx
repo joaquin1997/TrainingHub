@@ -5,9 +5,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { progressClient } from '@/features/progress/api/progressClient';
+import { RecordsCard } from '@/features/progress/components/RecordsCard';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { isPerformedSet } from '@/features/workouts/utils/performedSet';
+import { formatWorkoutShareText, shareRecords } from '@/features/workouts/utils/shareText';
+import { shareWorkoutText } from '@/features/workouts/utils/shareWorkout';
 import { exerciseVolumeKg, summarizeSession } from '@/features/workouts/utils/sessionStats';
 import {
   activeDurationSeconds,
@@ -22,7 +26,7 @@ import { Chip } from '@/ui/Chip';
 import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
-import type { WeightUnit, WorkoutSession, WorkoutSet } from '@workout/domain';
+import type { SessionRecord, WeightUnit, WorkoutSession, WorkoutSet } from '@workout/domain';
 
 /**
  * The figure beside an exercise: its volume, or for time and distance work
@@ -62,6 +66,7 @@ export function WorkoutSessionDetailScreen() {
   const router = useRouter();
   const { workoutId } = useLocalSearchParams<{ workoutId?: string }>();
   const [session, setSession] = useState<WorkoutSession | null>(null);
+  const [records, setRecords] = useState<SessionRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
   const { settings } = useSettings();
@@ -73,6 +78,7 @@ export function WorkoutSessionDetailScreen() {
         setIsLoading(true);
         setErrorMessage(undefined);
         setSession(null);
+        setRecords([]);
       }
 
       if (!workoutId) {
@@ -84,7 +90,11 @@ export function WorkoutSessionDetailScreen() {
       }
 
       try {
-        const nextSession = await workoutsClient.getById(workoutId);
+        // The records it beat (spec 0023); failing to load them hides only the card.
+        const [nextSession, sessionRecords] = await Promise.all([
+          workoutsClient.getById(workoutId),
+          progressClient.sessionRecords().catch(() => []),
+        ]);
 
         if (shouldUpdate()) {
           if (!nextSession) {
@@ -93,6 +103,9 @@ export function WorkoutSessionDetailScreen() {
           }
 
           setSession(nextSession);
+          setRecords(
+            sessionRecords.find((entry) => entry.workoutId === nextSession.id)?.records ?? [],
+          );
         }
       } catch (error) {
         if (shouldUpdate()) {
@@ -206,6 +219,16 @@ export function WorkoutSessionDetailScreen() {
         </View>
       ) : null}
 
+      <RecordsCard
+        title={t('progress.records.beaten')}
+        unit={unit}
+        items={records.map((record, index) => ({
+          key: `${record.exerciseId}-${record.type}-${index}`,
+          record,
+          meta: record.exerciseName,
+        }))}
+      />
+
       {session.notes ? (
         <View style={styles.notesCard}>
           <View style={styles.metaRow}>
@@ -215,6 +238,33 @@ export function WorkoutSessionDetailScreen() {
           <Text style={styles.notes}>{session.notes}</Text>
         </View>
       ) : null}
+
+      <Button
+        label={t('workouts.share.action')}
+        icon="share-outline"
+        variant="secondary"
+        fullWidth
+        onPress={() =>
+          void shareWorkoutText(
+            formatWorkoutShareText({
+              when,
+              durationSeconds: session.completedAt
+                ? activeDurationSeconds(session.startedAt, session.completedAt, session.pausedSeconds)
+                : null,
+              volumeKg: totals.volumeKg,
+              unit,
+              language: i18n.language,
+              exercises: session.exercises.map((exercise) => ({
+                name: exercise.exerciseName,
+                sets: exercise.sets.map((set) => ({ ...set, performed: isPerformedSet(set) })),
+              })),
+              notes: session.notes,
+              records: shareRecords(records, unit, t),
+              t,
+            }),
+          )
+        }
+      />
 
       <Text style={styles.sectionLabel}>{t('workouts.exercisesDone')}</Text>
       {session.exercises.map((exercise) => (

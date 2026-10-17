@@ -60,4 +60,25 @@ describe('active workout envelope', () => {
       ),
     ).toEqual({ kind: 'invalid' });
   });
+
+  it('keeps a running rest, and drops a malformed one but keeps the workout (spec 0018)', () => {
+    const rest = { endsAt: '2026-10-16T09:02:00.000Z', totalSeconds: 120, workoutExerciseId: 'we-1' };
+    const resting = { ...draft, rest };
+
+    expect(
+      parsePersistedActiveWorkout(serializeActiveWorkout(resting, 'user-a'), 'user-a'),
+    ).toEqual({ kind: 'ok', draft: resting });
+
+    for (const broken of [{ ...rest, endsAt: 'soon' }, { endsAt: rest.endsAt }, 'x']) {
+      const raw = JSON.stringify({
+        ...JSON.parse(serializeActiveWorkout(draft, 'user-a')),
+        draft: { ...draft, rest: broken },
+      });
+      const parsed = parsePersistedActiveWorkout(raw, 'user-a');
+
+      expect(parsed.kind).toBe('ok');
+      expect(parsed.kind === 'ok' && parsed.draft.rest).toBeUndefined();
+      expect(parsed.kind === 'ok' && parsed.draft.exercises).toEqual(draft.exercises);
+    }
+  });
 });

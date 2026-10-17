@@ -4,6 +4,8 @@ import type {
   ExerciseProgressPoint,
   ExerciseProgressSummary,
   MuscleGroupVolumePoint,
+  SessionRecord,
+  SessionRecords,
   WeeklyVolumePoint,
 } from '@workout/domain';
 
@@ -12,6 +14,12 @@ import {
   isPerformedSet,
   isWarmupSet,
 } from '../workouts/performedSets.js';
+import {
+  deriveExerciseRecords,
+  estimateOneRepMax,
+  type ExerciseRecordHistory,
+  type RecordSet,
+} from './records.js';
 
 type ProgressSetInput = {
   reps?: number | null;
@@ -29,6 +37,9 @@ type ProgressSetInput = {
  */
 export type ProgressSessionInput = {
   date: string;
+  /** The workout's public id; needed only to list the records it beat. */
+  workoutId?: string;
+  clientId?: string | null;
   exercises: Array<{
     exerciseId: string;
     exerciseName: string;
@@ -71,51 +82,17 @@ type ProgressAccumulator = {
   points: ExerciseProgressPoint[];
 };
 
-/**
- * The per-session best that makes a record for a tracking type (spec 0021
- * FR-6): longest time for timed exercises, longest distance for distance
- * ones, heaviest weight otherwise.
- */
-function recordMetric(
-  trackingType: ExerciseTrackingType | undefined,
-): 'bestWeightKg' | 'bestDurationSeconds' | 'bestDistanceMeters' {
-  switch (trackingType) {
-    case 'duration':
-    case 'weight_duration':
-      return 'bestDurationSeconds';
-    case 'distance_duration':
-      return 'bestDistanceMeters';
-    default:
-      return 'bestWeightKg';
-  }
-}
-
 function maxDefined(values: Array<number | null | undefined>): number | undefined {
   const defined = values.filter((value): value is number => typeof value === 'number');
   return defined.length > 0 ? Math.max(...defined) : undefined;
 }
 
-/** Epley estimated one-rep max for a single set, rounded to one decimal. */
-function estimateOneRepMax(
-  reps: number | null | undefined,
-  weightKg: number | null | undefined,
-): number | undefined {
-  if (typeof reps !== 'number' || typeof weightKg !== 'number' || weightKg <= 0) {
-    return undefined;
-  }
-
-  return Math.round(weightKg * (1 + reps / 30) * 10) / 10;
-}
-
 function buildAccumulators(
-  sessions: ProgressSessionInput[],
+  ordered: ProgressSessionInput[],
 ): Map<string, ProgressAccumulator> {
   const byExercise = new Map<string, ProgressAccumulator>();
-  const chronological = sessions
-    .slice()
-    .sort((left, right) => left.date.localeCompare(right.date));
 
-  for (const session of chronological) {
+  for (const session of ordered) {
     for (const exercise of session.exercises) {
       const accumulator = byExercise.get(exercise.exerciseId) ?? {
         exerciseId: exercise.exerciseId,
@@ -150,14 +127,66 @@ function buildAccumulators(
   return byExercise;
 }
 
-function toSummary(accumulator: ProgressAccumulator): ExerciseProgressSummary {
+type ExerciseRecordSessions = {
+  /** Index into the chronological session list, one per session (entries merged). */
+  sessionIndexes: number[];
+  history: ExerciseRecordHistory;
+};
+
+function chronological(sessions: ProgressSessionInput[]): ProgressSessionInput[] {
+  return sessions
+    .slice()
+    .sort((left, right) => left.date.localeCompare(right.date));
+}
+
+/**
+ * Records per exercise (spec 0023), from working sets only: warmups never
+ * count. An exercise logged twice in one workout is one session here.
+ */
+function buildRecordHistories(
+  ordered: ProgressSessionInput[],
+): Map<string, ExerciseRecordSessions> {
+  const work = new Map<
+    string,
+    { sessionIndexes: number[]; sessions: Array<{ date: string; sets: RecordSet[] }> }
+  >();
+
+  ordered.forEach((session, sessionIndex) => {
+    for (const exercise of session.exercises) {
+      const entry = work.get(exercise.exerciseId) ?? { sessionIndexes: [], sessions: [] };
+      const workingSets = exercise.sets.filter((set) => !isWarmupSet(set));
+      const last = entry.sessions.length - 1;
+
+      if (entry.sessionIndexes[last] === sessionIndex) {
+        entry.sessions[last]!.sets.push(...workingSets);
+      } else {
+        entry.sessionIndexes.push(sessionIndex);
+        entry.sessions.push({ date: session.date, sets: [...workingSets] });
+      }
+
+      work.set(exercise.exerciseId, entry);
+    }
+  });
+
+  return new Map(
+    [...work.entries()].map(([exerciseId, entry]) => [
+      exerciseId,
+      {
+        sessionIndexes: entry.sessionIndexes,
+        history: deriveExerciseRecords(entry.sessions),
+      },
+    ]),
+  );
+}
+
+function toSummary(
+  accumulator: ProgressAccumulator,
+  records: ExerciseRecordSessions | undefined,
+): ExerciseProgressSummary {
   const { points } = accumulator;
   const lastPoint = points[points.length - 1];
-  const metric = recordMetric(accumulator.trackingType);
-  const lastBest = lastPoint?.[metric];
-  const priorBest = maxDefined(points.slice(0, -1).map((point) => point[metric]));
-  const isRecordSession =
-    lastBest !== undefined && (priorBest === undefined || lastBest > priorBest);
+  const lastHits = records?.history.hits[records.history.hits.length - 1] ?? [];
+  const isRecordSession = lastHits.length > 0;
 
   return {
     exerciseId: accumulator.exerciseId,
@@ -187,8 +216,11 @@ function toSummary(accumulator: ProgressAccumulator): ExerciseProgressSummary {
 export function buildExerciseProgressSummaries(
   sessions: ProgressSessionInput[],
 ): ExerciseProgressSummary[] {
-  return [...buildAccumulators(sessions).values()]
-    .map(toSummary)
+  const ordered = chronological(sessions);
+  const records = buildRecordHistories(ordered);
+
+  return [...buildAccumulators(ordered).values()]
+    .map((accumulator) => toSummary(accumulator, records.get(accumulator.exerciseId)))
     .sort((left, right) =>
       (right.lastPerformedAt ?? '').localeCompare(left.lastPerformedAt ?? ''),
     );
@@ -198,13 +230,70 @@ export function buildExerciseProgressDetail(
   sessions: ProgressSessionInput[],
   exerciseId: string,
 ): ExerciseProgressDetail | null {
-  const accumulator = buildAccumulators(sessions).get(exerciseId);
+  const ordered = chronological(sessions);
+  const accumulator = buildAccumulators(ordered).get(exerciseId);
 
   if (!accumulator) {
     return null;
   }
 
-  return { ...toSummary(accumulator), points: accumulator.points };
+  const records = buildRecordHistories(ordered).get(exerciseId);
+
+  return {
+    ...toSummary(accumulator, records),
+    points: accumulator.points,
+    records: records?.history.bests ?? [],
+  };
+}
+
+/**
+ * The records each workout beat (spec 0023), newest workout first. Workouts
+ * that beat none, or carry no id, are left out.
+ */
+export function buildSessionRecords(
+  sessions: ProgressSessionInput[],
+): SessionRecords[] {
+  const ordered = chronological(sessions);
+  const histories = buildRecordHistories(ordered);
+  const hitsBySession = new Map<number, Map<string, SessionRecord[]>>();
+
+  for (const [exerciseId, { sessionIndexes, history }] of histories) {
+    sessionIndexes.forEach((sessionIndex, position) => {
+      const hits = history.hits[position] ?? [];
+      if (hits.length === 0) {
+        return;
+      }
+
+      const exerciseName =
+        ordered[sessionIndex]!.exercises.find((exercise) => exercise.exerciseId === exerciseId)
+          ?.exerciseName ?? '';
+      const byExercise = hitsBySession.get(sessionIndex) ?? new Map();
+      byExercise.set(
+        exerciseId,
+        hits.map((hit) => ({ ...hit, exerciseId, exerciseName })),
+      );
+      hitsBySession.set(sessionIndex, byExercise);
+    });
+  }
+
+  const result: SessionRecords[] = [];
+
+  ordered.forEach((session, sessionIndex) => {
+    const byExercise = hitsBySession.get(sessionIndex);
+    if (!byExercise || !session.workoutId) {
+      return;
+    }
+
+    // In the order the exercises were done in the workout.
+    const exerciseIds = [...new Set(session.exercises.map((exercise) => exercise.exerciseId))];
+    result.push({
+      workoutId: session.workoutId,
+      ...(session.clientId ? { clientId: session.clientId } : {}),
+      records: exerciseIds.flatMap((exerciseId) => byExercise.get(exerciseId) ?? []),
+    });
+  });
+
+  return result.reverse();
 }
 
 /** Total volume (reps × weight) for one session across all its exercises. */

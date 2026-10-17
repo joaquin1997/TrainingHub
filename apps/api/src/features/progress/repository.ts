@@ -4,6 +4,7 @@ import {
   buildExerciseProgressDetail,
   buildExerciseProgressSummaries,
   buildMuscleGroupVolume,
+  buildSessionRecords,
   buildWeeklyVolume,
   selectPerformedWork,
   type ProgressSessionInput,
@@ -29,6 +30,8 @@ async function loadSessionInputs(
 
   const inputs = sessions.map((session) => ({
     date: (session.completedAt ?? session.startedAt).toISOString(),
+    workoutId: session.publicId,
+    clientId: session.clientId,
     exercises: session.exercises.map((exercise) => ({
       exerciseId: exercise.exercise.publicId,
       exerciseName: exercise.exercise.name,
@@ -70,4 +73,8 @@ export async function listWeeklyVolume(userPublicId: string) {
 
 export async function listMuscleGroupVolume(userPublicId: string) {
   return buildMuscleGroupVolume(await loadSessionInputs(userPublicId));
+}
+
+export async function listSessionRecords(userPublicId: string) {
+  return buildSessionRecords(await loadSessionInputs(userPublicId));
 }

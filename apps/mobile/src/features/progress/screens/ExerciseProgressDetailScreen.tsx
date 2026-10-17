@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ProgressChart } from '@/features/progress/components/ProgressChart';
+import { RecordsCard } from '@/features/progress/components/RecordsCard';
 import { TimedProgressDetail } from '@/features/progress/components/TimedProgress';
 import { progressClient } from '@/features/progress/api/progressClient';
 import { buildProgressSeries } from '@/features/progress/utils/chartData';
@@ -138,6 +139,9 @@ export function ExerciseProgressDetailScreen() {
   );
   const volumeSeries = buildProgressSeries(displayPoints, 'totalVolume');
   const personalRecords = extractPersonalRecords(progress.points);
+  // Current best of each record type (spec 0023); absent from older servers.
+  const records = progress.records ?? [];
+  const heaviest = records.find((record) => record.type === 'heaviestWeight');
 
   const formatAxisDate = (date: string) => formatShortDate(date, i18n.language);
 
@@ -163,7 +167,9 @@ export function ExerciseProgressDetailScreen() {
           label={t('progress.bestLabel')}
           value={formatWeightValue(progress.personalBestWeightKg, unit)}
           unit={unit}
-          caption={t('progress.repsCaption', { reps: formatValue(progress.personalBestReps) })}
+          caption={t('progress.repsCaption', {
+            reps: formatValue(heaviest ? heaviest.reps : progress.personalBestReps),
+          })}
           tone="record"
         />
       </View>
@@ -190,9 +196,18 @@ export function ExerciseProgressDetailScreen() {
           formatLabel={formatAxisDate}
         />
       ) : null}
+      <RecordsCard
+        title={t('progress.records.title')}
+        unit={unit}
+        items={records.map((record, index) => ({
+          key: `${record.type}-${index}`,
+          record,
+          meta: formatDate(record.date, i18n.language),
+        }))}
+      />
       {personalRecords.length > 0 ? (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>{t('progress.personalRecords')}</Text>
+          <Text style={styles.cardTitle}>{t('progress.heaviestOverTime')}</Text>
           {personalRecords
             .slice()
             .reverse()

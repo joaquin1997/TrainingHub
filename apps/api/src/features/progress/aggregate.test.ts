@@ -4,6 +4,7 @@ import {
   buildExerciseProgressDetail,
   buildExerciseProgressSummaries,
   buildMuscleGroupVolume,
+  buildSessionRecords,
   buildWeeklyVolume,
   selectPerformedWork,
   type ProgressSessionInput,
@@ -422,6 +423,136 @@ describe('performed work only (spec 0013)', () => {
   });
 });
 
+describe('records by type (spec 0023)', () => {
+  const done = '2026-05-01T10:00:00.000Z';
+  const bench = (date: string, sets: ProgressSessionInput['exercises'][number]['sets']) => ({
+    date,
+    exercises: [{ exerciseId: 'bench', exerciseName: 'Bench', sets }],
+  });
+
+  it('flags more reps at the same weight as a record session', () => {
+    const summary = buildExerciseProgressSummaries([
+      bench('2026-05-01T09:00:00.000Z', [{ reps: 6, weightKg: 100 }]),
+      bench('2026-05-08T09:00:00.000Z', [{ reps: 8, weightKg: 100 }]),
+    ])[0];
+
+    expect(summary?.isRecordSession).toBe(true);
+  });
+
+  it('puts the current bests of each type on the detail', () => {
+    const detail = buildExerciseProgressDetail(
+      [
+        bench('2026-05-01T09:00:00.000Z', [{ reps: 6, weightKg: 100 }]),
+        bench('2026-05-08T09:00:00.000Z', [{ reps: 8, weightKg: 100 }]),
+      ],
+      'bench',
+    );
+
+    expect(detail?.records?.find((record) => record.type === 'repsAtWeight')).toEqual({
+      type: 'repsAtWeight',
+      value: 8,
+      weightKg: 100,
+      date: '2026-05-08T09:00:00.000Z',
+    });
+    expect(detail?.records?.find((record) => record.type === 'heaviestWeight')?.date).toBe(
+      '2026-05-01T09:00:00.000Z',
+    );
+  });
+
+  it('a warmup heavier than any working set is no record (AC-3)', () => {
+    const input = selectPerformedWork([
+      bench('2026-05-01T09:00:00.000Z', [{ reps: 5, weightKg: 100, completedAt: done }]),
+      bench('2026-05-08T09:00:00.000Z', [
+        { reps: 5, weightKg: 140, completedAt: done, type: 'warmup' },
+        { reps: 5, weightKg: 100, completedAt: done },
+      ]),
+    ]);
+    const detail = buildExerciseProgressDetail(input, 'bench');
+
+    expect(detail?.isRecordSession).toBe(false);
+    expect(detail?.records?.find((record) => record.type === 'heaviestWeight')?.value).toBe(100);
+  });
+
+  it('counts an exercise logged twice in one workout as one session', () => {
+    const detail = buildExerciseProgressDetail(
+      [
+        bench('2026-05-01T09:00:00.000Z', [{ reps: 5, weightKg: 100 }]),
+        {
+          date: '2026-05-08T09:00:00.000Z',
+          exercises: [
+            { exerciseId: 'bench', exerciseName: 'Bench', sets: [{ reps: 5, weightKg: 100 }] },
+            { exerciseId: 'bench', exerciseName: 'Bench', sets: [{ reps: 5, weightKg: 100 }] },
+          ],
+        },
+      ],
+      'bench',
+    );
+
+    expect(detail?.isRecordSession).toBe(true);
+    expect(detail?.records?.find((record) => record.type === 'bestSessionVolume')).toEqual({
+      type: 'bestSessionVolume',
+      value: 1000,
+      date: '2026-05-08T09:00:00.000Z',
+    });
+  });
+});
+
+describe('buildSessionRecords (spec 0023)', () => {
+  const workout = (
+    workoutId: string,
+    date: string,
+    exercises: ProgressSessionInput['exercises'],
+  ): ProgressSessionInput => ({ workoutId, clientId: `client-${workoutId}`, date, exercises });
+
+  it('lists the records each workout beat, newest first (AC-2)', () => {
+    const result = buildSessionRecords([
+      workout('w1', '2026-05-01T09:00:00.000Z', [
+        { exerciseId: 'bench', exerciseName: 'Bench', sets: [{ reps: 5, weightKg: 100 }] },
+      ]),
+      workout('w2', '2026-05-08T09:00:00.000Z', [
+        { exerciseId: 'squat', exerciseName: 'Squat', sets: [{ reps: 5, weightKg: 120 }] },
+        {
+          exerciseId: 'bench',
+          exerciseName: 'Bench',
+          sets: [
+            { reps: 5, weightKg: 100 },
+            { reps: 5, weightKg: 100 },
+          ],
+        },
+      ]),
+      workout('w3', '2026-05-15T09:00:00.000Z', [
+        { exerciseId: 'bench', exerciseName: 'Bench', sets: [{ reps: 5, weightKg: 100 }] },
+      ]),
+    ]);
+
+    expect(result).toEqual([
+      {
+        workoutId: 'w2',
+        clientId: 'client-w2',
+        records: [
+          {
+            type: 'bestSessionVolume',
+            value: 1000,
+            date: '2026-05-08T09:00:00.000Z',
+            exerciseId: 'bench',
+            exerciseName: 'Bench',
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('announces nothing for a first workout (EF-1)', () => {
+    expect(
+      buildSessionRecords([
+        workout('w1', '2026-05-01T09:00:00.000Z', [
+          { exerciseId: 'bench', exerciseName: 'Bench', sets: [{ reps: 5, weightKg: 100 }] },
+        ]),
+      ]),
+    ).toEqual([]);
+  });
+});
+
 describe('time and distance (spec 0021)', () => {
   const plank = (date: string, seconds: number[]): ProgressSessionInput => ({
     date,
@@ -449,6 +580,9 @@ describe('time and distance (spec 0021)', () => {
       personalBestDurationSeconds: 60,
       isRecordSession: false,
     });
+    expect(detail?.records).toEqual([
+      { type: 'longestTime', value: 60, date: '2026-05-01T09:00:00.000Z' },
+    ]);
   });
 
   it('a longer time is the record of a timed exercise (FR-6)', () => {
@@ -460,7 +594,7 @@ describe('time and distance (spec 0021)', () => {
     expect(summary?.isRecordSession).toBe(true);
   });
 
-  it('weight & time records the longest time, not the heaviest weight', () => {
+  it('weight & time records the longest time, never a weight record', () => {
     const carry = (date: string, weightKg: number, durationSeconds: number) => ({
       date,
       exercises: [
@@ -472,12 +606,13 @@ describe('time and distance (spec 0021)', () => {
         },
       ],
     });
-    const [summary] = buildExerciseProgressSummaries([
-      carry('2026-05-01T09:00:00.000Z', 24, 60),
-      carry('2026-05-08T09:00:00.000Z', 32, 40),
-    ]);
+    const detail = buildExerciseProgressDetail(
+      [carry('2026-05-01T09:00:00.000Z', 24, 60), carry('2026-05-08T09:00:00.000Z', 32, 40)],
+      'carry',
+    );
 
-    expect(summary?.isRecordSession).toBe(false);
+    expect(detail?.isRecordSession).toBe(false);
+    expect(detail?.records?.map((record) => record.type)).toEqual(['longestTime']);
     expect(buildWeeklyVolume([carry('2026-05-08T09:00:00.000Z', 32, 40)])[0]?.totalVolume).toBe(0);
   });
 

@@ -1,7 +1,7 @@
 ---
 id: 0028
 title: Share a workout
-status: ready
+status: in-progress
 roadmap: docs/roadmap/07-social.md
 created: 2026-10-16
 ---

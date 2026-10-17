@@ -12,6 +12,16 @@ struct WorkoutActivityAttributes: ActivityAttributes {
     var pausedSeconds: Double
     /// Active energy read from Health; nil when unknown.
     var activeKcal: Int?
+    /// End of the running rest; nil when none runs (spec 0018).
+    var restEndsAt: Date?
+
+    /// Every update passes this as the stale date: the rest's end while it is
+    /// ahead, so the system re-renders the activity without the countdown once
+    /// it passes, even with the app suspended. Nil otherwise.
+    var staleDate: Date? {
+      guard let restEndsAt, restEndsAt > Date() else { return nil }
+      return restEndsAt
+    }
   }
 
   var workoutId: String

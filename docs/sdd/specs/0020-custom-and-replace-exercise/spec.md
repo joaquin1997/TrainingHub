@@ -1,7 +1,7 @@
 ---
 id: 0020
 title: Create and replace exercises where they are needed
-status: ready
+status: in-progress
 roadmap: docs/roadmap/06-exercises-advanced.md
 created: 2026-10-16
 ---

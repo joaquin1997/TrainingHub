@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { extractMetricRecords, extractPersonalRecords } from './personalRecords';
+import { extractPersonalRecords } from './personalRecords';
 import type { ExerciseProgressPoint } from '@workout/domain';
 
 function point(
@@ -45,24 +45,5 @@ describe('extractPersonalRecords', () => {
     ]);
 
     expect(records).toHaveLength(0);
-  });
-});
-
-describe('extractMetricRecords (spec 0021)', () => {
-  it('keeps the sessions that set a new longest time', () => {
-    expect(
-      extractMetricRecords(
-        [
-          point('2026-01-01', { bestDurationSeconds: 45 }),
-          point('2026-01-08', { bestDurationSeconds: 45 }),
-          point('2026-01-15', { bestDurationSeconds: 60 }),
-          point('2026-01-22', {}),
-        ],
-        'bestDurationSeconds',
-      ),
-    ).toEqual([
-      { date: '2026-01-01', value: 45 },
-      { date: '2026-01-15', value: 60 },
-    ]);
   });
 });

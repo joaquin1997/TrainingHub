@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,7 +24,9 @@ interface WheelPickerProps {
 
 /**
  * iOS-style spinning wheel built from a snapping ScrollView (no native picker
- * dependency). Renders an odd number of rows and selects the centered one.
+ * dependency). Renders an odd number of rows and selects the centered one;
+ * tapping a row selects it too (also where scroll momentum is not reported,
+ * e.g. on the web).
  */
 export function WheelPicker({
   values,
@@ -66,11 +69,21 @@ export function WheelPicker({
         onMomentumScrollEnd={handleMomentumEnd}
       >
         {values.map((item) => (
-          <View key={item} style={styles.row}>
+          <Pressable
+            key={item}
+            accessibilityRole="button"
+            accessibilityState={{ selected: item === value }}
+            onPress={() => {
+              if (item !== value) {
+                onChange(item);
+              }
+            }}
+            style={styles.row}
+          >
             <Text style={[styles.item, item === value ? styles.itemActive : null]}>
               {formatItem ? formatItem(item) : String(item)}
             </Text>
-          </View>
+          </Pressable>
         ))}
       </ScrollView>
     </View>

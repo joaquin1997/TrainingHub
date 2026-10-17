@@ -34,24 +34,3 @@ export function extractPersonalRecords(
   return records;
 }
 
-/**
- * Sessions that set a new longest time or distance (spec 0021 FR-6), as for
- * weight above: each one beats every earlier session.
- */
-export function extractMetricRecords(
-  points: ExerciseProgressPoint[],
-  metric: 'bestDurationSeconds' | 'bestDistanceMeters',
-): Array<{ date: string; value: number }> {
-  const records: Array<{ date: string; value: number }> = [];
-  let best = 0;
-
-  for (const point of points) {
-    const value = point[metric];
-    if (value !== undefined && value > best) {
-      best = value;
-      records.push({ date: point.date, value });
-    }
-  }
-
-  return records;
-}
