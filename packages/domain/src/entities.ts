@@ -513,6 +513,8 @@ export interface ExerciseLastSet {
   weightKg?: number;
   durationSeconds?: number;
   distanceMeters?: number;
+  /** Last time's set was a warm-up (spec 0031): "last time" pairs by kind. */
+  isWarmup?: boolean;
 }
 
 /**

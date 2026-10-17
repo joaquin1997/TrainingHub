@@ -28,6 +28,7 @@ import {
   canAddApproachSets,
   type ApproachSetsOutcome,
 } from '@/features/workouts/state/approachSetsDraft';
+import { pairedPerformance } from '@/features/workouts/state/lastTimeByKind';
 import { RestBar } from '@/features/workouts/components/RestBar';
 import { WarmUpChecklist } from '@/features/workouts/components/WarmUpChecklist';
 import { toggleWarmUpItem } from '@/features/workouts/state/warmUpDraft';
@@ -294,6 +295,27 @@ export function ActiveWorkoutScreen() {
       active = false;
     };
   }, [exerciseIdsKey]);
+
+  // "Last time" pairs by kind and position within the kind (spec 0031), so a
+  // set whose type changes, or sets added or removed ahead of it, re-pair.
+  // applyLastPerformance returns the same draft when nothing changes, so this
+  // settles after one pass.
+  useEffect(() => {
+    if (!workoutDraft) {
+      return;
+    }
+
+    let next = workoutDraft;
+    for (const [id, performance] of Object.entries(lastByExercise)) {
+      if (performance) {
+        next = applyLastPerformance(next, id, performance);
+      }
+    }
+
+    if (next !== workoutDraft) {
+      setActiveWorkout(next);
+    }
+  }, [workoutDraft, lastByExercise]);
 
   // A rest that ended or was skipped while this screen is open brings the
   // next set to do to about a third of the screen (FR-5). A new rest replacing
@@ -680,7 +702,8 @@ export function ActiveWorkoutScreen() {
                 unilateral={exercise.isUnilateral}
                 unit={unit}
                 previousLabel={previousSetLabel(
-                  lastByExercise[exercise.exerciseId],
+                  // Paired by kind, as the placeholders (spec 0031 FR-18).
+                  pairedPerformance(lastByExercise[exercise.exerciseId], exercise.entries),
                   set.order,
                   exercise.trackingType,
                   unit,
