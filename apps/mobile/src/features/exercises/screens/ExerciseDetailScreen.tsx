@@ -1,9 +1,12 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
+import { ExerciseImage } from '@/features/exercises/components/ExerciseImage';
+import { useAuth } from '@/features/auth/AuthContext';
+import { pickProfilePhoto } from '@/features/profile/photo/pickProfilePhoto';
 import { progressClient } from '@/features/progress/api/progressClient';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { formatDate } from '@/lib/format';
@@ -30,6 +33,9 @@ export function ExerciseDetailScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
   const { settings } = useSettings();
+  const { user } = useAuth();
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState<string>();
   const unit = settings.unit;
 
   const loadExercise = useCallback(
@@ -105,6 +111,26 @@ export function ExerciseDetailScreen() {
     };
   }, [exerciseId]);
 
+  async function handleChangePhoto() {
+    if (!exercise) {
+      return;
+    }
+    try {
+      setPhotoError(undefined);
+      const imageBase64 = await pickProfilePhoto();
+      if (!imageBase64) {
+        return;
+      }
+      setPhotoBusy(true);
+      await exercisesClient.setPhoto(exercise.id, { imageBase64 });
+      setExercise(await exercisesClient.getById(exercise.id));
+    } catch {
+      setPhotoError(t('customExercise.photoNotSaved'));
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+
   if (isLoading) {
     return (
       <View style={styles.screen}>
@@ -138,13 +164,23 @@ export function ExerciseDetailScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
       <Text style={styles.title}>{exercise.name}</Text>
-      {exercise.imageUrl ? (
-        <Image
-          source={{ uri: exercise.imageUrl }}
-          style={styles.image}
-          resizeMode="contain"
-          accessibilityLabel={t('exercises.illustration', { name: exercise.name })}
-        />
+      <ExerciseImage
+        imageUrl={exercise.imageUrl}
+        style={styles.image}
+        accessibilityLabel={t('exercises.illustration', { name: exercise.name })}
+        fallback={null}
+      />
+      {!exercise.isSystemDefined && exercise.createdByUserId === user?.id ? (
+        <>
+          <Button
+            label={exercise.imageUrl ? t('customExercise.changePhoto') : t('customExercise.addPhoto')}
+            icon="image-outline"
+            variant="secondary"
+            disabled={photoBusy}
+            onPress={() => void handleChangePhoto()}
+          />
+          {photoError ? <Text style={styles.meta}>{photoError}</Text> : null}
+        </>
       ) : null}
       <View style={styles.card}>
         {chipGroups.map((group) => (

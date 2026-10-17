@@ -8,6 +8,9 @@ vi.mock('./repository.js', () => {
     listMuscleGroups: vi.fn(),
     findExerciseById: vi.fn(),
     createExercise: vi.fn(),
+    saveExercisePhoto: vi.fn(),
+    deleteExercisePhoto: vi.fn(),
+    findExercisePhoto: vi.fn(),
     listFavoriteExerciseIds: vi.fn(),
     addFavoriteExercise: vi.fn(),
     removeFavoriteExercise: vi.fn(),
@@ -22,10 +25,13 @@ vi.mock('../../infrastructure/userContext.js', () => ({
 import { createApp } from '../../app.js';
 import {
   createExercise,
+  deleteExercisePhoto,
   findExerciseById,
+  findExercisePhoto,
   InvalidMuscleGroupSelectionError,
   listExercises,
   listMuscleGroups,
+  saveExercisePhoto,
 } from './repository.js';
 
 const app = createApp({ logger: false });
@@ -156,5 +162,66 @@ describe('POST /exercises', () => {
 
     expect(response.statusCode).toBe(400);
     expect(response.json()).toEqual({ message: 'Invalid muscle group selection' });
+  });
+});
+
+describe('exercise photo', () => {
+  const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0]);
+  const token = () => `Bearer ${app.jwt.sign({ sub: 'user-test' })}`;
+  const put = (imageBase64: string, withAuth = true) =>
+    app.inject({
+      method: 'PUT',
+      url: '/exercises/e1/photo',
+      headers: withAuth ? { authorization: token() } : {},
+      payload: { imageBase64 },
+    });
+
+  it('requires a signed-in user', async () => {
+    expect((await put(jpeg.toString('base64'), false)).statusCode).toBe(401);
+    expect(saveExercisePhoto).not.toHaveBeenCalled();
+
+    const read = await app.inject({ method: 'GET', url: '/exercises/e1/photo' });
+    expect(read.statusCode).toBe(401);
+  });
+
+  it('rejects data that is not a JPEG', async () => {
+    expect((await put(Buffer.from('<html></html>').toString('base64'))).statusCode).toBe(400);
+    expect(saveExercisePhoto).not.toHaveBeenCalled();
+  });
+
+  it('saves the photo for the creator (204)', async () => {
+    vi.mocked(saveExercisePhoto).mockResolvedValue('ok');
+    const response = await put(jpeg.toString('base64'));
+    expect(response.statusCode).toBe(204);
+    expect(saveExercisePhoto).toHaveBeenCalledWith('user-test', 'e1', jpeg);
+  });
+
+  it('refuses anyone but the creator (403) and unknown exercises (404)', async () => {
+    vi.mocked(saveExercisePhoto).mockResolvedValueOnce('forbidden');
+    expect((await put(jpeg.toString('base64'))).statusCode).toBe(403);
+    vi.mocked(saveExercisePhoto).mockResolvedValueOnce('not-found');
+    expect((await put(jpeg.toString('base64'))).statusCode).toBe(404);
+  });
+
+  it('serves the stored photo with private caching', async () => {
+    vi.mocked(findExercisePhoto).mockResolvedValue({ data: jpeg, updatedAt: new Date(0) });
+    const response = await app.inject({
+      method: 'GET',
+      url: '/exercises/e1/photo',
+      headers: { authorization: token() },
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['content-type']).toBe('image/jpeg');
+    expect(String(response.headers['cache-control'])).toContain('private');
+  });
+
+  it('deletes through the repository (204)', async () => {
+    vi.mocked(deleteExercisePhoto).mockResolvedValue('ok');
+    const response = await app.inject({
+      method: 'DELETE',
+      url: '/exercises/e1/photo',
+      headers: { authorization: token() },
+    });
+    expect(response.statusCode).toBe(204);
   });
 });

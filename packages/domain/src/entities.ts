@@ -71,6 +71,13 @@ export interface Exercise {
   updatedAt: ISODateString;
 }
 
+/** Body of `POST /exercises`: a custom exercise with its muscle groups. */
+export interface CreateExerciseInput {
+  name: string;
+  primaryMuscleGroupIds: EntityId[];
+  secondaryMuscleGroupIds: EntityId[];
+}
+
 /**
  * Write contract for creating a custom exercise.
  */

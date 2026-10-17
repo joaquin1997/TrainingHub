@@ -2,12 +2,18 @@ import { Prisma } from '@prisma/client';
 import type { CreateExerciseInput, Exercise, MuscleGroup } from '@workout/domain';
 
 import { prisma } from '../../infrastructure/prisma.js';
+import { photoImageUrl } from './photo.js';
 import { toExerciseTrackingType } from './trackingTypes.js';
 
 const exerciseInclude = {
   createdByUser: {
     select: {
       publicId: true,
+    },
+  },
+  photo: {
+    select: {
+      updatedAt: true,
     },
   },
   primaryMuscleGroupLinks: {
@@ -48,7 +54,9 @@ function mapExercise(record: ExerciseRecord): Exercise {
     language: record.language ?? undefined,
     source: record.source,
     sourceId: record.sourceId,
-    imageUrl: record.imageUrl ?? undefined,
+    imageUrl:
+      record.imageUrl ??
+      (record.photo ? photoImageUrl(record.publicId, record.photo.updatedAt) : undefined),
     primaryMuscleGroups: record.primaryMuscleGroupLinks.map(
       (link) => link.muscleGroup.name,
     ),
@@ -272,4 +280,88 @@ export async function createExercise(
   });
 
   return mapExercise(exercise);
+}
+
+export type ExercisePhotoRecord = {
+  data: Buffer;
+  updatedAt: Date;
+};
+
+export async function findExercisePhoto(
+  exercisePublicId: string,
+): Promise<ExercisePhotoRecord | null> {
+  const photo = await prisma.exercisePhoto.findFirst({
+    where: { exercise: { publicId: exercisePublicId } },
+    select: { data: true, updatedAt: true },
+  });
+
+  return photo
+    ? {
+        data: Buffer.from(photo.data),
+        updatedAt: photo.updatedAt,
+      }
+    : null;
+}
+
+export type PhotoWriteResult = 'ok' | 'not-found' | 'forbidden';
+
+/** Finds the exercise and checks that the user created it (system exercises never qualify). */
+async function findOwnedExerciseId(
+  userPublicId: string,
+  exercisePublicId: string,
+): Promise<{ id: bigint } | 'not-found' | 'forbidden'> {
+  const exercise = await prisma.exercise.findUnique({
+    where: { publicId: exercisePublicId },
+    select: {
+      id: true,
+      isSystemDefined: true,
+      createdByUser: { select: { publicId: true } },
+    },
+  });
+
+  if (!exercise) {
+    return 'not-found';
+  }
+
+  if (exercise.isSystemDefined || exercise.createdByUser?.publicId !== userPublicId) {
+    return 'forbidden';
+  }
+
+  return { id: exercise.id };
+}
+
+export async function saveExercisePhoto(
+  userPublicId: string,
+  exercisePublicId: string,
+  data: Buffer,
+): Promise<PhotoWriteResult> {
+  const owned = await findOwnedExerciseId(userPublicId, exercisePublicId);
+
+  if (typeof owned === 'string') {
+    return owned;
+  }
+
+  const bytes = new Uint8Array(data);
+  await prisma.exercisePhoto.upsert({
+    where: { exerciseId: owned.id },
+    create: { exerciseId: owned.id, data: bytes },
+    update: { data: bytes },
+  });
+
+  return 'ok';
+}
+
+export async function deleteExercisePhoto(
+  userPublicId: string,
+  exercisePublicId: string,
+): Promise<PhotoWriteResult> {
+  const owned = await findOwnedExerciseId(userPublicId, exercisePublicId);
+
+  if (typeof owned === 'string') {
+    return owned;
+  }
+
+  await prisma.exercisePhoto.deleteMany({ where: { exerciseId: owned.id } });
+
+  return 'ok';
 }

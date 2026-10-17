@@ -1,7 +1,7 @@
 ---
 id: 0026
 title: Exercise images
-status: ready
+status: in-progress
 decided: 2026-10-16
 roadmap: docs/roadmap/06-exercises-advanced.md
 created: 2026-10-16

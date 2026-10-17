@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,6 +12,7 @@ import {
 import type { Exercise, ExerciseTrackingType, MuscleGroup } from '@workout/domain';
 
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
+import { ExercisePhotoField } from '@/features/exercises/components/ExercisePhotoField';
 import { TRACKING_TYPES } from '@/lib/tracking';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
@@ -42,6 +44,7 @@ export function CustomExerciseForm({
   const [muscleGroups, setMuscleGroups] = useState<MuscleGroup[]>([]);
   const [primaryMuscleGroupIds, setPrimaryMuscleGroupIds] = useState<string[]>([]);
   const [secondaryMuscleGroupIds, setSecondaryMuscleGroupIds] = useState<string[]>([]);
+  const [photoBase64, setPhotoBase64] = useState<string>();
   const [trackingType, setTrackingType] = useState<ExerciseTrackingType>('weight_reps');
   const [errorMessage, setErrorMessage] = useState<string>();
   const [isLoadingMuscleGroups, setIsLoadingMuscleGroups] = useState(false);
@@ -125,7 +128,17 @@ export function CustomExerciseForm({
         secondaryMuscleGroupIds,
         trackingType,
       });
-      onCreated(createdExercise);
+      let result = createdExercise;
+      if (photoBase64) {
+        try {
+          await exercisesClient.setPhoto(createdExercise.id, { imageBase64: photoBase64 });
+          result = await exercisesClient.getById(createdExercise.id);
+        } catch {
+          // The exercise exists; the photo can be added from its detail.
+          Alert.alert(t('customExercise.photoNotSaved'));
+        }
+      }
+      onCreated(result);
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : t('customExercise.createError'),
@@ -168,6 +181,11 @@ export function CustomExerciseForm({
         placeholder={t('customExercise.namePlaceholder')}
         placeholderTextColor={colors.textSubtle}
         style={styles.input}
+      />
+      <ExercisePhotoField
+        photoBase64={photoBase64}
+        onChange={setPhotoBase64}
+        disabled={isSubmitting}
       />
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>{t('customExercise.trackingTitle')}</Text>

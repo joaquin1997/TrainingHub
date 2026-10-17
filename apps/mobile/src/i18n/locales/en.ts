@@ -138,6 +138,11 @@ export const en = {
     loadError: 'Unable to load muscle groups.',
     validation: 'Name and at least one primary muscle group are required.',
     createError: 'Unable to create exercise.',
+    addPhoto: 'Add photo',
+    changePhoto: 'Change photo',
+    removePhoto: 'Remove photo',
+    photoError: 'The photo could not be read.',
+    photoNotSaved: 'The exercise was created, but the photo could not be saved. Add it again from the exercise.',
     // Tracking type (spec 0021).
     trackingTitle: 'What each set records',
     trackingTypes: {

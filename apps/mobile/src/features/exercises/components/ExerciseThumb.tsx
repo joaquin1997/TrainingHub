@@ -1,17 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
+import { ExerciseImage } from '@/features/exercises/components/ExerciseImage';
 import { colors, radii } from '@/ui/theme';
 
-/** The exercise's catalog image, or a neutral tile when it has none (spec 0017 FR-23). */
+/** The exercise's image, or a neutral tile when it has none or it fails to load (specs 0017, 0026). */
 export function ExerciseThumb({ imageUrl, size = 48 }: { imageUrl?: string; size?: number }) {
   return (
     <View style={[styles.tile, { width: size, height: size }]}>
-      {imageUrl ? (
-        <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="contain" />
-      ) : (
-        <Ionicons name="barbell-outline" size={size * 0.45} color={colors.textSubtle} />
-      )}
+      <ExerciseImage
+        imageUrl={imageUrl}
+        style={styles.image}
+        fallback={<Ionicons name="barbell-outline" size={size * 0.45} color={colors.textSubtle} />}
+      />
     </View>
   );
 }

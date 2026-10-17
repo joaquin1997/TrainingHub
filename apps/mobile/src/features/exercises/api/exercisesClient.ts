@@ -1,4 +1,9 @@
-import type { CreateExerciseInput, Exercise, MuscleGroup } from '@workout/domain';
+import type {
+  CreateExerciseInput,
+  Exercise,
+  MuscleGroup,
+  SetProfilePhotoInput,
+} from '@workout/domain';
 
 import { apiRequest } from '@/lib/http';
 
@@ -17,6 +22,16 @@ export const exercisesClient = {
       method: 'POST',
       body: JSON.stringify(input),
     });
+  },
+  /** Sets the photo of a custom exercise (same JPEG/base64 upload as the profile photo). */
+  setPhoto(exerciseId: string, input: SetProfilePhotoInput) {
+    return apiRequest<void>(`/exercises/${exerciseId}/photo`, {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    });
+  },
+  removePhoto(exerciseId: string) {
+    return apiRequest<void>(`/exercises/${exerciseId}/photo`, { method: 'DELETE' });
   },
   listFavorites() {
     return apiRequest<string[]>('/exercises/favorites');

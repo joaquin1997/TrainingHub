@@ -39,6 +39,11 @@ export function setAuthToken(token: string | null) {
   authToken = token;
 }
 
+/** The bearer token currently sent with requests (for image loads that bypass fetch). */
+export function getAuthToken() {
+  return authToken;
+}
+
 /** Register a callback fired when the API returns 401 (e.g. to sign out). */
 export function setOnUnauthorized(handler: (() => void) | null) {
   onUnauthorized = handler;

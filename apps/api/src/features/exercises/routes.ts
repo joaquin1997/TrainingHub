@@ -1,15 +1,19 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply } from 'fastify';
 
 import {
   addFavoriteExercise,
   createExercise,
+  deleteExercisePhoto,
   findExerciseById,
+  findExercisePhoto,
   InvalidMuscleGroupSelectionError,
   listExercises,
   listFavoriteExerciseIds,
   listMuscleGroups,
   removeFavoriteExercise,
+  saveExercisePhoto,
 } from './repository.js';
+import { decodeJpegBase64 } from '../profile/validation.js';
 import { isExerciseTrackingType } from './trackingTypes.js';
 import { resolveUserPublicId } from '../../infrastructure/userContext.js';
 
@@ -42,6 +46,21 @@ function parseCreateExerciseInput(body: unknown) {
     secondaryMuscleGroupIds: body.secondaryMuscleGroupIds.map((id) => id.trim()),
     trackingType: body.trackingType,
   };
+}
+
+function sendPhotoWriteResult(
+  reply: FastifyReply,
+  result: 'ok' | 'not-found' | 'forbidden',
+) {
+  if (result === 'not-found') {
+    return reply.code(404).send({ message: 'Exercise not found' });
+  }
+
+  if (result === 'forbidden') {
+    return reply.code(403).send({ message: 'Only the creator can change the photo' });
+  }
+
+  return reply.code(204).send();
 }
 
 export async function registerExerciseRoutes(app: FastifyInstance) {
@@ -110,6 +129,59 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
       throw error;
     }
   });
+
+  // Same upload shape as the profile photo (spec 0027): a small JPEG, base64.
+  app.put<{ Params: { id: string }; Body: unknown }>(
+    '/exercises/:id/photo',
+    { preHandler: app.authenticate },
+    async (request, reply) => {
+      const photo = decodeJpegBase64(request.body);
+
+      if (!photo.ok) {
+        return reply.code(photo.status).send({ message: photo.message });
+      }
+
+      const result = await saveExercisePhoto(
+        await resolveUserPublicId(request),
+        request.params.id,
+        photo.bytes,
+      );
+
+      return sendPhotoWriteResult(reply, result);
+    },
+  );
+
+  app.delete<{ Params: { id: string } }>(
+    '/exercises/:id/photo',
+    { preHandler: app.authenticate },
+    async (request, reply) => {
+      const result = await deleteExercisePhoto(
+        await resolveUserPublicId(request),
+        request.params.id,
+      );
+
+      return sendPhotoWriteResult(reply, result);
+    },
+  );
+
+  // TODO(0015): restrict reads to the creator once custom exercises are private.
+  app.get<{ Params: { id: string } }>(
+    '/exercises/:id/photo',
+    { preHandler: app.authenticate },
+    async (request, reply) => {
+      const photo = await findExercisePhoto(request.params.id);
+
+      if (!photo) {
+        return reply.code(404).send({ message: 'Photo not found' });
+      }
+
+      return reply
+        .header('Content-Type', 'image/jpeg')
+        .header('Cache-Control', 'private, max-age=31536000, immutable')
+        .header('X-Content-Type-Options', 'nosniff')
+        .send(photo.data);
+    },
+  );
 
   app.get<{ Params: { id: string } }>('/exercises/:id', async (request, reply) => {
     const exercise = await findExerciseById(request.params.id);
