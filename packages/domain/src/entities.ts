@@ -148,6 +148,8 @@ export interface RoutineExerciseSet {
   targetDurationSeconds?: number;
   /** Target distance in metres (spec 0021). */
   targetDistanceMeters?: number;
+  /** A warm-up (approach) set in the plan (spec 0024); absent = working set. */
+  isWarmup?: boolean;
   createdAt: ISODateString;
   updatedAt: ISODateString;
 }
@@ -163,6 +165,8 @@ export interface RoutineSetInput {
   targetWeight?: number;
   targetDurationSeconds?: number;
   targetDistanceMeters?: number;
+  /** A warm-up (approach) set (spec 0024). */
+  isWarmup?: boolean;
 }
 
 /**

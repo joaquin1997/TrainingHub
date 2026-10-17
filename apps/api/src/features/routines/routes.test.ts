@@ -164,6 +164,36 @@ describe('POST /routines time and distance targets (spec 0021)', () => {
   });
 });
 
+describe('POST /routines warm-up sets (spec 0024)', () => {
+  it('passes isWarmup only for warm-up sets', async () => {
+    vi.mocked(findExerciseById).mockResolvedValue({ id: 'ex1', name: 'Squat' } as never);
+    vi.mocked(createRoutine).mockResolvedValue({ id: 'r3', name: 'Legs' } as never);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/routines',
+      payload: {
+        name: 'Legs',
+        exercises: [
+          {
+            exerciseId: 'ex1',
+            orderIndex: 1,
+            sets: [
+              { setNumber: 1, targetWeight: 20, minReps: 10, maxReps: 10, isWarmup: true },
+              { setNumber: 2, targetWeight: 140, maxReps: 5, isWarmup: 'yes' },
+              { setNumber: 3, targetWeight: 140, maxReps: 5 },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.statusCode).toBe(201);
+    const sets = vi.mocked(createRoutine).mock.calls[0]?.[1].exercises[0]?.sets;
+    expect(sets?.map((set) => set.isWarmup)).toEqual([true, undefined, undefined]);
+  });
+});
+
 describe('DELETE /routines/:id', () => {
   it('returns 204 when the routine was deleted', async () => {
     vi.mocked(deleteRoutine).mockResolvedValue(true as never);

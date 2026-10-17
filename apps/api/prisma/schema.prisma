@@ -180,6 +180,8 @@ model RoutineExerciseSet {
   targetDurationSeconds Int?
   /// Target distance in metres (spec 0021).
   targetDistanceMeters Float?
+  /// A warm-up (approach) set in the plan (spec 0024).
+  isWarmup          Boolean         @default(false)
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
   routineExercise   RoutineExercise @relation(fields: [routineExerciseId], references: [id], onDelete: Cascade)
