@@ -107,6 +107,16 @@ export interface SetExerciseTrackingTypeInput {
 }
 
 /**
+ * What deleting a custom exercise touches, counted over its creator's own
+ * data only (spec 0033 FR-3): routines and saved workouts that contain it.
+ * The active workout lives on the device, which checks it itself (FR-4).
+ */
+export interface ExerciseDeletionImpact {
+  routineCount: number;
+  workoutCount: number;
+}
+
+/**
  * Represents one normalized muscle group option from the exercise catalog.
  */
 export interface MuscleGroup {
@@ -169,6 +179,11 @@ export interface RoutineExercise {
   trackingType?: ExerciseTrackingType;
   /** Whether the exercise is unilateral, read from the exercise (spec 0022). */
   isUnilateral?: boolean;
+  /**
+   * Its creator deleted the exercise (spec 0033 FR-7): the slot keeps it, but
+   * it is no longer in the catalog. Absent when it is not deleted.
+   */
+  exerciseDeleted?: boolean;
   sets: RoutineExerciseSet[];
   createdAt: ISODateString;
   updatedAt: ISODateString;

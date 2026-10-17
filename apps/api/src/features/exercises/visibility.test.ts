@@ -11,9 +11,20 @@ describe('visibleExerciseWhere', () => {
     expect(visibleExerciseWhere('user-ana')).toEqual({
       OR: [
         { isSystemDefined: true },
-        { isSystemDefined: false, createdByUser: { publicId: 'user-ana' } },
+        {
+          isSystemDefined: false,
+          createdByUser: { publicId: 'user-ana' },
+          deletedAt: null,
+        },
       ],
     });
+  });
+
+  it('leaves out custom exercises their creator deleted (spec 0033 FR-5, FR-11)', () => {
+    const [catalog, own] = visibleExerciseWhere('user-ana').OR ?? [];
+    expect(own).toMatchObject({ deletedAt: null });
+    // Catalog exercises are never deleted: no lifecycle filter on them.
+    expect(catalog).toEqual({ isSystemDefined: true });
   });
 
   it('never matches custom exercises without a creator (EF-3)', () => {
@@ -38,6 +49,12 @@ describe('usableExerciseWhere', () => {
         },
       },
     ]);
+  });
+
+  it('keeps the person own custom exercises even once deleted (spec 0033 FR-7, FR-8, EF-5)', () => {
+    const own = usableExerciseWhere('user-ben').OR?.[1];
+    expect(own).toEqual({ isSystemDefined: false, createdByUser: { publicId: 'user-ben' } });
+    expect(JSON.stringify(usableExerciseWhere('user-ben'))).not.toMatch(/deletedAt/);
   });
 
   it('never refers to another person', () => {
@@ -70,5 +87,20 @@ describe('classifyExerciseAccess', () => {
       classifyExerciseAccess({ isSystemDefined: false, creatorPublicId: null }, 'user-ben'),
     ).toBe('hidden');
     expect(classifyExerciseAccess({ isSystemDefined: false }, '')).toBe('hidden');
+  });
+
+  it('hides a deleted custom exercise from everyone, its creator included (spec 0033)', () => {
+    const deleted = { isSystemDefined: false, creatorPublicId: 'user-ana', isDeleted: true };
+    expect(classifyExerciseAccess(deleted, 'user-ana')).toBe('hidden');
+    expect(classifyExerciseAccess(deleted, 'user-ben')).toBe('hidden');
+    expect(
+      classifyExerciseAccess({ ...deleted, isDeleted: false }, 'user-ana'),
+    ).toBe('own');
+  });
+
+  it('ignores the lifecycle when the caller does not pass it', () => {
+    expect(
+      classifyExerciseAccess({ isSystemDefined: false, creatorPublicId: 'user-ana' }, 'user-ana'),
+    ).toBe('own');
   });
 });

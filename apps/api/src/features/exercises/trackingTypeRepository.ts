@@ -29,6 +29,7 @@ export async function setExerciseTrackingType(
     select: {
       id: true,
       isSystemDefined: true,
+      deletedAt: true,
       createdByUser: { select: { publicId: true } },
     },
   });
@@ -36,7 +37,12 @@ export async function setExerciseTrackingType(
   if (
     !exercise ||
     classifyExerciseAccess(
-      { isSystemDefined: exercise.isSystemDefined, creatorPublicId: exercise.createdByUser?.publicId },
+      {
+        isSystemDefined: exercise.isSystemDefined,
+        creatorPublicId: exercise.createdByUser?.publicId,
+        // A deleted custom exercise answers like a missing one (spec 0033).
+        isDeleted: exercise.deletedAt !== null && exercise.deletedAt !== undefined,
+      },
       userPublicId,
     ) === 'hidden'
   ) {

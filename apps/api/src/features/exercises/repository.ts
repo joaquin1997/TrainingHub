@@ -1,7 +1,13 @@
 import { Prisma } from '@prisma/client';
-import type { CreateExerciseInput, Exercise, MuscleGroup } from '@workout/domain';
+import type {
+  CreateExerciseInput,
+  Exercise,
+  ExerciseDeletionImpact,
+  MuscleGroup,
+} from '@workout/domain';
 
 import { prisma } from '../../infrastructure/prisma.js';
+import { deletionImpactWhere, planExerciseDeletion } from './deletion.js';
 import { photoImageUrl } from './photo.js';
 import { toExerciseTrackingType } from './trackingTypes.js';
 import {
@@ -326,6 +332,133 @@ export async function createExercise(
   return mapExercise(exercise);
 }
 
+/** The exercise as deletion sees it: its lifecycle and whether anything points at it. */
+async function findExerciseForDeletion(userPublicId: string, exercisePublicId: string) {
+  const exercise = await prisma.exercise.findUnique({
+    where: { publicId: exercisePublicId },
+    select: {
+      id: true,
+      isSystemDefined: true,
+      deletedAt: true,
+      createdByUser: { select: { publicId: true } },
+      _count: { select: { routineExercises: true, workoutExercises: true } },
+    },
+  });
+
+  if (!exercise) {
+    return { id: null, access: 'missing' as const, isDeleted: false, isReferenced: false };
+  }
+
+  return {
+    id: exercise.id,
+    // The lifecycle is judged by the plan, not the classifier (spec 0033 EF-2).
+    access: classifyExerciseAccess(
+      {
+        isSystemDefined: exercise.isSystemDefined,
+        creatorPublicId: exercise.createdByUser?.publicId,
+      },
+      userPublicId,
+    ),
+    isDeleted: exercise.deletedAt !== null,
+    isReferenced:
+      exercise._count.routineExercises > 0 || exercise._count.workoutExercises > 0,
+  };
+}
+
+/**
+ * How many of the creator's own routines and saved workouts contain their
+ * custom exercise (spec 0033 FR-3). Catalog → `'forbidden'`; unknown, someone
+ * else's or already deleted → `'not-found'`.
+ */
+export async function getExerciseDeletionImpact(
+  userPublicId: string,
+  exercisePublicId: string,
+): Promise<ExerciseDeletionImpact | 'not-found' | 'forbidden'> {
+  const exercise = await findExerciseForDeletion(userPublicId, exercisePublicId);
+  const plan = planExerciseDeletion({ ...exercise, inActiveWorkout: false });
+
+  if (plan === 'forbidden') {
+    return 'forbidden';
+  }
+
+  if (plan === 'not-found' || plan === 'already-deleted' || exercise.id === null) {
+    return 'not-found';
+  }
+
+  const where = deletionImpactWhere(userPublicId, exercise.id);
+  const [routineCount, workoutCount] = await Promise.all([
+    prisma.routine.count({ where: where.routines }),
+    prisma.workoutSession.count({ where: where.workouts }),
+  ]);
+
+  return { routineCount, workoutCount };
+}
+
+export type ExerciseDeletionResult = 'deleted' | 'not-found' | 'forbidden';
+
+function isForeignKeyViolation(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003'
+  );
+}
+
+/**
+ * Deletes the person's custom exercise (spec 0033). Never used → removed
+ * outright (photo, favourites and muscle links cascade). Used, or in the
+ * active workout → archived: hidden from the catalog and pickers, kept with
+ * its name for routines and workouts (FR-6, FR-7, FR-8), favourites removed
+ * for everyone (FR-10), photo removed (FR-9). Already deleted → `'deleted'`
+ * (EF-2). Routine and workout rows are never touched (Article 2).
+ */
+export async function deleteCustomExercise(
+  userPublicId: string,
+  exercisePublicId: string,
+  options: { inActiveWorkout: boolean },
+): Promise<ExerciseDeletionResult> {
+  const exercise = await findExerciseForDeletion(userPublicId, exercisePublicId);
+  const plan = planExerciseDeletion({ ...exercise, inActiveWorkout: options.inActiveWorkout });
+
+  if (plan === 'not-found' || plan === 'forbidden') {
+    return plan;
+  }
+
+  if (plan === 'already-deleted' || exercise.id === null) {
+    return 'deleted';
+  }
+
+  const id = exercise.id;
+
+  if (plan === 'remove') {
+    try {
+      await prisma.exercise.delete({ where: { id } });
+      return 'deleted';
+    } catch (error) {
+      // A save referenced it since we looked: keep it for that save instead.
+      if (!isForeignKeyViolation(error)) {
+        throw error;
+      }
+    }
+  }
+
+  await prisma.$transaction([
+    prisma.exercise.update({ where: { id }, data: { deletedAt: new Date() } }),
+    prisma.exerciseFavorite.deleteMany({ where: { exerciseId: id } }),
+  ]);
+
+  // Best effort (EF-4): the deletion stands even if this fails, and the photo
+  // is never served again because the photo read only serves visible exercises.
+  try {
+    await prisma.exercisePhoto.deleteMany({ where: { exerciseId: id } });
+  } catch (error) {
+    console.warn('[exercisesRepository] deleteCustomExercise:photo-not-removed', {
+      exercisePublicId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  return 'deleted';
+}
+
 export type ExercisePhotoRecord = {
   data: Buffer;
   updatedAt: Date;
@@ -355,7 +488,8 @@ export type PhotoWriteResult = 'ok' | 'not-found' | 'forbidden';
 
 /**
  * Finds the exercise as the person sees it (spec 0015): `null` when it does
- * not exist or is someone else's custom exercise — both answer "not found".
+ * not exist, is someone else's custom exercise, or was deleted (spec 0033) —
+ * all answer "not found".
  */
 async function findAccessibleExercise(userPublicId: string, exercisePublicId: string) {
   const exercise = await prisma.exercise.findUnique({
@@ -363,6 +497,7 @@ async function findAccessibleExercise(userPublicId: string, exercisePublicId: st
     select: {
       id: true,
       isSystemDefined: true,
+      deletedAt: true,
       createdByUser: { select: { publicId: true } },
     },
   });
@@ -375,6 +510,7 @@ async function findAccessibleExercise(userPublicId: string, exercisePublicId: st
     {
       isSystemDefined: exercise.isSystemDefined,
       creatorPublicId: exercise.createdByUser?.publicId,
+      isDeleted: exercise.deletedAt !== null,
     },
     userPublicId,
   );

@@ -229,6 +229,10 @@ export function RoutineDetailScreen() {
             </Text>
           </View>
           <Text style={styles.exerciseTitle}>{exercise.exerciseName}</Text>
+          {/* Spec 0033 FR-7: kept in the routine, but no longer in the catalog. */}
+          {exercise.exerciseDeleted ? (
+            <Chip icon="trash-outline" label={t('exerciseDeletion.deleted')} size="sm" />
+          ) : null}
           {exercise.restSeconds !== undefined ? (
             <Chip
               icon="timer-outline"

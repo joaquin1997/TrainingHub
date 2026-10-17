@@ -55,6 +55,18 @@ describe('setExerciseTrackingType (spec 0030)', () => {
     expect(update).not.toHaveBeenCalled();
   });
 
+  it("treats the creator's deleted custom exercise as not found (0033)", async () => {
+    findUnique.mockResolvedValue({
+      id: 8n,
+      isSystemDefined: false,
+      deletedAt: new Date(),
+      createdByUser: { publicId: 'owner' },
+    });
+
+    expect(await setExerciseTrackingType('owner', 'e2', 'reps')).toBe('not-found');
+    expect(update).not.toHaveBeenCalled();
+  });
+
   it('reports a missing exercise', async () => {
     findUnique.mockResolvedValue(null);
 

@@ -156,6 +156,22 @@ export const es: TranslationCatalog = {
     done: 'Hecho',
     notDone: 'Sin hacer',
   },
+  // Borrar un ejercicio propio (spec 0033).
+  exerciseDeletion: {
+    action: 'Borrar ejercicio',
+    confirmTitle: '¿Borrar «{{name}}»?',
+    confirm: 'Borrar',
+    unused: 'No está en ninguna rutina ni entrenamiento.',
+    inRoutines_one: 'En {{count}} rutina: se queda en ella, marcado como borrado.',
+    inRoutines_other: 'En {{count}} rutinas: se queda en ellas, marcado como borrado.',
+    inWorkouts_one: 'En {{count}} entrenamiento guardado: tu historial lo conserva.',
+    inWorkouts_other: 'En {{count}} entrenamientos guardados: tu historial lo conserva.',
+    inActiveWorkout: 'Está en tu entrenamiento en curso: sus series se quedan y se guardan.',
+    disappears: 'Desaparece de tus ejercicios y de los selectores, con su foto.',
+    impactError: 'No se pudo comprobar dónde se usa este ejercicio. No se ha borrado nada. Inténtalo de nuevo.',
+    deleteError: 'No se pudo borrar el ejercicio. Comprueba la conexión e inténtalo de nuevo.',
+    deleted: 'Ejercicio borrado',
+  },
   customExercise: {
     title: 'Crear ejercicio personalizado',
     namePlaceholder: 'Nombre del ejercicio',
