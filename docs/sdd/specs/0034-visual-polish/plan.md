@@ -308,8 +308,10 @@ column or a single-line bar:
 |---|---|
 | Set row: marker digit, previous, set inputs, column headers (36 / 64 / 44 pt columns) | 1.3 |
 | Rest bar clock and its three buttons; workout bar figures | 1.3 |
-| Tab bar labels | 1.2 |
-| `figureLarge` (clock, hero figure) and `title` | 1.5 |
+| Stat tile figures | 1.3 |
+| `figureLarge` beside a button (workout clock, Settings rest stepper) | 1.5 |
+
+Titles, headings, body and caption text are not capped.
 
 Rows that hold a name already wrap (0017 FR-7). `ListRow` and `CardHeader`
 let the title wrap and keep the trailing node at its intrinsic width.
@@ -376,6 +378,50 @@ The real check is AC-11 on an iPhone SE at the largest accessibility size —
   not apply the system font scale) — AC-11 is a [DEVICE] check.
 - **Remove set's warning haptic** is an interpretation (no dialog exists);
   reversible in one line.
+
+## As built (Phase A, 2026-10-18)
+
+Where the implementation settled something this plan left open, or departed
+from it. Each is reversible.
+
+- **Tokens moved to `src/ui/tokens.ts`** (pure data: palette, fonts, the six
+  type styles, spacing, radii, `layout`, `fontScaleCap`); `theme.ts`
+  re-exports them with `commonStyles`. The check exempts only `tokens.ts`,
+  so `commonStyles` is checked too. The scanner also requires the dark
+  keyboard on every `<TextInput`.
+- **Column headers in sentence case.** At Caption (13 pt) the uppercase,
+  tracked "PREVIOUS" and "SERIE" no longer fit the set row's 64 / 36 pt
+  columns. A new `columnLabel` role (Caption bold, no tracking) and
+  sentence-case strings ("Set", "Previous", "kg", "Reps", "Target", "Min",
+  "Max", and their Spanish) replace them in the set row, the routine set
+  table and the routine detail. **[ASSUMPTION]**
+- **What counts as a list row (AC-10).** `ListRow` draws rows that lead
+  somewhere or name a thing with a secondary line (exercise list and picker,
+  settings account row, profile measurements, measurement history).
+  Table-style data rows — a set in the summary or session detail, a session
+  of a progress screen, a record, a distribution bar — are tables, not list
+  rows, and keep their own styles. **[ASSUMPTION]**
+- `CardHeader` gained `icon` (warm-up cards) and centres its neighbours when
+  the title is a single line; `ListRow` gained `divider` and `disabled`.
+- The Settings account row is a `ListRow`: name, then e-mail (or "Open
+  profile" when there is none); the separate "Open profile" line is gone —
+  the chevron and the accessibility label carry it.
+- **Record pop trigger.** The screen remembers the set whose tick on this
+  screen returned `record` from `tickFeedback`, in the same update as the
+  tick, so the badge mounts with `pop`. A record from a watch tick gets the
+  notice but no pop and no phone haptic.
+- **Dynamic Type caps** as planned except the tab bar: its labels are left
+  to React Navigation (no per-label cap there). Also capped: stat tile
+  figures (1.3) and the Settings rest stepper figure (1.5).
+- **Versions.** `expo install` could not reach Expo's API from the sandbox;
+  the three modules are pinned to the ranges in Expo's
+  `bundledNativeModules.json` for SDK 55 (`expo-haptics ~55.0.9`,
+  `expo-splash-screen ~55.0.12`, `expo-system-ui ~55.0.10`).
+- Unused after this work, left in the locale files to keep the diff small:
+  `routines.loadingRoutines`, `workouts.loadingWorkouts`,
+  `progress.loading`, `exercises.loading`.
+- Web only: the exercise list's chip rows no longer stretch when the list is
+  short (react-native-web scroll views grow by default).
 
 ## Rollout
 
