@@ -387,7 +387,7 @@ const styles = createStyles(() => ({
     gap: spacing.md,
   },
   cardActive: {
-    borderColor: colors.primary,
+    borderColor: colors.primaryInk,
   },
   cardPressed: {
     ...commonStyles.pressed,

@@ -49,17 +49,17 @@ type Look = {
 /** Shape and colour of each status (FR-17: never colour alone). */
 /** Read at render time, so it follows the theme (spec 0038). */
 const LOOKS = (): Record<SetStatus, Look> => ({
-  record: { icon: 'trophy', iconColor: colors.onPrimary, frame: { borderColor: colors.accent } },
-  done: { icon: 'checkmark', iconColor: colors.onPrimary, frame: { borderColor: colors.success } },
+  record: { icon: 'trophy', iconColor: colors.onPrimary, frame: { borderColor: colors.accentInk } },
+  done: { icon: 'checkmark', iconColor: colors.onPrimary, frame: { borderColor: colors.successInk } },
   generatedWarmup: {
     icon: 'sparkles',
-    iconColor: colors.accent,
-    frame: { borderColor: colors.accent, borderStyle: 'dashed' },
+    iconColor: colors.accentInk,
+    frame: { borderColor: colors.accentInk, borderStyle: 'dashed' },
   },
   upNext: {
     icon: 'checkmark',
-    iconColor: colors.primary,
-    frame: { borderColor: colors.primary, borderWidth: 2 },
+    iconColor: colors.primaryInk,
+    frame: { borderColor: colors.primaryInk, borderWidth: 2 },
   },
   none: { icon: 'checkmark', iconColor: colors.controlBorder, frame: {} },
 });

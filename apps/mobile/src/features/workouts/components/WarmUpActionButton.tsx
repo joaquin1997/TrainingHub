@@ -34,7 +34,7 @@ export function WarmUpActionButton({ action, onPress, style }: WarmUpActionButto
       <Ionicons
         name={removing ? 'flame' : 'flame-outline'}
         size={18}
-        color={removing ? colors.accent : colors.textMuted}
+        color={removing ? colors.accentInk : colors.textMuted}
       />
       {removing ? (
         <View style={styles.badge} pointerEvents="none">

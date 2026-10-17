@@ -30,8 +30,8 @@ export function StatTile({
   tone = 'neutral',
 }: StatTileProps) {
   useTheme();
-  const figureColor = tone === 'record' ? colors.accent : colors.text;
-  const captionColor = captionTone === 'success' ? colors.success : colors.textMuted;
+  const figureColor = tone === 'record' ? colors.accentInk : colors.text;
+  const captionColor = captionTone === 'success' ? colors.successInk : colors.textMuted;
 
   return (
     <View style={styles.tile}>

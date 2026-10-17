@@ -112,7 +112,7 @@ const styles = createStyles(() => ({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    borderColor: colors.primary,
+    borderColor: colors.primaryInk,
   },
   cardText: {
     flex: 1,
@@ -131,6 +131,6 @@ const styles = createStyles(() => ({
   },
   notice: {
     ...commonStyles.meta,
-    color: colors.danger,
+    color: colors.dangerInk,
   },
 }));

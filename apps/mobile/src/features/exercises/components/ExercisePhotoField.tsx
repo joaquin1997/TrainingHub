@@ -81,7 +81,7 @@ const styles = createStyles(() => ({
     gap: spacing.xs,
   },
   error: {
-    color: colors.danger,
+    color: colors.dangerInk,
     ...typeScale.caption,
   },
 }));

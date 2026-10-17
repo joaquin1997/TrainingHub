@@ -83,7 +83,7 @@ export function RestBar({ rest, onAdjust, onSkip, next }: RestBarProps) {
         </Text>
       ) : null}
       <View style={styles.row}>
-        <Ionicons name="timer-outline" size={18} color={colors.accent} />
+        <Ionicons name="timer-outline" size={18} color={colors.accentInk} />
         <View style={styles.text}>
           <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn} style={styles.label}>{t('workouts.rest')}</Text>
           <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn} style={styles.clock}>{formatDuration(remaining)}</Text>
@@ -106,7 +106,7 @@ const styles = createStyles(() => ({
   bar: {
     backgroundColor: colors.surfaceRaised,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.accent,
+    borderTopColor: colors.accentInk,
     paddingTop: spacing.sm,
     paddingHorizontal: spacing.lg,
     gap: spacing.sm,
@@ -119,7 +119,7 @@ const styles = createStyles(() => ({
   },
   fill: {
     height: '100%',
-    backgroundColor: colors.accent,
+    backgroundColor: colors.accentInk,
   },
   fillDraining: {
     width: '100%',
@@ -138,7 +138,7 @@ const styles = createStyles(() => ({
   },
   clock: {
     ...commonStyles.figure,
-    color: colors.accent,
+    color: colors.accentInk,
   },
   next: {
     ...commonStyles.meta,

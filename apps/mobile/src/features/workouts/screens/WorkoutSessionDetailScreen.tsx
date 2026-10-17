@@ -302,7 +302,7 @@ export function WorkoutSessionDetailScreen() {
                 <Ionicons
                   name={done ? 'checkmark-circle' : 'ellipse-outline'}
                   size={18}
-                  color={done ? colors.success : colors.textSubtle}
+                  color={done ? colors.successInk : colors.textSubtle}
                 />
                 <Text style={styles.setNum}>{set.order}</Text>
                 <Text style={styles.setValue}>

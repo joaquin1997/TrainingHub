@@ -41,7 +41,7 @@ export function ScreenTitle({ title, action }: ScreenTitleProps) {
           style={({ pressed }) => [styles.action, pressed ? commonStyles.pressed : null]}
         >
           {action.icon ? (
-            <Ionicons name={action.icon} size={18} color={colors.primary} />
+            <Ionicons name={action.icon} size={18} color={colors.primaryInk} />
           ) : null}
           <Text style={styles.actionLabel}>{action.label}</Text>
         </Pressable>
@@ -80,7 +80,7 @@ const styles = createStyles(() => ({
   },
   actionLabel: {
     ...typeScale.body,
-    color: colors.primary,
+    color: colors.primaryInk,
     fontFamily: fonts.displayBold,
   },
 }));

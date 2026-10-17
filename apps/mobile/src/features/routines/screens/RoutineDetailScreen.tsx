@@ -307,7 +307,7 @@ export function RoutineDetailScreen() {
       </View>
       {isLocked ? (
         <View style={styles.lockNotice}>
-          <Ionicons name="lock-closed" size={18} color={colors.primary} />
+          <Ionicons name="lock-closed" size={18} color={colors.primaryInk} />
           <View style={styles.lockText}>
             <Text style={styles.lockTitle}>{t('routines.activeLabel')}</Text>
             <Text style={styles.meta}>{t('routineDetail.editLocked')}</Text>
@@ -422,7 +422,7 @@ const styles = createStyles(() => ({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.md,
-    borderColor: colors.primary,
+    borderColor: colors.primaryInk,
     backgroundColor: colors.primarySoft,
   },
   lockText: {
@@ -430,7 +430,7 @@ const styles = createStyles(() => ({
     gap: spacing.xxs,
   },
   lockTitle: {
-    color: colors.primary,
+    color: colors.primaryInk,
     fontFamily: fonts.displayBold,
     ...typeScale.body,
   },

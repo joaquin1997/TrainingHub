@@ -220,7 +220,7 @@ export function ExerciseProgressDetailScreen() {
             .map((record, index) => (
               <View key={`${record.date}-${index}`} style={styles.recordRow}>
                 <View style={styles.recordIcon}>
-                  <Ionicons name="trophy" size={14} color={colors.accent} />
+                  <Ionicons name="trophy" size={14} color={colors.accentInk} />
                 </View>
                 <Text style={styles.recordValue}>
                   {`${formatWeightValue(record.weightKg, unit)} ${unit}${record.reps !== undefined ? ` × ${record.reps}` : ''}`}

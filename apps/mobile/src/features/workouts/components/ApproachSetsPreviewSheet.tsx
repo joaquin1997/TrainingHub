@@ -52,7 +52,7 @@ export function ApproachSetsPreviewSheet({
           >
             <View style={styles.grabber} />
             <View style={styles.titleRow}>
-              <Ionicons name="flame-outline" size={18} color={colors.accent} />
+              <Ionicons name="flame-outline" size={18} color={colors.accentInk} />
               <Text style={styles.title}>
                 {t('workouts.approachPreviewTitle', { exercise: preview.exerciseName })}
               </Text>

@@ -134,7 +134,7 @@ function StartupSpinner() {
         backgroundColor: colors.background,
       }}
     >
-      <ActivityIndicator color={colors.primary} />
+      <ActivityIndicator color={colors.primaryInk} />
     </View>
   );
 }

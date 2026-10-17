@@ -45,7 +45,7 @@ export function WarmUpChecklist({ items, onToggle }: Props) {
             <Ionicons
               name={icon}
               size={item.done === undefined ? 8 : 24}
-              color={item.done ? colors.success : colors.textMuted}
+              color={item.done ? colors.successInk : colors.textMuted}
               accessibilityLabel={
                 item.done === undefined ? undefined : item.done ? t('warmUp.done') : t('warmUp.notDone')
               }

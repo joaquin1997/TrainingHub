@@ -97,7 +97,7 @@ export function ShareSheet({ visible, card, onShareText, onClose }: ShareSheetPr
           </View>
           {status === 'failed' ? (
             <View style={styles.failure} accessibilityLiveRegion="polite">
-              <Ionicons name="alert-circle-outline" size={16} color={colors.danger} />
+              <Ionicons name="alert-circle-outline" size={16} color={colors.dangerInk} />
               <Text style={styles.failureText}>{t('workouts.share.imageFailed')}</Text>
             </View>
           ) : null}

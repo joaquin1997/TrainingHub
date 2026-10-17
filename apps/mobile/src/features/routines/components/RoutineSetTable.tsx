@@ -111,7 +111,7 @@ export function RoutineSetTable({ sets, trackingType, unit, onChange, onRemove }
               <Text style={styles.setNumber}>
                 {routineSetLabel(sets, setIndex, t('workouts.setType.warmup'))}
               </Text>
-              <Ionicons name="sparkles" size={10} color={colors.accent} />
+              <Ionicons name="sparkles" size={10} color={colors.accentInk} />
             </View>
           ) : (
             <Text style={[styles.colSet, styles.setNumber]}>

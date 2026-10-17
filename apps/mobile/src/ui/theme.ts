@@ -242,12 +242,12 @@ export const commonStyles = createStyles(() => ({
   },
   link: {
     ...typeScale.body,
-    color: colors.primary,
+    color: colors.primaryInk,
     fontWeight: '700',
   },
   error: {
     ...typeScale.caption,
-    color: colors.danger,
+    color: colors.dangerInk,
   },
   pressed: {
     opacity: 0.82,

@@ -100,7 +100,7 @@ const styles = createStyles(() => ({
   },
   staticEdge: {
     borderWidth: 2,
-    borderColor: colors.primary,
+    borderColor: colors.primaryInk,
     padding: spacing.xxs,
   },
   burst: {
@@ -113,6 +113,6 @@ const styles = createStyles(() => ({
     // translucent, and the burst must not sit under its text (FR-17).
     borderRadius: radii.lg + spacing.md,
     borderWidth: spacing.md,
-    borderColor: colors.primary,
+    borderColor: colors.primaryInk,
   },
 }));

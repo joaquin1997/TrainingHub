@@ -138,7 +138,7 @@ export function StickyWorkoutHeader({
         </Pressable>
       ) : (
         <View style={styles.upNext}>
-          <Ionicons name="checkmark-done" size={18} color={colors.success} />
+          <Ionicons name="checkmark-done" size={18} color={colors.successInk} />
           <Text style={styles.allDone}>{t('workouts.stickyHeader.allDone')}</Text>
         </View>
       )}
@@ -173,7 +173,7 @@ const styles = createStyles(() => ({
   },
   clock: {
     ...typeScale.figure,
-    color: colors.primary,
+    color: colors.primaryInk,
   },
   clockPaused: {
     color: colors.textMuted,
@@ -212,7 +212,7 @@ const styles = createStyles(() => ({
     fontVariant: ['tabular-nums'],
   },
   upNextWord: {
-    color: colors.primary,
+    color: colors.primaryInk,
     fontFamily: fonts.displayBold,
   },
   allDone: {

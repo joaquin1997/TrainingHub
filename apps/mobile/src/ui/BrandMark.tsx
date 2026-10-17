@@ -22,7 +22,7 @@ export function BrandMark({ size = 24 }: BrandMarkProps) {
       importantForAccessibility="no-hide-descendants"
       style={[styles.tile, size >= 48 ? styles.tileLarge : null, { width: size, height: size }]}
     >
-      <Ionicons name="pulse" size={Math.round(size * 0.66)} color={colors.primary} />
+      <Ionicons name="pulse" size={Math.round(size * 0.66)} color={colors.primaryInk} />
     </View>
   );
 }

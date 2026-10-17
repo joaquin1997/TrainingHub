@@ -87,7 +87,7 @@ function ActiveWorkoutBar({
       >
         {clock}
       </Text>
-      <Ionicons name="chevron-up" size={18} color={colors.primary} />
+      <Ionicons name="chevron-up" size={18} color={colors.primaryInk} />
     </Pressable>
   );
 }
@@ -101,7 +101,7 @@ const styles = createStyles(() => ({
     paddingVertical: spacing.sm,
     backgroundColor: colors.surfaceRaised,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.primary,
+    borderTopColor: colors.primaryInk,
   },
   pressed: {
     ...commonStyles.pressed,
@@ -110,7 +110,7 @@ const styles = createStyles(() => ({
     width: 8,
     height: 8,
     borderRadius: radii.round,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryInk,
   },
   dotPaused: {
     backgroundColor: colors.textMuted,
@@ -129,15 +129,15 @@ const styles = createStyles(() => ({
   },
   clock: {
     ...commonStyles.figure,
-    color: colors.primary,
+    color: colors.primaryInk,
   },
   clockPaused: {
     color: colors.textMuted,
   },
   labelResting: {
-    color: colors.accent,
+    color: colors.accentInk,
   },
   clockResting: {
-    color: colors.accent,
+    color: colors.accentInk,
   },
 }));

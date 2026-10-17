@@ -71,7 +71,7 @@ const styles = createStyles(() => ({
     fontVariant: ['tabular-nums'],
   },
   valueLatest: {
-    color: colors.primary,
+    color: colors.primaryInk,
   },
   track: {
     height: CHART_AREA_HEIGHT,
@@ -87,14 +87,14 @@ const styles = createStyles(() => ({
     backgroundColor: colors.borderStrong,
   },
   barLatest: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryInk,
   },
   label: {
     color: colors.textSubtle,
     ...typeScale.caption,
   },
   labelLatest: {
-    color: colors.primary,
+    color: colors.primaryInk,
     fontWeight: '700',
   },
 }));

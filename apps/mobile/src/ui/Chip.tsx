@@ -23,10 +23,10 @@ interface ChipProps {
 /** Read at render time, so it follows the theme (spec 0038). */
 const toneColors = (): Record<ChipTone, { background: string; text: string }> => ({
   neutral: { background: colors.surfaceRaised, text: colors.textMuted },
-  primary: { background: colors.primarySoft, text: colors.primary },
-  record: { background: colors.accentSoft, text: colors.accent },
-  done: { background: colors.successSoft, text: colors.success },
-  danger: { background: colors.dangerSoft, text: colors.danger },
+  primary: { background: colors.primarySoft, text: colors.primaryInk },
+  record: { background: colors.accentSoft, text: colors.accentInk },
+  done: { background: colors.successSoft, text: colors.successInk },
+  danger: { background: colors.dangerSoft, text: colors.dangerInk },
 });
 
 /** The one pill style for tags, filters and set types (spec 0017 FR-4). */

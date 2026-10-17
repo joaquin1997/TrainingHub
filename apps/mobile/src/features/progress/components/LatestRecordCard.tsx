@@ -30,7 +30,7 @@ export function LatestRecordCard({ record, unit, onPress }: LatestRecordCardProp
       style={({ pressed }) => [styles.card, pressed ? commonStyles.pressed : null]}
     >
       <View style={styles.icon}>
-        <Ionicons name="trophy" size={18} color={colors.accent} />
+        <Ionicons name="trophy" size={18} color={colors.accentInk} />
       </View>
       <View style={styles.text}>
         <Text style={styles.label}>{t('progress.latestRecord')}</Text>
@@ -77,7 +77,7 @@ const styles = createStyles(() => ({
   },
   value: {
     ...typeScale.body,
-    color: colors.accent,
+    color: colors.accentInk,
     fontFamily: fonts.displayBold,
     fontVariant: ['tabular-nums'],
   },

@@ -277,7 +277,7 @@ export function WorkoutSummaryScreen() {
                   <Ionicons
                     name={done ? 'checkmark-circle' : 'ellipse-outline'}
                     size={20}
-                    color={done ? colors.success : colors.textSubtle}
+                    color={done ? colors.successInk : colors.textSubtle}
                   />
                 </View>
               );

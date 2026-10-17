@@ -59,7 +59,7 @@ export function AuthLandingScreen() {
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.brandBlock}>
           <View style={styles.mark}>
-            <Ionicons name="pulse" size={30} color={colors.primary} />
+            <Ionicons name="pulse" size={30} color={colors.primaryInk} />
           </View>
           <Text style={styles.brand}>TrainingHub</Text>
           <Text style={styles.subtitle}>

@@ -215,7 +215,7 @@ export function FirstRunScreen() {
             {asksAlerts ? (
               <View style={styles.alertCard}>
                 <View style={styles.alertHeader}>
-                  <Ionicons name="notifications-outline" size={20} color={colors.primary} />
+                  <Ionicons name="notifications-outline" size={20} color={colors.primaryInk} />
                   <Text style={styles.alertTitle}>{t('firstRun.alertsTitle')}</Text>
                 </View>
                 <Text style={styles.body}>{t('firstRun.alertsBody')}</Text>
@@ -306,7 +306,7 @@ const styles = createStyles(() => ({
   },
   dotOn: {
     width: 20,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryInk,
   },
   content: {
     flexGrow: 1,
@@ -346,6 +346,6 @@ const styles = createStyles(() => ({
   },
   error: {
     ...typeScale.caption,
-    color: colors.danger,
+    color: colors.dangerInk,
   },
 }));

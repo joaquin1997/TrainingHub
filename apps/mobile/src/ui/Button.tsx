@@ -34,7 +34,7 @@ interface ButtonProps {
 const labelColor = (): Record<ButtonVariant, string> => ({
   primary: colors.onPrimary,
   secondary: colors.text,
-  danger: colors.danger,
+  danger: colors.dangerInk,
   ghost: colors.textMuted,
 });
 
@@ -55,7 +55,7 @@ export function Button({
   maxFontScale,
 }: ButtonProps) {
   useTheme();
-  const color = destructive ? colors.danger : labelColor()[variant];
+  const color = destructive ? colors.dangerInk : labelColor()[variant];
 
   return (
     <Pressable
@@ -99,7 +99,7 @@ const styles = createStyles(() => ({
   primary: {
     minHeight: 52,
     backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    borderColor: colors.primaryInk,
   },
   secondary: {
     backgroundColor: colors.surfaceRaised,
@@ -107,7 +107,7 @@ const styles = createStyles(() => ({
   },
   danger: {
     backgroundColor: colors.dangerSoft,
-    borderColor: colors.danger,
+    borderColor: colors.dangerInk,
   },
   ghost: {
     backgroundColor: 'transparent',

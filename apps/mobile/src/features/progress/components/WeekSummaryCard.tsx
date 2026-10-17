@@ -37,7 +37,7 @@ export function WeekSummaryCard({ comparison, unit }: WeekSummaryCardProps) {
             <Ionicons
               name={direction === 'up' ? 'arrow-up' : direction === 'down' ? 'arrow-down' : 'remove'}
               size={16}
-              color={direction === 'up' ? colors.success : colors.textMuted}
+              color={direction === 'up' ? colors.successInk : colors.textMuted}
             />
             <Text style={[styles.delta, direction === 'up' ? styles.deltaUp : null]}>
               {direction === 'up'
@@ -79,7 +79,7 @@ const styles = createStyles(() => ({
     flexShrink: 1,
   },
   deltaUp: {
-    color: colors.success,
+    color: colors.successInk,
   },
   meta: {
     ...commonStyles.meta,

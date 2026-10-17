@@ -97,7 +97,7 @@ export function ProgressChart({
           point ? (
             <View style={styles.readout} accessibilityLiveRegion="polite">
               {point.isRecord ? (
-                <Ionicons name="trophy" size={RECORD_ICON} color={colors.accent} />
+                <Ionicons name="trophy" size={RECORD_ICON} color={colors.accentInk} />
               ) : null}
               <Text style={[styles.range, styles.readoutText]}>
                 {pointReadout(point, format, t)}
@@ -241,8 +241,8 @@ function LineChart({
                 <Svg width={width} height={PLOT_HEIGHT}>
                   <Defs>
                     <LinearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                      <Stop offset="0" stopColor={colors.primary} stopOpacity={AREA_OPACITY} />
-                      <Stop offset="1" stopColor={colors.primary} stopOpacity={0} />
+                      <Stop offset="0" stopColor={colors.primaryInk} stopOpacity={AREA_OPACITY} />
+                      <Stop offset="1" stopColor={colors.primaryInk} stopOpacity={0} />
                     </LinearGradient>
                   </Defs>
                   {area ? <Path d={area} fill={`url(#${gradientId})`} /> : null}
@@ -260,7 +260,7 @@ function LineChart({
                     <Path
                       d={line}
                       fill="none"
-                      stroke={colors.primary}
+                      stroke={colors.primaryInk}
                       strokeWidth={LINE_WIDTH}
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -277,7 +277,7 @@ function LineChart({
                         cx={plot.x}
                         cy={plot.y}
                         r={radius}
-                        fill={isRecord ? colors.accent : colors.primary}
+                        fill={isRecord ? colors.accentInk : colors.primaryInk}
                         stroke={colors.surface}
                         strokeWidth={DOT_RING}
                       />
@@ -358,7 +358,7 @@ const styles = createStyles(() => ({
     color: colors.text,
   },
   readoutRecord: {
-    color: colors.accent,
+    color: colors.accentInk,
   },
   body: {
     flexDirection: 'row',

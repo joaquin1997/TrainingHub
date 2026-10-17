@@ -39,7 +39,7 @@ export function RecordNotice({
         accessibilityLiveRegion="polite"
         accessibilityRole="alert"
       >
-        <Ionicons name="trophy" size={18} color={colors.accent} />
+        <Ionicons name="trophy" size={18} color={colors.accentInk} />
         <View style={styles.texts}>
           <Text style={styles.title} numberOfLines={2}>
             {t('progress.records.liveNotice', { title })}
@@ -68,7 +68,7 @@ const styles = createStyles(() => ({
     maxWidth: 420,
     borderRadius: radii.pill,
     borderWidth: 1,
-    borderColor: colors.accent,
+    borderColor: colors.accentInk,
     backgroundColor: colors.surfaceRaised,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,

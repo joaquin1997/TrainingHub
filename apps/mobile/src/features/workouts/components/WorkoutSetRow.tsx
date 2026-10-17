@@ -531,7 +531,7 @@ const styles = createStyles(() => ({
     fontVariant: ['tabular-nums'],
   },
   markerTextFailure: {
-    color: colors.accent,
+    color: colors.accentInk,
   },
   body: {
     flex: 1,
@@ -561,7 +561,7 @@ const styles = createStyles(() => ({
     fontVariant: ['tabular-nums'],
   },
   recordText: {
-    color: colors.accent,
+    color: colors.accentInk,
     fontWeight: '700',
   },
   cellInput: {
@@ -594,7 +594,7 @@ const styles = createStyles(() => ({
     minWidth: 0,
   },
   timeInputRunning: {
-    color: colors.primary,
+    color: colors.primaryInk,
   },
   timerButton: {
     width: TIMER_SIZE,

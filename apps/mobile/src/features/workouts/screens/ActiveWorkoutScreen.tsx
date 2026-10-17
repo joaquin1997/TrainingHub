@@ -1185,7 +1185,7 @@ const styles = createStyles(() => ({
     width: 8,
     height: 8,
     borderRadius: radii.pill,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryInk,
   },
   liveDotPaused: {
     backgroundColor: colors.textMuted,
@@ -1206,7 +1206,7 @@ const styles = createStyles(() => ({
   },
   clock: {
     ...commonStyles.figureLarge,
-    color: colors.primary,
+    color: colors.primaryInk,
     flexShrink: 1,
   },
   clockPaused: {
@@ -1231,7 +1231,7 @@ const styles = createStyles(() => ({
     marginTop: spacing.xs,
   },
   progressCount: {
-    color: colors.primary,
+    color: colors.primaryInk,
     fontFamily: fonts.displayBold,
     ...typeScale.body,
     fontVariant: ['tabular-nums'],
@@ -1245,7 +1245,7 @@ const styles = createStyles(() => ({
   progressFill: {
     height: '100%',
     borderRadius: radii.pill,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryInk,
   },
   card: {
     ...commonStyles.card,

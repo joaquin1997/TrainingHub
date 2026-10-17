@@ -300,7 +300,7 @@ export function ExercisesListScreen() {
                     <Ionicons
                       name={isFavorite ? 'star' : 'star-outline'}
                       size={22}
-                      color={isFavorite ? colors.primary : colors.textSubtle}
+                      color={isFavorite ? colors.primaryInk : colors.textSubtle}
                     />
                   </Pressable>
                 }

@@ -38,9 +38,9 @@ export function StateView({ kind, title, message, icon, actionLabel, onAction }:
   return (
     <View style={styles.container}>
       {kind === 'loading' ? (
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={colors.primaryInk} />
       ) : (
-        <Ionicons name="alert-circle-outline" size={40} color={colors.danger} />
+        <Ionicons name="alert-circle-outline" size={40} color={colors.dangerInk} />
       )}
       {title ? <Text style={styles.title}>{title}</Text> : null}
       {message ? (
@@ -75,7 +75,7 @@ const styles = createStyles(() => ({
     textAlign: 'center',
   },
   errorMessage: {
-    color: colors.danger,
+    color: colors.dangerInk,
   },
   action: {
     alignSelf: 'center',

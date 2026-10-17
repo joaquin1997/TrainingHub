@@ -248,7 +248,7 @@ export function ExercisePickerModal({
               onPress={() => setStep('create')}
               style={({ pressed }) => [styles.createRow, pressed ? styles.rowPressed : null]}
             >
-              <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
+              <Ionicons name="add-circle-outline" size={22} color={colors.primaryInk} />
               <Text style={styles.createLabel} numberOfLines={1}>
                 {trimmedQuery
                   ? t('exercises.createNamed', { name: trimmedQuery })
@@ -284,7 +284,7 @@ export function ExercisePickerModal({
                     subtitle={details.length > 0 ? details.join(' · ') : undefined}
                     leading={<ExerciseThumb imageUrl={exercise.imageUrl} />}
                     trailing={
-                      <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+                      <Ionicons name="add-circle-outline" size={24} color={colors.primaryInk} />
                     }
                     onPress={() => void choose(exercise)}
                     disabled={checkingId !== undefined}
@@ -354,7 +354,7 @@ const styles = createStyles(() => ({
     alignSelf: 'center',
   },
   notice: {
-    color: colors.danger,
+    color: colors.dangerInk,
     ...typeScale.caption,
   },
   createRow: {
@@ -366,7 +366,7 @@ const styles = createStyles(() => ({
   },
   createLabel: {
     flex: 1,
-    color: colors.primary,
+    color: colors.primaryInk,
     fontFamily: fonts.displayBold,
     ...typeScale.body,
   },

@@ -24,7 +24,7 @@ export function ProgressRing({
   size,
   strokeWidth,
   progress,
-  color = colors.primary,
+  color = colors.primaryInk,
   trackColor = colors.borderStrong,
   holeColor = colors.surfaceRaised,
   children,

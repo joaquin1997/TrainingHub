@@ -44,7 +44,7 @@ export function RecordsCard({ title, items, unit, variant = 'default' }: Records
         return (
           <View key={key} style={styles.row}>
             <View style={styles.icon}>
-              <Ionicons name="trophy" size={14} color={colors.accent} />
+              <Ionicons name="trophy" size={14} color={colors.accentInk} />
             </View>
             <View style={styles.text}>
               <Text style={styles.title}>{label.title}</Text>
@@ -63,7 +63,7 @@ const styles = createStyles(() => ({
     ...commonStyles.card,
   },
   highlight: {
-    borderColor: colors.accent,
+    borderColor: colors.accentInk,
     backgroundColor: colors.accentSoft,
   },
   row: {

@@ -133,7 +133,7 @@ const styles = createStyles(() => ({
     fontFamily: fonts.display,
   },
   destructive: {
-    color: colors.danger,
+    color: colors.dangerInk,
   },
   cancel: {
     minHeight: 48,

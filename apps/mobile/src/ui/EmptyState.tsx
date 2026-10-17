@@ -31,7 +31,7 @@ export function EmptyState({ icon = 'file-tray-outline', title, message, action 
         </View>
       ) : (
         <View style={styles.iconTile}>
-          <Ionicons name={icon} size={32} color={colors.primary} />
+          <Ionicons name={icon} size={32} color={colors.primaryInk} />
         </View>
       )}
       {title ? (

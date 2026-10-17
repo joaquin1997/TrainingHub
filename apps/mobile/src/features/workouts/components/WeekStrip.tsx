@@ -97,10 +97,10 @@ const styles = createStyles(() => ({
     backgroundColor: colors.surface,
   },
   today: {
-    borderColor: colors.primary,
+    borderColor: colors.primaryInk,
   },
   selected: {
-    borderColor: colors.primary,
+    borderColor: colors.primaryInk,
     backgroundColor: colors.primary,
   },
   future: {
@@ -125,7 +125,7 @@ const styles = createStyles(() => ({
     borderRadius: radii.round,
   },
   dotOn: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryInk,
   },
   dotOnSelected: {
     backgroundColor: colors.onPrimary,
