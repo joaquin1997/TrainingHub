@@ -20,7 +20,7 @@ API ships before the app (the app's delete action needs the endpoints).
 | 4 | [x] `RoutineExercise.exerciseDeleted` (domain); routine reads set it | domain / api | typecheck; e2e (task 7) | `feat(exercises): routines mark deleted exercises` |
 | 5 | [x] Mobile: client methods; `exerciseDeletion.ts` (`describeDeletionImpact`, `isInActiveWorkout`) + tests; `DeleteExerciseButton` on the custom exercise detail (impact → confirm → delete; EF-1, EF-2, EF-6); i18n en/es | mobile | unit tests; typecheck | `feat(exercises): delete a custom exercise from its detail` |
 | 6 | [x] Mobile: "Deleted exercise" chip in routine detail and routine form | mobile | typecheck | `feat(exercises): show deleted exercises in routines` |
-| 7 | [ ] Local end-to-end check on PGlite (two users; AC-1…AC-8, EF-5); progress log; definition of done | docs | log | `docs(sdd): record 0033 implementation` |
+| 7 | [x] Local end-to-end check on PGlite (two users; AC-1…AC-8, EF-5); progress log; definition of done | docs | log | `docs(sdd): record 0033 implementation` |
 | 8 | [ ] [DEVICE] Delete flow on a phone: confirmation texts (unused / counts / active workout), offline error, routine chip, active workout keeps sets and saves, neutral tile, no delete on catalog | mobile | device | — |
 | 9 | [ ] (owner: migration/deploy) Apply the migration and redeploy the API, before the app update | ops | `/health`; impact call on the server | — |
 
@@ -102,12 +102,37 @@ device pass (task 8), the deploy (task 9).
   the routine and the workout itself need no change (name from the routine,
   thumbnail 404 → neutral tile); history, session detail, share and progress
   read the name from the workout, so they show it as before.
+- 2026-10-17 — Task 7: end-to-end on a fresh in-memory PGlite (all 22
+  migrations applied with `migrate deploy`, including
+  `20261018150000_add_exercise_deleted_at`), the built API on a local port,
+  and a node script with `fetch` + `psql` (kept in the session scratchpad,
+  not committed). Ana: "Press Landmie" (never used) and "Hammer row" (1
+  routine, 3 workouts), both with photo and favourite; Ben held "Hammer row"
+  in a routine and a workout (set in SQL, as before 0015) and favourited it.
+  52 checks, all passing: FR-2 / EF-3 (Ben's impact and delete on Ana's
+  exercise identical to an unknown id, nothing changed; catalog 403; no
+  token 401), AC-1 (impact 0/0, row removed with photo and favourite),
+  AC-2 (impact 1 routine / 3 workouts — Ben's not counted; checking changes
+  nothing), archive (row kept with `deletedAt`; out of list and detail;
+  favourites removed for Ana and Ben; photo row removed, photo 404 = AC-6),
+  EF-2 (second delete 204, impact then 404), AC-3 (history, workout detail,
+  progress detail and overview, last time — all by name with every set),
+  AC-4 (routine slot kept with rest and targets, `exerciseDeleted`; routine
+  saves when edited; a workout from it saves), Ben's history and routine
+  unaffected, FR-8 / EF-5 (an exercise only in the active workout is kept on
+  delete and that workout saves; Ben cannot use it), AC-8 (same name → new
+  id without history; old workouts keep the deleted one), Article 2 (all
+  performed sets intact). Remaining: device pass (task 8) and the
+  migration + deploy (task 9).
 
 ## Definition of done
 
-- [ ] Every functional requirement and acceptance criterion in `spec.md` is met
-      or explicitly deferred with a TODO
-- [ ] `pnpm -r typecheck` and `pnpm -r test` green
+- [x] Every functional requirement and acceptance criterion in `spec.md` is met
+      or explicitly deferred with a TODO (the app-side ACs — confirmation
+      texts, offline error, routine chip, neutral tile — await the device
+      pass, task 8; purging unreferenced deleted exercises is a `TODO(sdd)`
+      in the plan)
+- [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [ ] Relevant `docs/roadmap/NN-*.md` checklist and progress log updated
       (left to the owner's merge: this branch does not touch `docs/roadmap/`)
 - [ ] `spec.md` status set to `done`; `../backlog.md` updated (after the
