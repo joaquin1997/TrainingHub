@@ -323,6 +323,8 @@ export const es: TranslationCatalog = {
     noLongerAvailable: 'Este ejercicio ya no está disponible. La lista se ha actualizado.',
   },
   workouts: {
+    recordsAnnounce_one: '{{count}} récord hoy',
+    recordsAnnounce_other: '{{count}} récords hoy',
     discardLost_one: 'Se perderá {{count}} serie hecha.',
     discardLost_other: 'Se perderán {{count}} series hechas.',
     discardNoneDone: 'Aún no hay series hechas.',

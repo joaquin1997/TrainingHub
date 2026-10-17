@@ -320,6 +320,8 @@ export const en = {
     noLongerAvailable: 'This exercise is no longer available. The list has been refreshed.',
   },
   workouts: {
+    recordsAnnounce_one: '{{count}} record today',
+    recordsAnnounce_other: '{{count}} records today',
     discardLost_one: '{{count}} set done will be lost.',
     discardLost_other: '{{count}} sets done will be lost.',
     discardNoneDone: 'No sets done yet.',

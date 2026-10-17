@@ -7,6 +7,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { progressClient } from '@/features/progress/api/progressClient';
 import { RecordsCard } from '@/features/progress/components/RecordsCard';
+import { RecordCelebration } from '@/features/workouts/components/RecordCelebration';
 import {
   clearLatestCompletedWorkout,
   getLatestCompletedWorkout,
@@ -200,16 +201,20 @@ export function WorkoutSummaryScreen() {
         <Chip icon="checkmark-circle" tone="done" label={t('workouts.savedToHistory')} />
       </View>
       {/* Records of the day lead (FR-24); the block appears when they arrive. */}
-      <RecordsCard
-        title={t('progress.records.today')}
-        unit={unit}
-        variant="highlight"
-        items={records.map((record, index) => ({
-          key: `${record.exerciseId}-${record.type}-${index}`,
-          record,
-          meta: record.exerciseName,
-        }))}
-      />
+      {records.length > 0 ? (
+        <RecordCelebration workoutId={clientId} recordCount={records.length}>
+          <RecordsCard
+            title={t('progress.records.today')}
+            unit={unit}
+            variant="highlight"
+            items={records.map((record, index) => ({
+              key: `${record.exerciseId}-${record.type}-${index}`,
+              record,
+              meta: record.exerciseName,
+            }))}
+          />
+        </RecordCelebration>
+      ) : null}
       <View style={styles.tiles}>
         <StatTile label={t('workouts.duration')} value={formatDuration(duration)} />
         <StatTile
