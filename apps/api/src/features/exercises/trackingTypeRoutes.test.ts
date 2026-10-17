@@ -56,9 +56,7 @@ describe('PUT /exercises/:id/tracking-type (spec 0030)', () => {
     expect(setExerciseTrackingType).toHaveBeenCalledWith('user-test', 'e1', 'duration');
   });
 
-  it("refuses someone else's custom exercise (403, EF-6) and unknown ones (404)", async () => {
-    vi.mocked(setExerciseTrackingType).mockResolvedValueOnce('forbidden');
-    expect((await put({ trackingType: 'reps' })).statusCode).toBe(403);
+  it("answers 404 for someone else's custom exercise (0015) and unknown ones", async () => {
     vi.mocked(setExerciseTrackingType).mockResolvedValueOnce('not-found');
     expect((await put({ trackingType: 'reps' })).statusCode).toBe(404);
   });

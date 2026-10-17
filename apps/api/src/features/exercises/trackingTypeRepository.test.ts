@@ -10,7 +10,7 @@ vi.mock('../../infrastructure/prisma.js', () => ({
 }));
 
 vi.mock('./repository.js', () => ({
-  findExerciseById: vi.fn(async (id: string) => ({ id, trackingType: 'duration' })),
+  findExerciseById: vi.fn(async (_userId: string, id: string) => ({ id, trackingType: 'duration' })),
 }));
 
 import { setExerciseTrackingType } from './trackingTypeRepository.js';
@@ -44,14 +44,14 @@ describe('setExerciseTrackingType (spec 0030)', () => {
     expect(update).toHaveBeenCalledOnce();
   });
 
-  it("refuses someone else's custom exercise and never writes (EF-6)", async () => {
+  it("treats someone else's custom exercise as not found and never writes (EF-6, 0015)", async () => {
     findUnique.mockResolvedValue({
       id: 8n,
       isSystemDefined: false,
       createdByUser: { publicId: 'owner' },
     });
 
-    expect(await setExerciseTrackingType('intruder', 'e2', 'reps')).toBe('forbidden');
+    expect(await setExerciseTrackingType('intruder', 'e2', 'reps')).toBe('not-found');
     expect(update).not.toHaveBeenCalled();
   });
 

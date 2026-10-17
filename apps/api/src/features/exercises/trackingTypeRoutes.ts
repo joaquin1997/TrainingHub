@@ -28,10 +28,6 @@ export async function registerExerciseTrackingTypeRoutes(app: FastifyInstance) {
         return reply.code(404).send({ message: 'Exercise not found' });
       }
 
-      if (result === 'forbidden') {
-        return reply.code(403).send({ message: 'Only the creator can change this exercise' });
-      }
-
       return result;
     },
   );
