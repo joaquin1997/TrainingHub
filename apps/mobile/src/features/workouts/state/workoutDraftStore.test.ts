@@ -395,12 +395,19 @@ describe('applyLastPerformance', () => {
   it('returns the same reference when nothing changes', () => {
     const draft = buildWorkoutSessionDraft(routine);
 
+    // Last time had only a warm-up: no counterpart for the working set (spec 0031).
     const unchanged = applyLastPerformance(draft, 'ex-row', {
       performedAt: '2026-05-29T09:00:00.000Z',
-      sets: [{ order: 99, reps: 5, weightKg: 5 }], // no matching set order
+      sets: [{ order: 1, reps: 5, weightKg: 5, isWarmup: true }],
     });
-
     expect(unchanged).toBe(draft);
+
+    const performance = {
+      performedAt: '2026-05-29T09:00:00.000Z',
+      sets: [{ order: 1, reps: 12, weightKg: 55 }],
+    };
+    const applied = applyLastPerformance(draft, 'ex-row', performance);
+    expect(applyLastPerformance(applied, 'ex-row', performance)).toBe(applied);
   });
 });
 

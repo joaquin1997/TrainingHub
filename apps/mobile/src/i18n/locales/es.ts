@@ -305,6 +305,15 @@ export const es: TranslationCatalog = {
     addApproachSets: 'Añadir series de calentamiento',
     approachNoWeight: 'Escribe primero el peso de trabajo: el calentamiento se calcula a partir de él.',
     approachTooLight: 'El peso de trabajo está demasiado cerca de la barra vacía para calentar.',
+    // Vista previa, marca y deshacer (spec 0031).
+    removeGeneratedWarmUps: 'Quitar las series de calentamiento generadas',
+    approachPreviewTitle: 'Calentamiento para {{exercise}}',
+    approachPreviewFrom: 'A partir de {{weight}} {{unit}}',
+    approachPreviewSet: '{{weight}} {{unit}} × {{reps}}',
+    approachPreviewKept_one: 'La serie de calentamiento que ya hay se queda; estas van después.',
+    approachPreviewKept_other: 'Las {{count}} series de calentamiento que ya hay se quedan; estas van después.',
+    approachPreviewConfirm: 'Añadir series',
+    generatedWarmupLabel: '{{type}}, generada',
     share: {
       action: 'Compartir',
       duration: 'Duración',

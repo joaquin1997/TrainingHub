@@ -332,13 +332,18 @@ export function WorkoutSetRow({
     <View style={[styles.row, set.done ? styles.rowDone : null]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={setTypeLabel(set.type, t)}
+        accessibilityLabel={
+          set.generatedWarmup
+            ? t('workouts.generatedWarmupLabel', { type: setTypeLabel(set.type, t) })
+            : setTypeLabel(set.type, t)
+        }
         onPress={onCycleType}
         hitSlop={4}
         style={[
           styles.marker,
           set.type === 'failure' ? styles.markerFailure : null,
           typed ? styles.markerTyped : null,
+          set.generatedWarmup ? styles.markerGenerated : null,
         ]}
       >
         <Text
@@ -350,6 +355,12 @@ export function WorkoutSetRow({
         >
           {set.type === 'normal' ? set.order : setTypeLabel(set.type, t)[0]}
         </Text>
+        {/* Added by the warm-up action, untouched since (spec 0031 FR-6). */}
+        {set.generatedWarmup ? (
+          <View style={styles.generatedBadge} pointerEvents="none">
+            <Ionicons name="sparkles" size={9} color={colors.accent} />
+          </View>
+        ) : null}
       </Pressable>
       <Text
         numberOfLines={1}
@@ -447,6 +458,24 @@ const styles = StyleSheet.create({
   markerTyped: {
     borderWidth: 1,
     borderColor: colors.borderStrong,
+  },
+  // A generated warm-up (spec 0031): dashed outline plus a badge, not colour alone.
+  markerGenerated: {
+    borderStyle: 'dashed',
+    borderColor: colors.accent,
+  },
+  generatedBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.accent,
   },
   markerFailure: {
     backgroundColor: colors.accentSoft,

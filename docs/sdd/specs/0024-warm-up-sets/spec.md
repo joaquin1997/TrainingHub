@@ -94,6 +94,10 @@ per Article 2. Migration.
 - **[ASSUMPTION: adding approach sets again replaces the warm-up sets ahead of
   the first working set that are not done yet]**, so changing the working
   weight and tapping again regenerates instead of doubling.
+  **Superseded by [0031](../0031-warm-up-preview-and-undo/spec.md)
+  (2026-10-17):** adding never replaces existing warm-ups; with generated
+  sets present, the action removes the not-done ones instead, and adding
+  shows a preview first.
 
 ## Open decisions
 

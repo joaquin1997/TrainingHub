@@ -24,14 +24,21 @@ import {
 } from '@/features/workouts/components/WorkoutSetRow';
 import { useExerciseReplacement } from '@/features/workouts/hooks/useExerciseReplacement';
 import {
-  addApproachSets,
   canAddApproachSets,
-  type ApproachSetsOutcome,
+  confirmApproachSets,
+  previewApproachSets,
+  removeGeneratedWarmUps,
+  warmUpActionFor,
+  type ApproachSetsNotice,
+  type ApproachSetsPreview,
 } from '@/features/workouts/state/approachSetsDraft';
+import { pairedPerformance } from '@/features/workouts/state/lastTimeByKind';
 import { RestBar } from '@/features/workouts/components/RestBar';
 import { WarmUpChecklist } from '@/features/workouts/components/WarmUpChecklist';
 import { toggleWarmUpItem } from '@/features/workouts/state/warmUpDraft';
+import { ApproachSetsPreviewSheet } from '@/features/workouts/components/ApproachSetsPreviewSheet';
 import { RestEditorSheet } from '@/features/workouts/components/RestEditorSheet';
+import { WarmUpActionButton } from '@/features/workouts/components/WarmUpActionButton';
 import { nextSetToDo } from '@/features/workouts/restTimer/nextSetToDo';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useSettings } from '@/features/settings/SettingsContext';
@@ -125,7 +132,13 @@ export function ActiveWorkoutScreen() {
   // Why approach sets could not be added to an exercise (spec 0024 EF-1).
   const [approachNotice, setApproachNotice] = useState<{
     workoutExerciseId: string;
-    outcome: Exclude<ApproachSetsOutcome, 'added'>;
+    outcome: ApproachSetsNotice;
+  } | null>(null);
+  // The approach sets about to be added, shown before anything changes (spec
+  // 0031 FR-1). Screen state only, so a restart reopens without it (EF-5).
+  const [approachPreview, setApproachPreview] = useState<{
+    workoutExerciseId: string;
+    preview: ApproachSetsPreview;
   } | null>(null);
   const [lastByExercise, setLastByExercise] = useState<
     Record<string, ExerciseLastPerformance | null>
@@ -294,6 +307,27 @@ export function ActiveWorkoutScreen() {
       active = false;
     };
   }, [exerciseIdsKey]);
+
+  // "Last time" pairs by kind and position within the kind (spec 0031), so a
+  // set whose type changes, or sets added or removed ahead of it, re-pair.
+  // applyLastPerformance returns the same draft when nothing changes, so this
+  // settles after one pass.
+  useEffect(() => {
+    if (!workoutDraft) {
+      return;
+    }
+
+    let next = workoutDraft;
+    for (const [id, performance] of Object.entries(lastByExercise)) {
+      if (performance) {
+        next = applyLastPerformance(next, id, performance);
+      }
+    }
+
+    if (next !== workoutDraft) {
+      setActiveWorkout(next);
+    }
+  }, [workoutDraft, lastByExercise]);
 
   // A rest that ended or was skipped while this screen is open brings the
   // next set to do to about a third of the screen (FR-5). A new rest replacing
@@ -478,13 +512,43 @@ export function ActiveWorkoutScreen() {
     applyDraft(addSetToWorkoutExercise(workoutDraft, workoutExerciseId));
   };
 
-  const handleAddApproachSets = (workoutExerciseId: string) => {
-    const { draft, outcome } = addApproachSets(workoutDraft, workoutExerciseId);
-    setApproachNotice(outcome === 'added' ? null : { workoutExerciseId, outcome });
-    if (outcome === 'added') {
-      applyDraft(draft);
+  // The warm-up action as a toggle (spec 0031): remove the generated sets at
+  // once, or preview the ramp and add it on confirm.
+  const handleWarmUpAction = (workoutExerciseId: string) => {
+    const exercise = workoutDraft.exercises.find((item) => item.id === workoutExerciseId);
+    if (exercise && warmUpActionFor(exercise) === 'remove') {
+      setApproachNotice(null);
+      applyDraft(removeGeneratedWarmUps(workoutDraft, workoutExerciseId));
+      return;
+    }
+
+    const result = previewApproachSets(workoutDraft, workoutExerciseId);
+    if (result.outcome === 'preview') {
+      setApproachNotice(null);
+      setApproachPreview({ workoutExerciseId, preview: result });
+    } else {
+      setApproachNotice({ workoutExerciseId, outcome: result.outcome });
     }
   };
+
+  const confirmApproachPreview = () => {
+    const current = getActiveWorkout();
+    if (current && approachPreview) {
+      setActiveWorkout(
+        confirmApproachSets(current, approachPreview.workoutExerciseId, approachPreview.preview),
+      );
+    }
+    setApproachPreview(null);
+  };
+
+  // Hidden once its exercise is removed or replaced (EF-1).
+  const previewedExercise = approachPreview
+    ? workoutDraft.exercises.find(
+        (item) =>
+          item.id === approachPreview.workoutExerciseId &&
+          item.exerciseId === approachPreview.preview.exerciseId,
+      )
+    : undefined;
 
   const handleAddExercise = (exercise: Exercise) => {
     if (!workoutDraft) {
@@ -680,7 +744,8 @@ export function ActiveWorkoutScreen() {
                 unilateral={exercise.isUnilateral}
                 unit={unit}
                 previousLabel={previousSetLabel(
-                  lastByExercise[exercise.exerciseId],
+                  // Paired by kind, as the placeholders (spec 0031 FR-18).
+                  pairedPerformance(lastByExercise[exercise.exerciseId], exercise.entries),
                   set.order,
                   exercise.trackingType,
                   unit,
@@ -701,15 +766,11 @@ export function ActiveWorkoutScreen() {
               style={styles.compactButton}
             />
             {canAddApproachSets(exercise) ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('workouts.addApproachSets')}
-                onPress={() => handleAddApproachSets(exercise.id)}
-                hitSlop={6}
+              <WarmUpActionButton
+                action={warmUpActionFor(exercise)}
+                onPress={() => handleWarmUpAction(exercise.id)}
                 style={styles.iconButton}
-              >
-                <Ionicons name="flame-outline" size={18} color={colors.textMuted} />
-              </Pressable>
+              />
             ) : null}
             <Pressable
               accessibilityRole="button"
@@ -894,6 +955,15 @@ export function ActiveWorkoutScreen() {
           }}
         />
       ) : null}
+      <ApproachSetsPreviewSheet
+        preview={
+          approachPreview && previewedExercise
+            ? { ...approachPreview.preview, exerciseName: previewedExercise.exerciseName }
+            : null
+        }
+        onConfirm={confirmApproachPreview}
+        onCancel={() => setApproachPreview(null)}
+      />
       <RestEditorSheet
         visible={restEditorExercise !== undefined}
         exerciseName={restEditorExercise?.exerciseName ?? ''}

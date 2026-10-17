@@ -11,6 +11,7 @@ import { usableExerciseWhere } from '../exercises/visibility.js';
 import {
   isLegacySession,
   isPerformedSet,
+  isWarmupSet,
   pickLastPerformance,
 } from './performedSets.js';
 import {
@@ -234,6 +235,8 @@ export async function getExerciseLastPerformance(
         weightKg: set.weightKg ?? undefined,
         durationSeconds: set.durationSeconds ?? undefined,
         distanceMeters: set.distanceMeters ?? undefined,
+        // Spec 0031: today's sets pair with last time's sets of the same kind.
+        isWarmup: isWarmupSet(set) || undefined,
       })),
   };
 }

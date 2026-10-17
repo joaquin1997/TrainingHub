@@ -30,8 +30,13 @@ import {
   type EditableWarmUpItem,
 } from '@/features/routines/utils/warmUpItems';
 import {
-  addRoutineApproachSets,
-  type RoutineApproachSetsOutcome,
+  confirmRoutineApproachSets,
+  editRoutineSetValue,
+  previewRoutineApproachSets,
+  removeRoutineGeneratedWarmUps,
+  routineWarmUpActionFor,
+  type RoutineApproachSetsNotice,
+  type RoutineApproachSetsPreview,
 } from '@/features/routines/utils/routineApproachSets';
 import { replaceRoutineRowExercise } from '@/features/routines/utils/replaceRoutineExercise';
 import {
@@ -39,6 +44,8 @@ import {
   type NumericSetField,
 } from '@/features/routines/utils/routineSetInheritance';
 import { useSettings } from '@/features/settings/SettingsContext';
+import { ApproachSetsPreviewSheet } from '@/features/workouts/components/ApproachSetsPreviewSheet';
+import { WarmUpActionButton } from '@/features/workouts/components/WarmUpActionButton';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
 import { formatDuration } from '@/lib/format';
 import { parseDistanceInput, parseDurationInput, tracksField } from '@/lib/tracking';
@@ -125,6 +132,7 @@ function toEditableSet(
         ? String(routineSet.targetDistanceMeters)
         : '',
     isWarmup: routineSet.isWarmup || undefined,
+    generatedWarmup: (routineSet.isWarmup && routineSet.isGeneratedWarmup) || undefined,
   };
 }
 
@@ -230,7 +238,13 @@ export function RoutineFormScreen({
   // Why approach sets could not be added to a row (spec 0024 EF-1).
   const [approachNotice, setApproachNotice] = useState<{
     exerciseRowId: string;
-    outcome: Exclude<RoutineApproachSetsOutcome, 'added'>;
+    outcome: RoutineApproachSetsNotice;
+  } | null>(null);
+  // The approach rows about to be added (spec 0031 FR-13); nothing changes
+  // until confirmed.
+  const [approachPreview, setApproachPreview] = useState<{
+    exerciseRowId: string;
+    preview: RoutineApproachSetsPreview;
   } | null>(null);
   const activeWorkout = useActiveWorkout();
 
@@ -399,7 +413,8 @@ export function RoutineFormScreen({
           ? {
               ...exercise,
               sets: exercise.sets.map((set) =>
-                set.id === setId ? { ...set, [field]: value } : set,
+                // A changed generated row becomes the person's own (spec 0031 FR-7).
+                set.id === setId ? editRoutineSetValue(set, field, value) : set,
               ),
             }
           : exercise,
@@ -468,25 +483,61 @@ export function RoutineFormScreen({
     );
   }
 
-  function addApproachSetRows(exerciseId: string) {
-    const exercise = exercises.find((item) => item.id === exerciseId);
-    if (!exercise) {
+  // The warm-up action as a toggle (spec 0031 FR-13): remove the generated
+  // rows at once, or preview the ramp and add it on confirm.
+  function handleWarmUpAction(exerciseRowId: string) {
+    const exercise = exercises.find((item) => item.id === exerciseRowId);
+    if (!exercise?.exerciseId) {
       return;
     }
 
-    const result = addRoutineApproachSets(exercise.sets, unit, () =>
-      createRowId('routine-set-row'),
-    );
-    setApproachNotice(
-      result.outcome === 'added' ? null : { exerciseRowId: exerciseId, outcome: result.outcome },
-    );
-    if (result.outcome === 'added') {
-      setExercises((currentExercises) =>
-        currentExercises.map((item) =>
-          item.id === exerciseId ? { ...item, sets: result.sets } : item,
-        ),
-      );
+    if (routineWarmUpActionFor(exercise.sets) === 'remove') {
+      setApproachNotice(null);
+      replaceRowSets(exerciseRowId, (sets) => removeRoutineGeneratedWarmUps(sets));
+      return;
     }
+
+    const result = previewRoutineApproachSets(exercise.sets, exercise.exerciseId, unit);
+    if (result.outcome === 'preview') {
+      setApproachNotice(null);
+      setApproachPreview({ exerciseRowId, preview: result });
+    } else {
+      setApproachNotice({ exerciseRowId, outcome: result.outcome });
+    }
+  }
+
+  function confirmApproachPreview() {
+    const pending = approachPreview;
+    setApproachPreview(null);
+    if (!pending) {
+      return;
+    }
+
+    // Exactly the rows shown (EF-2); nothing if the row went away or its
+    // exercise was replaced (EF-1).
+    setExercises((currentExercises) =>
+      currentExercises.map((item) =>
+        item.id === pending.exerciseRowId && item.exerciseId === pending.preview.exerciseId
+          ? {
+              ...item,
+              sets: confirmRoutineApproachSets(item.sets, pending.preview, () =>
+                createRowId('routine-set-row'),
+              ),
+            }
+          : item,
+      ),
+    );
+  }
+
+  function replaceRowSets(
+    exerciseRowId: string,
+    update: (sets: EditableRoutineSet[]) => EditableRoutineSet[],
+  ) {
+    setExercises((currentExercises) =>
+      currentExercises.map((item) =>
+        item.id === exerciseRowId ? { ...item, sets: update(item.sets) } : item,
+      ),
+    );
   }
 
   function removeSetRow(exerciseId: string, setId: string) {
@@ -592,6 +643,9 @@ export function RoutineFormScreen({
             targetDurationSeconds,
             targetDistanceMeters,
             isWarmup: exercise.sets[setIndex]?.isWarmup || undefined,
+            isGeneratedWarmup:
+              (exercise.sets[setIndex]?.isWarmup && exercise.sets[setIndex]?.generatedWarmup) ||
+              undefined,
           });
         }
 
@@ -916,15 +970,11 @@ export function RoutineFormScreen({
                 {exercise.exerciseId &&
                 tracksField(exercise.trackingType, 'weight') &&
                 tracksField(exercise.trackingType, 'reps') ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={t('workouts.addApproachSets')}
-                    onPress={() => addApproachSetRows(exercise.id)}
-                    hitSlop={6}
+                  <WarmUpActionButton
+                    action={routineWarmUpActionFor(exercise.sets)}
+                    onPress={() => handleWarmUpAction(exercise.id)}
                     style={styles.iconButton}
-                  >
-                    <Ionicons name="flame-outline" size={18} color={colors.textMuted} />
-                  </Pressable>
+                  />
                 ) : null}
                 {exercise.exerciseId ? (
                   <Pressable
@@ -998,6 +1048,23 @@ export function RoutineFormScreen({
           </View>
         </View>
       </ScrollView>
+      <ApproachSetsPreviewSheet
+        preview={(() => {
+          // Hidden once its row is gone or its exercise replaced (EF-1).
+          const row = approachPreview
+            ? exercises.find(
+                (item) =>
+                  item.id === approachPreview.exerciseRowId &&
+                  item.exerciseId === approachPreview.preview.exerciseId,
+              )
+            : undefined;
+          return approachPreview && row
+            ? { ...approachPreview.preview, exerciseName: row.exerciseQuery }
+            : null;
+        })()}
+        onConfirm={confirmApproachPreview}
+        onCancel={() => setApproachPreview(null)}
+      />
       <ExercisePickerModal
         visible={replaceRowId !== null}
         title={t('workouts.replaceTitle', {

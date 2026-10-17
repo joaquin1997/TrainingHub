@@ -13,6 +13,7 @@ import { formatDuration } from '@/lib/format';
 import { parseDistanceInput, parseDurationInput, tracksField } from '@/lib/tracking';
 import { kgToInputString, roundWeight, toKg } from '@/lib/weight';
 
+import { pairLastSets, withTargetPlaceholders } from './lastTimeByKind';
 import { buildWarmUpDraft, toWarmUpItemsInput } from './warmUpDraft';
 
 export const WORKOUT_SET_TYPES: WorkoutSetType[] = [
@@ -67,6 +68,16 @@ export type WorkoutSetDraft = {
   targetWeight?: number;
   targetDurationSeconds?: number;
   targetDistanceMeters?: number;
+  /**
+   * The placeholders came from last time's set of the same kind (spec 0031);
+   * if the set later has no counterpart, they go back to the routine targets.
+   */
+  lastTimePaired?: boolean;
+  /**
+   * Added by the warm-up action and untouched since (spec 0031): the action
+   * can remove it. Lost for good when a value or the type changes; never saved.
+   */
+  generatedWarmup?: boolean;
 };
 
 /** A set value the person types (the `Kg` field is in the display unit). */
@@ -243,6 +254,8 @@ function buildExerciseDrafts(
           done: false,
           // A routine warm-up set (spec 0024) is a warm-up in the workout.
           type: set.isWarmup ? 'warmup' : 'normal',
+          // A generated routine warm-up stays generated in the workout (0031 FR-15).
+          generatedWarmup: (set.isWarmup && set.isGeneratedWarmup) || undefined,
           minReps: set.minReps,
           maxReps: set.maxReps,
           targetWeight: set.targetWeight,
@@ -291,7 +304,14 @@ export function updateWorkoutSetDraft(
       return {
         ...exercise,
         entries: exercise.entries.map((set) =>
-          set.id === workoutSetId ? { ...set, [field]: value } : set,
+          set.id === workoutSetId
+            ? {
+                ...set,
+                [field]: value,
+                // A changed value makes a generated warm-up the person's own (0031 FR-7).
+                generatedWarmup: set[field] === value ? set.generatedWarmup : undefined,
+              }
+            : set,
         ),
       };
     }),
@@ -398,7 +418,8 @@ function inheritedDuration(set: WorkoutSetDraft): string | undefined {
 
 /**
  * Fills each set's ghosted placeholders from the exercise's last performance
- * (matched by set order). Only placeholders change — the user's actual entries
+ * (paired by kind and position within the kind, spec 0031 — see
+ * `lastTimeByKind.ts`). Only placeholders change — the user's actual entries
  * are untouched — and the same reference is returned when nothing changes, so
  * it is safe to call on every performance fetch without churn.
  */
@@ -415,11 +436,17 @@ export function applyLastPerformance(
       return exercise;
     }
 
-    const entries = exercise.entries.map((set) => {
-      const last = performance.sets.find((item) => item.order === set.order);
+    // Paired by kind: warm-ups with warm-ups, working with working (spec 0031).
+    const paired = pairLastSets(performance.sets, exercise.entries);
+    const entries = exercise.entries.map((set, index) => {
+      const last = paired[index];
 
       if (!last) {
-        return set;
+        if (!set.lastTimePaired) {
+          return set;
+        }
+        changed = true;
+        return withTargetPlaceholders(set, unit);
       }
 
       const repsPlaceholder =
@@ -454,7 +481,8 @@ export function applyLastPerformance(
         durationPlaceholder === set.durationPlaceholder &&
         distancePlaceholder === set.distancePlaceholder &&
         repsLeftPlaceholder === set.repsLeftPlaceholder &&
-        repsRightPlaceholder === set.repsRightPlaceholder
+        repsRightPlaceholder === set.repsRightPlaceholder &&
+        set.lastTimePaired
       ) {
         return set;
       }
@@ -468,6 +496,7 @@ export function applyLastPerformance(
         distancePlaceholder,
         repsLeftPlaceholder,
         repsRightPlaceholder,
+        lastTimePaired: true,
       };
     });
 
@@ -582,7 +611,8 @@ export function cycleWorkoutSetType(
 
           const nextIndex =
             (WORKOUT_SET_TYPES.indexOf(set.type) + 1) % WORKOUT_SET_TYPES.length;
-          return { ...set, type: WORKOUT_SET_TYPES[nextIndex]! };
+          // A re-typed generated warm-up is the person's own (spec 0031 FR-7).
+          return { ...set, type: WORKOUT_SET_TYPES[nextIndex]!, generatedWarmup: undefined };
         }),
       };
     }),

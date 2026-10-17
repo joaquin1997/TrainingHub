@@ -185,6 +185,8 @@ export interface RoutineExerciseSet {
   targetDistanceMeters?: number;
   /** A warm-up (approach) set in the plan (spec 0024); absent = working set. */
   isWarmup?: boolean;
+  /** Added by the warm-up action and not changed since (spec 0031); only with isWarmup. */
+  isGeneratedWarmup?: boolean;
   createdAt: ISODateString;
   updatedAt: ISODateString;
 }
@@ -202,6 +204,8 @@ export interface RoutineSetInput {
   targetDistanceMeters?: number;
   /** A warm-up (approach) set (spec 0024). */
   isWarmup?: boolean;
+  /** A generated warm-up (spec 0031); ignored unless `isWarmup` is true. */
+  isGeneratedWarmup?: boolean;
 }
 
 /**
@@ -513,6 +517,8 @@ export interface ExerciseLastSet {
   weightKg?: number;
   durationSeconds?: number;
   distanceMeters?: number;
+  /** Last time's set was a warm-up (spec 0031): "last time" pairs by kind. */
+  isWarmup?: boolean;
 }
 
 /**

@@ -198,6 +198,42 @@ describe('POST /routines warm-up sets (spec 0024)', () => {
   });
 });
 
+describe('routine generated warm-up sets (spec 0031)', () => {
+  it('passes isGeneratedWarmup only for warm-up sets sent with a literal true', async () => {
+    vi.mocked(findExerciseById).mockResolvedValue({ id: 'ex1', name: 'Squat' } as never);
+    vi.mocked(updateRoutine).mockResolvedValue({ id: 'r3', name: 'Legs' } as never);
+
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/routines/r3',
+      payload: {
+        name: 'Legs',
+        exercises: [
+          {
+            exerciseId: 'ex1',
+            orderIndex: 1,
+            sets: [
+              { setNumber: 1, targetWeight: 20, maxReps: 10, isWarmup: true, isGeneratedWarmup: true },
+              { setNumber: 2, targetWeight: 55, maxReps: 5, isWarmup: true, isGeneratedWarmup: 'yes' },
+              { setNumber: 3, targetWeight: 60, maxReps: 5, isWarmup: true },
+              { setNumber: 4, targetWeight: 140, maxReps: 5, isGeneratedWarmup: true },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    const sets = vi.mocked(updateRoutine).mock.calls[0]?.[2].exercises[0]?.sets;
+    expect(sets?.map((set) => set.isGeneratedWarmup)).toEqual([
+      true,
+      undefined,
+      undefined,
+      undefined,
+    ]);
+  });
+});
+
 describe('routine warm-up block (spec 0024)', () => {
   const exercises = [{ exerciseId: 'ex1', orderIndex: 1, sets: [{ setNumber: 1 }] }];
 
