@@ -73,6 +73,11 @@ export type WorkoutSetDraft = {
    * if the set later has no counterpart, they go back to the routine targets.
    */
   lastTimePaired?: boolean;
+  /**
+   * Added by the warm-up action and untouched since (spec 0031): the action
+   * can remove it. Lost for good when a value or the type changes; never saved.
+   */
+  generatedWarmup?: boolean;
 };
 
 /** A set value the person types (the `Kg` field is in the display unit). */
@@ -297,7 +302,14 @@ export function updateWorkoutSetDraft(
       return {
         ...exercise,
         entries: exercise.entries.map((set) =>
-          set.id === workoutSetId ? { ...set, [field]: value } : set,
+          set.id === workoutSetId
+            ? {
+                ...set,
+                [field]: value,
+                // A changed value makes a generated warm-up the person's own (0031 FR-7).
+                generatedWarmup: set[field] === value ? set.generatedWarmup : undefined,
+              }
+            : set,
         ),
       };
     }),
@@ -597,7 +609,8 @@ export function cycleWorkoutSetType(
 
           const nextIndex =
             (WORKOUT_SET_TYPES.indexOf(set.type) + 1) % WORKOUT_SET_TYPES.length;
-          return { ...set, type: WORKOUT_SET_TYPES[nextIndex]! };
+          // A re-typed generated warm-up is the person's own (spec 0031 FR-7).
+          return { ...set, type: WORKOUT_SET_TYPES[nextIndex]!, generatedWarmup: undefined };
         }),
       };
     }),

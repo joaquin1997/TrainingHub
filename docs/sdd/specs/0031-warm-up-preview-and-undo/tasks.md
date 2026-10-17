@@ -18,7 +18,7 @@ be deployed before saved routines keep the mark.
 |---|---|---|---|---|
 | 1 | [x] Plan and tasks; spec status `in-progress`; 0024's "adding again replaces" assumption marked superseded | docs | — | `docs(sdd): plan and tasks for 0031` |
 | 2 | [x] Domain `ExerciseLastSet.isWarmup`; API last performance sends it; `lastTimeByKind.ts` (`pairLastSets`, `pairedPerformance`, `targetPlaceholders`); `applyLastPerformance` pairs by kind and drops a lost pairing back to targets; active screen re-applies on draft change and pairs the previous column | domain + api + mobile | unit tests (AC-10, AC-11, FR-19, FR-20, EF-8) | `feat(workouts): pair last time by warm-up and working sets` |
-| 3 | [ ] `generatedWarmup` on draft sets, cleared on value or type change; `approachSetsDraft.ts` rewritten (`warmUpActionFor`, `previewApproachSets`, `confirmApproachSets`, `removeGeneratedWarmUps`); `ApproachSetsPreviewSheet`; toggle button and sheet on the active screen; generated mark on the set marker; i18n en/es | mobile | unit tests (AC-1–AC-8, AC-12, EF-1, EF-3, EF-4, EF-6) | `feat(workouts): preview, mark and undo warm-up sets in the active workout` |
+| 3 | [x] `generatedWarmup` on draft sets, cleared on value or type change; `approachSetsDraft.ts` rewritten (`warmUpActionFor`, `previewApproachSets`, `confirmApproachSets`, `removeGeneratedWarmUps`); `ApproachSetsPreviewSheet`; toggle button and sheet on the active screen; generated mark on the set marker; i18n en/es | mobile | unit tests (AC-1–AC-8, AC-12, EF-1, EF-3, EF-4, EF-6) | `feat(workouts): preview, mark and undo warm-up sets in the active workout` |
 | 4 | [ ] Domain `isGeneratedWarmup` on routine sets; column + migration `20261018110000_add_routine_set_generated_warmup`; routines API reads/writes it (only with `isWarmup`); route test | domain + api | route test; `migrate diff` SQL | `feat(routines): routine sets remember generated warm-ups` |
 | 5 | [ ] Routine editor: `routineApproachSets.ts` rewritten around the toggle; mark in `RoutineSetTable`; button + preview sheet in `RoutineFormScreen`; load/save/clear the mark; duplicate copies it; workout from a routine carries it; i18n | mobile | unit tests (AC-9, FR-13, FR-14, FR-15) | `feat(routines): preview, mark and undo warm-up sets in the routine editor` |
 | 6 | [ ] Progress log, definition of done | docs | — | `docs(sdd): close spec 0031 implementation` |
@@ -58,6 +58,15 @@ Not verifiable in CI: tasks 7–8.
   and the "previous" column reads `pairedPerformance` — `previousSetLabel`
   itself is unchanged. The old "same reference" store test relied on
   order-matching and was rewritten for kinds.
+- 2026-10-17 — Task 3: the store only gained the optional field and its
+  clearing in `updateWorkoutSetDraft` (when the value actually changes) and
+  `cycleWorkoutSetType`; everything else is in `approachSetsDraft.ts`
+  (rewritten; the replace-on-add `addApproachSets` is gone). The toggle icon
+  is a small shared `WarmUpActionButton` and the preview a shared
+  `ApproachSetsPreviewSheet`, so the screen diff stays a handler, a state and
+  the sheet. EF-1 is derived at render (the sheet hides when its exercise is
+  gone or replaced) and enforced again in `confirmApproachSets`. Not done: a
+  web preview of the sheet and mark (left to the device check, task 7).
 
 ## Definition of done
 

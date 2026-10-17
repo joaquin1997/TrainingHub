@@ -299,6 +299,15 @@ export const en = {
     addApproachSets: 'Add warm-up sets',
     approachNoWeight: 'Enter the working weight first: warm-up sets are worked out from it.',
     approachTooLight: 'The working weight is too close to the empty bar for warm-up sets.',
+    // Preview, mark and undo (spec 0031).
+    removeGeneratedWarmUps: 'Remove generated warm-up sets',
+    approachPreviewTitle: 'Warm-up sets for {{exercise}}',
+    approachPreviewFrom: 'From {{weight}} {{unit}}',
+    approachPreviewSet: '{{weight}} {{unit}} × {{reps}}',
+    approachPreviewKept_one: 'The warm-up set already there stays; these go after it.',
+    approachPreviewKept_other: 'The {{count}} warm-up sets already there stay; these go after them.',
+    approachPreviewConfirm: 'Add sets',
+    generatedWarmupLabel: '{{type}}, generated',
     share: {
       action: 'Share',
       duration: 'Duration',
