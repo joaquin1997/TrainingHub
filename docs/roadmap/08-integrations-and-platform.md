@@ -18,7 +18,7 @@
 - [~] Settings
   - [x] Units (kg/lb), server-persisted, applied across logging, history and progress
   - [x] Default rest duration, server-persisted
-  - [ ] Theme (the app is dark-only today)
+  - [x] Theme — System / Light / Dark (spec 0038; device checks pending)
   - [x] Onboarding (spec 0037 — first run; device checks pending)
 - [ ] Data export
 - [x] i18n ES/EN (full app, persisted language preference)
