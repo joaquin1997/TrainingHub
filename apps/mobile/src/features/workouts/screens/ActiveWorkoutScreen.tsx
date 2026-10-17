@@ -71,7 +71,7 @@ import { confirmAction } from '@/lib/confirmAction';
 import { formatDuration } from '@/lib/format';
 import { isPermanentRejection } from '@/lib/http';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, layout, radii, spacing, typeScale } from '@/ui/theme';
 import type { Exercise, ExerciseLastPerformance } from '@workout/domain';
 import { syncWorkoutCompletionToAppleHealth } from '@/features/health/integrations/appleWorkoutIntegration';
 import {
@@ -956,6 +956,7 @@ export function ActiveWorkoutScreen() {
             })}
           />
           <TextInput
+            keyboardAppearance="dark"
             value={workoutDraft.notes ?? ''}
             onChangeText={handleNotesChange}
             placeholder={t('workouts.notesPlaceholder')}
@@ -1058,8 +1059,7 @@ const styles = StyleSheet.create({
   },
   hint: {
     color: colors.textSubtle,
-    fontSize: 12,
-    lineHeight: 16,
+    ...typeScale.caption,
   },
   headerCard: {
     ...commonStyles.card,
@@ -1073,7 +1073,7 @@ const styles = StyleSheet.create({
   liveDot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: radii.pill,
     backgroundColor: colors.primary,
   },
   liveDotPaused: {
@@ -1081,8 +1081,6 @@ const styles = StyleSheet.create({
   },
   routineName: {
     ...commonStyles.cardTitle,
-    fontSize: 20,
-    lineHeight: 26,
   },
   clockRow: {
     flexDirection: 'row',
@@ -1110,12 +1108,10 @@ const styles = StyleSheet.create({
   },
   energyValue: {
     ...commonStyles.figure,
-    fontSize: 18,
-    lineHeight: 22,
   },
   energyUnit: {
     color: colors.textMuted,
-    fontSize: 13,
+    ...typeScale.caption,
   },
   progressRow: {
     flexDirection: 'row',
@@ -1126,18 +1122,18 @@ const styles = StyleSheet.create({
   progressCount: {
     color: colors.primary,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
     fontVariant: ['tabular-nums'],
   },
   progressTrack: {
     height: 8,
-    borderRadius: 4,
+    borderRadius: radii.pill,
     backgroundColor: colors.surfaceRaised,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: radii.pill,
     backgroundColor: colors.primary,
   },
   card: {
@@ -1153,19 +1149,19 @@ const styles = StyleSheet.create({
     top: 14,
     bottom: 14,
     width: 2,
-    borderRadius: 1,
+    borderRadius: radii.pill,
     backgroundColor: colors.borderStrong,
   },
   supersetMembers: {
     gap: spacing.lg,
   },
   indented: {
-    marginLeft: 36,
+    marginLeft: layout.setMarker,
   },
   // Centred on the superset rail, in the gutter left of the set rows.
   roundTagSlot: {
     position: 'absolute',
-    left: -36,
+    left: -layout.setMarker,
     width: 28,
     top: 0,
     bottom: 0,
@@ -1174,19 +1170,18 @@ const styles = StyleSheet.create({
   },
   roundTag: {
     minWidth: 24,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     borderWidth: 1,
     borderColor: colors.borderStrong,
     backgroundColor: colors.surface,
-    paddingHorizontal: 3,
-    paddingVertical: 1,
+    paddingHorizontal: spacing.xxs,
+    paddingVertical: spacing.xxs,
     alignItems: 'center',
   },
   roundTagText: {
     color: colors.textMuted,
     fontFamily: fonts.displayBold,
-    fontSize: 10,
-    lineHeight: 13,
+    ...typeScale.caption,
   },
   // Drawn over the row, so highlighting never shifts the layout (FR-14).
   upNextRing: {
@@ -1214,10 +1209,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radii.sm,
     backgroundColor: colors.surfaceRaised,
-    paddingHorizontal: 4,
+    paddingHorizontal: spacing.xs,
   },
   blockBadgeSuperset: {
-    borderRadius: 14,
+    borderRadius: radii.round,
     backgroundColor: colors.surface,
     borderWidth: 1.5,
     borderColor: colors.textMuted,
@@ -1225,11 +1220,11 @@ const styles = StyleSheet.create({
   blockBadgeText: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 13,
+    ...typeScale.caption,
   },
   blockBadgeTextSuperset: {
     color: colors.text,
-    fontSize: 12,
+    ...typeScale.caption,
   },
   exerciseTitleColumn: {
     flex: 1,
@@ -1237,7 +1232,7 @@ const styles = StyleSheet.create({
   },
   exerciseTitle: {
     ...commonStyles.cardTitle,
-    paddingTop: 2,
+    paddingTop: spacing.xxs,
   },
   restChipRow: {
     flexDirection: 'row',
@@ -1270,7 +1265,7 @@ const styles = StyleSheet.create({
   },
   notesInput: {
     ...commonStyles.input,
-    fontSize: 15,
+    ...typeScale.body,
     minHeight: 72,
     // Long notes scroll inside the field, which keeps the caret in view.
     maxHeight: 160,

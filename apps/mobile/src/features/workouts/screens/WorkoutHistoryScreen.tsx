@@ -27,7 +27,7 @@ import { useRefresh } from '@/lib/useRefresh';
 import { Chip } from '@/ui/Chip';
 import { ScreenTitle } from '@/ui/ScreenTitle';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
 import type { WorkoutSession } from '@workout/domain';
 
 export function WorkoutHistoryScreen() {
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   },
   cardHeading: {
     flex: 1,
-    gap: 2,
+    gap: spacing.xxs,
   },
   cardTitle: {
     ...commonStyles.cardTitle,
@@ -272,18 +272,16 @@ const styles = StyleSheet.create({
   exerciseName: {
     flex: 1,
     color: colors.text,
-    fontSize: 14,
-    lineHeight: 20,
+    ...typeScale.caption,
   },
   exerciseSets: {
     color: colors.textMuted,
     fontFamily: fonts.display,
-    fontSize: 13,
-    lineHeight: 20,
+    ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
   more: {
     color: colors.textSubtle,
-    fontSize: 13,
+    ...typeScale.caption,
   },
 });

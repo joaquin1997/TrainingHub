@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { formatWarmUpTarget } from '@/features/routines/utils/warmUpItems';
-import { colors, commonStyles, spacing } from '@/ui/theme';
+import { colors, commonStyles, spacing, typeScale } from '@/ui/theme';
 
 type Item = {
   key: string;
@@ -101,14 +101,14 @@ const styles = StyleSheet.create({
   name: {
     flex: 1,
     color: colors.text,
-    fontSize: 15,
+    ...typeScale.body,
   },
   nameDone: {
     color: colors.textMuted,
   },
   target: {
     color: colors.textMuted,
-    fontSize: 14,
+    ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
 });

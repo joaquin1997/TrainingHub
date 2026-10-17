@@ -3,7 +3,7 @@ import type { WeightUnit } from '@workout/domain';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, fonts, radii, spacing } from '@/ui/theme';
+import { colors, fonts, radii, spacing, typeScale } from '@/ui/theme';
 
 import type { RecordNotice as Notice } from './liveRecordBadges';
 import { recordBadgeLabel } from './recordBadgeLabel';
@@ -69,10 +69,10 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 14,
+    ...typeScale.caption,
   },
   exercise: {
     color: colors.textMuted,
-    fontSize: 12,
+    ...typeScale.caption,
   },
 });

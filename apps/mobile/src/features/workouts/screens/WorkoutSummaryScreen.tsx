@@ -22,7 +22,7 @@ import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
 import type { SessionRecord, WorkoutSetType } from '@workout/domain';
 
 function setTypeLabel(type: WorkoutSetType, t: TFunction) {
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     height: 64,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 32,
+    borderRadius: radii.round,
     backgroundColor: colors.success,
   },
   heroTitle: {
@@ -291,13 +291,13 @@ const styles = StyleSheet.create({
     width: 20,
     color: colors.textMuted,
     fontFamily: fonts.displayBold,
-    fontSize: 14,
+    ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
   setValue: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
     fontVariant: ['tabular-nums'],
   },
   setSpacer: {

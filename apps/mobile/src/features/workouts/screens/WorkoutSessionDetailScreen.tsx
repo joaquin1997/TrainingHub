@@ -26,7 +26,7 @@ import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
 import type { SessionRecord, WeightUnit, WorkoutSession, WorkoutSet } from '@workout/domain';
 
 /**
@@ -325,9 +325,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   title: {
-    ...commonStyles.heading,
-    fontSize: 26,
-    lineHeight: 32,
+    ...commonStyles.title,
   },
   metaRow: {
     flexDirection: 'row',
@@ -368,7 +366,7 @@ const styles = StyleSheet.create({
   exerciseVolume: {
     ...commonStyles.figureUnit,
     color: colors.text,
-    paddingTop: 2,
+    paddingTop: spacing.xxs,
   },
   setRow: {
     minHeight: 40,
@@ -386,13 +384,13 @@ const styles = StyleSheet.create({
     width: 18,
     color: colors.textMuted,
     fontFamily: fonts.displayBold,
-    fontSize: 14,
+    ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
   setValue: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
     fontVariant: ['tabular-nums'],
   },
   spacer: {
@@ -401,7 +399,7 @@ const styles = StyleSheet.create({
   setRest: {
     color: colors.textSubtle,
     fontFamily: fonts.display,
-    fontSize: 12,
+    ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
 });

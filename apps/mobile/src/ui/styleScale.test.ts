@@ -58,20 +58,6 @@ const BASELINE: Record<string, number> = {
   'features/routines/screens/RoutineFormScreen.tsx': 17,
   'features/routines/screens/RoutinesListScreen.tsx': 2,
   'features/settings/screens/SettingsScreen.tsx': 11,
-  'features/workouts/components/ApproachSetsPreviewSheet.tsx': 7,
-  'features/workouts/components/ProgressRing.tsx': 1,
-  'features/workouts/components/RestBar.tsx': 4,
-  'features/workouts/components/RestEditorSheet.tsx': 8,
-  'features/workouts/components/WarmUpActionButton.tsx': 1,
-  'features/workouts/components/WarmUpChecklist.tsx': 2,
-  'features/workouts/components/WheelPicker.tsx': 1,
-  'features/workouts/components/WorkoutBar.tsx': 6,
-  'features/workouts/components/WorkoutSetRow.tsx': 18,
-  'features/workouts/liveRecords/RecordNotice.tsx': 2,
-  'features/workouts/screens/ActiveWorkoutScreen.tsx': 25,
-  'features/workouts/screens/WorkoutHistoryScreen.tsx': 6,
-  'features/workouts/screens/WorkoutSessionDetailScreen.tsx': 6,
-  'features/workouts/screens/WorkoutSummaryScreen.tsx': 3,
 };
 
 describe('scanStyleSource', () => {

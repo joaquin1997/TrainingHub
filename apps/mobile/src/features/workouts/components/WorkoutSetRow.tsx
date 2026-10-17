@@ -25,7 +25,7 @@ import {
   type SetValueField,
 } from '@/lib/tracking';
 import { fromKg, roundWeight } from '@/lib/weight';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
 
 /**
  * A column of the row: a tracked field, or one side of the reps of a
@@ -239,6 +239,7 @@ export function WorkoutSetRow({
       case 'weight':
         return (
           <TextInput
+            keyboardAppearance="dark"
             key={field}
             keyboardType="decimal-pad"
             value={set.weightKg}
@@ -251,6 +252,7 @@ export function WorkoutSetRow({
       case 'reps':
         return (
           <TextInput
+            keyboardAppearance="dark"
             key={field}
             keyboardType="number-pad"
             value={set.reps}
@@ -265,6 +267,7 @@ export function WorkoutSetRow({
         const side = field === 'repsLeft' ? 'left' : 'right';
         return (
           <TextInput
+            keyboardAppearance="dark"
             key={field}
             keyboardType="number-pad"
             accessibilityLabel={t(side === 'left' ? 'workouts.repsLeft' : 'workouts.repsRight')}
@@ -279,6 +282,7 @@ export function WorkoutSetRow({
       case 'distance':
         return (
           <TextInput
+            keyboardAppearance="dark"
             key={field}
             keyboardType="decimal-pad"
             value={set.distance ?? ''}
@@ -295,6 +299,7 @@ export function WorkoutSetRow({
             style={[styles.colInput, compact ? styles.colTimeWide : null, styles.timeCell]}
           >
             <TextInput
+              keyboardAppearance="dark"
               keyboardType="numbers-and-punctuation"
               editable={!timer.isRunning}
               value={timer.isRunning ? formatDuration(timer.displaySeconds) : (set.duration ?? '')}
@@ -396,11 +401,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    paddingHorizontal: 4,
+    paddingHorizontal: spacing.xs,
   },
   colLabel: {
     ...commonStyles.sectionLabel,
-    fontSize: 10,
   },
   colCentered: {
     textAlign: 'center',
@@ -424,7 +428,7 @@ const styles = StyleSheet.create({
   },
   // The time column also holds the timer button; centre its label on the input.
   colTimeLabel: {
-    paddingRight: 32,
+    paddingRight: spacing.xxxl,
   },
   colCheckIcon: {
     width: 44,
@@ -441,8 +445,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     borderRadius: radii.md,
-    paddingVertical: 4,
-    paddingHorizontal: 4,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.xs,
   },
   rowDone: {
     backgroundColor: colors.successSoft,
@@ -470,7 +474,7 @@ const styles = StyleSheet.create({
     right: -4,
     width: 14,
     height: 14,
-    borderRadius: 7,
+    borderRadius: radii.round,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surface,
@@ -483,7 +487,7 @@ const styles = StyleSheet.create({
   markerText: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
     fontVariant: ['tabular-nums'],
   },
   markerTextTyped: {
@@ -495,7 +499,7 @@ const styles = StyleSheet.create({
   prevText: {
     color: colors.textMuted,
     fontFamily: fonts.display,
-    fontSize: 13,
+    ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
   cellInput: {
@@ -506,13 +510,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceRaised,
     color: colors.text,
     textAlign: 'center',
+    // Figure size; inputs take no line height (iOS would clip the glyphs).
     fontFamily: fonts.displayBold,
-    fontSize: 18,
+    fontSize: typeScale.figure.fontSize,
     fontVariant: ['tabular-nums'],
-    paddingVertical: 6,
+    paddingVertical: spacing.xs,
   },
   cellInputCompact: {
-    fontSize: 16,
+    fontSize: typeScale.body.fontSize,
     paddingHorizontal: 0,
   },
   cellInputDone: {
@@ -522,7 +527,7 @@ const styles = StyleSheet.create({
   timeCell: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
   },
   timeInput: {
     flex: 1,
@@ -536,7 +541,7 @@ const styles = StyleSheet.create({
     height: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 14,
+    borderRadius: radii.round,
     backgroundColor: colors.surfaceRaised,
   },
   timerButtonRunning: {

@@ -7,7 +7,7 @@ import type { RunningRest } from '@/features/workouts/state/workoutDraftStore';
 import { useRestRemaining } from '@/features/workouts/restTimer/useRestRemaining';
 import { formatDuration } from '@/lib/format';
 import { Button } from '@/ui/Button';
-import { colors, commonStyles, spacing } from '@/ui/theme';
+import { colors, commonStyles, radii, spacing, typeScale } from '@/ui/theme';
 
 interface RestBarProps {
   rest: RunningRest;
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   },
   track: {
     height: 3,
-    borderRadius: 2,
+    borderRadius: radii.pill,
     backgroundColor: colors.background,
     overflow: 'hidden',
   },
@@ -90,12 +90,9 @@ const styles = StyleSheet.create({
   },
   label: {
     ...commonStyles.sectionLabel,
-    fontSize: 10,
   },
   clock: {
     ...commonStyles.figure,
-    fontSize: 22,
-    lineHeight: 26,
     color: colors.accent,
   },
   next: {

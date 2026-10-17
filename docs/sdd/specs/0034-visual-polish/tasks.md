@@ -23,7 +23,7 @@ empty states → brand → haptics → motion → Dynamic Type → docs.
 | 2 | [x] `typeScale` (six styles), `radii.round`, `spacing.xxs/xxxl`, `layout`; `commonStyles` rebuilt on them; scanner `styleScale.ts` + `styleScale.test.ts` with a per-file baseline | mobile | unit tests (AC-5 scanner, AC-6) | `feat(ui): closed type, shape and spacing scales with a check` |
 | 3 | [x] `contrast.ts` + test over the palette pairs; `textSubtle` lightened; `controlBorder` for the undone done box | mobile | unit test (AC-7) | `feat(ui): palette meets WCAG AA contrast` |
 | 4 | [x] Shared UI, app shell and auth on the scales | mobile | check baseline shrinks; typecheck | `refactor(ui): shared components and shell on the closed scales` |
-| 5 | [ ] Workouts on the scales | mobile | idem | `refactor(ui): workouts on the closed scales` |
+| 5 | [x] Workouts on the scales | mobile | idem | `refactor(ui): workouts on the closed scales` |
 | 6 | [ ] Routines on the scales | mobile | idem | `refactor(ui): routines on the closed scales` |
 | 7 | [ ] Progress and profile on the scales | mobile | idem | `refactor(ui): progress and profile on the closed scales` |
 | 8 | [ ] Exercises and settings on the scales; baseline deleted (check strict); `keyboardAppearance="dark"` on every input | mobile | check strict (AC-5) | `refactor(ui): exercises and settings on the closed scales` |
