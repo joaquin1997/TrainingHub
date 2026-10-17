@@ -6,6 +6,14 @@ export function buildRoutineCopyInput(routine: Routine): CreateRoutineInput {
     name: `${routine.name} (copy)`,
     description: routine.description,
     folder: routine.folder,
+    warmUpItems: routine.warmUpItems
+      ?.slice()
+      .sort((left, right) => left.order - right.order)
+      .map(({ name, targetDurationSeconds, targetReps }) => ({
+        name,
+        targetDurationSeconds,
+        targetReps,
+      })),
     exercises: routine.exercises
       .slice()
       .sort((left, right) => left.orderIndex - right.orderIndex)

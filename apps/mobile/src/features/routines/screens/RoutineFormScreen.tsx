@@ -22,6 +22,12 @@ import {
   type EditableRoutineSet,
 } from '@/features/routines/components/RoutineSetTable';
 import { routinesClient } from '@/features/routines/api/routinesClient';
+import { WarmUpBlockEditor } from '@/features/routines/components/WarmUpBlockEditor';
+import {
+  toEditableWarmUpItems,
+  toWarmUpItemsInput,
+  type EditableWarmUpItem,
+} from '@/features/routines/utils/warmUpItems';
 import {
   addRoutineApproachSets,
   type RoutineApproachSetsOutcome,
@@ -202,6 +208,8 @@ export function RoutineFormScreen({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [folder, setFolder] = useState('');
+  // The routine's warm-up block (spec 0024).
+  const [warmUpItems, setWarmUpItems] = useState<EditableWarmUpItem[]>([]);
   const [exercises, setExercises] = useState<EditableRoutineExercise[]>([
     createEmptyExerciseRow(),
   ]);
@@ -281,6 +289,9 @@ export function RoutineFormScreen({
           setName(nextRoutine.name);
           setDescription(nextRoutine.description ?? '');
           setFolder(nextRoutine.folder ?? '');
+          setWarmUpItems(
+            toEditableWarmUpItems(nextRoutine.warmUpItems, () => createRowId('warm-up-row')),
+          );
           setExercises(
             nextRoutine.exercises.length > 0
               ? nextRoutine.exercises
@@ -503,6 +514,12 @@ export function RoutineFormScreen({
       return;
     }
 
+    const warmUpInput = toWarmUpItemsInput(warmUpItems);
+    if (warmUpInput === null) {
+      setErrorMessage(t('warmUp.invalidTarget'));
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       setErrorMessage(undefined);
@@ -596,6 +613,7 @@ export function RoutineFormScreen({
           name: trimmedName,
           description: trimmedDescription || undefined,
           folder: folder.trim() || undefined,
+          warmUpItems: warmUpInput,
           exercises: routineExercises,
         });
 
@@ -614,6 +632,7 @@ export function RoutineFormScreen({
         name: trimmedName,
         description: trimmedDescription || undefined,
         folder: folder.trim() || undefined,
+        warmUpItems: warmUpInput,
         exercises: routineExercises,
       });
 
@@ -717,6 +736,12 @@ export function RoutineFormScreen({
             </View>
           </View>
         </View>
+
+        <WarmUpBlockEditor
+          items={warmUpItems}
+          onChange={setWarmUpItems}
+          createId={() => createRowId('warm-up-row')}
+        />
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t('routineForm.routineExercises')}</Text>

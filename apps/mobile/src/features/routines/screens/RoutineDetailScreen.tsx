@@ -11,6 +11,7 @@ import { buildRoutineCopyInput } from '@/features/routines/utils/duplicateRoutin
 import { routineSetLabel } from '@/features/routines/utils/routineApproachSets';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
+import { WarmUpChecklist } from '@/features/workouts/components/WarmUpChecklist';
 import { useRoutineStart } from '@/features/workouts/hooks/useRoutineStart';
 import { confirmAction } from '@/lib/confirmAction';
 import { formatDuration } from '@/lib/format';
@@ -301,6 +302,9 @@ export function RoutineDetailScreen() {
         </View>
       ) : null}
       {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+      <WarmUpChecklist
+        items={(routine.warmUpItems ?? []).map((item) => ({ ...item, key: String(item.order) }))}
+      />
       {exercises.length === 0 ? (
         <StateView kind="empty" icon="barbell-outline" message={t('routineDetail.noExercises')} />
       ) : (
