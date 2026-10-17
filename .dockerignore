@@ -7,6 +7,11 @@
 .gitignore
 **/*.log
 
+# Local output (script logs, the image-matching CSV) and docs: not needed in the
+# image, and they would bust the build cache on every run.
+**/tmp
+docs
+
 # Never ship local secrets into the image (DATABASE_URL is injected at runtime).
 **/.env
 **/.env.*
