@@ -1,7 +1,7 @@
 ---
 id: 0029
 title: Supersets that flow in rounds
-status: ready
+status: in-progress
 decided: 2026-10-17
 roadmap: docs/roadmap/05-routines-advanced.md
 created: 2026-10-17
