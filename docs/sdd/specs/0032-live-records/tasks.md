@@ -61,6 +61,9 @@ reopening (AC-8, AC-9), AC-10/AC-11 end to end — [DEVICE]; the API redeploy �
   web` bundled the app with the shared rules; no browser is available here,
   so the layout of the badge chip and the notice is left for the device
   pass.
+- 2026-10-18 — Coordinator: backlog row and owner server steps updated;
+  roadmap 04 checklist and progress log updated; glossary already had Starting
+  records and Record badge.
 
 ## Definition of done
 

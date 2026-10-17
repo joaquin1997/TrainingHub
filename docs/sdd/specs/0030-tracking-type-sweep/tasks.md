@@ -137,6 +137,9 @@ it before the sweep (harmless; the sweep re-decides those 44).
   `apps/mobile/src/features/exercises/screens/ExerciseDetailScreen.tsx`,
   `apps/mobile/src/i18n/locales/{en,es}.ts` (`customExercise` block) and
   `apps/api/src/features/progress/aggregate.ts` (`buildRecordHistories`).
+- 2026-10-18 — Coordinator: backlog row and owner server steps updated;
+  roadmap 06 checklist and progress log updated; the 0021
+  `catalog:tracking-types` step replaced by the sweep in the server steps.
 
 ## Definition of done
 
@@ -146,4 +149,4 @@ it before the sweep (harmless; the sweep re-decides those 44).
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [ ] Migration deployed; sweep reported, reviewed and applied on the server (owner)
 - [ ] Device check of the detail control (owner)
-- [ ] Roadmap 06 and backlog updated (coordinator)
+- [x] Roadmap 06 and backlog updated (coordinator)

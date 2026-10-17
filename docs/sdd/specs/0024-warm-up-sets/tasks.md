@@ -84,6 +84,8 @@ Not verifiable in CI: tasks 10–11.
   save sends every item with `done`. Not done: a web preview of the screens
   (left to the device check, task 10); the summary screen does not show the
   block (FR-7 is about the saved workout, which History shows).
+- 2026-10-18 — Coordinator: backlog row and owner server steps updated;
+  roadmap 01 checklist and progress log updated.
 
 ## Definition of done
 

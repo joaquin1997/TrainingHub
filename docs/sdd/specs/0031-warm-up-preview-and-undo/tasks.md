@@ -93,6 +93,9 @@ Not verifiable in CI: tasks 7–8.
   (0031 `in-progress`; close the 0023 follow-up "warm-up taken as last
   time's first set"), roadmap 01, the glossary term "generated warm-up set",
   and the migration in the owner's server steps.
+- 2026-10-18 — Coordinator: backlog row and owner server steps updated;
+  roadmap 01 checklist and progress log updated; the 0023 follow-up closed;
+  glossary already had "generated warm-up set".
 
 ## Definition of done
 

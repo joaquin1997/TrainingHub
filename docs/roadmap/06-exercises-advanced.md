@@ -11,6 +11,14 @@
 - [x] Pagination of the catalog (client-side: the API returns the full catalog)
 - [x] Create a custom exercise from the Exercises tab and every picker;
   replace an exercise in the active workout and the routine editor (spec 0020)
+- [x] Custom exercises are private to their creator; references made before
+  stay readable as held exercises (spec 0015 — redeploy and device check
+  pending)
+- [x] Tracking type sweep of the catalog (report, review, apply, undo) and a
+  type control on the exercise detail (spec 0030 — migration, server sweep
+  and device check pending)
+- [x] Delete my custom exercises: hidden from the catalog, kept by name in
+  history and routines (spec 0033 — migration and device check pending)
 
 ## Progress log
 - (2026-05-31) Catalog filter chips for category + equipment, derived from the
@@ -44,6 +52,32 @@
   (redeploy), then `pnpm run import:images` (review the CSV) and
   `pnpm run import:images:db` on the server, and a device rebuild (image
   picker, shared with 0027).
+- (2026-10-18) Spec 0015 — custom exercises are private. One visibility rule
+  in the API (`exercises/visibility.ts`): list, detail, search, favourites,
+  photo and same-name dedupe (catalog first) show catalog plus own exercises;
+  someone else's answers like an unknown id (404). Routines and workouts
+  accept catalog, own and held exercises (another person's exercise already
+  in your routines or workouts before this change). The pickers re-check a
+  custom exercise and show a notice when it is gone. Needs the API redeploy
+  (no migration); held-exercise display pending the device check.
+- (2026-10-18) Spec 0030 — tracking type sweep. A multilingual classifier
+  plus a corrections file decides each catalog exercise's type; the sweep
+  script reports to a CSV, applies (idempotent, with a run file) and undoes,
+  and never overrides a type set by a person (`trackingTypeSetBy`). New
+  `PUT /exercises/:id/tracking-type` and a type control on the exercise
+  detail (confirm sheet when it has workouts). Records use only the values
+  of the current type. Needs the `add_exercise_tracking_type_set_by`
+  migration, then the report / review / apply on the server; supersedes
+  0021's `catalog:tracking-types`. Device check pending.
+- (2026-10-18) Spec 0033 — delete custom exercises. The creator deletes from
+  the exercise detail after seeing what uses it (routines, saved workouts,
+  the active workout). Unused ones are removed; used ones are archived
+  (`deletedAt`): gone from the catalog and pickers, kept by name in history,
+  progress and routines ("Deleted exercise" chip), and still usable in the
+  creator's own saves. Favourites and photo go. New
+  `GET /exercises/:id/deletion-impact` and `DELETE /exercises/:id`. Needs
+  the `add_exercise_deleted_at` migration and redeploy before the app
+  update; device check pending.
 
 ## Notes
 - Catalog screen `apps/mobile/src/features/exercises`.

@@ -124,6 +124,8 @@ device pass (task 8), the deploy (task 9).
   id without history; old workouts keep the deleted one), Article 2 (all
   performed sets intact). Remaining: device pass (task 8) and the
   migration + deploy (task 9).
+- 2026-10-18 — Coordinator: backlog row and owner server steps updated;
+  roadmap 06 checklist and progress log updated.
 
 ## Definition of done
 
@@ -133,8 +135,8 @@ device pass (task 8), the deploy (task 9).
       pass, task 8; purging unreferenced deleted exercises is a `TODO(sdd)`
       in the plan)
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
-- [ ] Relevant `docs/roadmap/NN-*.md` checklist and progress log updated
-      (left to the owner's merge: this branch does not touch `docs/roadmap/`)
+- [x] Relevant `docs/roadmap/NN-*.md` checklist and progress log updated
+      (roadmap 06, coordinator 2026-10-18)
 - [ ] `spec.md` status set to `done`; `../backlog.md` updated (after the
       device pass and deploy; backlog left to the merge)
 - [ ] Constitution amended if this work settled a new invariant

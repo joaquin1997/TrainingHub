@@ -80,12 +80,15 @@ redeploy).
   files to keep the diff off lines other specs edit; safe to delete later.
   Checked: `expo export --platform web` bundles; screens not exercised in a
   browser (needs the API and a session) — left to task 8.
+- 2026-10-18 — Coordinator: backlog row and owner server steps updated;
+  roadmap 05 checklist and progress log updated; glossary already had Superset
+  and Round.
 
 ## Definition of done
 
 - [x] Every functional requirement and acceptance criterion in `spec.md` is met
       or explicitly deferred with a TODO
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
-- [ ] Roadmap 05/02, backlog and glossary updates handed to the coordinator
+- [x] Roadmap 05/02, backlog and glossary updates handed to the coordinator
 - [ ] Checked on the owner's device (task 8)
 - [ ] `spec.md` status set to `done`

@@ -23,6 +23,14 @@ previous performance, set types, and persist completion.
   reps, time, weight & time, distance & time) with the matching columns, a
   set timer, and time/distance in routines, history and progress (spec 0021 —
   migration, catalog script and device check pending)
+- [x] Unilateral exercises: left and right reps in one set row, shown in
+  History, share and the watch (spec 0022 — migration and device check pending)
+- [x] Warm-up sets: approach sets worked out from the working weight, in the
+  workout and the routine editor; a warm-up block (mobility, cardio) ticked in
+  the workout (spec 0024 — migrations and device check pending)
+  - [x] The warm-up button previews before adding, marks generated warm-ups
+    and removes them again; "last time" pairs warm-ups with warm-ups
+    (spec 0031 — migration and device check pending)
 
 ## Design notes
 - Source of truth for the live session is the mobile `workoutDraftStore`
@@ -88,3 +96,29 @@ previous performance, set types, and persist completion.
   `pnpm run catalog:tracking-types` on the server to mark the timed and
   distance exercises of the wger catalog (44 locally; idempotent). No
   rebuild; timed rows, timer vibration and keyboard pending the device check.
+  (The catalog script is superseded by 0030's sweep.)
+- (2026-10-17) Spec 0022 — unilateral exercises. `Exercise.isUnilateral`
+  (switch on the custom exercise form and the exercise detail, through
+  `PUT /exercises/:id/unilateral`) and `repsLeft` / `repsRight` on a set; the
+  API stores `reps` as their sum. The row shows L and R side by side, saved
+  sets read `20 kg × 10 L / 8 R`, share text and the watch target carry both
+  sides. Records read the better side, volume both. Needs the
+  `add_unilateral_exercises` migration (redeploy); no rebuild; row layout and
+  switches pending the device check.
+- (2026-10-17) Spec 0024 — warm-up sets. A flame button works out approach
+  sets from the working weight (140 kg → 20 × 10, 55 × 5, 85 × 3, 105 × 2,
+  125 × 1; lb steps; none at the bar) in the active workout and the routine
+  editor; routine sets can be warm-ups (`W`, working sets numbered alone).
+  Routines carry a warm-up block (name, target time or reps) shown as a
+  checklist first in the workout and in the History detail; never sets,
+  volume or records. Needs the `add_routine_set_warmup` and
+  `add_warm_up_blocks` migrations (redeploy); device check pending.
+- (2026-10-18) Spec 0031 — warm-up button: preview, mark and undo. The
+  button opens a preview sheet first; confirmed sets are marked as generated
+  (cleared when a value or the type is edited) and the button turns into
+  "remove", which takes out only generated ones. Routine sets keep the mark
+  (`isGeneratedWarmup`) and a workout from that routine carries it; the saved
+  workout stores plain warm-ups. "Last time" now pairs warm-ups with
+  warm-ups and working sets with working sets (closes the 0023 follow-up).
+  Needs the `add_routine_set_generated_warmup` migration (redeploy); device
+  check pending.

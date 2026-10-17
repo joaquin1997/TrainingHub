@@ -65,6 +65,8 @@ row layout with three inputs on a phone width and the switches (device).
   environment (Playwright's download is blocked), so the row layout and the
   switches are left for the device pass. Width estimate at 390 pt: about
   50 pt per input with the compact style, enough for two-digit reps.
+- 2026-10-18 — Coordinator: backlog row and owner server steps updated;
+  roadmap 01 checklist and progress log updated.
 
 ## Definition of done
 

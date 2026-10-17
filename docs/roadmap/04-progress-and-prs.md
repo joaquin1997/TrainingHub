@@ -8,6 +8,9 @@
   and session volume, est. 1RM, longest time and distance), named on the
   summary, History and the exercise screen (spec 0023 — redeploy and device
   check pending)
+- [x] Record badges while logging: a done set that beats the starting records
+  gets a badge and a notice; stored only on save (spec 0032 — redeploy and
+  device check pending)
 - [~] Charts for weight/volume over time
   - [x] Per-session bar chart (est. 1RM with volume fallback) on the exercise
     detail screen — dependency-free, pure-view bars
@@ -65,6 +68,14 @@
   chip, and the exercise screen a "Records" card (the old timeline is now
   "Heaviest weight over time"). Needs the API redeploy (no migration); an
   older API just shows no records.
+- (2026-10-18) Spec 0032 — records shown live while logging. The per-set
+  record rules moved to the domain package (`records.ts`), shared by the API
+  and the app. New `GET /progress/starting-records` gives each exercise's
+  bests when it enters the workout; the draft keeps them (offline after a
+  restart). A done working set that beats them gets a record badge (session
+  volume on the exercise) and a notice; nothing is stored until the save,
+  whose records stay authoritative. Needs the API redeploy (no migration);
+  badge and notice layout pending the device check.
 
 ## Notes
 - Progress aggregation already exists (`apps/api/src/features/progress`). PRs can

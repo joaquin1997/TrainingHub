@@ -94,6 +94,8 @@ device pass (task 7), the redeploy (task 8).
   Ana's not-held "Remo Hammer" → 400, same body as an unknown id), AC-7,
   AC-8, FR-15 (catalog unilateral still allowed), EF-3 (creator set to null →
   visible to nobody). Remaining: device pass (task 7) and redeploy (task 8).
+- 2026-10-18 — Coordinator: backlog row and owner server steps updated;
+  roadmap 06 checklist and progress log updated.
 
 ## Definition of done
 
@@ -101,8 +103,8 @@ device pass (task 7), the redeploy (task 8).
       or explicitly deferred with a TODO (EF-4 and the held-exercise display
       await the device pass, task 7)
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
-- [ ] Relevant `docs/roadmap/NN-*.md` checklist and progress log updated
-      (left to the owner's merge: this branch does not touch `docs/roadmap/`)
+- [x] Relevant `docs/roadmap/NN-*.md` checklist and progress log updated
+      (roadmap 06, coordinator 2026-10-18)
 - [ ] `spec.md` status set to `done`; `../backlog.md` updated (after the
       device pass and deploy; backlog left to the merge)
 - [ ] Constitution amended if this work settled a new invariant

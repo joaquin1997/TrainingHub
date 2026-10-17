@@ -4,6 +4,9 @@
 - [x] Reorder exercises in the routine builder (up/down, later drag&drop)
 - [x] Inherit previous set values as ghosted placeholders in the builder
 - [x] Supersets (group exercises by number; badge in detail + active workout)
+  - [x] Supersets flow in rounds: one rest per round, next set highlighted,
+    Superset / Tri-set / Giant set headers, join and split in the editor
+    (spec 0029 — device check pending)
 - [x] Duplicate routine
 - [x] Folders / organization (folder label + grouped list)
 - [x] Per-exercise rest time config
@@ -18,6 +21,15 @@
   (`b84514b`), folders with a grouped list (`cec462e`) and supersets grouped
   by number with a badge in detail + active workout (`73987d4`). **Point 5
   complete**; drag&drop reorder stays deferred (needs a gesture lib).
+- (2026-10-18) Spec 0029 — superset flow. A round is set *n* of every
+  exercise in the superset (warm-ups outside rounds); ticking a set
+  mid-round starts no rest and moves to the next set, the rest starts when
+  the round is complete with the last member's rest. The phone, the watch
+  and the rest-over alert ("Next: exercise · set n") follow the rounds. The
+  workout card shows "Round n of m", round markers and the next set; the
+  editor drops the number field for join with next / take out, and keeps
+  groups normalised on load and save. App only (no migration, no redeploy);
+  device check on iPhone + Apple Watch pending.
 
 ## Notes
 - Builder is `RoutineFormScreen`. Supersets need a grouping concept on
