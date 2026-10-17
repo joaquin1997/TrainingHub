@@ -200,7 +200,7 @@ describe('POST /routines warm-up sets (spec 0024)', () => {
 
 describe('routine generated warm-up sets (spec 0031)', () => {
   it('passes isGeneratedWarmup only for warm-up sets sent with a literal true', async () => {
-    vi.mocked(findExerciseById).mockResolvedValue({ id: 'ex1', name: 'Squat' } as never);
+    vi.mocked(findUsableExercises).mockResolvedValue(usable({ id: 'ex1', name: 'Squat' }));
     vi.mocked(updateRoutine).mockResolvedValue({ id: 'r3', name: 'Legs' } as never);
 
     const response = await app.inject({
