@@ -69,6 +69,7 @@ function mapExercise(record: ExerciseRecord): Exercise {
     isSystemDefined: record.isSystemDefined,
     createdByUserId: record.createdByUser?.publicId,
     trackingType: toExerciseTrackingType(record.trackingType),
+    isUnilateral: record.isUnilateral,
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
   };
@@ -257,6 +258,7 @@ export async function createExercise(
       equipment: [],
       isSystemDefined: false,
       trackingType: input.trackingType ?? 'weight_reps',
+      isUnilateral: input.isUnilateral ?? false,
       createdByUser: {
         connect: {
           publicId: userPublicId,
@@ -364,4 +366,42 @@ export async function deleteExercisePhoto(
   await prisma.exercisePhoto.deleteMany({ where: { exerciseId: owned.id } });
 
   return 'ok';
+}
+
+export type UnilateralWriteResult = Exercise | 'not-found' | 'forbidden';
+
+/**
+ * Marks an exercise as done one side at a time, or not (spec 0022 FR-1).
+ * Catalog exercises can be marked by anyone signed in — the flag is on the
+ * exercise, shared by everyone on the server; a custom one only by its creator.
+ */
+export async function setExerciseUnilateral(
+  userPublicId: string,
+  exercisePublicId: string,
+  isUnilateral: boolean,
+): Promise<UnilateralWriteResult> {
+  const exercise = await prisma.exercise.findUnique({
+    where: { publicId: exercisePublicId },
+    select: {
+      id: true,
+      isSystemDefined: true,
+      createdByUser: { select: { publicId: true } },
+    },
+  });
+
+  if (!exercise) {
+    return 'not-found';
+  }
+
+  if (!exercise.isSystemDefined && exercise.createdByUser?.publicId !== userPublicId) {
+    return 'forbidden';
+  }
+
+  const updated = await prisma.exercise.update({
+    where: { id: exercise.id },
+    data: { isUnilateral },
+    include: exerciseInclude,
+  });
+
+  return mapExercise(updated);
 }
