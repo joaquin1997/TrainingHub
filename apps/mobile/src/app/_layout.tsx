@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, View } from 'react-native';
 
 import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
+import { FirstRunContext, useFirstRunGate } from '@/features/onboarding/useFirstRunGate';
 import { SettingsProvider } from '@/features/settings/SettingsContext';
 import { useLiveWorkoutController } from '@/features/workouts/liveActivity/useLiveWorkoutController';
 import { useActiveWorkoutPersistence } from '@/features/workouts/persistence/useActiveWorkoutPersistence';
@@ -48,13 +49,30 @@ function RootNavigator() {
   const segments = useSegments();
   const router = useRouter();
   const { t } = useTranslation();
+  // The first run, decided once per sign-in or app start (spec 0037 FR-1, FR-4).
+  const firstRun = useFirstRunGate({
+    userId: user?.id ?? null,
+    ready: isAuthenticated && !isRestoringWorkout,
+  });
 
   const inAuthGroup = segments[0] === 'auth';
+  const inFirstRun = segments[0] === 'first-run';
 
   useEffect(() => {
     // Wait for the stored workout too: after sign-in the app only leaves the
     // auth screen once it is restored (spec 0010 EF-6).
     if (isLoading || isRestoringWorkout) {
+      return;
+    }
+
+    if (isAuthenticated && firstRun.status === 'deciding') {
+      return;
+    }
+
+    if (isAuthenticated && firstRun.status === 'show') {
+      if (!inFirstRun) {
+        router.replace('/first-run');
+      }
       return;
     }
 
@@ -69,15 +87,20 @@ function RootNavigator() {
         router.push('/workouts/active');
       }
     }
-  }, [inAuthGroup, isAuthenticated, isLoading, isRestoringWorkout, router]);
+  }, [inAuthGroup, inFirstRun, isAuthenticated, isLoading, isRestoringWorkout, firstRun.status, router]);
 
-  // On the auth screen the navigator stays mounted while the workout restores.
-  if (isLoading || (isRestoringWorkout && !inAuthGroup)) {
+  // On the auth screen the navigator stays mounted while the workout restores
+  // and while the first run is decided, so Routines never flashes before it.
+  if (
+    isLoading ||
+    (isRestoringWorkout && !inAuthGroup) ||
+    (firstRun.status === 'deciding' && !inAuthGroup)
+  ) {
     return <StartupSpinner />;
   }
 
   return (
-    <>
+    <FirstRunContext.Provider value={firstRun}>
     <SplashHandOver />
     <Stack
       screenOptions={{
@@ -89,11 +112,12 @@ function RootNavigator() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="auth/index" options={{ headerShown: false }} />
+      <Stack.Screen name="first-run" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="workouts/active" options={{ title: t('nav.activeWorkout') }} />
       <Stack.Screen name="workouts/summary" options={{ title: t('nav.workoutSaved') }} />
       <Stack.Screen name="workouts/[workoutId]" options={{ title: t('nav.workout') }} />
     </Stack>
-    </>
+    </FirstRunContext.Provider>
   );
 }
 

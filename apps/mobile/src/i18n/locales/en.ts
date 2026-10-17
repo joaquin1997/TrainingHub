@@ -579,6 +579,27 @@ export const en = {
     todayStart: 'Start',
     todayGone: 'That routine no longer exists.',
   },
+  firstRun: {
+    skip: 'Skip',
+    back: 'Back',
+    stepOf: 'Step {{step}} of {{count}}',
+    welcomeTitle: 'Welcome to TrainingHub',
+    welcomeBody: 'Two quick choices and you are ready. You can change them later in Settings.',
+    restTitle: 'Rest between sets',
+    restBody: 'The rest timer starts with this when you tick a set.',
+    alertsTitle: 'Know when a rest ends',
+    alertsBody: 'Allow alerts so your phone — and a paired watch — buzz when a rest ends, even with the phone locked.',
+    allowAlerts: 'Allow alerts',
+    notNow: 'Not now',
+    alertsOn: 'Alerts are on.',
+    alertsOff: 'Alerts are off. You can turn them on in Settings.',
+    readyTitle: 'You are ready',
+    readyBody: 'Create a routine and start your first workout.',
+    addProfile: 'Add your name and photo',
+    continue: 'Continue',
+    start: 'Start training',
+    saveError: 'Your choices could not be saved. Check the connection and try again.',
+  },
 };
 
 export type TranslationCatalog = typeof en;
