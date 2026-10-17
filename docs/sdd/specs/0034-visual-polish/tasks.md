@@ -20,7 +20,7 @@ empty states → brand → haptics → motion → Dynamic Type → docs.
 | # | Task | Area | Verify | Commit message |
 |---|---|---|---|---|
 | 1 | [x] Plan and tasks for Phase A; spec status `in-progress` | docs | — | `docs(sdd): plan and tasks for 0034 phase A` |
-| 2 | [ ] `typeScale` (six styles), `radii.round`, `spacing.xxs/xxxl`, `layout`; `commonStyles` rebuilt on them; scanner `styleScale.ts` + `styleScale.test.ts` with a per-file baseline | mobile | unit tests (AC-5 scanner, AC-6) | `feat(ui): closed type, shape and spacing scales with a check` |
+| 2 | [x] `typeScale` (six styles), `radii.round`, `spacing.xxs/xxxl`, `layout`; `commonStyles` rebuilt on them; scanner `styleScale.ts` + `styleScale.test.ts` with a per-file baseline | mobile | unit tests (AC-5 scanner, AC-6) | `feat(ui): closed type, shape and spacing scales with a check` |
 | 3 | [ ] `contrast.ts` + test over the palette pairs; `textSubtle` lightened; `controlBorder` for the undone done box | mobile | unit test (AC-7) | `feat(ui): palette meets WCAG AA contrast` |
 | 4 | [ ] Shared UI, app shell and auth on the scales | mobile | check baseline shrinks; typecheck | `refactor(ui): shared components and shell on the closed scales` |
 | 5 | [ ] Workouts on the scales | mobile | idem | `refactor(ui): workouts on the closed scales` |
