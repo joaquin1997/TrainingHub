@@ -24,7 +24,7 @@ be deployed before routine warm-up sets and the warm-up block persist.
 | 6 | [x] Domain warm-up item types; `RoutineWarmUpItem` + `WorkoutWarmUpItem` + migration `20261017150000_add_warm_up_blocks`; routines API (create, replace only when sent, read); workouts API (save with `done`, read); route tests | domain + api | route tests; `migrate diff` SQL | `feat(routines): warm-up block on routines and workouts` |
 | 7 | [x] Routine editor warm-up card (name, target time/reps, add/remove); routine detail block; duplicate copies it; i18n | mobile | typecheck; unit test (duplicate) | `feat(routines): edit the warm-up block` |
 | 8 | [x] `warmUpDraft.ts` (`buildWarmUpDraft`, `toggleWarmUpItem`, `toWarmUpItemsInput`); store builds and sends it; active screen checklist card first; history detail shows done items; i18n | mobile | unit tests (AC-3, FR-6, FR-7) | `feat(workouts): warm-up checklist in the active workout` |
-| 9 | [ ] Progress log, definition of done | docs | — | `docs(sdd): close spec 0024 implementation` |
+| 9 | [x] Progress log, definition of done | docs | — | `docs(sdd): close spec 0024 implementation` |
 | 10 | [ ] [DEVICE] Approach-set button, notice and generated rows in the active workout and the routine editor; warm-up card first in the workout, ticking leaves the sets-done bar alone; history detail shows the ticked items | device | owner, iOS | — |
 | 11 | [ ] (owner) Apply both migrations on the server and deploy the API | ops | `npm run db:deploy` | — |
 
@@ -51,13 +51,46 @@ Not verifiable in CI: tasks 10–11.
 
 - 2026-10-17 — Plan and tasks written and self-approved under the owner's
   delegation.
+- 2026-10-17 — Tasks 2–3: `approachSets` (140 kg → 20 × 10, 55 × 5, 85 × 3,
+  105 × 2, 125 × 1; 315 lb → 45/125/190/235/285; 30 kg → three sets; at the
+  bar → none). `addApproachSets` lives in its own module so the draft store
+  only gained an exported `nextDraftId`; generated sets carry typed values
+  and replace the not-done warm-ups ahead of the first working set. Flame
+  button in the exercise's actions row (weight & reps only), notice below
+  the row for `noWeight` / `tooLight`.
+- 2026-10-17 — Task 4: `RoutineExerciseSet.isWarmup`; migration SQL produced
+  with `prisma migrate diff --from-schema-datamodel` (old) →
+  `--to-schema-datamodel` (new). The API takes only a literal `true`.
+- 2026-10-17 — Task 5: inheritance in the routine editor now skips rows of
+  the other kind, so inserting warm-ups never changes what a working row
+  inherits. Set column and routine detail show `W` and number working sets
+  only. The draft-from-routine test sits in `approachSetsDraft.test.ts`
+  rather than `workoutDraftStore.test.ts`, to stay clear of 0022's edits.
+- 2026-10-17 — Task 6: `RoutineWarmUpItem` / `WorkoutWarmUpItem` tables, one
+  migration (SQL from `migrate diff`). Both migrations applied with
+  `prisma migrate deploy` to a fresh local PGlite (all 19), and
+  `prisma migrate diff --from-url … --to-schema-datamodel` reported "No
+  difference detected". Smoke test of the built API on that database with
+  curl: a routine created with a block and a warm-up set returns both; a
+  `PUT` without `warmUpItems` kept the block, one with `[{name: 'Rower'}]`
+  replaced it; a saved workout returns its items with `done` true/false.
+  (PGlite's socket server needs its default single connection; with `-m 10`
+  Prisma's prepared statements collide.)
+- 2026-10-17 — Tasks 7–8: `WarmUpBlockEditor` card above the exercises in
+  the editor (name, target, Time/Reps chip, remove, add); one read-only /
+  checkbox card `WarmUpChecklist` for the routine detail, the active
+  workout (first, before the exercises) and the History detail. The draft
+  copies the block at start (`warmUp`); ticking touches nothing else; the
+  save sends every item with `done`. Not done: a web preview of the screens
+  (left to the device check, task 10); the summary screen does not show the
+  block (FR-7 is about the saved workout, which History shows).
 
 ## Definition of done
 
-- [ ] Every functional requirement and acceptance criterion in `spec.md` is met
+- [x] Every functional requirement and acceptance criterion in `spec.md` is met
       or explicitly deferred with a TODO
-- [ ] `pnpm -r typecheck` and `pnpm -r test` green
-- [ ] Roadmap 01, backlog and glossary updates handed to the coordinator
+- [x] `pnpm -r typecheck` and `pnpm -r test` green
+- [x] Roadmap 01, backlog and glossary updates handed to the coordinator
 - [ ] Checked on the owner's device (task 10)
 - [ ] Migrations applied on the server (task 11)
 - [ ] `spec.md` status set to `done`
