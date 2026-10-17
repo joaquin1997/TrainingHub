@@ -203,6 +203,7 @@ export const es: TranslationCatalog = {
       duration: 'Duración',
       volume: 'Volumen',
       notes: 'Notas',
+      records: 'Récords',
     },
     setType: {
       warmup: 'Calentamiento',

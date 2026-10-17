@@ -12,7 +12,7 @@ import {
   getLatestCompletedWorkout,
   toWorkoutSessionSkeleton,
 } from '@/features/workouts/state/workoutDraftStore';
-import { formatWorkoutShareText } from '@/features/workouts/utils/shareText';
+import { formatWorkoutShareText, shareRecords } from '@/features/workouts/utils/shareText';
 import { shareWorkoutText } from '@/features/workouts/utils/shareWorkout';
 import { summarizeSession } from '@/features/workouts/utils/sessionStats';
 import { activeDurationSeconds, formatDuration } from '@/lib/format';
@@ -194,6 +194,7 @@ export function WorkoutSummaryScreen() {
                 })),
               })),
               notes: workoutSession.notes,
+              records: shareRecords(records, unit, t),
               t,
             }),
           )

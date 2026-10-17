@@ -10,7 +10,7 @@ import { RecordsCard } from '@/features/progress/components/RecordsCard';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { isPerformedSet } from '@/features/workouts/utils/performedSet';
-import { formatWorkoutShareText } from '@/features/workouts/utils/shareText';
+import { formatWorkoutShareText, shareRecords } from '@/features/workouts/utils/shareText';
 import { shareWorkoutText } from '@/features/workouts/utils/shareWorkout';
 import { exerciseVolumeKg, summarizeSession } from '@/features/workouts/utils/sessionStats';
 import {
@@ -228,6 +228,7 @@ export function WorkoutSessionDetailScreen() {
                 sets: exercise.sets.map((set) => ({ ...set, performed: isPerformedSet(set) })),
               })),
               notes: session.notes,
+              records: shareRecords(records, unit, t),
               t,
             }),
           )

@@ -200,6 +200,7 @@ export const en = {
       duration: 'Duration',
       volume: 'Volume',
       notes: 'Notes',
+      records: 'Records',
     },
     setType: {
       warmup: 'Warmup',
