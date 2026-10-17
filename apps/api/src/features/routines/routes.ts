@@ -5,7 +5,7 @@ import type {
   RoutineSetInput,
 } from '@workout/domain';
 
-import { findExerciseById } from '../exercises/repository.js';
+import { findUsableExercises } from '../exercises/repository.js';
 import {
   createRoutine,
   deleteRoutine,
@@ -147,34 +147,36 @@ function parseRoutineWriteInput(body: unknown): CreateRoutineInput | null {
   };
 }
 
+/**
+ * Resolves each exercise and its name. Only exercises the person may use are
+ * accepted: catalog, own, or held (spec 0015 FR-6, FR-7); anything else is
+ * refused as unknown, without saying whether it exists.
+ */
 async function hydrateRoutineWriteInput(
+  userPublicId: string,
   input: CreateRoutineInput,
 ): Promise<RoutineWriteInput | null> {
-  const exercises = await Promise.all(
-    input.exercises.map(
-      async (
-        exercise,
-      ): Promise<RoutineWriteInput['exercises'][number] | null> => {
-        const existingExercise = await findExerciseById(exercise.exerciseId);
-
-        if (!existingExercise) {
-          return null;
-        }
-
-        return {
-          exerciseId: existingExercise.id,
-          exerciseName: existingExercise.name,
-          orderIndex: exercise.orderIndex,
-          restSeconds: exercise.restSeconds,
-          supersetGroup: exercise.supersetGroup,
-          sets: exercise.sets,
-        };
-      },
-    ),
+  const usable = await findUsableExercises(
+    userPublicId,
+    input.exercises.map((exercise) => exercise.exerciseId),
   );
 
-  if (exercises.some((exercise) => exercise === null)) {
-    return null;
+  const exercises: RoutineWriteInput['exercises'] = [];
+  for (const exercise of input.exercises) {
+    const existingExercise = usable.get(exercise.exerciseId);
+
+    if (!existingExercise) {
+      return null;
+    }
+
+    exercises.push({
+      exerciseId: existingExercise.id,
+      exerciseName: existingExercise.name,
+      orderIndex: exercise.orderIndex,
+      restSeconds: exercise.restSeconds,
+      supersetGroup: exercise.supersetGroup,
+      sets: exercise.sets,
+    });
   }
 
   return {
@@ -182,10 +184,7 @@ async function hydrateRoutineWriteInput(
     description: input.description,
     folder: input.folder,
     warmUpItems: input.warmUpItems,
-    exercises: exercises.filter(
-      (exercise): exercise is RoutineWriteInput['exercises'][number] =>
-        exercise !== null,
-    ),
+    exercises,
   };
 }
 
@@ -234,7 +233,10 @@ export async function registerRoutineRoutes(app: FastifyInstance) {
       });
     }
 
-    const input = await hydrateRoutineWriteInput(parsedInput);
+    const input = await hydrateRoutineWriteInput(
+      await resolveUserPublicId(request),
+      parsedInput,
+    );
 
     if (!input) {
       return reply.code(400).send({
@@ -279,7 +281,10 @@ export async function registerRoutineRoutes(app: FastifyInstance) {
         });
       }
 
-      const input = await hydrateRoutineWriteInput(parsedInput);
+      const input = await hydrateRoutineWriteInput(
+        await resolveUserPublicId(request),
+        parsedInput,
+      );
 
       if (!input) {
         return reply.code(400).send({

@@ -67,8 +67,9 @@ function sendPhotoWriteResult(
 }
 
 export async function registerExerciseRoutes(app: FastifyInstance) {
-  app.get('/exercises', async () => {
-    return listExercises();
+  // Catalog plus the acting person's own custom exercises (spec 0015).
+  app.get('/exercises', async (request) => {
+    return listExercises(await resolveUserPublicId(request));
   });
 
   app.get('/muscle-groups', async () => {
@@ -148,12 +149,9 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
         body.isUnilateral,
       );
 
+      // Someone else's custom exercise is "not found" too (spec 0015 FR-2).
       if (result === 'not-found') {
         return reply.code(404).send({ message: 'Exercise not found' });
-      }
-
-      if (result === 'forbidden') {
-        return reply.code(403).send({ message: 'Only the creator can change this exercise' });
       }
 
       return result;
@@ -194,12 +192,15 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
     },
   );
 
-  // TODO(0015): restrict reads to the creator once custom exercises are private.
+  // Only exercises the person can see (spec 0015 FR-13): in practice the creator.
   app.get<{ Params: { id: string } }>(
     '/exercises/:id/photo',
     { preHandler: app.authenticate },
     async (request, reply) => {
-      const photo = await findExercisePhoto(request.params.id);
+      const photo = await findExercisePhoto(
+        await resolveUserPublicId(request),
+        request.params.id,
+      );
 
       if (!photo) {
         return reply.code(404).send({ message: 'Photo not found' });
@@ -214,7 +215,10 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
   );
 
   app.get<{ Params: { id: string } }>('/exercises/:id', async (request, reply) => {
-    const exercise = await findExerciseById(request.params.id);
+    const exercise = await findExerciseById(
+      await resolveUserPublicId(request),
+      request.params.id,
+    );
 
     if (!exercise) {
       return reply.code(404).send({

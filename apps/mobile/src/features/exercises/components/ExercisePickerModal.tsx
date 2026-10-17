@@ -16,6 +16,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
 import { CustomExerciseForm } from '@/features/exercises/components/CustomExerciseForm';
 import { ExerciseThumb } from '@/features/exercises/components/ExerciseThumb';
+import {
+  isExerciseGone,
+  needsAvailabilityCheck,
+} from '@/features/exercises/utils/exerciseAvailability';
 import { Button } from '@/ui/Button';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, fonts, spacing } from '@/ui/theme';
@@ -62,6 +66,9 @@ export function ExercisePickerModal({
   // modal over a modal is unreliable on iOS (spec 0020).
   const [step, setStep] = useState<'list' | 'create'>('list');
   const [confirmation, setConfirmation] = useState<PickerConfirmation | null>(null);
+  // Spec 0015 EF-4: a custom exercise from a list loaded earlier may be gone.
+  const [notice, setNotice] = useState<string>();
+  const [checkingId, setCheckingId] = useState<string>();
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -70,6 +77,7 @@ export function ExercisePickerModal({
       setQuery('');
       setStep('list');
       setConfirmation(null);
+      setNotice(undefined);
     }
   }, [visible]);
 
@@ -98,7 +106,7 @@ export function ExercisePickerModal({
     }
   }, [visible, hasLoaded, isLoading, loadExercises]);
 
-  const choose = (exercise: Exercise) => {
+  const apply = (exercise: Exercise) => {
     const question = confirm?.(exercise) ?? null;
 
     if (question) {
@@ -111,13 +119,45 @@ export function ExercisePickerModal({
     onClose();
   };
 
+  /**
+   * A custom exercise is re-checked before it is used: custom exercises are
+   * private (spec 0015), and a list loaded before that may offer someone
+   * else's. "Not found" drops it with a notice and reloads the list (EF-4);
+   * any other failure lets the choice through, so offline still works.
+   */
+  const choose = async (exercise: Exercise) => {
+    if (checkingId) {
+      return;
+    }
+    setNotice(undefined);
+
+    if (needsAvailabilityCheck(exercise)) {
+      setCheckingId(exercise.id);
+      try {
+        await exercisesClient.getById(exercise.id);
+      } catch (error) {
+        if (isExerciseGone(error)) {
+          setExercises((current) => current.filter((item) => item.id !== exercise.id));
+          setNotice(t('exercises.noLongerAvailable'));
+          void loadExercises();
+          return;
+        }
+      } finally {
+        setCheckingId(undefined);
+      }
+    }
+
+    apply(exercise);
+  };
+
   const handleCreated = (created: Exercise) => {
     setExercises((current) =>
       [...current.filter((exercise) => exercise.id !== created.id), created].sort(
         (left, right) => left.name.localeCompare(right.name),
       ),
     );
-    choose(created);
+    // Just created by this person: nothing to re-check.
+    apply(created);
   };
 
   const trimmedQuery = query.trim();
@@ -213,6 +253,11 @@ export function ExercisePickerModal({
                   : t('exercises.createExercise')}
               </Text>
             </Pressable>
+            {notice ? (
+              <Text style={styles.notice} accessibilityRole="alert">
+                {notice}
+              </Text>
+            ) : null}
             {isLoading ? <StateView kind="loading" message={t('exercises.loading')} /> : null}
             {errorMessage ? (
               <StateView
@@ -233,7 +278,8 @@ export function ExercisePickerModal({
                   <Pressable
                     key={exercise.id}
                     accessibilityRole="button"
-                    onPress={() => choose(exercise)}
+                    onPress={() => void choose(exercise)}
+                    disabled={checkingId !== undefined}
                     style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
                   >
                     <ExerciseThumb imageUrl={exercise.imageUrl} />
@@ -312,6 +358,11 @@ const styles = StyleSheet.create({
   },
   centered: {
     alignSelf: 'center',
+  },
+  notice: {
+    color: colors.danger,
+    fontSize: 14,
+    lineHeight: 20,
   },
   createRow: {
     minHeight: 44,

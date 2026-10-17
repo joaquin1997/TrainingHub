@@ -17,6 +17,7 @@ import {
 } from '@/features/exercises/api/exercisesClient';
 import { CustomExerciseModal } from '@/features/exercises/components/CustomExerciseModal';
 import { ExercisePickerModal } from '@/features/exercises/components/ExercisePickerModal';
+import { isUnknownRoutineExerciseError } from '@/features/exercises/utils/exerciseAvailability';
 import {
   RoutineSetTable,
   type EditableRoutineSet,
@@ -638,6 +639,17 @@ export function RoutineFormScreen({
 
       router.replace(`/routines/${createdRoutine.id}`);
     } catch (error) {
+      // Spec 0015 EF-4: an exercise picked from a list loaded earlier is no
+      // longer this person's to use; say so and refresh the search list.
+      if (isUnknownRoutineExerciseError(error)) {
+        setErrorMessage(t('routineForm.unknownExercise'));
+        void exercisesClient
+          .list()
+          .then((nextExercises) => setAvailableExercises(toSortedExercises(nextExercises)))
+          .catch(() => undefined);
+        return;
+      }
+
       setErrorMessage(
         error instanceof Error ? error.message : t('routineForm.saveError'),
       );

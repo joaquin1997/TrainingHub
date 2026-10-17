@@ -7,6 +7,7 @@ import type {
 } from '@workout/domain';
 
 import { prisma } from '../../infrastructure/prisma.js';
+import { usableExerciseWhere } from '../exercises/visibility.js';
 import {
   isLegacySession,
   isPerformedSet,
@@ -250,9 +251,10 @@ async function findWorkoutSessionByClientId(
 }
 
 /**
- * Which of the referenced records exist and, for routines and routine slots,
- * belong to the user. Exercises only need to exist for now.
- * TODO(sdd): spec 0015 narrows exercises to "system or created by this user".
+ * Which of the referenced records exist and belong to the user: routines and
+ * routine slots of their own; exercises from the catalog, their own, or held
+ * — already in one of their routines or saved workouts (spec 0015 FR-6, FR-7,
+ * EF-1). Any other exercise counts as unknown (EF-2).
  */
 async function resolveOwnedReferences(
   userPublicId: string,
@@ -276,7 +278,7 @@ async function resolveOwnedReferences(
         })
       : [],
     prisma.exercise.findMany({
-      where: { publicId: { in: refs.exerciseIds } },
+      where: { publicId: { in: refs.exerciseIds }, ...usableExerciseWhere(userPublicId) },
       select: { publicId: true },
     }),
   ]);

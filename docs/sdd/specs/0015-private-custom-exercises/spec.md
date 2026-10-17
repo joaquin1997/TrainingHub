@@ -1,7 +1,7 @@
 ---
 id: 0015
 title: Custom exercises are private
-status: ready
+status: in-progress
 roadmap: docs/roadmap/06-exercises-advanced.md
 created: 2026-10-17
 ---

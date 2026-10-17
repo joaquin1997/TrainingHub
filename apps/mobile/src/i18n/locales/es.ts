@@ -128,6 +128,8 @@ export const es: TranslationCatalog = {
     setValuesInvalid: 'Los valores de las series deben ser números válidos.',
     notAvailableEdit: 'La rutina no está disponible para editar.',
     saveError: 'No se ha podido guardar la rutina.',
+    unknownExercise:
+      'Uno de los ejercicios ya no está disponible. Elige otro; la lista se ha actualizado.',
   },
   // Bloque de calentamiento (spec 0024).
   warmUp: {
@@ -280,6 +282,7 @@ export const es: TranslationCatalog = {
     newExercise: 'Nuevo ejercicio',
     createExercise: 'Crear ejercicio',
     createNamed: 'Crear «{{name}}»',
+    noLongerAvailable: 'Este ejercicio ya no está disponible. La lista se ha actualizado.',
   },
   workouts: {
     barLabel: '{{routine}}, {{clock}}. Abrir el entrenamiento en curso',

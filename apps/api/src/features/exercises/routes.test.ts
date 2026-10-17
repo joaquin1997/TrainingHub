@@ -24,13 +24,17 @@ vi.mock('../../infrastructure/userContext.js', () => ({
 }));
 
 import { createApp } from '../../app.js';
+import { resolveUserPublicId } from '../../infrastructure/userContext.js';
+import { classifyExerciseAccess } from './visibility.js';
 import {
+  addFavoriteExercise,
   createExercise,
   deleteExercisePhoto,
   findExerciseById,
   findExercisePhoto,
   InvalidMuscleGroupSelectionError,
   listExercises,
+  listFavoriteExerciseIds,
   listMuscleGroups,
   saveExercisePhoto,
   setExerciseUnilateral,
@@ -60,6 +64,8 @@ describe('GET /exercises', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual([{ id: 'e1' }]);
+    // Scoped to the acting person (spec 0015 FR-1, AC-9 via the dev fallback).
+    expect(listExercises).toHaveBeenCalledWith('user-test');
   });
 });
 
@@ -91,6 +97,7 @@ describe('GET /exercises/:id', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ id: 'e1' });
+    expect(findExerciseById).toHaveBeenCalledWith('user-test', 'e1');
   });
 });
 
@@ -225,7 +232,7 @@ describe('exercise photo', () => {
     expect(saveExercisePhoto).toHaveBeenCalledWith('user-test', 'e1', jpeg);
   });
 
-  it('refuses anyone but the creator (403) and unknown exercises (404)', async () => {
+  it('refuses catalog exercises (403) and unknown or hidden ones (404)', async () => {
     vi.mocked(saveExercisePhoto).mockResolvedValueOnce('forbidden');
     expect((await put(jpeg.toString('base64'))).statusCode).toBe(403);
     vi.mocked(saveExercisePhoto).mockResolvedValueOnce('not-found');
@@ -242,6 +249,7 @@ describe('exercise photo', () => {
     expect(response.statusCode).toBe(200);
     expect(response.headers['content-type']).toBe('image/jpeg');
     expect(String(response.headers['cache-control'])).toContain('private');
+    expect(findExercisePhoto).toHaveBeenCalledWith('user-test', 'e1');
   });
 
   it('deletes through the repository (204)', async () => {
@@ -290,10 +298,190 @@ describe('PUT /exercises/:id/unilateral (spec 0022)', () => {
     expect(setExerciseUnilateral).toHaveBeenCalledWith('user-test', 'e1', true);
   });
 
-  it("refuses someone else's custom exercise (403) and unknown ones (404)", async () => {
-    vi.mocked(setExerciseUnilateral).mockResolvedValueOnce('forbidden');
-    expect((await put({ isUnilateral: false })).statusCode).toBe(403);
+  it('answers 404 for unknown and hidden exercises (spec 0015 FR-14)', async () => {
     vi.mocked(setExerciseUnilateral).mockResolvedValueOnce('not-found');
-    expect((await put({ isUnilateral: false })).statusCode).toBe(404);
+    const response = await put({ isUnilateral: false });
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toEqual({ message: 'Exercise not found' });
   });
 });
+
+/**
+ * Spec 0015 FR-2 / AC-2: someone else's custom exercise answers exactly like
+ * one that never existed. The repository mock behaves like the real one: it
+ * applies the same visibility rule (`classifyExerciseAccess`) to a small
+ * in-memory catalog. So these tests check that every route passes the acting
+ * person and maps "hidden" and "unknown" to one identical answer.
+ */
+describe('no existence leak for custom exercises (spec 0015)', () => {
+  const world: Record<
+    string,
+    { isSystemDefined: boolean; creatorPublicId: string | null; hasPhoto: boolean }
+  > = {
+    'ex-ana': { isSystemDefined: false, creatorPublicId: 'user-ana', hasPhoto: true },
+    'ex-catalog': { isSystemDefined: true, creatorPublicId: null, hasPhoto: false },
+  };
+  const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0]);
+
+  const access = (user: string, id: string) => {
+    const exercise = world[id];
+    return exercise ? classifyExerciseAccess(exercise, user) : 'missing';
+  };
+  const visible = (user: string, id: string) => {
+    const result = access(user, id);
+    return result === 'catalog' || result === 'own';
+  };
+  const asExercise = (id: string) => ({
+    id,
+    name: id,
+    isSystemDefined: world[id]?.isSystemDefined,
+  });
+  const photoWrite = (user: string, id: string) => {
+    const result = access(user, id);
+    return result === 'own' ? 'ok' : result === 'catalog' ? 'forbidden' : 'not-found';
+  };
+
+  beforeEach(() => {
+    vi.mocked(resolveUserPublicId).mockImplementation(
+      async (request) => request.user?.sub ?? 'user-dev',
+    );
+    vi.mocked(findExerciseById).mockImplementation(
+      async (user, id) => (visible(user, id) ? asExercise(id) : null) as never,
+    );
+    vi.mocked(findExercisePhoto).mockImplementation(async (user, id) =>
+      visible(user, id) && world[id]?.hasPhoto
+        ? { data: jpeg, updatedAt: new Date(0) }
+        : null,
+    );
+    vi.mocked(addFavoriteExercise).mockImplementation(async (user, id) => visible(user, id));
+    vi.mocked(setExerciseUnilateral).mockImplementation(
+      async (user, id) =>
+        (visible(user, id) ? { ...asExercise(id), isUnilateral: true } : 'not-found') as never,
+    );
+    vi.mocked(saveExercisePhoto).mockImplementation(async (user, id) => photoWrite(user, id));
+    vi.mocked(deleteExercisePhoto).mockImplementation(async (user, id) => photoWrite(user, id));
+  });
+
+  afterAll(() => {
+    vi.mocked(resolveUserPublicId).mockImplementation(async () => 'user-test');
+  });
+
+  const as = (user: string) => ({
+    authorization: `Bearer ${app.jwt.sign({ sub: user })}`,
+  });
+
+  const requests: Array<{
+    name: string;
+    send: (user: string, id: string) => ReturnType<typeof app.inject>;
+  }> = [
+    {
+      name: 'detail',
+      send: (user, id) =>
+        app.inject({ method: 'GET', url: `/exercises/${id}`, headers: as(user) }),
+    },
+    {
+      name: 'photo read',
+      send: (user, id) =>
+        app.inject({ method: 'GET', url: `/exercises/${id}/photo`, headers: as(user) }),
+    },
+    {
+      name: 'photo write',
+      send: (user, id) =>
+        app.inject({
+          method: 'PUT',
+          url: `/exercises/${id}/photo`,
+          headers: as(user),
+          payload: { imageBase64: jpeg.toString('base64') },
+        }),
+    },
+    {
+      name: 'photo delete',
+      send: (user, id) =>
+        app.inject({ method: 'DELETE', url: `/exercises/${id}/photo`, headers: as(user) }),
+    },
+    {
+      name: 'favourite',
+      send: (user, id) =>
+        app.inject({ method: 'PUT', url: `/exercises/${id}/favorite`, headers: as(user) }),
+    },
+    {
+      name: 'unilateral',
+      send: (user, id) =>
+        app.inject({
+          method: 'PUT',
+          url: `/exercises/${id}/unilateral`,
+          headers: as(user),
+          payload: { isUnilateral: true },
+        }),
+    },
+  ];
+
+  const snapshot = (response: Awaited<ReturnType<typeof app.inject>>) => ({
+    status: response.statusCode,
+    contentType: response.headers['content-type'],
+    body: response.body,
+  });
+
+  for (const request of requests) {
+    it(`${request.name}: Ben gets for Ana's exercise exactly what he gets for an unknown id`, async () => {
+      const hidden = snapshot(await request.send('user-ben', 'ex-ana'));
+      const unknown = snapshot(await request.send('user-ben', 'ex-never-existed'));
+
+      expect(hidden.status).toBe(404);
+      expect(hidden).toEqual(unknown);
+      expect(hidden.body).not.toContain('user-ana');
+      expect(hidden.body).not.toContain('ex-ana');
+    });
+
+    it(`${request.name}: Ana, the creator, is served`, async () => {
+      const own = await request.send('user-ana', 'ex-ana');
+      expect(own.statusCode).toBeLessThan(300);
+    });
+  }
+
+  it('never answers 403 for a hidden exercise, on any route', async () => {
+    for (const request of requests) {
+      const response = await request.send('user-ben', 'ex-ana');
+      expect(response.statusCode, request.name).not.toBe(403);
+    }
+  });
+
+  it('passes the acting person, not a fixed one, to the repository', async () => {
+    await app.inject({ method: 'GET', url: '/exercises/ex-ana', headers: as('user-ben') });
+    expect(findExerciseById).toHaveBeenLastCalledWith('user-ben', 'ex-ana');
+
+    vi.mocked(listExercises).mockResolvedValue([] as never);
+    await app.inject({ method: 'GET', url: '/exercises', headers: as('user-ben') });
+    expect(listExercises).toHaveBeenLastCalledWith('user-ben');
+
+    vi.mocked(listFavoriteExerciseIds).mockResolvedValue([]);
+    await app.inject({ method: 'GET', url: '/exercises/favorites', headers: as('user-ben') });
+    expect(listFavoriteExerciseIds).toHaveBeenLastCalledWith('user-ben');
+  });
+
+  it('a request without a token acts as the fallback account (AC-9)', async () => {
+    vi.mocked(listExercises).mockResolvedValue([] as never);
+    await app.inject({ method: 'GET', url: '/exercises' });
+    expect(listExercises).toHaveBeenLastCalledWith('user-dev');
+
+    const detail = await app.inject({ method: 'GET', url: '/exercises/ex-ana' });
+    expect(detail.statusCode).toBe(404);
+  });
+
+  it('catalog exercises stay visible to everyone', async () => {
+    const detail = await app.inject({
+      method: 'GET',
+      url: '/exercises/ex-catalog',
+      headers: as('user-ben'),
+    });
+    expect(detail.statusCode).toBe(200);
+
+    const favourite = await app.inject({
+      method: 'PUT',
+      url: '/exercises/ex-catalog/favorite',
+      headers: as('user-ben'),
+    });
+    expect(favourite.statusCode).toBe(204);
+  });
+});
+
