@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { BottomTabBar } from '@react-navigation/bottom-tabs';
+import { BottomTabBar } from 'expo-router/tabs';
 import { Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import type { ColorValue } from 'react-native';
 
 import { WorkoutBar } from '@/features/workouts/components/WorkoutBar';
 import { colors, fonts } from '@/ui/theme';
@@ -9,8 +10,9 @@ import { colors, fonts } from '@/ui/theme';
 type IconName = keyof typeof Ionicons.glyphMap;
 
 function tabIcon(focused: IconName, unfocused: IconName) {
-  return ({ color, size, focused: isFocused }: { color: string; size: number; focused: boolean }) => (
-    <Ionicons name={isFocused ? focused : unfocused} size={size} color={color} />
+  // The tab bar passes back the tint colours set below, which are strings.
+  return ({ color, size, focused: isFocused }: { color: ColorValue; size: number; focused: boolean }) => (
+    <Ionicons name={isFocused ? focused : unfocused} size={size} color={color as string} />
   );
 }
 
