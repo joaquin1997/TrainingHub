@@ -272,7 +272,7 @@ describe('removeGeneratedWarmUps', () => {
 });
 
 describe('workout from a routine', () => {
-  it('starts a routine warm-up set as a warm-up in the workout', () => {
+  it('starts routine warm-up sets as warm-ups, keeping the generated mark', () => {
     const at = '2026-10-17T08:00:00.000Z';
     const draft = buildWorkoutSessionDraft({
       id: 'r1',
@@ -286,8 +286,9 @@ describe('workout from a routine', () => {
           exerciseName: 'Squat',
           orderIndex: 1,
           sets: [
-            { id: 's1', routineExerciseId: 're-1', setNumber: 1, targetWeight: 20, isWarmup: true, createdAt: at, updatedAt: at },
-            { id: 's2', routineExerciseId: 're-1', setNumber: 2, targetWeight: 140, createdAt: at, updatedAt: at },
+            { id: 's0', routineExerciseId: 're-1', setNumber: 1, targetWeight: 20, isWarmup: true, createdAt: at, updatedAt: at },
+            { id: 's1', routineExerciseId: 're-1', setNumber: 2, targetWeight: 55, isWarmup: true, isGeneratedWarmup: true, createdAt: at, updatedAt: at },
+            { id: 's2', routineExerciseId: 're-1', setNumber: 3, targetWeight: 140, isGeneratedWarmup: true, createdAt: at, updatedAt: at },
           ],
           createdAt: at,
           updatedAt: at,
@@ -297,7 +298,19 @@ describe('workout from a routine', () => {
       updatedAt: at,
     });
 
-    expect(entriesOf(draft).map((entry) => entry.type)).toEqual(['warmup', 'normal']);
+    expect(entriesOf(draft).map((entry) => entry.type)).toEqual(['warmup', 'warmup', 'normal']);
+    // Generated routine warm-ups are generated in the workout (spec 0031 FR-15,
+    // AC-9); the mark means nothing on a working set.
+    expect(entriesOf(draft).map((entry) => entry.generatedWarmup)).toEqual([
+      undefined,
+      true,
+      undefined,
+    ]);
+    const removed = removeGeneratedWarmUps(draft, draft.exercises[0]!.id);
+    expect(entriesOf(removed).map((entry) => entry.id)).toEqual([
+      'draft-set-re-1-1',
+      'draft-set-re-1-3',
+    ]);
   });
 });
 

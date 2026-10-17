@@ -25,6 +25,8 @@ export type EditableRoutineSet = {
   targetDistance: string;
   /** A warm-up (approach) set (spec 0024). */
   isWarmup?: boolean;
+  /** Added by the warm-up action and untouched since (spec 0031). */
+  generatedWarmup?: boolean;
 };
 
 /** The editor columns of each tracked field: reps has a min and a max. */
@@ -96,9 +98,25 @@ export function RoutineSetTable({ sets, trackingType, unit, onChange, onRemove }
       </View>
       {sets.map((set, setIndex) => (
         <View key={set.id} style={styles.row}>
-          <Text style={[styles.colSet, styles.setNumber]}>
-            {routineSetLabel(sets, setIndex, t('workouts.setType.warmup'))}
-          </Text>
+          {set.isWarmup && set.generatedWarmup ? (
+            // A generated warm-up row: the letter plus a badge (spec 0031 FR-6).
+            <View
+              accessible
+              accessibilityLabel={t('workouts.generatedWarmupLabel', {
+                type: t('workouts.setType.warmup'),
+              })}
+              style={[styles.colSet, styles.generatedCell]}
+            >
+              <Text style={styles.setNumber}>
+                {routineSetLabel(sets, setIndex, t('workouts.setType.warmup'))}
+              </Text>
+              <Ionicons name="sparkles" size={10} color={colors.accent} />
+            </View>
+          ) : (
+            <Text style={[styles.colSet, styles.setNumber]}>
+              {routineSetLabel(sets, setIndex, t('workouts.setType.warmup'))}
+            </Text>
+          )}
           {columns.map((field) => (
             <TextInput
               key={field}
@@ -157,6 +175,12 @@ const styles = StyleSheet.create({
     width: 28,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  generatedCell: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
   },
   setNumber: {
     color: colors.textMuted,

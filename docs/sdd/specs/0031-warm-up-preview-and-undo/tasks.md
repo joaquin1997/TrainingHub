@@ -20,7 +20,7 @@ be deployed before saved routines keep the mark.
 | 2 | [x] Domain `ExerciseLastSet.isWarmup`; API last performance sends it; `lastTimeByKind.ts` (`pairLastSets`, `pairedPerformance`, `targetPlaceholders`); `applyLastPerformance` pairs by kind and drops a lost pairing back to targets; active screen re-applies on draft change and pairs the previous column | domain + api + mobile | unit tests (AC-10, AC-11, FR-19, FR-20, EF-8) | `feat(workouts): pair last time by warm-up and working sets` |
 | 3 | [x] `generatedWarmup` on draft sets, cleared on value or type change; `approachSetsDraft.ts` rewritten (`warmUpActionFor`, `previewApproachSets`, `confirmApproachSets`, `removeGeneratedWarmUps`); `ApproachSetsPreviewSheet`; toggle button and sheet on the active screen; generated mark on the set marker; i18n en/es | mobile | unit tests (AC-1–AC-8, AC-12, EF-1, EF-3, EF-4, EF-6) | `feat(workouts): preview, mark and undo warm-up sets in the active workout` |
 | 4 | [x] Domain `isGeneratedWarmup` on routine sets; column + migration `20261018110000_add_routine_set_generated_warmup`; routines API reads/writes it (only with `isWarmup`); route test | domain + api | route test; `migrate diff` SQL | `feat(routines): routine sets remember generated warm-ups` |
-| 5 | [ ] Routine editor: `routineApproachSets.ts` rewritten around the toggle; mark in `RoutineSetTable`; button + preview sheet in `RoutineFormScreen`; load/save/clear the mark; duplicate copies it; workout from a routine carries it; i18n | mobile | unit tests (AC-9, FR-13, FR-14, FR-15) | `feat(routines): preview, mark and undo warm-up sets in the routine editor` |
+| 5 | [x] Routine editor: `routineApproachSets.ts` rewritten around the toggle; mark in `RoutineSetTable`; button + preview sheet in `RoutineFormScreen`; load/save/clear the mark; duplicate copies it; workout from a routine carries it; i18n | mobile | unit tests (AC-9, FR-13, FR-14, FR-15) | `feat(routines): preview, mark and undo warm-up sets in the routine editor` |
 | 6 | [ ] Progress log, definition of done | docs | — | `docs(sdd): close spec 0031 implementation` |
 | 7 | [ ] [DEVICE] Preview sheet with one hand during a set; mark legible in light and dark; action reads add/remove (VoiceOver too); restart keeps the mark; routine saved and reopened keeps it; workout from that routine; History shows plain warm-ups; "last time" after inserting the ramp | device | owner, iOS | — |
 | 8 | [ ] (owner: migration/deploy) Apply `20261018110000_add_routine_set_generated_warmup` and deploy the API | ops | `npm run db:deploy` | — |
@@ -73,6 +73,18 @@ Not verifiable in CI: tasks 7–8.
   stores the flag only for a literal `true` on a set that is also a warm-up,
   and the repository returns it only under the same condition. Not applied
   to a database here (owner, task 8).
+- 2026-10-17 — Task 5: `routineApproachSets.ts` rewritten around the toggle
+  (`routineWarmUpActionFor`, `previewRoutineApproachSets`,
+  `confirmRoutineApproachSets`, `removeRoutineGeneratedWarmUps`, and
+  `editRoutineSetValue`, which the editor's `updateSetField` now uses so a
+  changed generated row loses its mark). The editor reuses the workout's
+  `WarmUpActionButton` and `ApproachSetsPreviewSheet`; the preview is held
+  per row and confirmed only if the row still has the same exercise (EF-1).
+  `RoutineSetTable` shows the `W` with a sparkles badge and a spoken label
+  for generated rows. The save sends `isGeneratedWarmup`, duplicate copies
+  it, and `buildExerciseDrafts` turns a generated routine warm-up into a
+  generated draft set (FR-15). Replacing a row's exercise keeps its rows and
+  marks as they are (0020 behaviour, not changed here).
 
 ## Definition of done
 

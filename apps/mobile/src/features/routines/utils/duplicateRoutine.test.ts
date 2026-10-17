@@ -23,7 +23,7 @@ describe('buildRoutineCopyInput (spec 0024)', () => {
           exerciseName: 'Squat',
           orderIndex: 1,
           sets: [
-            { id: 's1', routineExerciseId: 're-1', setNumber: 1, targetWeight: 20, isWarmup: true, createdAt: at, updatedAt: at },
+            { id: 's1', routineExerciseId: 're-1', setNumber: 1, targetWeight: 20, isWarmup: true, isGeneratedWarmup: true, createdAt: at, updatedAt: at },
             { id: 's2', routineExerciseId: 're-1', setNumber: 2, targetWeight: 140, createdAt: at, updatedAt: at },
           ],
           createdAt: at,
@@ -41,5 +41,7 @@ describe('buildRoutineCopyInput (spec 0024)', () => {
       { name: 'Band pull-aparts', targetDurationSeconds: undefined, targetReps: 15 },
     ]);
     expect(copy.exercises[0]!.sets.map((set) => set.isWarmup)).toEqual([true, undefined]);
+    // Spec 0031 FR-14: the generated mark is copied too.
+    expect(copy.exercises[0]!.sets.map((set) => set.isGeneratedWarmup)).toEqual([true, undefined]);
   });
 });

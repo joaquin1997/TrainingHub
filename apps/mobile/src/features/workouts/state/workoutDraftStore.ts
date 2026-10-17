@@ -254,6 +254,8 @@ function buildExerciseDrafts(
           done: false,
           // A routine warm-up set (spec 0024) is a warm-up in the workout.
           type: set.isWarmup ? 'warmup' : 'normal',
+          // A generated routine warm-up stays generated in the workout (0031 FR-15).
+          generatedWarmup: (set.isWarmup && set.isGeneratedWarmup) || undefined,
           minReps: set.minReps,
           maxReps: set.maxReps,
           targetWeight: set.targetWeight,
