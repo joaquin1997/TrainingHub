@@ -18,10 +18,15 @@ interface RecordsCardProps {
   title: string;
   items: RecordsCardItem[];
   unit: WeightUnit;
+  /**
+   * `highlight` sets the card apart as the first thing of a screen (the
+   * summary's records of the day, spec 0034 FR-24): orange tint and edge.
+   */
+  variant?: 'default' | 'highlight';
 }
 
 /** A card of personal records (spec 0023): trophy, what it is, its figure. */
-export function RecordsCard({ title, items, unit }: RecordsCardProps) {
+export function RecordsCard({ title, items, unit, variant = 'default' }: RecordsCardProps) {
   const { t } = useTranslation();
 
   if (items.length === 0) {
@@ -29,7 +34,7 @@ export function RecordsCard({ title, items, unit }: RecordsCardProps) {
   }
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, variant === 'highlight' ? styles.highlight : null]}>
       <CardHeader title={title} />
       {items.map(({ key, record, meta }) => {
         const label = describeRecord(record, unit, t);
@@ -55,6 +60,10 @@ export function RecordsCard({ title, items, unit }: RecordsCardProps) {
 const styles = StyleSheet.create({
   card: {
     ...commonStyles.card,
+  },
+  highlight: {
+    borderColor: colors.accent,
+    backgroundColor: colors.accentSoft,
   },
   row: {
     minHeight: 44,

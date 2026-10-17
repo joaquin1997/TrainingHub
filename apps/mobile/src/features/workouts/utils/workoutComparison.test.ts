@@ -1,8 +1,14 @@
 import type { WorkoutSession, WorkoutSet } from '@workout/domain';
 import { describe, expect, it } from 'vitest';
 
+import i18n from 'i18next';
+
+import { en } from '@/i18n/locales/en';
+import { es } from '@/i18n/locales/es';
+
 import {
   compareWithPrevious,
+  describeComparison,
   loadWorkoutComparison,
   type ComparedWorkout,
 } from './workoutComparison';
@@ -261,5 +267,36 @@ describe('loadWorkoutComparison', () => {
       async () => ({ error: 'old server' }) as unknown as WorkoutSession[],
     );
     expect(result).toBeNull();
+  });
+});
+
+describe('describeComparison', () => {
+  const translator = i18n.createInstance();
+  void translator.init({
+    resources: { en: { translation: en }, es: { translation: es } },
+    lng: 'en',
+    interpolation: { escapeValue: false },
+    initAsync: false,
+  });
+  const date = '2026-10-12T18:00:00.000Z';
+
+  it('says the difference and the day, with a short chip label (AC-17)', () => {
+    const words = describeComparison(
+      { deltaKg: 1250, direction: 'up', previousDate: date },
+      'kg',
+      'en',
+      translator.getFixedT('en'),
+    );
+    expect(words).toEqual({ sentence: '1250 kg more than Oct 12', short: '+1250 kg' });
+  });
+
+  it('uses the display unit and the language; down and same have their words', () => {
+    const t = translator.getFixedT('es');
+    expect(
+      describeComparison({ deltaKg: -100, direction: 'down', previousDate: date }, 'lb', 'es', t),
+    ).toEqual({ sentence: '220.5 lb menos que el 12 oct', short: '−220.5 lb' });
+    expect(
+      describeComparison({ deltaKg: 0, direction: 'same', previousDate: date }, 'kg', 'es', t),
+    ).toEqual({ sentence: 'Igual que el 12 oct', short: 'Igual' });
   });
 });

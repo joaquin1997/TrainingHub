@@ -12,9 +12,15 @@ import {
   getLatestCompletedWorkout,
   toWorkoutSessionSkeleton,
 } from '@/features/workouts/state/workoutDraftStore';
+import { useWorkoutComparison } from '@/features/workouts/hooks/useWorkoutComparison';
 import { formatWorkoutShareText, shareRecords } from '@/features/workouts/utils/shareText';
 import { shareWorkoutText } from '@/features/workouts/utils/shareWorkout';
 import { summarizeSession } from '@/features/workouts/utils/sessionStats';
+import {
+  describeComparison,
+  type ComparedWorkout,
+  type VolumeComparison,
+} from '@/features/workouts/utils/workoutComparison';
 import { activeDurationSeconds, formatDuration } from '@/lib/format';
 import { formatDistance, formatSetValues, sideLabels } from '@/lib/tracking';
 import { formatWeightValue } from '@/lib/weight';
@@ -24,7 +30,7 @@ import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
 import { CardHeader } from '@/ui/CardHeader';
-import type { SessionRecord, WorkoutSetType } from '@workout/domain';
+import type { SessionRecord, WeightUnit, WorkoutSetType } from '@workout/domain';
 
 function setTypeLabel(type: WorkoutSetType, t: TFunction) {
   switch (type) {
@@ -37,6 +43,41 @@ function setTypeLabel(type: WorkoutSetType, t: TFunction) {
     default:
       return null;
   }
+}
+
+const comparisonIcon = {
+  up: 'arrow-up',
+  down: 'arrow-down',
+  same: 'remove',
+} as const;
+
+/**
+ * An exercise's volume against its last session (FR-24): arrow + words, so the
+ * direction is never told by colour alone (FR-17). Green only for an increase;
+ * less volume is not an error.
+ */
+function ComparisonChip({
+  comparison,
+  unit,
+  language,
+  t,
+}: {
+  comparison: VolumeComparison;
+  unit: WeightUnit;
+  language: string;
+  t: TFunction;
+}) {
+  const words = describeComparison(comparison, unit, language, t);
+  return (
+    <View accessible accessibilityLabel={words.sentence}>
+      <Chip
+        size="sm"
+        icon={comparisonIcon[comparison.direction]}
+        tone={comparison.direction === 'up' ? 'done' : 'neutral'}
+        label={words.short}
+      />
+    </View>
+  );
 }
 
 export function WorkoutSummaryScreen() {
@@ -70,12 +111,33 @@ export function WorkoutSummaryScreen() {
     };
   }, [clientId]);
 
+  // Volume versus last time (FR-24): the workout as saved, compared with the
+  // history once; nothing is shown until (and unless) it loads (EF-5).
+  const unit = workoutDraft?.unit ?? 'kg';
+  const workoutSession = workoutDraft ? toWorkoutSessionSkeleton(workoutDraft) : null;
+  const isDone = (exerciseIndex: number, setIndex: number) =>
+    workoutDraft?.exercises[exerciseIndex]?.entries[setIndex]?.done ?? false;
+  const compared: ComparedWorkout | null = workoutSession
+    ? {
+        routineId: workoutSession.routineId,
+        startedAt: workoutSession.startedAt,
+        exercises: workoutSession.exercises.map((exercise, exerciseIndex) => ({
+          exerciseId: exercise.exerciseId,
+          sets: exercise.sets.map((set, setIndex) => ({
+            ...set,
+            performed: isDone(exerciseIndex, setIndex),
+          })),
+        })),
+      }
+    : null;
+  const comparison = useWorkoutComparison(compared, unit);
+
   const leaveTo = (path: Parameters<typeof router.replace>[0]) => {
     clearLatestCompletedWorkout();
     router.replace(path);
   };
 
-  if (!workoutDraft) {
+  if (!workoutDraft || !workoutSession || !compared) {
     return (
       <View style={styles.screen}>
         <StateView
@@ -92,18 +154,10 @@ export function WorkoutSummaryScreen() {
   // Rendered from the skeleton so the summary shows what was saved, ghosted
   // placeholders included, formatted back into the session unit (spec 0013).
   // The skeleton stamps every set; "done" comes from the draft.
-  const workoutSession = toWorkoutSessionSkeleton(workoutDraft);
-  const unit = workoutDraft.unit ?? 'kg';
-  const isDone = (exerciseIndex: number, setIndex: number) =>
-    workoutDraft.exercises[exerciseIndex]?.entries[setIndex]?.done ?? false;
-  const stats = summarizeSession({
-    exercises: workoutSession.exercises.map((exercise, exerciseIndex) => ({
-      sets: exercise.sets.map((set, setIndex) => ({
-        ...set,
-        performed: isDone(exerciseIndex, setIndex),
-      })),
-    })),
-  });
+  const stats = summarizeSession(compared);
+  const routineComparison = comparison?.routine
+    ? describeComparison(comparison.routine, unit, i18n.language, t)
+    : null;
   const duration = activeDurationSeconds(
     workoutSession.startedAt,
     workoutSession.completedAt,
@@ -119,12 +173,26 @@ export function WorkoutSummaryScreen() {
         <Text style={styles.heroTitle}>{workoutDraft.routineName}</Text>
         <Chip icon="checkmark-circle" tone="done" label={t('workouts.savedToHistory')} />
       </View>
+      {/* Records of the day lead (FR-24); the block appears when they arrive. */}
+      <RecordsCard
+        title={t('progress.records.today')}
+        unit={unit}
+        variant="highlight"
+        items={records.map((record, index) => ({
+          key: `${record.exerciseId}-${record.type}-${index}`,
+          record,
+          meta: record.exerciseName,
+        }))}
+      />
       <View style={styles.tiles}>
         <StatTile label={t('workouts.duration')} value={formatDuration(duration)} />
         <StatTile
           label={t('workouts.volumeLabel')}
           value={formatWeightValue(stats.volumeKg, unit)}
           unit={unit}
+          caption={routineComparison?.sentence}
+          captionIcon={comparison?.routine ? comparisonIcon[comparison.routine.direction] : undefined}
+          captionTone={comparison?.routine?.direction === 'up' ? 'success' : 'muted'}
         />
         <StatTile
           label={t('workouts.setsLabel')}
@@ -142,42 +210,48 @@ export function WorkoutSummaryScreen() {
           ) : null}
         </View>
       ) : null}
-      <RecordsCard
-        title={t('progress.records.beaten')}
-        unit={unit}
-        items={records.map((record, index) => ({
-          key: `${record.exerciseId}-${record.type}-${index}`,
-          record,
-          meta: record.exerciseName,
-        }))}
-      />
       <Text style={styles.sectionLabel}>{t('workouts.exercisesDone')}</Text>
-      {workoutSession.exercises.map((exercise, exerciseIndex) => (
-        <View key={exercise.id} style={styles.card}>
-          <CardHeader title={exercise.exerciseName} />
-          {exercise.sets.map((set, setIndex) => {
-            const done = isDone(exerciseIndex, setIndex);
-            const type = setTypeLabel(set.type, t);
-            return (
-              <View key={set.id} style={[styles.setRow, done ? null : styles.setRowSkipped]}>
-                <Text style={styles.setOrder}>{set.order}</Text>
-                <Text style={styles.setValue}>
-                  {formatSetValues(set, unit, sideLabels(t))}
-                </Text>
-                {type ? (
-                  <Chip label={type} size="sm" tone={set.type === 'failure' ? 'record' : 'neutral'} />
-                ) : null}
-                <View style={styles.setSpacer} />
-                <Ionicons
-                  name={done ? 'checkmark-circle' : 'ellipse-outline'}
-                  size={20}
-                  color={done ? colors.success : colors.textSubtle}
-                />
-              </View>
-            );
-          })}
-        </View>
-      ))}
+      {workoutSession.exercises.map((exercise, exerciseIndex) => {
+        const exerciseComparison = comparison?.exercises[exercise.exerciseId];
+        return (
+          <View key={exercise.id} style={styles.card}>
+            <CardHeader
+              title={exercise.exerciseName}
+              trailing={
+                exerciseComparison ? (
+                  <ComparisonChip
+                    comparison={exerciseComparison}
+                    unit={unit}
+                    language={i18n.language}
+                    t={t}
+                  />
+                ) : null
+              }
+            />
+            {exercise.sets.map((set, setIndex) => {
+              const done = isDone(exerciseIndex, setIndex);
+              const type = setTypeLabel(set.type, t);
+              return (
+                <View key={set.id} style={[styles.setRow, done ? null : styles.setRowSkipped]}>
+                  <Text style={styles.setOrder}>{set.order}</Text>
+                  <Text style={styles.setValue}>
+                    {formatSetValues(set, unit, sideLabels(t))}
+                  </Text>
+                  {type ? (
+                    <Chip label={type} size="sm" tone={set.type === 'failure' ? 'record' : 'neutral'} />
+                  ) : null}
+                  <View style={styles.setSpacer} />
+                  <Ionicons
+                    name={done ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={20}
+                    color={done ? colors.success : colors.textSubtle}
+                  />
+                </View>
+              );
+            })}
+          </View>
+        );
+      })}
       <Button
         label={t('routineDetail.backToRoutines')}
         icon="checkmark-done"

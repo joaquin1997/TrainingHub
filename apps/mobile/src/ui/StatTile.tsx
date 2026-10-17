@@ -9,14 +9,28 @@ interface StatTileProps {
   unit?: string;
   /** Small line under the figure. */
   caption?: string;
+  /** Icon before the caption, e.g. the arrow of a comparison (spec 0034 FR-24). */
+  captionIcon?: keyof typeof Ionicons.glyphMap;
+  /** `success` draws the caption green (an increase); default muted. */
+  captionTone?: 'muted' | 'success';
   icon?: keyof typeof Ionicons.glyphMap;
   /** `record` draws the figure orange (a personal record, FR-1). */
   tone?: 'neutral' | 'record';
 }
 
 /** Label + figure + unit; tiles sit in rows of two or three (spec 0017). */
-export function StatTile({ label, value, unit, caption, icon, tone = 'neutral' }: StatTileProps) {
+export function StatTile({
+  label,
+  value,
+  unit,
+  caption,
+  captionIcon,
+  captionTone = 'muted',
+  icon,
+  tone = 'neutral',
+}: StatTileProps) {
   const figureColor = tone === 'record' ? colors.accent : colors.text;
+  const captionColor = captionTone === 'success' ? colors.success : colors.textMuted;
 
   return (
     <View style={styles.tile}>
@@ -35,8 +49,15 @@ export function StatTile({ label, value, unit, caption, icon, tone = 'neutral' }
         </Text>
         {unit ? <Text style={styles.unit}>{` ${unit}`}</Text> : null}
       </Text>
-      {caption ? (
-        <Text style={styles.caption} numberOfLines={2}>
+      {caption && captionIcon ? (
+        <View style={styles.captionRow}>
+          <Ionicons name={captionIcon} size={14} color={captionColor} />
+          <Text style={[styles.caption, styles.captionText, { color: captionColor }]} numberOfLines={2}>
+            {caption}
+          </Text>
+        </View>
+      ) : caption ? (
+        <Text style={[styles.caption, { color: captionColor }]} numberOfLines={2}>
           {caption}
         </Text>
       ) : null}
@@ -77,5 +98,13 @@ const styles = StyleSheet.create({
   caption: {
     ...typeScale.caption,
     color: colors.textMuted,
+  },
+  captionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+  },
+  captionText: {
+    flex: 1,
   },
 });

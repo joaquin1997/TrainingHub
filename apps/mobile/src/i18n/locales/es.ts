@@ -355,6 +355,15 @@ export const es: TranslationCatalog = {
       notes: 'Notas',
       records: 'Récords',
     },
+    // Volumen frente a la última vez en el resumen (spec 0034 FR-24).
+    comparison: {
+      up: '{{delta}} más que el {{date}}',
+      down: '{{delta}} menos que el {{date}}',
+      same: 'Igual que el {{date}}',
+      chipUp: '+{{delta}}',
+      chipDown: '−{{delta}}',
+      chipSame: 'Igual',
+    },
     setType: {
       warmup: 'Calentamiento',
       drop: 'Drop',
@@ -481,6 +490,7 @@ export const es: TranslationCatalog = {
     records: {
       title: 'Récords',
       beaten: 'Récords batidos',
+      today: 'Récords de hoy',
       count_one: '{{count}} récord',
       count_other: '{{count}} récords',
       heaviestWeight: 'Peso máximo',

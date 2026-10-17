@@ -352,6 +352,15 @@ export const en = {
       notes: 'Notes',
       records: 'Records',
     },
+    // Volume versus last time on the summary (spec 0034 FR-24).
+    comparison: {
+      up: '{{delta}} more than {{date}}',
+      down: '{{delta}} less than {{date}}',
+      same: 'Same as {{date}}',
+      chipUp: '+{{delta}}',
+      chipDown: '−{{delta}}',
+      chipSame: 'Same',
+    },
     setType: {
       warmup: 'Warmup',
       drop: 'Drop',
@@ -478,6 +487,7 @@ export const en = {
     records: {
       title: 'Records',
       beaten: 'Records beaten',
+      today: 'Records today',
       count_one: '{{count}} record',
       count_other: '{{count}} records',
       heaviestWeight: 'Heaviest weight',
