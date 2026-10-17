@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import type { CreateExerciseInput, Exercise, MuscleGroup } from '@workout/domain';
 
 import { prisma } from '../../infrastructure/prisma.js';
-import { type PhotoContentType, photoImageUrl } from './photo.js';
+import { photoImageUrl } from './photo.js';
 
 const exerciseInclude = {
   createdByUser: {
@@ -280,7 +280,6 @@ export async function createExercise(
 }
 
 export type ExercisePhotoRecord = {
-  contentType: string;
   data: Buffer;
   updatedAt: Date;
 };
@@ -290,12 +289,11 @@ export async function findExercisePhoto(
 ): Promise<ExercisePhotoRecord | null> {
   const photo = await prisma.exercisePhoto.findFirst({
     where: { exercise: { publicId: exercisePublicId } },
-    select: { contentType: true, data: true, updatedAt: true },
+    select: { data: true, updatedAt: true },
   });
 
   return photo
     ? {
-        contentType: photo.contentType,
         data: Buffer.from(photo.data),
         updatedAt: photo.updatedAt,
       }
@@ -332,7 +330,6 @@ async function findOwnedExerciseId(
 export async function saveExercisePhoto(
   userPublicId: string,
   exercisePublicId: string,
-  contentType: PhotoContentType,
   data: Buffer,
 ): Promise<PhotoWriteResult> {
   const owned = await findOwnedExerciseId(userPublicId, exercisePublicId);
@@ -344,8 +341,8 @@ export async function saveExercisePhoto(
   const bytes = new Uint8Array(data);
   await prisma.exercisePhoto.upsert({
     where: { exerciseId: owned.id },
-    create: { exerciseId: owned.id, contentType, data: bytes },
-    update: { contentType, data: bytes },
+    create: { exerciseId: owned.id, data: bytes },
+    update: { data: bytes },
   });
 
   return 'ok';

@@ -140,55 +140,48 @@ describe('POST /exercises', () => {
 
 describe('exercise photo', () => {
   const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0]);
-  const put = (headers: Record<string, string>, payload: Buffer | string = jpeg) =>
-    app.inject({ method: 'PUT', url: '/exercises/e1/photo', headers, payload });
-
-  function authHeaders(contentType = 'image/jpeg') {
-    return {
-      authorization: `Bearer ${app.jwt.sign({ sub: 'user-test' })}`,
-      'content-type': contentType,
-    };
-  }
+  const token = () => `Bearer ${app.jwt.sign({ sub: 'user-test' })}`;
+  const put = (imageBase64: string, withAuth = true) =>
+    app.inject({
+      method: 'PUT',
+      url: '/exercises/e1/photo',
+      headers: withAuth ? { authorization: token() } : {},
+      payload: { imageBase64 },
+    });
 
   it('requires a signed-in user', async () => {
-    const response = await put({ 'content-type': 'image/jpeg' });
-    expect(response.statusCode).toBe(401);
+    expect((await put(jpeg.toString('base64'), false)).statusCode).toBe(401);
     expect(saveExercisePhoto).not.toHaveBeenCalled();
 
     const read = await app.inject({ method: 'GET', url: '/exercises/e1/photo' });
     expect(read.statusCode).toBe(401);
   });
 
-  it('rejects unsupported types and bytes that are not the claimed image', async () => {
-    expect((await put(authHeaders('image/gif'), 'GIF89a')).statusCode).toBe(415);
-    expect((await put(authHeaders(), '<html></html>')).statusCode).toBe(400);
+  it('rejects data that is not a JPEG', async () => {
+    expect((await put(Buffer.from('<html></html>').toString('base64'))).statusCode).toBe(400);
     expect(saveExercisePhoto).not.toHaveBeenCalled();
   });
 
   it('saves the photo for the creator (204)', async () => {
     vi.mocked(saveExercisePhoto).mockResolvedValue('ok');
-    const response = await put(authHeaders());
+    const response = await put(jpeg.toString('base64'));
     expect(response.statusCode).toBe(204);
-    expect(saveExercisePhoto).toHaveBeenCalledWith('user-test', 'e1', 'image/jpeg', jpeg);
+    expect(saveExercisePhoto).toHaveBeenCalledWith('user-test', 'e1', jpeg);
   });
 
   it('refuses anyone but the creator (403) and unknown exercises (404)', async () => {
     vi.mocked(saveExercisePhoto).mockResolvedValueOnce('forbidden');
-    expect((await put(authHeaders())).statusCode).toBe(403);
+    expect((await put(jpeg.toString('base64'))).statusCode).toBe(403);
     vi.mocked(saveExercisePhoto).mockResolvedValueOnce('not-found');
-    expect((await put(authHeaders())).statusCode).toBe(404);
+    expect((await put(jpeg.toString('base64'))).statusCode).toBe(404);
   });
 
   it('serves the stored photo with private caching', async () => {
-    vi.mocked(findExercisePhoto).mockResolvedValue({
-      contentType: 'image/jpeg',
-      data: jpeg,
-      updatedAt: new Date(0),
-    });
+    vi.mocked(findExercisePhoto).mockResolvedValue({ data: jpeg, updatedAt: new Date(0) });
     const response = await app.inject({
       method: 'GET',
       url: '/exercises/e1/photo',
-      headers: { authorization: authHeaders().authorization },
+      headers: { authorization: token() },
     });
     expect(response.statusCode).toBe(200);
     expect(response.headers['content-type']).toBe('image/jpeg');
@@ -200,7 +193,7 @@ describe('exercise photo', () => {
     const response = await app.inject({
       method: 'DELETE',
       url: '/exercises/e1/photo',
-      headers: { authorization: authHeaders().authorization },
+      headers: { authorization: token() },
     });
     expect(response.statusCode).toBe(204);
   });

@@ -16,7 +16,7 @@ Each task leaves the tree green (`pnpm -r typecheck` and `pnpm -r test`).
 | 2 | [x] `CreateExerciseInput` moved to `packages/domain`; API and mobile import it | domain, api, mobile | typecheck + tests | `refactor(exercises): share the create exercise contract` |
 | 3 | [x] `ExercisePhoto` model + migration; `PUT/GET/DELETE /exercises/:id/photo`; `imageUrl` from photo | api, data | API tests; `migrate deploy` on PGlite | `feat(exercises): photos for custom exercises` |
 | 4 | [x] Matching script, matcher tests, alias file, npm scripts | api | unit tests; run on PGlite | `feat(exercises): match catalog images from free-exercise-db` |
-| 5 | [ ] `expo-image-picker` pinned + `app.json`; `resolveImageSource`; `exercisesClient` upload; `ExerciseThumb`/detail fallback on error | mobile | unit tests | `feat(exercises): load images with auth and fall back to the tile` |
+| 5 | [ ] Reuse 0027's picker helper (no new dependency); `resolveImageSource`; `exercisesClient` upload; `ExerciseThumb`/detail fallback on error | mobile | unit tests | `feat(exercises): load images with auth and fall back to the tile` |
 | 6 | [ ] `ExercisePhotoField` in the create form, "Add/Change photo" on the detail, thumb in the active workout card; i18n | mobile | web preview: AC-2 | `feat(exercises): add a photo to a custom exercise` |
 | 7 | [ ] Progress log, definition of done, spec status | docs | | `docs(sdd): close spec 0026 implementation` |
 

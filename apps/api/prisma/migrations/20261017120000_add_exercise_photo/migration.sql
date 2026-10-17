@@ -2,7 +2,6 @@
 CREATE TABLE "ExercisePhoto" (
     "id" BIGSERIAL NOT NULL,
     "exerciseId" BIGINT NOT NULL,
-    "contentType" TEXT NOT NULL,
     "data" BYTEA NOT NULL,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

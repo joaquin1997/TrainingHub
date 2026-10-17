@@ -18,7 +18,7 @@ created: 2026-10-17
 | 6 — Integrations behind interfaces | no | The matching script reads a public JSON file; a data script like the wger importer, not a runtime integration. |
 | 7 — Secrets | no | No secret. Photo reads require the bearer token. |
 | 8 — Committable + verified | yes | One commit per task, each green. |
-| 9 — Dependencies | yes | One native dependency, `expo-image-picker` (SDK 55 version, pinned exact). **Needs a device rebuild** (native module + permission strings in `app.json`). No API dependency. |
+| 9 — Dependencies | yes | None new: reuses `expo-image-picker` and `expo-image-manipulator` added by 0027 (pinned there). The rebuild is 0027's. |
 | 10 — TODOs over half-solutions | yes | App-level offline image cache is a TODO (EF-2 says "where possible"). |
 
 ## Current state (verified)
@@ -70,15 +70,16 @@ created: 2026-10-17
 ### 2. Photos for custom exercises (FR-2, AC-2)
 
 - **Storage: in Postgres.** Table `ExercisePhoto` (`exerciseId` unique FK,
-  cascade; `contentType`; `data Bytes`; `updatedAt`). Not files on a volume:
+  cascade; `data Bytes` (JPEG); `updatedAt`). Not files on a volume:
   the container has no volume, one means a compose change, a separate backup
   path and orphan files; a few hundred KB per photo is trivial for one
   person's data and is backed up with everything else. List queries never
   load `data` (only the photo's `updatedAt`).
 - **Endpoints:**
   - `PUT /exercises/:id/photo`: strict auth; only the creator of a non-system
-    exercise; raw `image/jpeg|png|webp` body, 5 MB cap, magic bytes checked;
-    upsert; 204. 403 not creator, 404 missing, 400/413/415 bad body.
+    exercise; body `{ imageBase64 }` (small JPEG, same shape and validation as the
+    profile photo of spec 0027: `decodeJpegBase64`, 512 KB cap, magic bytes);
+    upsert; 204. 403 not creator, 404 missing, 400/413 bad body.
   - `GET /exercises/:id/photo`: strict auth (any signed-in user; 0015 will
     tighten it to the creator); `Cache-Control: private, max-age=31536000,
     immutable`, `nosniff`. The URL carries `?v=<updatedAt ms>` to bust it.
@@ -87,8 +88,12 @@ created: 2026-10-17
     `/exercises/<id>/photo?v=<ms>`; the app resolves relative URLs against
     `API_BASE_URL`. Domain type unchanged.
 - **Mobile.**
-  - `expo-image-picker`: take photo / choose from library, `quality: 0.7`,
-    square crop, no EXIF. Permission strings in the `app.json` plugin.
+  - Reuses 0027's `pickProfilePhoto` (library picker + square crop + 512 px
+    JPEG through `expo-image-picker` / `expo-image-manipulator`, already in
+    the app and the `app.json` plugin): one way of storing user photos, **no
+    new dependency and no new native rebuild** beyond 0027's.
+    **[ASSUMPTION: library only, no camera, like 0027; the camera needs the
+    plugin's camera permission and is a follow-up.]**
   - `ExercisePhotoField` in `CustomExerciseForm`; the photo uploads after the
     exercise is created (create, PUT, re-read, `onCreated`). If the upload
     fails the exercise exists and the form says so.
@@ -112,8 +117,8 @@ created: 2026-10-17
   "change photo" for existing exercises. The create body is therefore only
   moved to the domain, not widened.
 - **Token in the query string so plain `<img>` works:** leaks it in logs.
-- **Client-side resize (`expo-image-manipulator`):** a second native
-  dependency; picker `quality` plus the 5 MB cap is enough.
+- **Inline photo in `Exercise` (as the profile does):** the exercise list
+  carries hundreds of rows; a separate endpoint keeps it light.
 
 ## Shared contracts (`packages/domain`)
 

@@ -13,11 +13,7 @@ import {
   removeFavoriteExercise,
   saveExercisePhoto,
 } from './repository.js';
-import {
-  isPhotoContentType,
-  MAX_PHOTO_BYTES,
-  matchesImageSignature,
-} from './photo.js';
+import { decodeJpegBase64 } from '../profile/validation.js';
 import { resolveUserPublicId } from '../../infrastructure/userContext.js';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -65,13 +61,6 @@ function sendPhotoWriteResult(
 }
 
 export async function registerExerciseRoutes(app: FastifyInstance) {
-  // Photos arrive as the raw image body; everything else stays JSON.
-  app.addContentTypeParser(
-    ['image/jpeg', 'image/png', 'image/webp'],
-    { parseAs: 'buffer', bodyLimit: MAX_PHOTO_BYTES },
-    (_request, body, done) => done(null, body),
-  );
-
   app.get('/exercises', async () => {
     return listExercises();
   });
@@ -138,25 +127,21 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
     }
   });
 
+  // Same upload shape as the profile photo (spec 0027): a small JPEG, base64.
   app.put<{ Params: { id: string }; Body: unknown }>(
     '/exercises/:id/photo',
-    { preHandler: app.authenticate, bodyLimit: MAX_PHOTO_BYTES },
+    { preHandler: app.authenticate },
     async (request, reply) => {
-      const contentType = (request.headers['content-type'] ?? '').split(';')[0]?.trim() ?? '';
+      const photo = decodeJpegBase64(request.body);
 
-      if (!isPhotoContentType(contentType) || !Buffer.isBuffer(request.body)) {
-        return reply.code(415).send({ message: 'Photo must be a JPEG, PNG or WebP image' });
-      }
-
-      if (!matchesImageSignature(request.body, contentType)) {
-        return reply.code(400).send({ message: 'Invalid photo' });
+      if (!photo.ok) {
+        return reply.code(photo.status).send({ message: photo.message });
       }
 
       const result = await saveExercisePhoto(
         await resolveUserPublicId(request),
         request.params.id,
-        contentType,
-        request.body,
+        photo.bytes,
       );
 
       return sendPhotoWriteResult(reply, result);
@@ -188,7 +173,7 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
       }
 
       return reply
-        .header('Content-Type', photo.contentType)
+        .header('Content-Type', 'image/jpeg')
         .header('Cache-Control', 'private, max-age=31536000, immutable')
         .header('X-Content-Type-Options', 'nosniff')
         .send(photo.data);
