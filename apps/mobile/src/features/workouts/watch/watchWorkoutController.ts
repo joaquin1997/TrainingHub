@@ -43,6 +43,7 @@ export function startWatchWorkoutController({
   wasFinished = (clientId) => getLatestCompletedWorkout()?.clientId === clientId,
   onActiveEnergy,
   onFinishRequested,
+  onDiscardRequested,
   onError = logBridgeError,
 }: {
   bridge: WatchWorkoutBridge;
@@ -55,6 +56,8 @@ export function startWatchWorkoutController({
   onActiveEnergy?: (clientId: string, kcal: number) => void;
   /** Finish tapped on the watch; the phone asks for confirmation. */
   onFinishRequested?: (clientId: string) => void;
+  /** Discard confirmed on the watch, for the workout in progress (spec 0035). */
+  onDiscardRequested?: (clientId: string) => void;
   onError?: (error: unknown) => void;
 }) {
   let shownId: string | null = null;
@@ -123,6 +126,12 @@ export function startWatchWorkoutController({
       case 'finishRequested':
         if (firstTime(event.id)) {
           onFinishRequested?.(draft.clientId);
+        }
+        return;
+      // A request for a workout that already ended was dropped above (EF-9).
+      case 'discardRequested':
+        if (firstTime(event.id)) {
+          onDiscardRequested?.(draft.clientId);
         }
         return;
       default: {

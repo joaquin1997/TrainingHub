@@ -10,6 +10,9 @@ private let accent = Color(red: 0xFF / 255, green: 0x8A / 255, blue: 0x3D / 255)
 /// planned, never edited here (out of scope).
 struct WorkoutView: View {
   @ObservedObject var model: WorkoutModel
+  /// The secondary menu (spec 0035 FR-22): Discard is never a main control.
+  @State private var showsMenu = false
+  @State private var confirmsDiscard = false
 
   var body: some View {
     if let workout = model.activeWorkout {
@@ -116,6 +119,54 @@ struct WorkoutView: View {
           .font(.footnote)
           .foregroundStyle(accent)
       }
+      Button {
+        model.discardUnreachable = false
+        showsMenu = true
+      } label: {
+        Label(model.labels.more ?? "More", systemImage: "ellipsis")
+          .frame(maxWidth: .infinity)
+      }
+      .buttonStyle(.plain)
+      .foregroundStyle(textMuted)
+      .padding(.top, 4)
+    }
+    .sheet(isPresented: $showsMenu) {
+      menu
+    }
+  }
+
+  /// Discard behind its own confirmation, naming the sets that will be lost;
+  /// with the phone out of reach it is not offered at all (EF-8).
+  private var menu: some View {
+    VStack(spacing: 8) {
+      if model.discardUnreachable || !model.canReachPhone {
+        Text(model.labels.connectToDiscard ?? "Connect to your iPhone to discard")
+          .font(.footnote)
+          .multilineTextAlignment(.center)
+          .foregroundStyle(accent)
+      } else {
+        Button(role: .destructive) {
+          confirmsDiscard = true
+        } label: {
+          Label(model.labels.discard ?? "Discard", systemImage: "trash")
+            .frame(maxWidth: .infinity)
+        }
+      }
+    }
+    .confirmationDialog(
+      model.labels.discardTitle ?? "Discard this workout?",
+      isPresented: $confirmsDiscard,
+      titleVisibility: .visible
+    ) {
+      Button(model.labels.discard ?? "Discard", role: .destructive) {
+        model.requestDiscard()
+        if !model.discardUnreachable {
+          showsMenu = false
+        }
+      }
+      Button(model.labels.cancel ?? "Cancel", role: .cancel) {}
+    } message: {
+      Text(model.activeWorkout?.discardMessage ?? "")
     }
   }
 }

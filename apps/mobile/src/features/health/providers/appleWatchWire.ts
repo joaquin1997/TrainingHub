@@ -24,6 +24,14 @@ export interface WatchLabels {
   waiting: string;
   /** "Set 2 of 4". */
   setOf: (number: number, count: number) => string;
+  /** Spec 0035: the secondary menu and the discard confirmation. */
+  more: string;
+  discard: string;
+  discardTitle: string;
+  cancel: string;
+  connectToDiscard: string;
+  /** "3 sets done will be lost." / "No sets done yet." */
+  discardLost: (count: number) => string;
 }
 
 export interface WatchContextWire {
@@ -44,7 +52,10 @@ export interface WatchContextWire {
     target: string;
     restSeconds: number;
   };
-  labels?: Omit<WatchLabels, 'setOf'>;
+  /** Sets done, and the confirmation's message naming them (spec 0035). */
+  setsDone?: number;
+  discardMessage?: string;
+  labels?: Omit<WatchLabels, 'setOf' | 'discardLost'>;
 }
 
 const ms = (iso?: string) => (iso ? Date.parse(iso) : undefined);
@@ -55,7 +66,8 @@ export function encodeActiveContext(
   labels: WatchLabels,
   now: number = Date.now(),
 ): string {
-  const { setOf, ...texts } = labels;
+  const { setOf, discardLost, ...texts } = labels;
+  const setsDone = snapshot.setsDone ?? 0;
   const set = snapshot.currentSet;
   const wire: WatchContextWire = {
     v: WATCH_WIRE_VERSION,
@@ -77,6 +89,8 @@ export function encodeActiveContext(
           restSeconds: set.restSeconds,
         }
       : undefined,
+    setsDone,
+    discardMessage: discardLost(setsDone),
     labels: texts,
   };
   return JSON.stringify(wire);
@@ -96,7 +110,7 @@ export function encodeEndContext(
 export interface WatchEventWire {
   v: number;
   id: string;
-  kind: 'setDone' | 'pause' | 'resume' | 'finishRequested';
+  kind: 'setDone' | 'pause' | 'resume' | 'finishRequested' | 'discardRequested';
   workoutId: string;
   exerciseId?: string;
   setId?: string;
@@ -160,7 +174,8 @@ export function decodeWatchMessage(kind: string, json: string): WatchWorkoutEven
     case 'resume':
       return at ? { kind: raw.kind, id, workoutSessionId, at } : null;
     case 'finishRequested':
-      return { kind: 'finishRequested', id, workoutSessionId };
+    case 'discardRequested':
+      return { kind: raw.kind, id, workoutSessionId };
     default:
       return null;
   }

@@ -14,9 +14,11 @@ import {
 import { useSettings } from '@/features/settings/SettingsContext';
 import { startWatchWorkoutController } from '@/features/workouts/watch/watchWorkoutController';
 import {
+  clearActiveWorkout,
   getActiveWorkout,
   subscribeActiveWorkout,
 } from '@/features/workouts/state/workoutDraftStore';
+import { haptics } from '@/ui/haptics';
 
 import { startActiveEnergyRefresher } from './activeEnergyRefresher';
 import { publishActiveEnergy } from './activeEnergyStore';
@@ -63,6 +65,13 @@ export function useLiveWorkoutController(enabled: boolean) {
       allDone: t('workouts.watchAllDone'),
       waiting: t('workouts.watchWaiting'),
       setOf: (number, count) => t('workouts.watchSetOf', { number, count }),
+      more: t('workouts.watchMore'),
+      discard: t('workouts.liveDiscard'),
+      discardTitle: t('workouts.discardTitle'),
+      cancel: t('common.cancel'),
+      connectToDiscard: t('workouts.watchConnectToDiscard'),
+      discardLost: (count) =>
+        count > 0 ? t('workouts.discardLost', { count }) : t('workouts.discardNoneDone'),
     });
   }, [t, i18n.language]);
 
@@ -104,6 +113,13 @@ export function useLiveWorkoutController(enabled: boolean) {
           // Finishing is confirmed on the phone, as from the lock screen.
           onFinishRequested: () => {
             routerRef.current.navigate('/workouts/active?action=finish');
+          },
+          // Confirmed on the watch (spec 0035 FR-22): discard as from the
+          // app, which also ends the watch workout without saving to Health.
+          onDiscardRequested: () => {
+            haptics.destructiveConfirm();
+            clearActiveWorkout();
+            routerRef.current.navigate('/routines');
           },
         })
       : null;

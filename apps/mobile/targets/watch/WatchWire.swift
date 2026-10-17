@@ -25,6 +25,12 @@ struct WatchContext: Codable, Equatable {
     let finishOnPhone: String
     let allDone: String
     let waiting: String
+    // Spec 0035; optional so a context from an older phone build decodes.
+    var more: String? = nil
+    var discard: String? = nil
+    var discardTitle: String? = nil
+    var cancel: String? = nil
+    var connectToDiscard: String? = nil
 
     static let fallback = Labels(
       done: "Done",
@@ -35,7 +41,12 @@ struct WatchContext: Codable, Equatable {
       paused: "Paused",
       finishOnPhone: "Confirm on your iPhone",
       allDone: "All sets done",
-      waiting: "Start a workout on your iPhone"
+      waiting: "Start a workout on your iPhone",
+      more: "More",
+      discard: "Discard",
+      discardTitle: "Discard this workout?",
+      cancel: "Cancel",
+      connectToDiscard: "Connect to your iPhone to discard"
     )
   }
 
@@ -55,6 +66,9 @@ struct WatchContext: Codable, Equatable {
   let pausedSeconds: Double?
   let restEndsAtMs: Double?
   let currentSet: CurrentSet?
+  /// Sets done, and the discard confirmation's message naming them (spec 0035).
+  let setsDone: Int?
+  let discardMessage: String?
   let labels: Labels?
 }
 
@@ -65,6 +79,7 @@ struct WatchEvent: Codable {
     case pause
     case resume
     case finishRequested
+    case discardRequested
   }
 
   var v = 1

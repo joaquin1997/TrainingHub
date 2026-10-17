@@ -20,6 +20,13 @@ let watchLabels: WatchLabels = {
   allDone: 'All sets done',
   waiting: 'Start a workout on your iPhone',
   setOf: (number, count) => `Set ${number} of ${count}`,
+  more: 'More',
+  discard: 'Discard',
+  discardTitle: 'Discard this workout?',
+  cancel: 'Cancel',
+  connectToDiscard: 'Connect to your iPhone to discard',
+  discardLost: (count) =>
+    count > 0 ? `${count} sets done will be lost.` : 'No sets done yet.',
 };
 
 /** Texts shown on the watch; set from the app's language. */
