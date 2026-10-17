@@ -455,6 +455,14 @@ export const es: TranslationCatalog = {
       upNext: 'Siguiente',
       none: 'Sin hacer',
     },
+    // La cabecera compacta al desplazar el entrenamiento (spec 0034 FR-21).
+    stickyHeader: {
+      upNext: 'Siguiente',
+      set: 'Serie {{number}}',
+      warmup: 'Calentamiento',
+      allDone: 'Todas las series hechas',
+      scrollHint: 'Muestra la serie en la lista',
+    },
   },
   progress: {
     est1rmShort: '1RM est.',

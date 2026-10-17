@@ -452,6 +452,14 @@ export const en = {
       upNext: 'Up next',
       none: 'Not done',
     },
+    // The compact header while the workout is scrolled (spec 0034 FR-21).
+    stickyHeader: {
+      upNext: 'Up next',
+      set: 'Set {{number}}',
+      warmup: 'Warm-up',
+      allDone: 'All sets done',
+      scrollHint: 'Shows the set in the list',
+    },
   },
   progress: {
     est1rmShort: 'Est. 1RM',

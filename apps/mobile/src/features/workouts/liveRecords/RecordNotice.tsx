@@ -13,7 +13,16 @@ import { recordBadgeLabel } from './recordBadgeLabel';
  * FR-20): over the top of the screen, never blocking a tap, gone on its own
  * (`useLiveRecords`). It touches nothing else in the workout (FR-21).
  */
-export function RecordNotice({ notice, unit }: { notice?: Notice; unit: WeightUnit }) {
+export function RecordNotice({
+  notice,
+  unit,
+  top,
+}: {
+  notice?: Notice;
+  unit: WeightUnit;
+  /** Distance from the top of the screen, e.g. below the sticky workout header (spec 0034). */
+  top?: number;
+}) {
   const { t } = useTranslation();
 
   if (!notice) {
@@ -23,7 +32,7 @@ export function RecordNotice({ notice, unit }: { notice?: Notice; unit: WeightUn
   const title = recordBadgeLabel(notice.hits, unit, t);
 
   return (
-    <View pointerEvents="none" style={styles.overlay}>
+    <View pointerEvents="none" style={[styles.overlay, top !== undefined ? { top } : null]}>
       <View
         style={styles.notice}
         accessibilityLiveRegion="polite"

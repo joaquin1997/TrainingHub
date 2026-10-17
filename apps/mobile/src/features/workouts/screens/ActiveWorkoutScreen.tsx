@@ -10,6 +10,8 @@ import {
   Text,
   TextInput,
   View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from 'react-native';
 
 import { routinesClient } from '@/features/routines/api/routinesClient';
@@ -51,6 +53,8 @@ import {
   roundStatus,
 } from '@/features/workouts/superset/rounds';
 import { RestEditorSheet } from '@/features/workouts/components/RestEditorSheet';
+import { StickyWorkoutHeader } from '@/features/workouts/components/StickyWorkoutHeader';
+import { stickyHeaderModel } from '@/features/workouts/utils/stickyHeader';
 import { currentSetToDo } from '@/features/workouts/restTimer/nextSetToDo';
 import { nextSetLabel } from '@/features/workouts/restTimer/nextSetLabel';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -165,6 +169,11 @@ export function ActiveWorkoutScreen() {
   const liveRecords = useLiveRecords(workoutDraft);
   /** The set whose tick on this screen just earned a record: its status area pops (spec 0034 FR-7). */
   const [recordPopSetId, setRecordPopSetId] = useState<string | null>(null);
+  // The compact header (spec 0034 FR-21): shown past the header card's bottom.
+  const [compactHeader, setCompactHeader] = useState(false);
+  const compactHeaderRef = useRef(false);
+  const headerBottomRef = useRef(0);
+  const [stickyHeaderHeight, setStickyHeaderHeight] = useState(0);
 
   useEffect(() => {
     const entry = resolveActiveWorkoutEntry(getActiveWorkout(), routineId);
@@ -349,27 +358,14 @@ export function ActiveWorkoutScreen() {
     }
   }, [workoutDraft, lastByExercise]);
 
-  // A rest that ended or was skipped while this screen is open, or a tick that
-  // started no rest (spec 0029 FR-8), brings the next set to do to about a
-  // third of the screen (FR-5). A new rest replacing a running one, a finish
-  // or a discard do not scroll.
-  useEffect(() => {
-    const previous = lastRestRef.current;
-    lastRestRef.current = workoutDraft?.rest;
-    const afterTick = scrollAfterTickRef.current;
-    scrollAfterTickRef.current = false;
-    if (!workoutDraft || workoutDraft.rest || (!previous && !afterTick)) {
-      return;
-    }
-
-    const target = currentSetToDo(workoutDraft);
-    if (!target) {
-      return;
-    }
-
-    // After the frame that removes the rest bar, so the viewport is final.
+  /**
+   * Brings a set's row to about a third of the screen (spec 0018 FR-5) — below
+   * the compact header when it shows (spec 0034 FR-21). After the next frame,
+   * so a rest bar that just went away has left the viewport final.
+   */
+  const scrollToSet = (workoutSetId: string) => {
     requestAnimationFrame(() => {
-      const row = setRowRefs.current.get(target.workoutSetId);
+      const row = setRowRefs.current.get(workoutSetId);
       const content = contentRef.current;
       if (!row || !content) {
         return;
@@ -386,6 +382,37 @@ export function ActiveWorkoutScreen() {
         () => {},
       );
     });
+  };
+
+  // The compact header shows once the full header card has scrolled out of
+  // view (spec 0034 FR-21). State changes only when the threshold is crossed,
+  // so scrolling does not re-render the list.
+  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const show =
+      headerBottomRef.current > 0 && event.nativeEvent.contentOffset.y > headerBottomRef.current;
+    if (show !== compactHeaderRef.current) {
+      compactHeaderRef.current = show;
+      setCompactHeader(show);
+    }
+  };
+
+  // A rest that ended or was skipped while this screen is open, or a tick that
+  // started no rest (spec 0029 FR-8), brings the next set to do to about a
+  // third of the screen (FR-5). A new rest replacing a running one, a finish
+  // or a discard do not scroll.
+  useEffect(() => {
+    const previous = lastRestRef.current;
+    lastRestRef.current = workoutDraft?.rest;
+    const afterTick = scrollAfterTickRef.current;
+    scrollAfterTickRef.current = false;
+    if (!workoutDraft || workoutDraft.rest || (!previous && !afterTick)) {
+      return;
+    }
+
+    const target = currentSetToDo(workoutDraft);
+    if (target) {
+      scrollToSet(target.workoutSetId);
+    }
   }, [workoutDraft]);
 
   if (status === 'loading') {
@@ -882,9 +909,18 @@ export function ActiveWorkoutScreen() {
         // A tap on ✓ or another field while typing acts on the first tap.
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
+        onScroll={onScroll}
+        scrollEventThrottle={16}
       >
         <View ref={contentRef} collapsable={false} style={styles.content}>
-          <View style={styles.headerCard}>
+          <View
+            style={styles.headerCard}
+            onLayout={(event) => {
+              const { y, height } = event.nativeEvent.layout;
+              // Its bottom in the list: the list's top padding, then the card.
+              headerBottomRef.current = spacing.lg + y + height;
+            }}
+          >
             <View style={styles.liveRow}>
               <View style={[styles.liveDot, isPaused ? styles.liveDotPaused : null]} />
               <Text style={styles.sectionLabel}>
@@ -1010,6 +1046,15 @@ export function ActiveWorkoutScreen() {
           />
         </View>
       </ScrollView>
+      <StickyWorkoutHeader
+        visible={compactHeader}
+        clock={formatDuration(elapsedSeconds)}
+        paused={isPaused}
+        model={stickyHeaderModel(workoutDraft)}
+        unit={unit}
+        onPressUpNext={scrollToSet}
+        onLayout={(event) => setStickyHeaderHeight(event.nativeEvent.layout.height)}
+      />
       {workoutDraft.rest ? (
         <RestBar
           rest={workoutDraft.rest}
@@ -1038,7 +1083,12 @@ export function ActiveWorkoutScreen() {
         onConfirm={confirmApproachPreview}
         onCancel={() => setApproachPreview(null)}
       />
-      <RecordNotice notice={liveRecords.notice} unit={unit} />
+      <RecordNotice
+        notice={liveRecords.notice}
+        unit={unit}
+        // Below the compact header while it shows (spec 0034 FR-21).
+        top={compactHeader ? stickyHeaderHeight + spacing.md : undefined}
+      />
       <RestEditorSheet
         visible={restEditorExercise !== undefined}
         exerciseName={restEditorExercise?.exerciseName ?? ''}
