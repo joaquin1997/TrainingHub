@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { describeRecord } from '@/features/progress/utils/recordLabels';
-import { colors, commonStyles, fonts, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
 import type { ExerciseRecord, WeightUnit } from '@workout/domain';
 
 export interface RecordsCardItem {
@@ -70,27 +70,27 @@ const styles = StyleSheet.create({
     height: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 14,
+    borderRadius: radii.round,
     backgroundColor: colors.accentSoft,
   },
   text: {
     flex: 1,
-    gap: 2,
+    gap: spacing.xxs,
   },
   title: {
     color: colors.text,
-    fontSize: 14,
+    ...typeScale.caption,
     fontWeight: '600',
   },
   caption: {
     color: colors.textMuted,
-    fontSize: 12,
+    ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
   value: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
     fontVariant: ['tabular-nums'],
   },
 });

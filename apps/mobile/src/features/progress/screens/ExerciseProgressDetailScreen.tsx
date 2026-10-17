@@ -17,7 +17,7 @@ import { formatWeightValue, fromKg, roundWeight } from '@/lib/weight';
 import { Chip } from '@/ui/Chip';
 import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
 import type { ExerciseProgressDetail, WeightUnit } from '@workout/domain';
 
 function formatValue(value?: number) {
@@ -260,9 +260,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   title: {
-    ...commonStyles.heading,
-    fontSize: 28,
-    lineHeight: 34,
+    ...commonStyles.title,
   },
   headerMeta: {
     flexDirection: 'row',
@@ -294,19 +292,19 @@ const styles = StyleSheet.create({
     height: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 14,
+    borderRadius: radii.round,
     backgroundColor: colors.accentSoft,
   },
   recordValue: {
     flex: 1,
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
     fontVariant: ['tabular-nums'],
   },
   recordDate: {
     color: colors.textMuted,
-    fontSize: 13,
+    ...typeScale.caption,
   },
   sectionLabel: {
     ...commonStyles.sectionLabel,
@@ -325,22 +323,22 @@ const styles = StyleSheet.create({
   sessionDate: {
     width: 96,
     color: colors.textMuted,
-    fontSize: 13,
+    ...typeScale.caption,
   },
   sessionFigures: {
     flex: 1,
     alignItems: 'flex-end',
-    gap: 2,
+    gap: spacing.xxs,
   },
   sessionValue: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
     fontVariant: ['tabular-nums'],
   },
   sessionMeta: {
     color: colors.textSubtle,
-    fontSize: 12,
+    ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
 });

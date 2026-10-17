@@ -40,18 +40,6 @@ const BASELINE: Record<string, number> = {
   'features/exercises/components/UnilateralSwitch.tsx': 1,
   'features/exercises/screens/ExerciseDetailScreen.tsx': 4,
   'features/exercises/screens/ExercisesListScreen.tsx': 8,
-  'features/profile/components/ProfileAvatar.tsx': 2,
-  'features/profile/components/UnitInput.tsx': 1,
-  'features/profile/screens/MeasurementEntryScreen.tsx': 2,
-  'features/profile/screens/MeasurementHistoryScreen.tsx': 1,
-  'features/profile/screens/ProfileEditScreen.tsx': 3,
-  'features/profile/screens/ProfileScreen.tsx': 4,
-  'features/progress/components/MuscleDistribution.tsx': 4,
-  'features/progress/components/ProgressChart.tsx': 3,
-  'features/progress/components/RecordsCard.tsx': 5,
-  'features/progress/components/TimedProgress.tsx': 7,
-  'features/progress/screens/ExerciseProgressDetailScreen.tsx': 9,
-  'features/progress/screens/ProgressOverviewScreen.tsx': 6,
   'features/settings/screens/SettingsScreen.tsx': 11,
 };
 

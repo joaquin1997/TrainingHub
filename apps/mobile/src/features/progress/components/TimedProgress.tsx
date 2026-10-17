@@ -15,7 +15,7 @@ import { formatDate, formatDuration, formatShortDate } from '@/lib/format';
 import { formatDistance, formatSetValues } from '@/lib/tracking';
 import { Chip } from '@/ui/Chip';
 import { StatTile } from '@/ui/StatTile';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
 
 /**
  * Progress of a timed or distance exercise (spec 0021): its record is the
@@ -149,19 +149,18 @@ const styles = StyleSheet.create({
   },
   figure: {
     flex: 1,
-    gap: 2,
+    gap: spacing.xxs,
     borderRadius: radii.md,
     backgroundColor: colors.surfaceRaised,
     padding: spacing.sm,
   },
   figureLabel: {
     ...commonStyles.sectionLabel,
-    fontSize: 10,
   },
   figureValue: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 16,
+    ...typeScale.body,
     fontVariant: ['tabular-nums'],
   },
   screen: {
@@ -174,9 +173,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   title: {
-    ...commonStyles.heading,
-    fontSize: 28,
-    lineHeight: 34,
+    ...commonStyles.title,
   },
   headerMeta: {
     flexDirection: 'row',
@@ -206,12 +203,12 @@ const styles = StyleSheet.create({
   },
   sessionDate: {
     color: colors.textMuted,
-    fontSize: 14,
+    ...typeScale.caption,
   },
   sessionValue: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 15,
+    ...typeScale.body,
     fontVariant: ['tabular-nums'],
   },
 });

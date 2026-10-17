@@ -24,7 +24,7 @@ import { ActionSheet, type SheetAction } from '@/ui/ActionSheet';
 import { Button } from '@/ui/Button';
 import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, spacing } from '@/ui/theme';
+import { colors, commonStyles, spacing, typeScale } from '@/ui/theme';
 
 /** The person's profile (spec 0027), reached from the Settings account card. */
 export function ProfileScreen() {
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   },
   photoLink: {
     ...commonStyles.link,
-    fontSize: 13,
+    ...typeScale.caption,
   },
   name: {
     ...commonStyles.heading,
@@ -262,8 +262,6 @@ const styles = StyleSheet.create({
   },
   note: {
     ...commonStyles.meta,
-    fontSize: 13,
-    lineHeight: 18,
   },
   latestRow: {
     flexDirection: 'row',
@@ -282,7 +280,7 @@ const styles = StyleSheet.create({
   },
   latestDate: {
     color: colors.textSubtle,
-    fontSize: 12,
+    ...typeScale.caption,
   },
   factLabel: {
     ...commonStyles.meta,

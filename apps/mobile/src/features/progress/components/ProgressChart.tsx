@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { ChartSeries } from '@/features/progress/utils/chartData';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
 
 const CHART_AREA_HEIGHT = 120;
 
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
   range: {
     color: colors.textMuted,
     fontFamily: fonts.display,
-    fontSize: 12,
+    ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
   chart: {
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   value: {
     color: colors.textSubtle,
     fontFamily: fonts.display,
-    fontSize: 10,
+    ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
   valueLatest: {
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   },
   label: {
     color: colors.textSubtle,
-    fontSize: 10,
+    ...typeScale.caption,
   },
   labelLatest: {
     color: colors.primary,

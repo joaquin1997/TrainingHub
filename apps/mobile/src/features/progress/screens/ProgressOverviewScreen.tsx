@@ -26,7 +26,7 @@ import { useRefresh } from '@/lib/useRefresh';
 import { Chip } from '@/ui/Chip';
 import { ScreenTitle } from '@/ui/ScreenTitle';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
 import type {
   ExerciseProgressSummary,
   MuscleGroupVolumePoint,
@@ -255,34 +255,32 @@ const styles = StyleSheet.create({
   },
   figure: {
     flex: 1,
-    gap: 2,
+    gap: spacing.xxs,
     borderRadius: radii.md,
     backgroundColor: colors.surfaceRaised,
     padding: spacing.sm,
   },
   figureLabel: {
     ...commonStyles.sectionLabel,
-    fontSize: 10,
   },
   figureValue: {
     color: colors.text,
     fontFamily: fonts.displayBold,
-    fontSize: 16,
+    ...typeScale.body,
     fontVariant: ['tabular-nums'],
   },
   figureReps: {
     color: colors.textMuted,
     fontFamily: fonts.display,
-    fontSize: 13,
+    ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
   figureUnit: {
     color: colors.textMuted,
     fontFamily: fonts.display,
-    fontSize: 12,
+    ...typeScale.caption,
   },
   meta: {
     ...commonStyles.meta,
-    fontSize: 13,
   },
 });

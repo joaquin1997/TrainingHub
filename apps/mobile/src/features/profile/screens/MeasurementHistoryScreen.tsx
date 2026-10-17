@@ -19,7 +19,7 @@ import { useSettings } from '@/features/settings/SettingsContext';
 import { formatDate, formatShortDate, formatTime } from '@/lib/format';
 import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, spacing } from '@/ui/theme';
+import { colors, commonStyles, spacing, typeScale } from '@/ui/theme';
 
 /** Bars shown at most; a weekly weigh-in fills about four months. */
 const MAX_BARS = 16;
@@ -149,6 +149,6 @@ const styles = StyleSheet.create({
   },
   rowTime: {
     color: colors.textSubtle,
-    fontSize: 12,
+    ...typeScale.caption,
   },
 });

@@ -15,6 +15,7 @@ export function UnitInput({ value, onChangeText, unit, label }: UnitInputProps) 
   return (
     <View style={styles.container}>
       <TextInput
+        keyboardAppearance="dark"
         value={value}
         onChangeText={onChangeText}
         keyboardType="decimal-pad"
