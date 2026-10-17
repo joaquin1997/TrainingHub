@@ -153,14 +153,14 @@ call sites (`ExerciseProgressDetailScreen`, `ProgressOverviewScreen`,
 `packages/domain/src/entities.ts` (`ExerciseProgressPoint.isRecord`),
 `apps/api/src/features/progress/aggregate.ts(+test)`.
 Shared: `apps/mobile/package.json` + `pnpm-lock.yaml` (`react-native-svg`
-15.15.3), i18n (end of `progress`). API: additive field. Migration: none.
+15.16.0), i18n (end of `progress`). API: additive field. Migration: none.
 **Native rebuild**: yes (guarded — bars until then).
 
 | # | Task | Area | Verify | Commit message |
 |---|---|---|---|---|
 | B2.1 | [ ] `ExerciseProgressPoint.isRecord?: true` (domain); `aggregate.ts` keeps each point's session index and flags points whose session beat a record; tests (flag set, absent when none, two entries in one workout) | domain + api | `pnpm -r test` | `feat(progress): flag record sessions on progress points` |
 | B2.2 | [ ] `chartData`: `ChartPoint { date, value, isRecord, x, y }`, `positiveOnly`, one point centred, windows unchanged; `linePath`: `monotonePath`, `areaPath`, `nearestIndex`; point labels — pure, with tests (AC-15/16 logic, EF-7, 100 points) | mobile | unit tests | `feat(progress): line chart geometry` |
-| B2.3 | [ ] Add `react-native-svg` 15.15.3; `ProgressChart` drawn as smooth line + gradient area + points (records orange) + first/last dates + min/max; one point → dot and value; current bars moved to `ProgressBars` as the old-binary fallback (`hasViewManagerConfig('RNSVGPath')`) | mobile | typecheck; web export screenshots of the four screens — **native rebuild** | `feat(progress): smooth line charts with record points` |
+| B2.3 | [ ] Add `react-native-svg` 15.16.0; `ProgressChart` drawn as smooth line + gradient area + points (records orange) + first/last dates + min/max; one point → dot and value; current bars moved to `ProgressBars` as the old-binary fallback (`hasViewManagerConfig('RNSVGPath')`) | mobile | typecheck; web export screenshots of the four screens — **native rebuild** | `feat(progress): smooth line charts with record points` |
 | B2.4 | [ ] Tap and drag (`PanResponder`, nearest point, guide line, readout in the header "date · value unit · Record"); per-point accessible columns; i18n `progress.chart`; call sites pass `isRecord` / `positiveOnly` / `formatValue` | mobile | unit tests (labels); web export: tap the 5th of 8 points (AC-15) | `feat(progress): read a chart point by tap or screen reader` |
 | B2.5 | [ ] B2 progress log, `plan-b.md` *As built* (B2), web export; constitution amendment-log line for Article 9's reversed `react-native-svg` example | docs | `expo export --platform web` | `docs(sdd): record 0034 phase B2` |
 | B2.6 | [ ] [DEVICE] After the rebuild and an API deploy: AC-15 on iPhone and Android (line, area, two orange points, tap and drag readout, VoiceOver and TalkBack read every point in order); AC-16; a 100-point chart draws without visible delay; before the rebuild the bars still show | device | owner | — |
@@ -174,7 +174,7 @@ Owns: `features/workouts/screens/{WorkoutSummaryScreen,WorkoutSessionDetailScree
 `features/workouts/share/shareImage.ts`,
 `features/progress/components/RecordsCard.tsx` (`variant="highlight"`).
 Shared: `apps/mobile/package.json` + `pnpm-lock.yaml`
-(`react-native-view-shot` 4.0.3, `expo-sharing` ~55.0.14), i18n (inside and
+(`react-native-view-shot` 6.1.1, `expo-sharing` ~58.0.19), i18n (inside and
 right after `workouts.share`; `progress.records.today`). **API: none** —
 `GET /workouts` suffices (plan-b, *Decision*). Migration: none (reserved
 range `2026101816xxxx`, unused). **Native rebuild**: yes (guarded — text
@@ -185,7 +185,7 @@ share until then).
 | B3.1 | [ ] `compareWithPrevious` (routine: previous saved workout of the same routine strictly before; per exercise: its last earlier session; up/down/same; null without an earlier session or with a previous volume of 0) and `useWorkoutComparison` (one `workoutsClient.list()`, failure → null) — with tests | unit tests (AC-17 logic, EF-5) | `feat(workouts): compare a finished workout with the previous one` |
 | B3.2 | [ ] Summary: records of the day as a highlighted block above the tiles (`RecordsCard variant="highlight"`), volume tile caption with the routine comparison (arrow + word), per-exercise comparison chip; nothing shown without data; i18n `workouts.comparison`, `progress.records.today` | typecheck; web export with a mock API: routine done before + two records; first workout (AC-17); list failing (EF-5) | `feat(workouts): summary leads with records and compares with last time` |
 | B3.3 | [ ] `buildShareCard` (stats, up to 3 records, up to 5 exercises with their best set, display unit, language) — pure, with tests; `ShareCard` view (360 × 450, tokens, app mark, no font scaling) | unit tests; web screenshot of the card in English/kg and Spanish/lb | `feat(workouts): workout share card` |
-| B3.4 | [ ] Add `react-native-view-shot` 4.0.3 and `expo-sharing` ~55.0.14; `share/shareImage.ts` (availability with lazy `require`, capture 1080 × 1350 PNG, share sheet, failure result); `ShareSheet` (preview, Share image, Share as text, one-line failure); summary and session detail open the sheet; i18n inside `workouts.share` | typecheck; web export: image action hidden, text share works (EF-6) — **native rebuild** | `feat(workouts): share a workout as an image` |
+| B3.4 | [ ] Add `react-native-view-shot` 6.1.1 and `expo-sharing` ~58.0.19; `share/shareImage.ts` (availability with lazy `require`, capture 1080 × 1350 PNG, share sheet, failure result); `ShareSheet` (preview, Share image, Share as text, one-line failure); summary and session detail open the sheet; i18n inside `workouts.share` | typecheck; web export: image action hidden, text share works (EF-6) — **native rebuild** | `feat(workouts): share a workout as an image` |
 | B3.5 | [ ] B3 progress log, `plan-b.md` *As built* (B3), web export | `expo export --platform web` | `docs(sdd): record 0034 phase B3` |
 | B3.6 | [ ] [DEVICE] After the rebuild: AC-18 — share the image card to Messages / WhatsApp on iPhone and Android, in Spanish with lb, and the text share still offered; AC-17 on real data (routine done before with less volume); summary offline (EF-5) | owner | — |
 
@@ -218,10 +218,11 @@ order); `expo prebuild` and a device build for `react-native-svg`,
 ## Progress log (Phase B)
 
 - 2026-10-18 — Phase B planned in `plan-b.md` and split into B1 / B2 / B3;
-  self-approved under the owner's delegation. Versions pinned from the
-  installed `expo@55.0.8` `bundledNativeModules.json` (`react-native-svg`
-  15.15.3, `react-native-view-shot` 4.0.3, `expo-sharing` ~55.0.14), all
-  three resolved on npm from the sandbox. No migration in any workstream;
+  self-approved under the owner's delegation. The tree moved to Expo SDK 58
+  (RN 0.88) while planning; versions pinned from `expo@58.0.14`'s
+  `bundledNativeModules.json` (`react-native-svg` 15.16.0,
+  `react-native-view-shot` 6.1.1, `expo-sharing` ~58.0.19), all three
+  resolved on npm from the sandbox. No migration in any workstream;
   B2 adds one optional field to progress points; B3 needs no API change.
 
 ### B1 log

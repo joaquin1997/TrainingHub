@@ -103,12 +103,16 @@ Shared files and how each workstream keeps its edits small are listed under
   `GET /workouts/exercises/:id/last` cannot serve "last time" at the summary:
   the workout just saved *is* the last performance by then.
 - No image capture or file-sharing module is installed.
-- `bundledNativeModules.json` of the installed `expo@55.0.8` pins
-  `react-native-svg` **15.15.3**, `react-native-view-shot` **4.0.3**,
-  `expo-sharing` **~55.0.14** (also `react-native-gesture-handler ~2.30.0`,
-  `react-native-reanimated 4.2.1`, `expo-file-system ~55.0.11`, not chosen).
-  The npm registry is reachable from the sandbox (`npm view` resolves all
-  three), Expo's API was not in Phase A.
+- **The app is on Expo SDK 58** (`expo ~58.0.14`, React Native 0.88, React
+  19.3 — merged into the task branch on 2026-10-18 while this plan was
+  written; the request said SDK 55, the tree says 58, the tree wins). The
+  `bundledNativeModules.json` of `expo@58.0.14` (read from the npm tarball;
+  the registry is reachable from the sandbox, `expo install` / Expo's API
+  were not in Phase A) pins `react-native-svg` **15.16.0**,
+  `react-native-view-shot` **6.1.1** (peers `react-native >= 0.80`;
+  `html2canvas-pro` optional, for web only) and `expo-sharing` **~58.0.19**.
+  Not chosen: `react-native-gesture-handler`, `react-native-reanimated`,
+  `expo-file-system`.
 
 ## Constitution check
 
@@ -122,7 +126,7 @@ Shared files and how each workstream keeps its edits small are listed under
 | 6 — Integrations behind interfaces | yes (B3) | Image capture and the system share sheet sit behind `features/workouts/share/shareImage.ts` (`shareImageAvailable()`, `captureAndShare(ref)`); screens never import `react-native-view-shot` or `expo-sharing`. Chart drawing is a presentation library, reached only from `ProgressChart`. |
 | 7 — Secrets | no | — |
 | 8 — Committable + verified | yes | Each workstream is a short sequence of green commits (tasks.md, Phase B). Workstreams merge in any order; each leaves `pnpm -r typecheck` and `pnpm -r test` green on its own and after merging the others. |
-| 9 — Dependencies | yes | Three **native** packages, each the standard Expo SDK 55 choice, pinned to SDK 55's `bundledNativeModules.json`. **`react-native-svg` 15.15.3** (B2): the only practical way to draw a smooth curve and a filled area on iOS, Android and web; dependency-free `View`s cannot draw a Bézier path (Article 9's own example: line charts were deferred exactly for this). **`react-native-view-shot` 4.0.3** (B3): renders a laid-out view to a PNG file; the alternative — drawing the card twice, once in views and once in SVG text for `toDataURL` — duplicates the card and loses the app's fonts. **`expo-sharing` ~55.0.14** (B3): opens the system share sheet for a *file*; React Native's `Share` cannot share a file on Android. All three need `expo prebuild` and a device build; each is guarded so the JS update runs on the old binary (see Risks). Rejected: a chart library (victory-native, gifted-charts) — more weight than one path builder; `react-native-gesture-handler` / `reanimated` — `PanResponder` is enough for tap-and-drag on one view; `expo-file-system` — view-shot already writes the temp file. |
+| 9 — Dependencies | yes | Three **native** packages, each the standard Expo SDK 58 choice, pinned to SDK 58's `bundledNativeModules.json`. **`react-native-svg` 15.16.0** (B2): the only practical way to draw a smooth curve and a filled area on iOS, Android and web; dependency-free `View`s cannot draw a Bézier path (Article 9's own example: line charts were deferred exactly for this). **`react-native-view-shot` 6.1.1** (B3): renders a laid-out view to a PNG file; the alternative — drawing the card twice, once in views and once in SVG text for `toDataURL` — duplicates the card and loses the app's fonts. **`expo-sharing` ~58.0.19** (B3): opens the system share sheet for a *file*; React Native's `Share` cannot share a file on Android. All three need `expo prebuild` and a device build; each is guarded so the JS update runs on the old binary (see Risks). Rejected: a chart library (victory-native, gifted-charts) — more weight than one path builder; `react-native-gesture-handler` / `reanimated` — `PanResponder` is enough for tap-and-drag on one view; `expo-file-system` — view-shot already writes the temp file. |
 | 10 — TODOs over half-solutions | yes | Device-only checks are [DEVICE] tasks. Two unknowns are stated with their check (figure fit at 375 pt, view-shot on web); see Risks. |
 
 ## Workstreams
@@ -360,7 +364,7 @@ the rebuild therefore keeps today's charts instead of crashing.
 **Shared files B2 may touch**
 
 - `apps/mobile/package.json` + `pnpm-lock.yaml` — add `react-native-svg`
-  `15.15.3` (exact, as `bundledNativeModules.json`) in its own commit. On a
+  `15.16.0` (exact, as SDK 58's `bundledNativeModules.json`) in its own commit. On a
   lockfile conflict with B3, take either side and re-run `pnpm install`
   (never hand-merge the lockfile).
 - `apps/mobile/src/i18n/locales/{en,es}.ts` — new object `progress.chart`
@@ -477,8 +481,8 @@ already returns everything needed (decision below).
 **Shared files B3 may touch**
 
 - `apps/mobile/package.json` + `pnpm-lock.yaml` — add
-  `react-native-view-shot` `4.0.3` and `expo-sharing` `~55.0.14` in one
-  commit; lockfile conflicts as for B2 (re-run `pnpm install`).
+  `react-native-view-shot` `6.1.1` and `expo-sharing` `~58.0.19` in one
+  commit (not `html2canvas-pro`: the image action is not offered on web); lockfile conflicts as for B2 (re-run `pnpm install`).
 - `apps/mobile/src/i18n/locales/{en,es}.ts` — new keys **inside the existing
   `workouts.share` object** (`image`, `asText`, `sheetTitle`, `imageFailed`,
   `cardFooter`, `moreRecords`) and a new `workouts.comparison` object
@@ -562,7 +566,11 @@ B1, B2 and B3 lists above, plus:
   third of the viewport, below it. `RecordNotice` moves below the header.
   The keyboard (`automaticallyAdjustKeyboardInsets`) is unaffected.
 - **Old binaries.** svg (B2) and view-shot / sharing (B3) are guarded:
-  bars fallback and a hidden image action. If the view-manager check proves
+  bars fallback and a hidden image action. On React Native 0.88 (New
+  Architecture, bridgeless) `UIManager.hasViewManagerConfig` goes through the
+  interop layer; B2.3 must confirm on the web export *and* in the unit of its
+  guard that it answers `false` for an unknown component name rather than
+  throwing. If the view-manager check proves
   unreliable on one platform, the fallback is to ship B2/B3 only with the
   rebuild — noted in the progress log, not hidden.
 - **react-native-view-shot on web.** Not supported reliably; the image action
