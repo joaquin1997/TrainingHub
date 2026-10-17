@@ -615,3 +615,37 @@ Filled in by each workstream as it lands (own subsection).
 ### B2
 
 ### B3
+
+- **Comparison** (`utils/workoutComparison.ts`, `hooks/useWorkoutComparison.ts`)
+  as planned. Additions: cancelled sessions are not "saved workouts" and are
+  skipped **[ASSUMPTION]**; the load helper (`loadWorkoutComparison`) is a
+  pure function so EF-5 is unit-tested in node (any rejection or non-array
+  payload → null); `describeComparison` gives three wordings — a sentence for
+  screen readers ("892 kg more than Oct 14"), a short tile caption ("+892 kg
+  vs Oct 14") and a chip label ("+892 kg" / "−120 kg" / "Same"). The plan's
+  sentence did not fit a three-tile row, so the tile uses the short caption.
+- **Summary**: records of the day lead (`RecordsCard variant="highlight"`,
+  title "Records today"; it replaces the lower "records beaten" card there —
+  the history detail keeps "records beaten"). The volume tile caption needed
+  an icon and a colour, so **`ui/StatTile.tsx` gained `captionIcon` and
+  `captionTone`** (optional, default unchanged) — the only file touched
+  outside B3's list.
+- **Share card**: as planned, plus a reps-only best set reads "12 reps"
+  (the text share's "– kg × 12" read badly on an image), the volume figure is
+  in whole units, and the stats take their content width. Measured on the web
+  export: the panel's content fits the 450 pt frame with 3 records + "+n
+  more" + 5 exercises (scrollHeight = clientHeight).
+- **Image share** behind `share/shareImage.ts` + **`share/shareImage.web.ts`**
+  (new): the web build is always "unavailable", which also keeps
+  `react-native-view-shot` out of the web bundle — its web file imports the
+  optional `html2canvas-pro` and Metro would fail to resolve it. On native,
+  availability = `RNViewShot` registered (TurboModule or legacy) and
+  `require('expo-sharing')` not throwing; checked once and cached.
+- **Sheet** (`ShareSheet`): preview scaled to ≤ 50 % of the window height;
+  Share image hidden when unavailable, Share as text becomes the primary
+  action then. Whether view-shot captures the unscaled card from inside the
+  scaled wrapper on iOS and Android is a [DEVICE] check (B3.6).
+- Dependencies: `react-native-view-shot` 6.1.1, `expo-sharing` ~58.0.19
+  (`pnpm --filter @workout/mobile add`). `expo-sharing` ships a config plugin
+  for *receiving* shares; not needed to send, so `app.json` is unchanged.
+  Native rebuild required; until then the text share only.
