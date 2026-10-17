@@ -48,9 +48,19 @@ model Exercise {
   routineExercises          RoutineExercise[]
   workoutExercises          WorkoutExercise[]
   favorites                 ExerciseFavorite[]
+  photo                     ExercisePhoto?
 
   @@unique([source, sourceId])
   @@index([name])
+}
+
+model ExercisePhoto {
+  id          BigInt   @id @default(autoincrement())
+  exerciseId  BigInt   @unique
+  contentType String
+  data        Bytes
+  updatedAt   DateTime @updatedAt
+  exercise    Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
 }
 
 model ExerciseFavorite {

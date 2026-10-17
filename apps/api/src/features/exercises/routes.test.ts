@@ -8,6 +8,9 @@ vi.mock('./repository.js', () => {
     listMuscleGroups: vi.fn(),
     findExerciseById: vi.fn(),
     createExercise: vi.fn(),
+    saveExercisePhoto: vi.fn(),
+    deleteExercisePhoto: vi.fn(),
+    findExercisePhoto: vi.fn(),
     listFavoriteExerciseIds: vi.fn(),
     addFavoriteExercise: vi.fn(),
     removeFavoriteExercise: vi.fn(),
@@ -22,10 +25,13 @@ vi.mock('../../infrastructure/userContext.js', () => ({
 import { createApp } from '../../app.js';
 import {
   createExercise,
+  deleteExercisePhoto,
   findExerciseById,
+  findExercisePhoto,
   InvalidMuscleGroupSelectionError,
   listExercises,
   listMuscleGroups,
+  saveExercisePhoto,
 } from './repository.js';
 
 const app = createApp({ logger: false });
@@ -129,5 +135,73 @@ describe('POST /exercises', () => {
 
     expect(response.statusCode).toBe(400);
     expect(response.json()).toEqual({ message: 'Invalid muscle group selection' });
+  });
+});
+
+describe('exercise photo', () => {
+  const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0]);
+  const put = (headers: Record<string, string>, payload: Buffer | string = jpeg) =>
+    app.inject({ method: 'PUT', url: '/exercises/e1/photo', headers, payload });
+
+  function authHeaders(contentType = 'image/jpeg') {
+    return {
+      authorization: `Bearer ${app.jwt.sign({ sub: 'user-test' })}`,
+      'content-type': contentType,
+    };
+  }
+
+  it('requires a signed-in user', async () => {
+    const response = await put({ 'content-type': 'image/jpeg' });
+    expect(response.statusCode).toBe(401);
+    expect(saveExercisePhoto).not.toHaveBeenCalled();
+
+    const read = await app.inject({ method: 'GET', url: '/exercises/e1/photo' });
+    expect(read.statusCode).toBe(401);
+  });
+
+  it('rejects unsupported types and bytes that are not the claimed image', async () => {
+    expect((await put(authHeaders('image/gif'), 'GIF89a')).statusCode).toBe(415);
+    expect((await put(authHeaders(), '<html></html>')).statusCode).toBe(400);
+    expect(saveExercisePhoto).not.toHaveBeenCalled();
+  });
+
+  it('saves the photo for the creator (204)', async () => {
+    vi.mocked(saveExercisePhoto).mockResolvedValue('ok');
+    const response = await put(authHeaders());
+    expect(response.statusCode).toBe(204);
+    expect(saveExercisePhoto).toHaveBeenCalledWith('user-test', 'e1', 'image/jpeg', jpeg);
+  });
+
+  it('refuses anyone but the creator (403) and unknown exercises (404)', async () => {
+    vi.mocked(saveExercisePhoto).mockResolvedValueOnce('forbidden');
+    expect((await put(authHeaders())).statusCode).toBe(403);
+    vi.mocked(saveExercisePhoto).mockResolvedValueOnce('not-found');
+    expect((await put(authHeaders())).statusCode).toBe(404);
+  });
+
+  it('serves the stored photo with private caching', async () => {
+    vi.mocked(findExercisePhoto).mockResolvedValue({
+      contentType: 'image/jpeg',
+      data: jpeg,
+      updatedAt: new Date(0),
+    });
+    const response = await app.inject({
+      method: 'GET',
+      url: '/exercises/e1/photo',
+      headers: { authorization: authHeaders().authorization },
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['content-type']).toBe('image/jpeg');
+    expect(String(response.headers['cache-control'])).toContain('private');
+  });
+
+  it('deletes through the repository (204)', async () => {
+    vi.mocked(deleteExercisePhoto).mockResolvedValue('ok');
+    const response = await app.inject({
+      method: 'DELETE',
+      url: '/exercises/e1/photo',
+      headers: { authorization: authHeaders().authorization },
+    });
+    expect(response.statusCode).toBe(204);
   });
 });
