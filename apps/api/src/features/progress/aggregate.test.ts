@@ -100,6 +100,8 @@ describe('buildExerciseProgressDetail', () => {
         bestReps: 6,
         totalVolume: 420,
         estimatedOneRepMax: 84,
+        // 70 kg beat the 65 kg heaviest weight (spec 0034 FR-22).
+        isRecord: true,
       },
     ]);
   });
@@ -493,6 +495,85 @@ describe('records by type (spec 0023)', () => {
       type: 'bestSessionVolume',
       value: 1000,
       date: '2026-05-08T09:00:00.000Z',
+    });
+  });
+});
+
+describe('record points (spec 0034 FR-22)', () => {
+  const bench = (date: string, sets: ProgressSessionInput['exercises'][number]['sets']) => ({
+    date,
+    exercises: [{ exerciseId: 'bench', exerciseName: 'Bench', sets }],
+  });
+
+  it('flags the points whose workout beat a record, in any type', () => {
+    const detail = buildExerciseProgressDetail(
+      [
+        bench('2026-05-01T09:00:00.000Z', [{ reps: 5, weightKg: 100 }]),
+        bench('2026-05-08T09:00:00.000Z', [{ reps: 5, weightKg: 105 }]),
+        bench('2026-05-15T09:00:00.000Z', [{ reps: 5, weightKg: 90 }]),
+        bench('2026-05-22T09:00:00.000Z', [{ reps: 6, weightKg: 100 }]),
+      ],
+      'bench',
+    );
+
+    expect(detail?.points.map((point) => point.isRecord)).toEqual([
+      undefined,
+      true,
+      undefined,
+      true,
+    ]);
+  });
+
+  it('leaves the flag out when no workout beat a record', () => {
+    const detail = buildExerciseProgressDetail(
+      [
+        bench('2026-05-01T09:00:00.000Z', [{ reps: 5, weightKg: 100 }]),
+        bench('2026-05-08T09:00:00.000Z', [{ reps: 4, weightKg: 90 }]),
+      ],
+      'bench',
+    );
+
+    expect(detail?.points.every((point) => !('isRecord' in point))).toBe(true);
+  });
+
+  it('flags both entries of an exercise logged twice in a record workout', () => {
+    const detail = buildExerciseProgressDetail(
+      [
+        bench('2026-05-01T09:00:00.000Z', [{ reps: 5, weightKg: 100 }]),
+        {
+          date: '2026-05-08T09:00:00.000Z',
+          exercises: [
+            { exerciseId: 'squat', exerciseName: 'Squat', sets: [{ reps: 5, weightKg: 140 }] },
+            { exerciseId: 'bench', exerciseName: 'Bench', sets: [{ reps: 5, weightKg: 100 }] },
+            { exerciseId: 'bench', exerciseName: 'Bench', sets: [{ reps: 5, weightKg: 100 }] },
+          ],
+        },
+      ],
+      'bench',
+    );
+
+    expect(detail?.points.map((point) => point.isRecord)).toEqual([undefined, true, true]);
+  });
+
+  it('never sends the internal session index', () => {
+    const detail = buildExerciseProgressDetail(
+      [
+        bench('2026-05-01T09:00:00.000Z', [{ reps: 5, weightKg: 100 }]),
+        bench('2026-05-08T09:00:00.000Z', [{ reps: 5, weightKg: 105 }]),
+      ],
+      'bench',
+    );
+
+    expect(Object.keys(detail ?? {})).not.toContain('pointSessions');
+    expect(detail?.points[1]).toEqual({
+      date: '2026-05-08T09:00:00.000Z',
+      bestWeightKg: 105,
+      bestReps: 5,
+      totalVolume: 525,
+      estimatedOneRepMax: 122.5,
+      bestDurationSeconds: undefined,
+      bestDistanceMeters: undefined,
+      isRecord: true,
     });
   });
 });
