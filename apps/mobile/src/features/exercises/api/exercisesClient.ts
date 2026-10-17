@@ -1,12 +1,6 @@
-import type { Exercise, MuscleGroup } from '@workout/domain';
+import type { CreateExerciseInput, Exercise, MuscleGroup } from '@workout/domain';
 
 import { apiRequest } from '@/lib/http';
-
-type CreateExerciseInput = {
-  name: string;
-  primaryMuscleGroupIds: string[];
-  secondaryMuscleGroupIds: string[];
-};
 
 export const exercisesClient = {
   list() {

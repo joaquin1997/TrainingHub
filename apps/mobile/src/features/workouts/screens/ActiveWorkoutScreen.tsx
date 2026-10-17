@@ -15,6 +15,11 @@ import {
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { ExercisePickerModal } from '@/features/exercises/components/ExercisePickerModal';
+import {
+  previousSetLabel,
+  WorkoutSetHeader,
+  WorkoutSetRow,
+} from '@/features/workouts/components/WorkoutSetRow';
 import { useExerciseReplacement } from '@/features/workouts/hooks/useExerciseReplacement';
 import { RestBar } from '@/features/workouts/components/RestBar';
 import { RestEditorSheet } from '@/features/workouts/components/RestEditorSheet';
@@ -35,15 +40,9 @@ import { StateView } from '@/ui/StateView';
 import { confirmAction } from '@/lib/confirmAction';
 import { formatDuration } from '@/lib/format';
 import { isPermanentRejection } from '@/lib/http';
-import { fromKg, roundWeight } from '@/lib/weight';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
-import type {
-  Exercise,
-  ExerciseLastPerformance,
-  WeightUnit,
-  WorkoutSetType,
-} from '@workout/domain';
+import type { Exercise, ExerciseLastPerformance } from '@workout/domain';
 import { syncWorkoutCompletionToAppleHealth } from '@/features/health/integrations/appleWorkoutIntegration';
 import {
   addExerciseToWorkout,
@@ -71,42 +70,13 @@ import {
   toWorkoutSessionSkeleton,
   updateWorkoutSetDraft,
   type RunningRest,
+  type SetDraftField,
   type WorkoutSessionDraft,
 } from '@/features/workouts/state/workoutDraftStore';
-
-/** Compact "previous performance" label for a set (weight×reps), or "–". */
-function prevSetLabel(
-  performance: ExerciseLastPerformance | null | undefined,
-  order: number,
-  unit: WeightUnit,
-) {
-  const last = performance?.sets.find((set) => set.order === order);
-
-  if (!last || (last.weightKg == null && last.reps == null)) {
-    return '–';
-  }
-
-  const weight =
-    last.weightKg != null ? roundWeight(fromKg(last.weightKg, unit)) : '–';
-  return `${weight}×${last.reps ?? '–'}`;
-}
 
 /** The rest chip of an exercise: "2:00", or "Off" for no rest. */
 function restChipLabel(seconds: number, t: TFunction) {
   return seconds > 0 ? formatDuration(seconds) : t('workouts.restOff');
-}
-
-function setTypeLabel(type: WorkoutSetType, t: TFunction) {
-  switch (type) {
-    case 'warmup':
-      return t('workouts.setType.warmup');
-    case 'drop':
-      return t('workouts.setType.drop');
-    case 'failure':
-      return t('workouts.setType.failure');
-    default:
-      return t('workouts.setType.normal');
-  }
 }
 
 export function ActiveWorkoutScreen() {
@@ -413,7 +383,7 @@ export function ActiveWorkoutScreen() {
   const handleSetChange = (
     workoutExerciseId: string,
     workoutSetId: string,
-    field: 'reps' | 'weightKg',
+    field: SetDraftField,
     value: string,
   ) => {
     if (!workoutDraft) {
@@ -480,6 +450,7 @@ export function ActiveWorkoutScreen() {
       addExerciseToWorkout(workoutDraft, {
         id: exercise.id,
         name: exercise.name,
+        trackingType: exercise.trackingType,
       }),
     );
   };
@@ -637,19 +608,9 @@ export function ActiveWorkoutScreen() {
           </View>
         </View>
         <View style={[styles.setList, inSuperset ? styles.indented : null]}>
-          <View style={styles.setHeaderRow}>
-            <Text style={[styles.colSet, styles.colLabel]}>{t('workouts.colSet')}</Text>
-            <Text style={[styles.colPrev, styles.colLabel]}>{t('workouts.colPrev')}</Text>
-            <Text style={[styles.colInput, styles.colLabel, styles.colCentered]}>
-              {unit.toUpperCase()}
-            </Text>
-            <Text style={[styles.colInput, styles.colLabel, styles.colCentered]}>
-              {t('workouts.colReps')}
-            </Text>
-            <Ionicons name="checkmark" size={14} color={colors.textMuted} style={styles.colCheckIcon} />
-            <View style={styles.colRemove} />
-          </View>
+          <WorkoutSetHeader trackingType={exercise.trackingType} unit={unit} />
           {exercise.entries.map((set) => (
+            // The row ref lets the screen scroll the next set into view (0018).
             <View
               key={set.id}
               ref={(node) => {
@@ -659,74 +620,22 @@ export function ActiveWorkoutScreen() {
                   setRowRefs.current.delete(set.id);
                 }
               }}
-              style={[styles.setRow, set.done ? styles.setRowDone : null]}
             >
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={setTypeLabel(set.type, t)}
-                onPress={() => handleCycleSetType(exercise.id, set.id)}
-                hitSlop={4}
-                style={[
-                  styles.setMarker,
-                  set.type === 'failure' ? styles.setMarkerFailure : null,
-                  set.type === 'warmup' || set.type === 'drop' ? styles.setMarkerTyped : null,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.setMarkerText,
-                    set.type === 'failure' ? styles.setMarkerTextFailure : null,
-                    set.type === 'warmup' || set.type === 'drop' ? styles.setMarkerTextTyped : null,
-                  ]}
-                >
-                  {set.type === 'normal' ? set.order : setTypeLabel(set.type, t)[0]}
-                </Text>
-              </Pressable>
-              <Text numberOfLines={1} style={[styles.colPrev, styles.prevText]}>
-                {prevSetLabel(lastByExercise[exercise.exerciseId], set.order, unit)}
-              </Text>
-              <TextInput
-                keyboardType="decimal-pad"
-                value={set.weightKg}
-                placeholder={set.weightPlaceholder ?? '–'}
-                placeholderTextColor={colors.textSubtle}
-                onChangeText={(value) =>
-                  handleSetChange(exercise.id, set.id, 'weightKg', value)
-                }
-                style={[styles.cellInput, styles.colInput, set.done ? styles.cellInputDone : null]}
+              <WorkoutSetRow
+                set={set}
+                trackingType={exercise.trackingType}
+                unit={unit}
+                previousLabel={previousSetLabel(
+                  lastByExercise[exercise.exerciseId],
+                  set.order,
+                  exercise.trackingType,
+                  unit,
+                )}
+                onChange={(field, value) => handleSetChange(exercise.id, set.id, field, value)}
+                onCycleType={() => handleCycleSetType(exercise.id, set.id)}
+                onToggleDone={() => handleToggleDone(exercise.id, set.id)}
+                onRemove={() => handleRemoveSet(exercise.id, set.id)}
               />
-              <TextInput
-                keyboardType="number-pad"
-                value={set.reps}
-                placeholder={set.repsPlaceholder ?? '–'}
-                placeholderTextColor={colors.textSubtle}
-                onChangeText={(value) =>
-                  handleSetChange(exercise.id, set.id, 'reps', value)
-                }
-                style={[styles.cellInput, styles.colInput, set.done ? styles.cellInputDone : null]}
-              />
-              <Pressable
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: set.done }}
-                onPress={() => handleToggleDone(exercise.id, set.id)}
-                hitSlop={4}
-                style={[styles.checkBox, set.done ? styles.checkBoxDone : null]}
-              >
-                <Ionicons
-                  name="checkmark"
-                  size={20}
-                  color={set.done ? colors.onPrimary : colors.borderStrong}
-                />
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('common.remove')}
-                onPress={() => handleRemoveSet(exercise.id, set.id)}
-                hitSlop={6}
-                style={styles.colRemove}
-              >
-                <Ionicons name="close" size={16} color={colors.textSubtle} />
-              </Pressable>
             </View>
           ))}
           <View style={styles.cardActions}>
@@ -1113,115 +1022,6 @@ const styles = StyleSheet.create({
   },
   setList: {
     gap: spacing.xs,
-  },
-  setHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: 4,
-  },
-  colLabel: {
-    ...commonStyles.sectionLabel,
-    fontSize: 10,
-  },
-  colCentered: {
-    textAlign: 'center',
-  },
-  colSet: {
-    width: 36,
-  },
-  colPrev: {
-    width: 64,
-  },
-  colInput: {
-    flex: 1,
-    flexBasis: 0,
-    minWidth: 0,
-  },
-  colCheckIcon: {
-    width: 44,
-    textAlign: 'center',
-  },
-  colRemove: {
-    width: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  setRow: {
-    minHeight: 52,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    borderRadius: radii.md,
-    paddingVertical: 4,
-    paddingHorizontal: 4,
-  },
-  setRowDone: {
-    backgroundColor: colors.successSoft,
-  },
-  setMarker: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radii.sm,
-    backgroundColor: colors.surfaceRaised,
-  },
-  setMarkerTyped: {
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  setMarkerFailure: {
-    backgroundColor: colors.accentSoft,
-  },
-  setMarkerText: {
-    color: colors.text,
-    fontFamily: fonts.displayBold,
-    fontSize: 15,
-    fontVariant: ['tabular-nums'],
-  },
-  setMarkerTextTyped: {
-    color: colors.textMuted,
-  },
-  setMarkerTextFailure: {
-    color: colors.accent,
-  },
-  prevText: {
-    color: colors.textMuted,
-    fontFamily: fonts.display,
-    fontSize: 13,
-    fontVariant: ['tabular-nums'],
-  },
-  cellInput: {
-    minHeight: 44,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surfaceRaised,
-    color: colors.text,
-    textAlign: 'center',
-    fontFamily: fonts.displayBold,
-    fontSize: 18,
-    fontVariant: ['tabular-nums'],
-    paddingVertical: 6,
-  },
-  cellInputDone: {
-    backgroundColor: 'transparent',
-    borderColor: 'transparent',
-  },
-  checkBox: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radii.sm,
-    borderWidth: 1.5,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surfaceRaised,
-  },
-  checkBoxDone: {
-    backgroundColor: colors.success,
-    borderColor: colors.success,
   },
   cardActions: {
     flexDirection: 'row',

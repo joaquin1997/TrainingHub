@@ -1,4 +1,5 @@
 import type {
+  ExerciseTrackingType,
   ExerciseProgressDetail,
   ExerciseProgressPoint,
   ExerciseProgressSummary,
@@ -23,6 +24,8 @@ import {
 type ProgressSetInput = {
   reps?: number | null;
   weightKg?: number | null;
+  durationSeconds?: number | null;
+  distanceMeters?: number | null;
   completedAt?: Date | string | null;
   type?: string | null;
   isWarmup?: boolean | null;
@@ -41,6 +44,8 @@ export type ProgressSessionInput = {
     exerciseId: string;
     exerciseName: string;
     category?: string | null;
+    /** The exercise's current tracking type; absent = weight & reps. */
+    trackingType?: ExerciseTrackingType;
     sets: ProgressSetInput[];
   }>;
 };
@@ -73,6 +78,7 @@ export function selectPerformedWork(
 type ProgressAccumulator = {
   exerciseId: string;
   exerciseName: string;
+  trackingType?: ExerciseTrackingType;
   points: ExerciseProgressPoint[];
 };
 
@@ -98,6 +104,7 @@ function buildAccumulators(
       const workingSets = exercise.sets.filter((set) => !isWarmupSet(set));
 
       accumulator.exerciseName = exercise.exerciseName;
+      accumulator.trackingType = exercise.trackingType;
       accumulator.points.push({
         date: session.date,
         bestWeightKg: maxDefined(workingSets.map((set) => set.weightKg)),
@@ -109,6 +116,8 @@ function buildAccumulators(
         estimatedOneRepMax: maxDefined(
           workingSets.map((set) => estimateOneRepMax(set.reps, set.weightKg)),
         ),
+        bestDurationSeconds: maxDefined(workingSets.map((set) => set.durationSeconds)),
+        bestDistanceMeters: maxDefined(workingSets.map((set) => set.distanceMeters)),
       });
 
       byExercise.set(exercise.exerciseId, accumulator);
@@ -190,6 +199,15 @@ function toSummary(
     personalBestReps: maxDefined(points.map((point) => point.bestReps)),
     bestEstimatedOneRepMax: maxDefined(
       points.map((point) => point.estimatedOneRepMax),
+    ),
+    trackingType: accumulator.trackingType,
+    latestDurationSeconds: lastPoint?.bestDurationSeconds,
+    latestDistanceMeters: lastPoint?.bestDistanceMeters,
+    personalBestDurationSeconds: maxDefined(
+      points.map((point) => point.bestDurationSeconds),
+    ),
+    personalBestDistanceMeters: maxDefined(
+      points.map((point) => point.bestDistanceMeters),
     ),
     isRecordSession,
   };

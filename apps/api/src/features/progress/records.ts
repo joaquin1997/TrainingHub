@@ -6,14 +6,26 @@ import type { ExerciseRecord, RecordType } from '@workout/domain';
  * not warm-up — the caller applies spec 0013's rule). Records are derived on
  * every read, never stored.
  *
- * Each single-value type is one small function in `SINGLE_VALUE_RECORDS`; a
- * new type (e.g. time or distance, spec 0021) is a new entry there.
+ * Each single-value type is one small function in `SINGLE_VALUE_RECORDS`.
+ * Time and distance (spec 0021) are entries there too; the weight-based types
+ * read only lifting sets (no time, no distance), so a carry's 24 kg is never a
+ * weight record — its record is the longest time (FR-6).
  */
 
 export type RecordSet = {
   reps?: number | null;
   weightKg?: number | null;
+  durationSeconds?: number | null;
+  distanceMeters?: number | null;
 };
+
+/** A set measured by weight and reps, not by time or distance (spec 0021). */
+function isLiftSet(set: RecordSet): boolean {
+  return (
+    (set.durationSeconds === undefined || set.durationSeconds === null) &&
+    (set.distanceMeters === undefined || set.distanceMeters === null)
+  );
+}
 
 /** One exercise in one session: when, and its working sets. */
 export type ExerciseSessionWork = {
@@ -36,6 +48,8 @@ const RECORD_ORDER: RecordType[] = [
   'bestSetVolume',
   'bestSessionVolume',
   'bestEstimatedOneRepMax',
+  'longestTime',
+  'longestDistance',
 ];
 
 function positive(value: number | null | undefined): value is number {
@@ -106,12 +120,26 @@ export const bestSessionVolume: SingleValueRecord = (sets) => {
 export const bestEstimatedOneRepMax: SingleValueRecord = (sets) =>
   bestSet(sets, (set) => estimateOneRepMax(set.reps, set.weightKg));
 
+export const longestTime: SingleValueRecord = (sets) =>
+  bestSet(sets, (set) => (positive(set.durationSeconds) ? set.durationSeconds : undefined));
+
+export const longestDistance: SingleValueRecord = (sets) =>
+  bestSet(sets, (set) => (positive(set.distanceMeters) ? set.distanceMeters : undefined));
+
+/** Weight-based types read lifting sets only (see `isLiftSet`). */
+const onLiftSets =
+  (derive: SingleValueRecord): SingleValueRecord =>
+  (sets) =>
+    derive(sets.filter(isLiftSet));
+
 export const SINGLE_VALUE_RECORDS: ReadonlyArray<readonly [RecordType, SingleValueRecord]> = [
-  ['heaviestWeight', heaviestWeight],
-  ['mostReps', mostReps],
-  ['bestSetVolume', bestSetVolume],
-  ['bestSessionVolume', bestSessionVolume],
-  ['bestEstimatedOneRepMax', bestEstimatedOneRepMax],
+  ['heaviestWeight', onLiftSets(heaviestWeight)],
+  ['mostReps', onLiftSets(mostReps)],
+  ['bestSetVolume', onLiftSets(bestSetVolume)],
+  ['bestSessionVolume', onLiftSets(bestSessionVolume)],
+  ['bestEstimatedOneRepMax', onLiftSets(bestEstimatedOneRepMax)],
+  ['longestTime', longestTime],
+  ['longestDistance', longestDistance],
 ];
 
 /** Most reps done at each distinct weight in these sets. */
@@ -210,7 +238,7 @@ export function deriveExerciseRecords(
       bests.set(type, record);
     }
 
-    const sessionReps = repsByWeight(session.sets);
+    const sessionReps = repsByWeight(session.sets.filter(isLiftSet));
     const hit = repsAtWeightHit(sessionReps, repsAtWeight);
     if (hit) {
       sessionHits.push({

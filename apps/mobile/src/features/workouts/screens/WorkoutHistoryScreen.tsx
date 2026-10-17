@@ -21,6 +21,7 @@ import {
   formatDuration,
   formatTime,
 } from '@/lib/format';
+import { formatDistance } from '@/lib/tracking';
 import { formatWeightValue } from '@/lib/weight';
 import { useRefresh } from '@/lib/useRefresh';
 import { Chip } from '@/ui/Chip';
@@ -162,6 +163,20 @@ export function WorkoutHistoryScreen() {
                       icon="barbell-outline"
                       size="sm"
                       label={`${formatWeightValue(totals.volumeKg, unit)} ${unit}`}
+                    />
+                  ) : null}
+                  {totals.durationSeconds > 0 ? (
+                    <Chip
+                      icon="stopwatch-outline"
+                      size="sm"
+                      label={formatDuration(totals.durationSeconds)}
+                    />
+                  ) : null}
+                  {totals.distanceMeters > 0 ? (
+                    <Chip
+                      icon="map-outline"
+                      size="sm"
+                      label={formatDistance(totals.distanceMeters)}
                     />
                   ) : null}
                   <Chip

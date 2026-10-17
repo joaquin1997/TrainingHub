@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import type { CreateRoutineInput, RoutineExerciseInput, Routine } from '@workout/domain';
 
 import { prisma } from '../../infrastructure/prisma.js';
+import { toExerciseTrackingType } from '../exercises/trackingTypes.js';
 
 /**
  * Hydrated write input the repository persists: the shared write contract plus
@@ -18,6 +19,7 @@ type RoutineRecord = Prisma.RoutineGetPayload<{
         exercise: {
           select: {
             publicId: true;
+            trackingType: true;
           };
         };
         sets: true;
@@ -48,6 +50,7 @@ function mapRoutine(userPublicId: string, record: RoutineRecord): Routine {
         orderIndex: exercise.orderIndex,
         restSeconds: exercise.restSeconds ?? undefined,
         supersetGroup: exercise.supersetGroup ?? undefined,
+        trackingType: toExerciseTrackingType(exercise.exercise.trackingType),
         sets: exercise.sets
           .slice()
           .sort((left, right) => left.setNumber - right.setNumber)
@@ -58,6 +61,8 @@ function mapRoutine(userPublicId: string, record: RoutineRecord): Routine {
             minReps: set.minReps ?? undefined,
             maxReps: set.maxReps ?? undefined,
             targetWeight: set.targetWeight ?? undefined,
+            targetDurationSeconds: set.targetDurationSeconds ?? undefined,
+            targetDistanceMeters: set.targetDistanceMeters ?? undefined,
             createdAt: set.createdAt.toISOString(),
             updatedAt: set.updatedAt.toISOString(),
           })),
@@ -88,6 +93,8 @@ function toRoutineExerciseCreateInput(
         minReps: set.minReps,
         maxReps: set.maxReps,
         targetWeight: set.targetWeight,
+        targetDurationSeconds: set.targetDurationSeconds,
+        targetDistanceMeters: set.targetDistanceMeters,
       })),
     },
   };
@@ -109,6 +116,7 @@ export async function listRoutines(userPublicId: string) {
           exercise: {
             select: {
               publicId: true,
+              trackingType: true,
             },
           },
           sets: true,
@@ -142,6 +150,7 @@ export async function findRoutineById(userPublicId: string, id: string) {
           exercise: {
             select: {
               publicId: true,
+              trackingType: true,
             },
           },
           sets: true,
@@ -189,6 +198,7 @@ export async function createRoutine(
           exercise: {
             select: {
               publicId: true,
+              trackingType: true,
             },
           },
           sets: true,
@@ -256,6 +266,7 @@ export async function updateRoutine(
           exercise: {
             select: {
               publicId: true,
+              trackingType: true,
             },
           },
           sets: true,

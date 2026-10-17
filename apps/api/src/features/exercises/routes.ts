@@ -10,6 +10,7 @@ import {
   listMuscleGroups,
   removeFavoriteExercise,
 } from './repository.js';
+import { isExerciseTrackingType } from './trackingTypes.js';
 import { resolveUserPublicId } from '../../infrastructure/userContext.js';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -29,7 +30,8 @@ function parseCreateExerciseInput(body: unknown) {
     typeof body.name !== 'string' ||
     !body.name.trim() ||
     !isStringArray(body.primaryMuscleGroupIds) ||
-    !isStringArray(body.secondaryMuscleGroupIds)
+    !isStringArray(body.secondaryMuscleGroupIds) ||
+    (body.trackingType !== undefined && !isExerciseTrackingType(body.trackingType))
   ) {
     return null;
   }
@@ -38,6 +40,7 @@ function parseCreateExerciseInput(body: unknown) {
     name: body.name.trim(),
     primaryMuscleGroupIds: body.primaryMuscleGroupIds.map((id) => id.trim()),
     secondaryMuscleGroupIds: body.secondaryMuscleGroupIds.map((id) => id.trim()),
+    trackingType: body.trackingType,
   };
 }
 

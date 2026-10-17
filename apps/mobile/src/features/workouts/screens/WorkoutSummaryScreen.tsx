@@ -16,6 +16,7 @@ import { formatWorkoutShareText, shareRecords } from '@/features/workouts/utils/
 import { shareWorkoutText } from '@/features/workouts/utils/shareWorkout';
 import { summarizeSession } from '@/features/workouts/utils/sessionStats';
 import { activeDurationSeconds, formatDuration } from '@/lib/format';
+import { formatDistance, formatSetValues } from '@/lib/tracking';
 import { formatWeightValue } from '@/lib/weight';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
@@ -130,6 +131,16 @@ export function WorkoutSummaryScreen() {
           caption={t('workouts.setsOfTotal', { total: stats.totalSets })}
         />
       </View>
+      {stats.durationSeconds > 0 || stats.distanceMeters > 0 ? (
+        <View style={styles.tiles}>
+          {stats.durationSeconds > 0 ? (
+            <StatTile label={t('workouts.setTimeLabel')} value={formatDuration(stats.durationSeconds)} />
+          ) : null}
+          {stats.distanceMeters > 0 ? (
+            <StatTile label={t('workouts.distanceLabel')} value={formatDistance(stats.distanceMeters)} />
+          ) : null}
+        </View>
+      ) : null}
       <RecordsCard
         title={t('progress.records.beaten')}
         unit={unit}
@@ -150,7 +161,7 @@ export function WorkoutSummaryScreen() {
               <View key={set.id} style={[styles.setRow, done ? null : styles.setRowSkipped]}>
                 <Text style={styles.setOrder}>{set.order}</Text>
                 <Text style={styles.setValue}>
-                  {`${formatWeightValue(set.weightKg, unit)} ${unit} × ${set.reps ?? '–'}`}
+                  {formatSetValues(set, unit)}
                 </Text>
                 {type ? (
                   <Chip label={type} size="sm" tone={set.type === 'failure' ? 'record' : 'neutral'} />

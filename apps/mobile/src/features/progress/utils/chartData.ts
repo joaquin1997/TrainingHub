@@ -1,7 +1,12 @@
 import type { ExerciseProgressPoint, WeeklyVolumePoint } from '@workout/domain';
 
 /** Numeric metrics on a progress point that can be charted over time. */
-export type ProgressMetric = 'estimatedOneRepMax' | 'totalVolume' | 'bestWeightKg';
+export type ProgressMetric =
+  | 'estimatedOneRepMax'
+  | 'totalVolume'
+  | 'bestWeightKg'
+  | 'bestDurationSeconds'
+  | 'bestDistanceMeters';
 
 export interface ChartBar {
   /** ISO date of the session this bar represents. */

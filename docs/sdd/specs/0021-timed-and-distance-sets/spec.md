@@ -1,7 +1,7 @@
 ---
 id: 0021
 title: Timed and distance sets
-status: ready
+status: in-progress
 roadmap: docs/roadmap/01-live-workout-logging.md
 created: 2026-10-16
 ---

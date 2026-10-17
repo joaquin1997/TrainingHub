@@ -62,6 +62,8 @@ function parseRoutineExerciseSetInput(
     minReps: parseOptionalInteger(value.minReps),
     maxReps: parseOptionalInteger(value.maxReps),
     targetWeight: parseOptionalNumber(value.targetWeight),
+    targetDurationSeconds: parseOptionalInteger(value.targetDurationSeconds),
+    targetDistanceMeters: parseOptionalNumber(value.targetDistanceMeters),
   };
 }
 

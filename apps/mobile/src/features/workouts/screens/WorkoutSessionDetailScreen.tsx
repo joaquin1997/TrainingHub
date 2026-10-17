@@ -19,13 +19,34 @@ import {
   formatDuration,
   formatTime,
 } from '@/lib/format';
+import { formatDistance, formatSetValues } from '@/lib/tracking';
 import { formatWeightValue } from '@/lib/weight';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
-import type { SessionRecord, WorkoutSession, WorkoutSet } from '@workout/domain';
+import type { SessionRecord, WeightUnit, WorkoutSession, WorkoutSet } from '@workout/domain';
+
+/**
+ * The figure beside an exercise: its volume, or for time and distance work
+ * (no volume) its total time and distance (spec 0021 FR-5).
+ */
+function exerciseHeadline(exercise: { sets: WorkoutSet[] }, unit: WeightUnit) {
+  const volumeKg = exerciseVolumeKg(exercise);
+  const { durationSeconds, distanceMeters } = summarizeSession({ exercises: [exercise] });
+
+  if (volumeKg > 0 || (durationSeconds === 0 && distanceMeters === 0)) {
+    return `${formatWeightValue(volumeKg, unit)} ${unit}`;
+  }
+
+  return [
+    distanceMeters > 0 ? formatDistance(distanceMeters) : null,
+    durationSeconds > 0 ? formatDuration(durationSeconds) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
 
 function setTypeLabel(type: WorkoutSet['type'], t: TFunction) {
   switch (type) {
@@ -187,6 +208,16 @@ export function WorkoutSessionDetailScreen() {
           value={totals.restSeconds > 0 ? formatDuration(totals.restSeconds) : '–'}
         />
       </View>
+      {totals.durationSeconds > 0 || totals.distanceMeters > 0 ? (
+        <View style={styles.tiles}>
+          {totals.durationSeconds > 0 ? (
+            <StatTile label={t('workouts.setTimeLabel')} value={formatDuration(totals.durationSeconds)} />
+          ) : null}
+          {totals.distanceMeters > 0 ? (
+            <StatTile label={t('workouts.distanceLabel')} value={formatDistance(totals.distanceMeters)} />
+          ) : null}
+        </View>
+      ) : null}
 
       <RecordsCard
         title={t('progress.records.beaten')}
@@ -241,7 +272,7 @@ export function WorkoutSessionDetailScreen() {
           <View style={styles.exerciseHeader}>
             <Text style={styles.cardTitle}>{exercise.exerciseName}</Text>
             <Text style={styles.exerciseVolume}>
-              {`${formatWeightValue(exerciseVolumeKg(exercise), unit)} ${unit}`}
+              {exerciseHeadline(exercise, unit)}
             </Text>
           </View>
           {exercise.sets.map((set) => {
@@ -256,7 +287,7 @@ export function WorkoutSessionDetailScreen() {
                 />
                 <Text style={styles.setNum}>{set.order}</Text>
                 <Text style={styles.setValue}>
-                  {`${formatWeightValue(set.weightKg, unit)} ${unit} × ${set.reps ?? '–'}`}
+                  {formatSetValues(set, unit)}
                 </Text>
                 {type ? (
                   <Chip label={type} size="sm" tone={set.type === 'failure' ? 'record' : 'neutral'} />

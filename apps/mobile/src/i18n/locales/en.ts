@@ -138,6 +138,15 @@ export const en = {
     loadError: 'Unable to load muscle groups.',
     validation: 'Name and at least one primary muscle group are required.',
     createError: 'Unable to create exercise.',
+    // Tracking type (spec 0021).
+    trackingTitle: 'What each set records',
+    trackingTypes: {
+      weight_reps: 'Weight & reps',
+      reps: 'Reps only',
+      duration: 'Time',
+      weight_duration: 'Weight & time',
+      distance_duration: 'Distance & time',
+    },
   },
   settings: {
     language: 'Language',
@@ -296,6 +305,11 @@ export const en = {
     colSet: 'SET',
     colPrev: 'PREVIOUS',
     colReps: 'REPS',
+    // Time and distance sets (spec 0021).
+    colTime: 'TIME',
+    colDistance: 'DIST',
+    startSetTimer: 'Start set timer',
+    stopSetTimer: 'Stop set timer',
     addSet: 'Add set',
     removeExercise: 'Remove exercise',
     replaceExercise: 'Replace exercise',
@@ -337,6 +351,9 @@ export const en = {
     backToHistory: 'Back to history',
     duration: 'Duration',
     restLabel: 'Rest',
+    // Time and distance sets (spec 0021).
+    setTimeLabel: 'Set time',
+    distanceLabel: 'Distance',
   },
   progress: {
     est1rmShort: 'Est. 1RM',
@@ -360,6 +377,9 @@ export const en = {
     notAvailable: 'Progress data is not available for this exercise yet.',
     backToProgress: 'Back to progress',
     heaviestOverTime: 'Heaviest weight over time',
+    // Time and distance records (spec 0021).
+    longestTime: 'Longest time',
+    longestDistance: 'Longest distance',
     volumeByCategory: 'Volume by category',
     freqWeekStreak: 'Week streak',
     freqWorkouts: 'Workouts',

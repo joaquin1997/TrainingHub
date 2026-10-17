@@ -22,6 +22,8 @@ export function buildRoutineCopyInput(routine: Routine): CreateRoutineInput {
             minReps: set.minReps,
             maxReps: set.maxReps,
             targetWeight: set.targetWeight,
+            targetDurationSeconds: set.targetDurationSeconds,
+            targetDistanceMeters: set.targetDistanceMeters,
           })),
       })),
   };

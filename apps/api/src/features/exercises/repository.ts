@@ -1,7 +1,8 @@
 import { Prisma } from '@prisma/client';
-import type { Exercise, MuscleGroup } from '@workout/domain';
+import type { CreateExerciseInput, Exercise, MuscleGroup } from '@workout/domain';
 
 import { prisma } from '../../infrastructure/prisma.js';
+import { toExerciseTrackingType } from './trackingTypes.js';
 
 const exerciseInclude = {
   createdByUser: {
@@ -31,12 +32,6 @@ type ExerciseRecord = Prisma.ExerciseGetPayload<{
   include: typeof exerciseInclude;
 }>;
 
-type CreateExerciseInput = {
-  name: string;
-  primaryMuscleGroupIds: string[];
-  secondaryMuscleGroupIds: string[];
-};
-
 export class InvalidMuscleGroupSelectionError extends Error {
   constructor(message = 'Invalid muscle group selection') {
     super(message);
@@ -65,6 +60,7 @@ function mapExercise(record: ExerciseRecord): Exercise {
     lastSourceUpdate: record.lastSourceUpdate?.toISOString(),
     isSystemDefined: record.isSystemDefined,
     createdByUserId: record.createdByUser?.publicId,
+    trackingType: toExerciseTrackingType(record.trackingType),
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
   };
@@ -252,6 +248,7 @@ export async function createExercise(
       name: input.name,
       equipment: [],
       isSystemDefined: false,
+      trackingType: input.trackingType ?? 'weight_reps',
       createdByUser: {
         connect: {
           publicId: userPublicId,
