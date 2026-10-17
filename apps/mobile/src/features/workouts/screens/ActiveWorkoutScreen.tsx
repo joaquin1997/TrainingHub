@@ -72,6 +72,8 @@ import { formatDuration } from '@/lib/format';
 import { isPermanentRejection } from '@/lib/http';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
 import { colors, commonStyles, fonts, layout, radii, spacing, typeScale } from '@/ui/theme';
+import { tickFeedback } from '@/features/workouts/liveRecords/tickFeedback';
+import { haptics } from '@/ui/haptics';
 import { CardHeader } from '@/ui/CardHeader';
 import type { Exercise, ExerciseLastPerformance } from '@workout/domain';
 import { syncWorkoutCompletionToAppleHealth } from '@/features/health/integrations/appleWorkoutIntegration';
@@ -516,6 +518,13 @@ export function ActiveWorkoutScreen() {
           settings.defaultRestSeconds,
         )
       : toggleWorkoutSetDone(workoutDraft, workoutExerciseId, workoutSetId);
+    // One pulse per tick: the record pattern replaces the tap (spec 0034 FR-4).
+    const feedback = tickFeedback(workoutDraft, nextDraft, workoutSetId);
+    if (feedback === 'record') {
+      haptics.record();
+    } else if (feedback === 'setDone') {
+      haptics.setDone();
+    }
     scrollAfterTickRef.current =
       becomingDone && (!nextDraft.rest || nextDraft.rest === workoutDraft.rest);
     setActiveWorkout(nextDraft);
@@ -633,6 +642,8 @@ export function ActiveWorkoutScreen() {
       workoutExerciseId,
       workoutSetId,
     );
+    // Removing a set has no dialog: the tap is the confirmation (spec 0034 FR-4).
+    haptics.destructiveConfirm();
     setActiveWorkout(nextDraft);
   };
 
