@@ -67,6 +67,11 @@ export interface Exercise {
   createdByUserId?: EntityId;
   /** What its sets record; absent from older servers, meaning `weight_reps`. */
   trackingType?: ExerciseTrackingType;
+  /**
+   * Done one side at a time: its sets record left and right reps (spec 0022).
+   * Applies to rep-based tracking types. Absent from older servers = false.
+   */
+  isUnilateral?: boolean;
   createdAt: ISODateString;
   updatedAt: ISODateString;
 }
@@ -87,6 +92,13 @@ export interface CreateExerciseInput {
   secondaryMuscleGroupIds: string[];
   /** Defaults to `weight_reps` (spec 0021 FR-2). */
   trackingType?: ExerciseTrackingType;
+  /** Defaults to false (spec 0022 FR-1). */
+  isUnilateral?: boolean;
+}
+
+/** Body of `PUT /exercises/:id/unilateral` (spec 0022 FR-1). */
+export interface SetExerciseUnilateralInput {
+  isUnilateral: boolean;
 }
 
 /**
@@ -129,6 +141,8 @@ export interface RoutineExercise {
   supersetGroup?: number;
   /** The exercise's tracking type, read from the exercise (spec 0021). */
   trackingType?: ExerciseTrackingType;
+  /** Whether the exercise is unilateral, read from the exercise (spec 0022). */
+  isUnilateral?: boolean;
   sets: RoutineExerciseSet[];
   createdAt: ISODateString;
   updatedAt: ISODateString;
@@ -236,7 +250,11 @@ export interface WorkoutSet {
   workoutExerciseId: EntityId;
   order: number;
   type: WorkoutSetType;
+  /** For a set with sides, the sum of both (spec 0022), so volume reads it as is. */
   reps?: number;
+  /** Reps per side of a unilateral exercise's set (spec 0022); absent = not done. */
+  repsLeft?: number;
+  repsRight?: number;
   weightKg?: number;
   durationSeconds?: number;
   distanceMeters?: number;
@@ -260,7 +278,11 @@ export interface WorkoutSet {
 export interface WorkoutSetInput {
   order: number;
   type?: WorkoutSetType;
+  /** Replaced by the server with `repsLeft + repsRight` when a side is sent. */
   reps?: number;
+  /** Reps per side (spec 0022); the same weight for both sides. */
+  repsLeft?: number;
+  repsRight?: number;
   weightKg?: number;
   durationSeconds?: number;
   distanceMeters?: number;
@@ -431,6 +453,9 @@ export interface MuscleGroupVolumePoint {
 export interface ExerciseLastSet {
   order: number;
   reps?: number;
+  /** Per side, for "last time" placeholders (spec 0022 FR-4). */
+  repsLeft?: number;
+  repsRight?: number;
   weightKg?: number;
   durationSeconds?: number;
   distanceMeters?: number;
