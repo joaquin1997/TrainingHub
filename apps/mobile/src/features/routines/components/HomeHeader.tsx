@@ -64,12 +64,10 @@ export function HomeHeader({
 
       {today ? (
         <Pressable
-          accessibilityRole="button"
           onPress={() => onOpenRoutine(today)}
           style={({ pressed }) => [styles.card, pressed ? commonStyles.pressed : null]}
         >
           <View style={styles.cardText}>
-            <Text style={styles.cardLabel}>{t('home.todayLabel')}</Text>
             <Text style={styles.cardTitle} numberOfLines={2}>
               {t('home.todayTitle', { name: today.name })}
             </Text>
@@ -118,10 +116,6 @@ const styles = StyleSheet.create({
   cardText: {
     flex: 1,
     gap: spacing.xxs,
-  },
-  cardLabel: {
-    ...commonStyles.sectionLabel,
-    color: colors.primary,
   },
   cardTitle: {
     ...commonStyles.cardTitle,

@@ -573,7 +573,6 @@ export const en = {
     thisWeek_one: '{{count}} this week',
     thisWeek_other: '{{count}} this week',
     todayTitle: 'Today: {{name}}',
-    todayLabel: 'Today’s routine',
     todayStart: 'Start',
     todayGone: 'That routine no longer exists.',
   },

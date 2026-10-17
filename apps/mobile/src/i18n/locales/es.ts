@@ -576,7 +576,6 @@ export const es: TranslationCatalog = {
     thisWeek_one: '{{count}} esta semana',
     thisWeek_other: '{{count}} esta semana',
     todayTitle: 'Hoy: {{name}}',
-    todayLabel: 'Rutina de hoy',
     todayStart: 'Empezar',
     todayGone: 'Esa rutina ya no existe.',
   },
