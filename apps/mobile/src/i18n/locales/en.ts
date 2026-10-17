@@ -443,6 +443,15 @@ export const en = {
     // Time and distance sets (spec 0021).
     setTimeLabel: 'Set time',
     distanceLabel: 'Distance',
+    // A set row's one status area and its second line (spec 0034 FR-19).
+    setStatus: {
+      last: 'Last {{value}}',
+      record: 'Done, record',
+      done: 'Done',
+      generatedWarmup: 'Generated warm-up, not done',
+      upNext: 'Up next',
+      none: 'Not done',
+    },
   },
   progress: {
     est1rmShort: 'Est. 1RM',

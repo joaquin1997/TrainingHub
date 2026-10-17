@@ -112,11 +112,15 @@ export const typeScale = {
   body: { fontSize: 16, lineHeight: 22 },
   /** Secondary text, section labels, column headers, chips — the smallest text. */
   caption: { fontSize: 13, lineHeight: 18 },
-  /** The key figure of a screen: the workout clock, a hero figure. */
+  /**
+   * The key figure of a screen and the set row's values: the workout clock, a
+   * hero figure, weight and reps (0034 FR-19). 28 pt so "102.5" fits a value
+   * column of a 375 pt-wide phone (30 pt measured 3 pt too wide).
+   */
   figureLarge: {
     fontFamily: fonts.displayBold,
-    fontSize: 40,
-    lineHeight: 46,
+    fontSize: 28,
+    lineHeight: 34,
     fontVariant: tabular,
   },
   /** Other figures: tiles, set inputs, the rest clock, chart values. */
