@@ -139,6 +139,8 @@ export type WorkoutSessionDraft = {
   pausedSeconds?: number;
   /** The rest counting down now; absent when none runs (spec 0018). */
   rest?: RunningRest;
+  /** The exercise of the last set ticked; anchors "next set" (spec 0029). */
+  lastTickedExerciseId?: string;
   /** The warm-up block's checklist; absent when the routine has none (spec 0024). */
   warmUp?: WarmUpItemDraft[];
   exercises: WorkoutExerciseDraft[];

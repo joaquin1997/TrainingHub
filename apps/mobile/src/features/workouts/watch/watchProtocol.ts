@@ -4,7 +4,7 @@ import type {
   WatchWorkoutSnapshot,
 } from '@workout/domain';
 
-import { nextSetToDo, type SetToDo } from '@/features/workouts/restTimer/nextSetToDo';
+import { currentSetToDo } from '@/features/workouts/restTimer/nextSetToDo';
 import {
   completeSet,
   effectiveSetValue,
@@ -18,18 +18,10 @@ import {
 import { trackingFields } from '@/lib/tracking';
 
 /**
- * The set the watch offers to tick (spec 0025 FR-4). During a rest, the set
- * after it (spec 0018's order, supersets alternating); otherwise the next set
- * of the first exercise block with one left. Null when every set is done.
+ * The set the watch offers to tick (spec 0025 FR-4): the same set the phone
+ * shows as next, in superset round order (spec 0029 FR-11).
  */
-export function currentSetToDo(draft: WorkoutSessionDraft): SetToDo | null {
-  if (draft.rest) {
-    return nextSetToDo(draft, draft.rest.workoutExerciseId);
-  }
-
-  const first = draft.exercises.find((exercise) => exercise.entries.some((set) => !set.done));
-  return first ? nextSetToDo(draft, first.id) : null;
-}
+export { currentSetToDo };
 
 /**
  * The planned values as the phone shows them, e.g. "60 kg × 8", "0:45" or
