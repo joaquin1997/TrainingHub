@@ -148,7 +148,7 @@ function chronological(sessions: ProgressSessionInput[]): ProgressSessionInput[]
  * Records per exercise (spec 0023), from working sets only: warmups never
  * count. An exercise logged twice in one workout is one session here.
  */
-function buildRecordHistories(
+export function buildRecordHistories(
   ordered: ProgressSessionInput[],
 ): Map<string, ExerciseRecordSessions> {
   const work = new Map<

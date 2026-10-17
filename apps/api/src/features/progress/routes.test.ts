@@ -6,6 +6,7 @@ vi.mock('./repository.js', () => ({
   listWeeklyVolume: vi.fn(),
   listMuscleGroupVolume: vi.fn(),
   listSessionRecords: vi.fn(),
+  listStartingRecords: vi.fn(),
 }));
 vi.mock('../../infrastructure/userContext.js', () => ({
   resolveUserPublicId: vi.fn(async () => 'user-test'),
@@ -17,6 +18,7 @@ import {
   listExerciseProgress,
   listMuscleGroupVolume,
   listSessionRecords,
+  listStartingRecords,
   listWeeklyVolume,
 } from './repository.js';
 
@@ -74,6 +76,44 @@ describe('GET /progress/muscle-distribution', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual([{ group: 'Chest', totalVolume: 1000 }]);
+  });
+});
+
+describe('GET /progress/starting-records (spec 0032)', () => {
+  it('passes the distinct ids, in order, to the repository', async () => {
+    vi.mocked(listStartingRecords).mockResolvedValue([
+      { exerciseId: 'e2', bests: {}, repsAtWeight: [] },
+      { exerciseId: 'e1', bests: { heaviestWeight: 100 }, repsAtWeight: [] },
+    ]);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/progress/starting-records?exerciseIds=e2,e1,e2',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(listStartingRecords).toHaveBeenCalledWith('user-test', ['e2', 'e1']);
+    expect(response.json()).toHaveLength(2);
+  });
+
+  it.each(['', '?exerciseIds=', '?exerciseIds=,,'])('refuses %j with 400', async (query) => {
+    const response = await app.inject({
+      method: 'GET',
+      url: `/progress/starting-records${query}`,
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(listStartingRecords).not.toHaveBeenCalled();
+  });
+
+  it('refuses more than 50 ids', async () => {
+    const ids = Array.from({ length: 51 }, (_, index) => `e${index}`).join(',');
+    const response = await app.inject({
+      method: 'GET',
+      url: `/progress/starting-records?exerciseIds=${ids}`,
+    });
+
+    expect(response.statusCode).toBe(400);
   });
 });
 
