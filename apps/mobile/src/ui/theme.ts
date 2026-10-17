@@ -1,13 +1,13 @@
 import { StyleSheet } from 'react-native';
 
-import { colors, fonts, layout, radii, spacing, typeScale } from './tokens';
+import { colors, fonts, fontScaleCap, layout, radii, spacing, typeScale } from './tokens';
 
 /**
  * Screens import the tokens from here (the values live in `tokens.ts`, the
  * only file where they are written — spec 0034 FR-10 – FR-12) together with
  * the shared styles built on them.
  */
-export { colors, fonts, layout, radii, spacing, typeScale };
+export { colors, fonts, fontScaleCap, layout, radii, spacing, typeScale };
 export type { TypeStyle } from './tokens';
 
 export const fontAssets = {

@@ -9,7 +9,7 @@ import { useRestRemaining } from '@/features/workouts/restTimer/useRestRemaining
 import type { WorkoutSessionDraft } from '@/features/workouts/state/workoutDraftStore';
 import { formatDuration } from '@/lib/format';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, fontScaleCap, fonts, radii, spacing, typeScale } from '@/ui/theme';
 
 interface WorkoutBarProps {
   /** Pad for the home indicator; only where no tab bar sits below the bar. */
@@ -67,16 +67,16 @@ function ActiveWorkoutBar({
     >
       <View style={[styles.dot, isPaused ? styles.dotPaused : null]} />
       <View style={styles.text}>
-        <Text style={[styles.label, isResting ? styles.labelResting : null]}>
+        <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn} style={[styles.label, isResting ? styles.labelResting : null]}>
           {isResting
             ? t('workouts.rest')
             : t(isPaused ? 'routines.pausedLabel' : 'routines.activeLabel')}
         </Text>
-        <Text style={styles.name} numberOfLines={1}>
+        <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn} style={styles.name} numberOfLines={1}>
           {workout.routineName}
         </Text>
       </View>
-      <Text
+      <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn}
         style={[
           styles.clock,
           isPaused ? styles.clockPaused : null,

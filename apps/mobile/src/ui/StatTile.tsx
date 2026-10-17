@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, commonStyles, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, fontScaleCap, radii, spacing, typeScale } from '@/ui/theme';
 
 interface StatTileProps {
   label: string;
@@ -27,7 +27,12 @@ export function StatTile({ label, value, unit, caption, icon, tone = 'neutral' }
         {icon ? <Ionicons name={icon} size={16} color={colors.textMuted} /> : null}
       </View>
       <Text style={styles.valueLine}>
-        <Text style={[styles.value, { color: figureColor }]}>{value}</Text>
+        <Text
+          maxFontSizeMultiplier={fontScaleCap.fixedColumn}
+          style={[styles.value, { color: figureColor }]}
+        >
+          {value}
+        </Text>
         {unit ? <Text style={styles.unit}>{` ${unit}`}</Text> : null}
       </Text>
       {caption ? (

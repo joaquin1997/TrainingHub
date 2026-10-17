@@ -32,7 +32,7 @@ empty states → brand → haptics → motion → Dynamic Type → docs.
 | 11 | [x] Brand assets script + PNGs; `app.json` icon / adaptive icon / favicon / splash / dark appearance; `expo-splash-screen`, `expo-system-ui`; splash hand-over in the root layout | mobile | config unit test; web favicon (AC-1, AC-2 partly) — **native rebuild** | `feat(ui): app icon, splash and dark system appearance` |
 | 12 | [x] `expo-haptics`; `ui/haptics.ts`; `tickFeedback`; wired to tick, rest over, destructive confirm, remove set, discard-and-start | mobile | unit tests (AC-3 logic, EF-1, EF-3) — **native rebuild** | `feat(ui): haptic language` |
 | 13 | [x] `useReducedMotion`; done-set transition; record badge pop; rest bar drains smoothly | mobile | typecheck; web export (AC-4 partly) | `feat(ui): small motion that respects reduce motion` |
-| 14 | [ ] Dynamic Type caps on fixed-width figures and bars | mobile | typecheck | `feat(ui): dynamic type caps on fixed-width figures` |
+| 14 | [x] Dynamic Type caps on fixed-width figures and bars | mobile | typecheck | `feat(ui): dynamic type caps on fixed-width figures` |
 | 15 | [ ] Progress log, web export check, definition of done | docs | `expo export --platform web` | `docs(sdd): record 0034 phase A implementation` |
 | 16 | [ ] [DEVICE] After a native rebuild: AC-1 icon on home screen / switcher / no prebuild icon warning (iOS + Android); AC-2 splash frame by frame; AC-3 four haptic patterns, none on untick/scroll/buttons; AC-4 motion with Reduce Motion off and on; AC-11 largest accessibility text on an SE-width iPhone (active workout with L/R + superset + generated warm-up, routines list, routine detail, summary, settings) | device | owner | — |
 

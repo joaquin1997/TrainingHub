@@ -14,7 +14,7 @@ import {
 import { confirmAction } from '@/lib/confirmAction';
 import { formatDuration } from '@/lib/format';
 import { Button } from '@/ui/Button';
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, fonts, fontScaleCap, radii, spacing, typeScale } from '@/ui/theme';
 import { ListRow } from '@/ui/ListRow';
 import { CardHeader } from '@/ui/CardHeader';
 import { ScreenTitle } from '@/ui/ScreenTitle';
@@ -103,7 +103,9 @@ export function SettingsScreen() {
           >
             <Ionicons name="remove" size={22} color={colors.text} />
           </Pressable>
-          <Text style={styles.restValue}>{formatDuration(settings.defaultRestSeconds)}</Text>
+          <Text maxFontSizeMultiplier={fontScaleCap.largeFigure} style={styles.restValue}>
+            {formatDuration(settings.defaultRestSeconds)}
+          </Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="+15 s"

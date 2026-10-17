@@ -8,7 +8,7 @@ import type { RunningRest } from '@/features/workouts/state/workoutDraftStore';
 import { useRestRemaining } from '@/features/workouts/restTimer/useRestRemaining';
 import { formatDuration } from '@/lib/format';
 import { Button } from '@/ui/Button';
-import { colors, commonStyles, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, fontScaleCap, radii, spacing, typeScale } from '@/ui/theme';
 import { useReducedMotion } from '@/ui/useReducedMotion';
 
 interface RestBarProps {
@@ -77,19 +77,19 @@ export function RestBar({ rest, onAdjust, onSkip, next }: RestBarProps) {
         )}
       </View>
       {next ? (
-        <Text style={styles.next} numberOfLines={1}>
+        <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn} style={styles.next} numberOfLines={1}>
           {t('workouts.restNext', { set: next })}
         </Text>
       ) : null}
       <View style={styles.row}>
         <Ionicons name="timer-outline" size={18} color={colors.accent} />
         <View style={styles.text}>
-          <Text style={styles.label}>{t('workouts.rest')}</Text>
-          <Text style={styles.clock}>{formatDuration(remaining)}</Text>
+          <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn} style={styles.label}>{t('workouts.rest')}</Text>
+          <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn} style={styles.clock}>{formatDuration(remaining)}</Text>
         </View>
-        <Button label="−15 s" variant="secondary" onPress={() => onAdjust(-15)} style={styles.step} />
-        <Button label="+15 s" variant="secondary" onPress={() => onAdjust(15)} style={styles.step} />
-        <Button
+        <Button maxFontScale={fontScaleCap.fixedColumn} label="−15 s" variant="secondary" onPress={() => onAdjust(-15)} style={styles.step} />
+        <Button maxFontScale={fontScaleCap.fixedColumn} label="+15 s" variant="secondary" onPress={() => onAdjust(15)} style={styles.step} />
+        <Button maxFontScale={fontScaleCap.fixedColumn}
           label={t('workouts.skip')}
           icon="play-skip-forward"
           variant="secondary"

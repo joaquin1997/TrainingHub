@@ -71,7 +71,7 @@ import { confirmAction } from '@/lib/confirmAction';
 import { formatDuration } from '@/lib/format';
 import { isPermanentRejection } from '@/lib/http';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
-import { colors, commonStyles, fonts, layout, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, fonts, fontScaleCap, layout, radii, spacing, typeScale } from '@/ui/theme';
 import { tickFeedback } from '@/features/workouts/liveRecords/tickFeedback';
 import { haptics } from '@/ui/haptics';
 import { CardHeader } from '@/ui/CardHeader';
@@ -898,7 +898,11 @@ export function ActiveWorkoutScreen() {
             </View>
             <Text style={styles.routineName}>{workoutDraft.routineName}</Text>
             <View style={styles.clockRow}>
-              <Text style={[styles.clock, isPaused ? styles.clockPaused : null]}>
+              {/* The clock and its button share one row (spec 0034 FR-18 caps). */}
+              <Text
+                maxFontSizeMultiplier={fontScaleCap.largeFigure}
+                style={[styles.clock, isPaused ? styles.clockPaused : null]}
+              >
                 {formatDuration(elapsedSeconds)}
               </Text>
               <Button
@@ -906,6 +910,7 @@ export function ActiveWorkoutScreen() {
                 icon={isPaused ? 'play' : 'pause'}
                 variant="secondary"
                 onPress={handleTogglePause}
+                maxFontScale={fontScaleCap.fixedColumn}
               />
             </View>
             {activeKcal !== null ? (

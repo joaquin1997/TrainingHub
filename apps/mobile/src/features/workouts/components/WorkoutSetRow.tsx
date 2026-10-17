@@ -26,7 +26,7 @@ import {
   type SetValueField,
 } from '@/lib/tracking';
 import { fromKg, roundWeight } from '@/lib/weight';
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, fontScaleCap, fonts, radii, spacing, typeScale } from '@/ui/theme';
 import { useReducedMotion } from '@/ui/useReducedMotion';
 
 /**
@@ -148,15 +148,15 @@ export function WorkoutSetHeader({ trackingType, unilateral, unit }: HeaderProps
 
   return (
     <View style={styles.headerRow}>
-      <Text style={[styles.colSet, styles.colLabel]}>{t('workouts.colSet')}</Text>
-      <Text
+      <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn} style={[styles.colSet, styles.colLabel]}>{t('workouts.colSet')}</Text>
+      <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn}
         numberOfLines={1}
         style={[styles.colPrev, compact ? styles.colPrevCompact : null, styles.colLabel]}
       >
         {t('workouts.colPrev')}
       </Text>
       {fields.map((field) => (
-        <Text
+        <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn}
           key={field}
           numberOfLines={1}
           style={[
@@ -271,7 +271,7 @@ export function WorkoutSetRow({
     switch (field) {
       case 'weight':
         return (
-          <TextInput
+          <TextInput maxFontSizeMultiplier={fontScaleCap.fixedColumn}
             keyboardAppearance="dark"
             key={field}
             keyboardType="decimal-pad"
@@ -284,7 +284,7 @@ export function WorkoutSetRow({
         );
       case 'reps':
         return (
-          <TextInput
+          <TextInput maxFontSizeMultiplier={fontScaleCap.fixedColumn}
             keyboardAppearance="dark"
             key={field}
             keyboardType="number-pad"
@@ -299,7 +299,7 @@ export function WorkoutSetRow({
       case 'repsRight': {
         const side = field === 'repsLeft' ? 'left' : 'right';
         return (
-          <TextInput
+          <TextInput maxFontSizeMultiplier={fontScaleCap.fixedColumn}
             keyboardAppearance="dark"
             key={field}
             keyboardType="number-pad"
@@ -314,7 +314,7 @@ export function WorkoutSetRow({
       }
       case 'distance':
         return (
-          <TextInput
+          <TextInput maxFontSizeMultiplier={fontScaleCap.fixedColumn}
             keyboardAppearance="dark"
             key={field}
             keyboardType="decimal-pad"
@@ -331,7 +331,7 @@ export function WorkoutSetRow({
             key={field}
             style={[styles.colInput, compact ? styles.colTimeWide : null, styles.timeCell]}
           >
-            <TextInput
+            <TextInput maxFontSizeMultiplier={fontScaleCap.fixedColumn}
               keyboardAppearance="dark"
               keyboardType="numbers-and-punctuation"
               editable={!timer.isRunning}
@@ -386,7 +386,7 @@ export function WorkoutSetRow({
           set.generatedWarmup ? styles.markerGenerated : null,
         ]}
       >
-        <Text
+        <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn}
           style={[
             styles.markerText,
             set.type === 'failure' ? styles.markerTextFailure : null,
@@ -402,7 +402,7 @@ export function WorkoutSetRow({
           </View>
         ) : null}
       </Pressable>
-      <Text
+      <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn}
         numberOfLines={1}
         style={[styles.colPrev, compact ? styles.colPrevCompact : null, styles.prevText]}
       >

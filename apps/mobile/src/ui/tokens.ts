@@ -129,3 +129,16 @@ export const typeScale = {
 } satisfies Record<string, TextStyle>;
 
 export type TypeStyle = keyof typeof typeScale;
+
+/**
+ * Largest system text scale some text follows (spec 0034 FR-18). Body and
+ * caption text grow without a cap; only figures and labels that sit in a
+ * fixed-width column or a one-line bar stop growing, so they never overlap
+ * the done target or push a control off screen (EF-8).
+ */
+export const fontScaleCap = {
+  /** Set row columns (36 / 64 / 44 pt), the rest bar, the workout bar. */
+  fixedColumn: 1.3,
+  /** The workout clock beside its Pause button. */
+  largeFigure: 1.5,
+};
