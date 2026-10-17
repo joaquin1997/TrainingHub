@@ -211,6 +211,13 @@ export const es: TranslationCatalog = {
     deleteEntry: 'Eliminar registro',
     deleteEntryTitle: '¿Eliminar este registro?',
     deleteEntryMessage: 'Se eliminan todas las medidas que contiene.',
+    latest: 'Último',
+    sincePrevious: 'Desde el anterior',
+    sinceFirst: 'Desde el primero',
+    trend: 'Tendencia',
+    entries: 'Registros',
+    historyEmpty: 'No hay registros de esta medida.',
+    unknownMeasurement: 'Medida desconocida.',
   },
   exercises: {
     primaryLabel: 'Músculos primarios',

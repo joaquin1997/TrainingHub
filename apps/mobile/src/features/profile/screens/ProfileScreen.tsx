@@ -1,8 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import type { BodyMeasurementEntry, WeightUnit } from '@workout/domain';
+import type { BodyMeasurementEntry, BodyMeasurementKey, WeightUnit } from '@workout/domain';
 
 import { profileClient } from '@/features/profile/api/profileClient';
 import { ProfileAvatar } from '@/features/profile/components/ProfileAvatar';
@@ -121,6 +122,7 @@ export function ProfileScreen() {
         unit={unit}
         locale={i18n.language}
         onAdd={() => router.push('/settings/measurement')}
+        onOpen={(key) => router.push(`/settings/measurements/${key}`)}
       />
       <ActionSheet
         visible={photoSheetOpen}
@@ -150,12 +152,14 @@ function BodySection({
   unit,
   locale,
   onAdd,
+  onOpen,
 }: {
   entries: BodyMeasurementEntry[];
   heightCm: number | null;
   unit: WeightUnit;
   locale: string;
   onAdd: () => void;
+  onOpen: (key: BodyMeasurementKey) => void;
 }) {
   const { t } = useTranslation();
   const latest = latestByKind(entries);
@@ -189,13 +193,19 @@ function BodySection({
           {measured.map(({ key }) => {
             const point = latest[key]!;
             return (
-              <View key={key} style={styles.latestRow}>
+              <Pressable
+                key={key}
+                accessibilityRole="button"
+                onPress={() => onOpen(key)}
+                style={({ pressed }) => [styles.latestRow, pressed ? commonStyles.pressed : null]}
+              >
                 <Text style={styles.latestLabel}>{t(`profile.kinds.${key}`)}</Text>
                 <View style={styles.latestValue}>
                   <Text style={commonStyles.label}>{formatMeasurement(key, point.value, unit)}</Text>
                   <Text style={styles.latestDate}>{formatDate(point.measuredAt, locale)}</Text>
                 </View>
-              </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              </Pressable>
             );
           })}
         </View>

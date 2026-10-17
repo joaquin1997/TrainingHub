@@ -208,6 +208,13 @@ export const en = {
     deleteEntry: 'Delete entry',
     deleteEntryTitle: 'Delete this entry?',
     deleteEntryMessage: 'Every measurement in it is deleted.',
+    latest: 'Latest',
+    sincePrevious: 'Since previous',
+    sinceFirst: 'Since first',
+    trend: 'Trend',
+    entries: 'Entries',
+    historyEmpty: 'No entries for this measurement.',
+    unknownMeasurement: 'Unknown measurement.',
   },
   exercises: {
     primaryLabel: 'Primary muscles',

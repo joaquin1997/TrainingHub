@@ -27,7 +27,7 @@ const MIN_BAR_RATIO = 0.08;
  * chart shows the latest trend. Heights are scaled across the visible range so
  * differences are easy to read.
  */
-function scaleSeries(
+export function scaleSeries(
   entries: Array<{ date: string; value: number }>,
   maxPoints: number,
 ): ChartSeries {
