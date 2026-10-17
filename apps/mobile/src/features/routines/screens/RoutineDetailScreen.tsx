@@ -7,6 +7,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { exerciseBlockLabels } from '@/features/routines/utils/exerciseBlockLabels';
+import { SupersetHeader } from '@/features/routines/components/SupersetHeader';
 import { buildRoutineCopyInput } from '@/features/routines/utils/duplicateRoutine';
 import { routineSetLabel } from '@/features/routines/utils/routineApproachSets';
 import { useSettings } from '@/features/settings/SettingsContext';
@@ -320,11 +321,7 @@ export function RoutineDetailScreen() {
             }
             return (
               <View key={block.key} style={styles.blockCard}>
-                <Chip
-                  icon="flash"
-                  label={t('routineDetail.superset', { group: first.supersetIndex })}
-                  size="sm"
-                />
+                <SupersetHeader size={block.members.length} />
                 <View style={styles.supersetBody}>
                   <View style={styles.rail} />
                   <View style={styles.supersetMembers}>

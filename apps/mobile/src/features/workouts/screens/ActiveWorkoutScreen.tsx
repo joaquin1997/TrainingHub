@@ -37,9 +37,19 @@ import { RestBar } from '@/features/workouts/components/RestBar';
 import { WarmUpChecklist } from '@/features/workouts/components/WarmUpChecklist';
 import { toggleWarmUpItem } from '@/features/workouts/state/warmUpDraft';
 import { ApproachSetsPreviewSheet } from '@/features/workouts/components/ApproachSetsPreviewSheet';
-import { RestEditorSheet } from '@/features/workouts/components/RestEditorSheet';
 import { WarmUpActionButton } from '@/features/workouts/components/WarmUpActionButton';
-import { nextSetToDo } from '@/features/workouts/restTimer/nextSetToDo';
+import {
+  moveWorkoutExerciseInGroups,
+  removeWorkoutExerciseInGroups,
+} from '@/features/workouts/superset/groupedDraft';
+import {
+  completeSetInRounds,
+  roundIndexOf,
+  roundStatus,
+} from '@/features/workouts/superset/rounds';
+import { RestEditorSheet } from '@/features/workouts/components/RestEditorSheet';
+import { currentSetToDo } from '@/features/workouts/restTimer/nextSetToDo';
+import { nextSetLabel } from '@/features/workouts/restTimer/nextSetLabel';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { useActiveEnergyKcal } from '@/features/workouts/hooks/useActiveEnergyKcal';
@@ -50,6 +60,7 @@ import {
 } from '@/features/workouts/utils/activeWorkoutEntry';
 import { parseWorkoutAction } from '@/features/workouts/utils/workoutAction';
 import { exerciseBlockLabels } from '@/features/routines/utils/exerciseBlockLabels';
+import { SupersetHeader } from '@/features/routines/components/SupersetHeader';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StateView } from '@/ui/StateView';
@@ -66,13 +77,10 @@ import {
   adjustRest,
   applyLastPerformance,
   clearActiveWorkout,
-  completeSet,
   countWorkoutSets,
   cycleWorkoutSetType,
   getActiveWorkout,
-  moveWorkoutExercise,
   pauseWorkout,
-  removeExerciseFromWorkout,
   removeSetFromWorkoutExercise,
   resolveRestSeconds,
   resumeWorkout,
@@ -114,6 +122,8 @@ export function ActiveWorkoutScreen() {
   const viewportHeightRef = useRef(0);
   const workoutDraft = useActiveWorkout();
   const lastRestRef = useRef<RunningRest | undefined>(workoutDraft?.rest);
+  // Set by a tick that starts no rest: bring the next set into view at once.
+  const scrollAfterTickRef = useRef(false);
   // An active workout already on the device opens immediately, offline too.
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(() =>
     resolveActiveWorkoutEntry(getActiveWorkout(), routineId) === 'resume'
@@ -329,17 +339,20 @@ export function ActiveWorkoutScreen() {
     }
   }, [workoutDraft, lastByExercise]);
 
-  // A rest that ended or was skipped while this screen is open brings the
-  // next set to do to about a third of the screen (FR-5). A new rest replacing
-  // a running one, a finish or a discard do not scroll.
+  // A rest that ended or was skipped while this screen is open, or a tick that
+  // started no rest (spec 0029 FR-8), brings the next set to do to about a
+  // third of the screen (FR-5). A new rest replacing a running one, a finish
+  // or a discard do not scroll.
   useEffect(() => {
     const previous = lastRestRef.current;
     lastRestRef.current = workoutDraft?.rest;
-    if (!previous || !workoutDraft || workoutDraft.rest) {
+    const afterTick = scrollAfterTickRef.current;
+    scrollAfterTickRef.current = false;
+    if (!workoutDraft || workoutDraft.rest || (!previous && !afterTick)) {
       return;
     }
 
-    const target = nextSetToDo(workoutDraft, previous.workoutExerciseId);
+    const target = currentSetToDo(workoutDraft);
     if (!target) {
       return;
     }
@@ -486,18 +499,20 @@ export function ActiveWorkoutScreen() {
     )?.done;
 
     // Ticking starts the exercise's rest in this workout, else the Settings
-    // default (FR-1) — the same rule as a tick from the watch (spec 0025).
+    // default (FR-1); in a superset only a tick that completes the round rests
+    // (spec 0029) — the same rule as a tick from the watch (spec 0025).
     // Un-ticking leaves a running rest alone.
-    setActiveWorkout(
-      becomingDone
-        ? completeSet(
-            workoutDraft,
-            workoutExerciseId,
-            workoutSetId,
-            settings.defaultRestSeconds,
-          )
-        : toggleWorkoutSetDone(workoutDraft, workoutExerciseId, workoutSetId),
-    );
+    const nextDraft = becomingDone
+      ? completeSetInRounds(
+          workoutDraft,
+          workoutExerciseId,
+          workoutSetId,
+          settings.defaultRestSeconds,
+        )
+      : toggleWorkoutSetDone(workoutDraft, workoutExerciseId, workoutSetId);
+    scrollAfterTickRef.current =
+      becomingDone && (!nextDraft.rest || nextDraft.rest === workoutDraft.rest);
+    setActiveWorkout(nextDraft);
   };
 
   const applyDraft = (nextDraft: WorkoutSessionDraft) => {
@@ -570,7 +585,7 @@ export function ActiveWorkoutScreen() {
       return;
     }
 
-    applyDraft(removeExerciseFromWorkout(workoutDraft, workoutExerciseId));
+    applyDraft(removeWorkoutExerciseInGroups(workoutDraft, workoutExerciseId));
   };
 
   const handleMoveExercise = (
@@ -582,7 +597,7 @@ export function ActiveWorkoutScreen() {
     }
 
     applyDraft(
-      moveWorkoutExercise(workoutDraft, workoutExerciseId, direction),
+      moveWorkoutExerciseInGroups(workoutDraft, workoutExerciseId, direction),
     );
   };
 
@@ -658,6 +673,8 @@ export function ActiveWorkoutScreen() {
   const unit = workoutDraft.unit ?? 'kg';
   const isPaused = Boolean(workoutDraft.pausedAt);
   const blockLabels = exerciseBlockLabels(workoutDraft.exercises);
+  // The set to do now: highlighted, and named in the rest bar (spec 0029).
+  const upNext = currentSetToDo(workoutDraft);
   const blocks: number[][] = [];
   blockLabels.forEach((label, index) => {
     if (label.superset === 'none' || label.superset === 'start') {
@@ -726,7 +743,10 @@ export function ActiveWorkoutScreen() {
             unilateral={exercise.isUnilateral}
             unit={unit}
           />
-          {exercise.entries.map((set) => (
+          {exercise.entries.map((set) => {
+            // In a superset each working set shows its round on the rail (FR-14).
+            const round = inSuperset ? roundIndexOf(exercise, set.id) : -1;
+            return (
             // The row ref lets the screen scroll the next set into view (0018).
             <View
               key={set.id}
@@ -738,6 +758,15 @@ export function ActiveWorkoutScreen() {
                 }
               }}
             >
+              {round >= 0 ? (
+                <View pointerEvents="none" style={styles.roundTagSlot}>
+                  <View style={styles.roundTag}>
+                    <Text style={styles.roundTagText}>
+                      {t('supersets.roundTag', { round: round + 1 })}
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
               <WorkoutSetRow
                 set={set}
                 trackingType={exercise.trackingType}
@@ -755,8 +784,12 @@ export function ActiveWorkoutScreen() {
                 onToggleDone={() => handleToggleDone(exercise.id, set.id)}
                 onRemove={() => handleRemoveSet(exercise.id, set.id)}
               />
+              {upNext?.workoutSetId === set.id ? (
+                <View pointerEvents="none" style={styles.upNextRing} />
+              ) : null}
             </View>
-          ))}
+            );
+          })}
           <View style={styles.cardActions}>
             <Button
               label={t('workouts.addSet')}
@@ -879,10 +912,11 @@ export function ActiveWorkoutScreen() {
             }
             return (
               <View key={key} style={styles.card}>
-                <Chip
-                  icon="flash"
-                  label={t('routineDetail.superset', { group: first.supersetIndex })}
-                  size="sm"
+                <SupersetHeader
+                  size={members.length}
+                  round={roundStatus(
+                    members.flatMap((index) => workoutDraft.exercises[index] ?? []),
+                  )}
                 />
                 <View style={styles.supersetBody}>
                   <View style={styles.rail} />
@@ -953,6 +987,7 @@ export function ActiveWorkoutScreen() {
               setActiveWorkout(skipRest(current));
             }
           }}
+          next={nextSetLabel(workoutDraft, t)}
         />
       ) : null}
       <ApproachSetsPreviewSheet
@@ -1111,6 +1146,43 @@ const styles = StyleSheet.create({
   },
   indented: {
     marginLeft: 36,
+  },
+  // Centred on the superset rail, in the gutter left of the set rows.
+  roundTagSlot: {
+    position: 'absolute',
+    left: -36,
+    width: 28,
+    top: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  roundTag: {
+    minWidth: 24,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 3,
+    paddingVertical: 1,
+    alignItems: 'center',
+  },
+  roundTagText: {
+    color: colors.textMuted,
+    fontFamily: fonts.displayBold,
+    fontSize: 10,
+    lineHeight: 13,
+  },
+  // Drawn over the row, so highlighting never shifts the layout (FR-14).
+  upNextRing: {
+    position: 'absolute',
+    top: -2,
+    bottom: -2,
+    left: -2,
+    right: -2,
+    borderRadius: radii.md,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
   },
   exercise: {
     gap: spacing.sm,

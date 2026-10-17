@@ -4,32 +4,24 @@ import type {
   WatchWorkoutSnapshot,
 } from '@workout/domain';
 
-import { nextSetToDo, type SetToDo } from '@/features/workouts/restTimer/nextSetToDo';
+import { currentSetToDo } from '@/features/workouts/restTimer/nextSetToDo';
+import { completeSetInRounds, restAfterTick } from '@/features/workouts/superset/rounds';
 import {
-  completeSet,
   effectiveSetValue,
   effectiveSideReps,
   pauseWorkout,
-  resolveRestSeconds,
   resumeWorkout,
+  type RunningRest,
   type WorkoutSetDraft,
   type WorkoutSessionDraft,
 } from '@/features/workouts/state/workoutDraftStore';
 import { trackingFields } from '@/lib/tracking';
 
 /**
- * The set the watch offers to tick (spec 0025 FR-4). During a rest, the set
- * after it (spec 0018's order, supersets alternating); otherwise the next set
- * of the first exercise block with one left. Null when every set is done.
+ * The set the watch offers to tick (spec 0025 FR-4): the same set the phone
+ * shows as next, in superset round order (spec 0029 FR-11).
  */
-export function currentSetToDo(draft: WorkoutSessionDraft): SetToDo | null {
-  if (draft.rest) {
-    return nextSetToDo(draft, draft.rest.workoutExerciseId);
-  }
-
-  const first = draft.exercises.find((exercise) => exercise.entries.some((set) => !set.done));
-  return first ? nextSetToDo(draft, first.id) : null;
-}
+export { currentSetToDo };
 
 /**
  * The planned values as the phone shows them, e.g. "60 kg × 8", "0:45" or
@@ -103,7 +95,8 @@ export function toWatchSnapshot(
               exercise.trackingType,
               exercise.isUnilateral,
             ),
-            restSeconds: resolveRestSeconds(exercise, defaultRestSeconds),
+            // 0 for a set that does not finish its superset round (spec 0029).
+            restSeconds: restAfterTick(draft, exercise.id, set.id, defaultRestSeconds),
           }
         : undefined,
   };
@@ -115,13 +108,23 @@ export function sameSnapshot(left: WatchWorkoutSnapshot, right: WatchWorkoutSnap
 }
 
 /**
+ * When a rest started. Estimated from its end and length, which is exact
+ * until extra time is added or taken away (spec 0029 plan, Risks).
+ */
+function restStartedMs(rest: RunningRest): number {
+  return Date.parse(rest.endsAt) - rest.totalSeconds * 1000;
+}
+
+/**
  * Applies a request from the watch to the active workout (spec 0025). Events
  * for another workout, and those that change nothing on the draft
  * (`finishRequested`, `activeEnergy`), return the draft as it is.
  *
- * A tick starts its rest from the instant it was made on the watch, so one
- * delivered late may start a rest that is already over (spec 0018's runner
- * then clears it without an alert); it never replaces a rest that ends later.
+ * A tick follows the superset rules of the phone (spec 0029 FR-11) and starts
+ * its rest from the instant it was made on the watch, so one delivered late
+ * may start a rest that is already over (spec 0018's runner then clears it
+ * without an alert); it never replaces a rest that ends later, and a tick
+ * that ends the rest mid-round (FR-4) never ends one started after it (EF-6).
  */
 export function applyWatchEvent(
   draft: WorkoutSessionDraft,
@@ -134,18 +137,21 @@ export function applyWatchEvent(
 
   switch (event.kind) {
     case 'setDone': {
-      const next = completeSet(
+      const next = completeSetInRounds(
         draft,
         event.workoutExerciseId,
         event.workoutSetId,
         defaultRestSeconds,
         new Date(event.at),
       );
+      const running = draft.rest;
       const keepRest =
         next !== draft &&
-        draft.rest &&
-        (!next.rest || Date.parse(draft.rest.endsAt) > Date.parse(next.rest.endsAt));
-      return keepRest ? { ...next, rest: draft.rest } : next;
+        running !== undefined &&
+        (next.rest
+          ? Date.parse(running.endsAt) > Date.parse(next.rest.endsAt)
+          : restStartedMs(running) > Date.parse(event.at));
+      return keepRest ? { ...next, rest: running } : next;
     }
     case 'pause':
       return pauseWorkout(draft, new Date(event.at));

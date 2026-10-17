@@ -5,24 +5,19 @@ import { AppState, Vibration } from 'react-native';
 
 import type { WorkoutSessionDraft } from '@/features/workouts/state/workoutDraftStore';
 
-import { nextSetToDo } from './nextSetToDo';
+import { nextSetLabel } from './nextSetLabel';
 import { restAlertsForThisDevice, type RestAlertContent } from './restAlerts';
 import { startRestTimerRunner } from './restTimerRunner';
 
 const REST_OVER_VIBRATION = [0, 400, 200, 400];
 
-/** "Rest over" — "Next: {exercise}", the exercise of the next set to do. */
+/** "Rest over" — "Next: {exercise} · set {n}", the set to do now (spec 0029 FR-10). */
 function restOverContent(draft: WorkoutSessionDraft, t: TFunction): RestAlertContent {
-  const target = draft.rest ? nextSetToDo(draft, draft.rest.workoutExerciseId) : null;
-  const exercise = target
-    ? draft.exercises.find((item) => item.id === target.workoutExerciseId)
-    : undefined;
+  const next = nextSetLabel(draft, t);
 
   return {
     title: t('workouts.restOverTitle'),
-    body: exercise
-      ? t('workouts.restOverBody', { exercise: exercise.exerciseName })
-      : t('workouts.restOverBodyGeneric'),
+    body: next ? t('workouts.restOverBody', { exercise: next }) : t('workouts.restOverBodyGeneric'),
   };
 }
 
