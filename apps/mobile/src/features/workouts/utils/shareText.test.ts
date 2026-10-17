@@ -66,4 +66,20 @@ describe('formatWorkoutShareText', () => {
     const text = formatWorkoutShareText({ ...base, title: undefined, durationSeconds: null });
     expect(text.split('\n').slice(0, 2)).toEqual(['Thursday, October 15', 'Volume 1000 kg']);
   });
+
+  it('shows time and distance sets as logged (spec 0021)', () => {
+    const text = formatWorkoutShareText({
+      ...base,
+      exercises: [
+        { name: 'Plank', sets: [{ durationSeconds: 60, type: 'normal', performed: true }] },
+        {
+          name: 'Rowing Machine',
+          sets: [{ distanceMeters: 500, durationSeconds: 105, type: 'normal', performed: true }],
+        },
+      ],
+    });
+
+    expect(text).toContain('Plank\n1. 1:00');
+    expect(text).toContain('Rowing Machine\n1. 500 m · 1:45');
+  });
 });

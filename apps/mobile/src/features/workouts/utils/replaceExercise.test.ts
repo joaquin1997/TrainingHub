@@ -118,6 +118,33 @@ describe('replaceExerciseInWorkout', () => {
     expect(newSet!.restSeconds).toBeUndefined();
   });
 
+  it('takes the new exercise tracking type; clears typed time, keeps the time target (spec 0021)', () => {
+    const plank = draft([
+      exercise(
+        'p',
+        1,
+        [set(1, { duration: '1:00', durationPlaceholder: '1:10', targetDurationSeconds: 45 })],
+        { trackingType: 'duration' },
+      ),
+    ]);
+    const replaced = replaceExerciseInWorkout(
+      plank,
+      'p',
+      { id: 'side', name: 'Side plank', trackingType: 'weight_duration' },
+      'drop',
+    ).exercises[0]!;
+
+    expect(replaced.trackingType).toBe('weight_duration');
+    expect(replaced.entries[0]).toMatchObject({
+      duration: '',
+      durationPlaceholder: '0:45',
+      targetDurationSeconds: 45,
+    });
+    expect(
+      replaceExerciseInWorkout(plank, 'p', hackSquat, 'drop').exercises[0]!.trackingType,
+    ).toBeUndefined();
+  });
+
   it("'drop' discards the done sets and mirrors every set", () => {
     const started = draft([
       exercise('b', 1, [set(1, { done: true, reps: '10' }), set(2), set(3)]),

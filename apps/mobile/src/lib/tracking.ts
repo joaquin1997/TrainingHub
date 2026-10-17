@@ -87,7 +87,9 @@ export function formatDistance(meters: number) {
   return `${Math.round(meters / 10) / 100} km`;
 }
 
-type SetValues = Pick<WorkoutSet, 'reps' | 'weightKg' | 'durationSeconds' | 'distanceMeters'>;
+type SetValues = {
+  [Key in 'reps' | 'weightKg' | 'durationSeconds' | 'distanceMeters']?: WorkoutSet[Key] | null;
+};
 
 /**
  * One line for a saved set, built from the values it holds rather than the

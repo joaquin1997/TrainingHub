@@ -1,3 +1,6 @@
+import type { ExerciseTrackingType } from '@workout/domain';
+
+import { formatDuration } from '@/lib/format';
 import type {
   WorkoutExerciseDraft,
   WorkoutSessionDraft,
@@ -23,8 +26,8 @@ export function countDoneSets(exercise: WorkoutExerciseDraft): number {
 /**
  * A fresh, empty set of the same type. Built field by field on purpose: nothing
  * typed or ghosted for the old exercise carries over, so the new exercise shows
- * its own last-time values once they load (FR-3). The routine's rep range is
- * the slot's plan and stays.
+ * its own last-time values once they load (FR-3). The routine's rep range,
+ * time and distance targets are the slot's plan and stay (spec 0021).
  */
 function emptySetLike(set: WorkoutSetDraft, order: number, exerciseId: string): WorkoutSetDraft {
   const targetReps = set.maxReps ?? set.minReps;
@@ -35,10 +38,20 @@ function emptySetLike(set: WorkoutSetDraft, order: number, exerciseId: string): 
     reps: '',
     weightKg: '',
     repsPlaceholder: targetReps !== undefined ? String(targetReps) : undefined,
+    duration: '',
+    distance: '',
+    durationPlaceholder:
+      set.targetDurationSeconds !== undefined
+        ? formatDuration(set.targetDurationSeconds)
+        : undefined,
+    distancePlaceholder:
+      set.targetDistanceMeters !== undefined ? String(set.targetDistanceMeters) : undefined,
     done: false,
     type: set.type,
     minReps: set.minReps,
     maxReps: set.maxReps,
+    targetDurationSeconds: set.targetDurationSeconds,
+    targetDistanceMeters: set.targetDistanceMeters,
   };
 }
 
@@ -59,7 +72,7 @@ function emptySetLike(set: WorkoutSetDraft, order: number, exerciseId: string): 
 export function replaceExerciseInWorkout(
   workoutDraft: WorkoutSessionDraft,
   workoutExerciseId: string,
-  exercise: { id: string; name: string },
+  exercise: { id: string; name: string; trackingType?: ExerciseTrackingType },
   doneSets: DoneSetsChoice,
 ): WorkoutSessionDraft {
   const index = workoutDraft.exercises.findIndex(
@@ -82,6 +95,8 @@ export function replaceExerciseInWorkout(
     id: replacementId,
     exerciseId: exercise.id,
     exerciseName: exercise.name,
+    // The replacement records what the new exercise tracks (spec 0021).
+    trackingType: exercise.trackingType,
     imagePlaceholderText: undefined,
     routineExerciseId: undefined,
     entries: template.map((set, setIndex) =>

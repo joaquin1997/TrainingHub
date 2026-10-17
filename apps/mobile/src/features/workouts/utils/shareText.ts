@@ -1,11 +1,15 @@
 import { describeRecord } from '@/features/progress/utils/recordLabels';
 import { formatDayHeading, formatDuration } from '@/lib/format';
+import { formatSetValues } from '@/lib/tracking';
 import { formatWeightValue } from '@/lib/weight';
 import type { SessionRecord, WeightUnit, WorkoutSetType } from '@workout/domain';
 
 export interface ShareSet {
   weightKg?: number | null;
   reps?: number | null;
+  /** Time and distance sets read "1:00" or "500 m · 1:45" (spec 0021). */
+  durationSeconds?: number | null;
+  distanceMeters?: number | null;
   type: WorkoutSetType;
   performed: boolean;
 }
@@ -63,7 +67,7 @@ export function formatWorkoutShareText(input: ShareWorkoutInput): string {
     done.forEach((set, index) => {
       const label = set.type === 'normal' ? '' : ` (${t(`workouts.setType.${set.type}`)})`;
       lines.push(
-        `${index + 1}. ${formatWeightValue(set.weightKg, unit)} ${unit} × ${set.reps ?? '–'}${label}`,
+        `${index + 1}. ${formatSetValues(set, unit)}${label}`,
       );
     });
   }
