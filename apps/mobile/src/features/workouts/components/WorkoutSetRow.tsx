@@ -1,23 +1,28 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useRef } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import type {
   ExerciseLastPerformance,
   ExerciseTrackingType,
+  LiveRecordHit,
   WeightUnit,
   WorkoutSetType,
 } from '@workout/domain';
 
 import { useSetTimer } from '@/features/workouts/hooks/useSetTimer';
 import {
+  recordBadgeAccessibilityLabel,
+  recordBadgeLabel,
+} from '@/features/workouts/liveRecords/recordBadgeLabel';
+import {
   effectiveSetValue,
   sideRepsPlaceholder,
   type SetDraftField,
   type WorkoutSetDraft,
 } from '@/features/workouts/state/workoutDraftStore';
+import { setStatus, setStatusLabel } from '@/features/workouts/utils/setStatus';
 import { formatDuration } from '@/lib/format';
 import {
   formatDistance,
@@ -27,7 +32,8 @@ import {
 } from '@/lib/tracking';
 import { fromKg, roundWeight } from '@/lib/weight';
 import { colors, commonStyles, fontScaleCap, fonts, radii, spacing, typeScale } from '@/ui/theme';
-import { useReducedMotion } from '@/ui/useReducedMotion';
+
+import { SetStatusArea, STATUS_AREA_SIZE, useDoneTransition } from './SetStatusArea';
 
 /**
  * A column of the row: a tracked field, or one side of the reps of a
@@ -53,6 +59,19 @@ const DRAFT_FIELD: Record<SetValueField, SetDraftField> = {
   distance: 'distance',
 };
 
+/** Sizes of the row's fixed parts (spec 0034 FR-19); hit areas reach 44 pt. */
+const MARKER_SIZE = 32;
+const REMOVE_WIDTH = 32;
+const TIMER_SIZE = 32;
+/** Row height of line 1: the status area's side. */
+const LINE_HEIGHT = STATUS_AREA_SIZE;
+
+/** Grows a control's touch area to 44 pt around a smaller visual. */
+const MARKER_HIT = { top: 6, bottom: 6, left: 6, right: 6 };
+/** Never reaches the status area: the row gap is 8 pt (plan-b, B1). */
+const REMOVE_HIT = { top: 0, bottom: 0, left: 4, right: 8 };
+const TIMER_HIT = 6;
+
 export function setTypeLabel(type: WorkoutSetType, t: TFunction) {
   switch (type) {
     case 'warmup':
@@ -68,7 +87,7 @@ export function setTypeLabel(type: WorkoutSetType, t: TFunction) {
 
 /**
  * Compact "previous performance" for a set in the exercise's fields, e.g.
- * "60×8", "1:00" or "500m·1:45"; "–" when there is none.
+ * "60 × 8", "1:00" or "500m · 1:45"; "–" when there is none.
  */
 export function previousSetLabel(
   performance: ExerciseLastPerformance | null | undefined,
@@ -105,12 +124,13 @@ export function previousSetLabel(
     return '–';
   }
 
-  return parts.map((part) => part ?? '–').join(fields.includes('reps') ? '×' : '·');
+  return parts.map((part) => part ?? '–').join(fields.includes('reps') ? ' × ' : ' · ');
 }
 
 /**
- * Two fields plus the timer do not fit the usual columns on a phone: the
- * previous column narrows, the time column widens and the figures shrink.
+ * Two fields plus the timer, or three columns, leave narrower inputs: the
+ * time column widens to hold its timer. Every value stays in Figure large
+ * (spec 0034 FR-19); a value wider than its field scrolls inside it.
  */
 function isCompact(fields: readonly SetColumn[]) {
   return (fields.length > 1 && fields.includes('duration')) || fields.length > 2;
@@ -140,7 +160,11 @@ type HeaderProps = {
   unit: WeightUnit;
 };
 
-/** Column labels above an exercise's sets, for its tracking type (spec 0021 FR-3). */
+/**
+ * Column labels above an exercise's sets, for its tracking type (spec 0021
+ * FR-3): over the marker and each value column; nothing over the status area
+ * and remove (spec 0034 — "last time" is on the row's second line).
+ */
 export function WorkoutSetHeader({ trackingType, unilateral, unit }: HeaderProps) {
   const { t } = useTranslation();
   const fields = rowColumns(trackingType, unilateral);
@@ -148,30 +172,35 @@ export function WorkoutSetHeader({ trackingType, unilateral, unit }: HeaderProps
 
   return (
     <View style={styles.headerRow}>
-      <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn} style={[styles.colSet, styles.colLabel]}>{t('workouts.colSet')}</Text>
-      <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn}
+      <Text
+        maxFontSizeMultiplier={fontScaleCap.fixedColumn}
         numberOfLines={1}
-        style={[styles.colPrev, compact ? styles.colPrevCompact : null, styles.colLabel]}
+        style={[styles.colSet, styles.colLabel]}
       >
-        {t('workouts.colPrev')}
+        {t('workouts.colSet')}
       </Text>
-      {fields.map((field) => (
-        <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn}
-          key={field}
-          numberOfLines={1}
-          style={[
-            styles.colInput,
-            field === 'duration' ? styles.colTimeLabel : null,
-            field === 'duration' && compact ? styles.colTimeWide : null,
-            styles.colLabel,
-            styles.colCentered,
-          ]}
-        >
-          {columnLabel(field, unit, t)}
-        </Text>
-      ))}
-      <Ionicons name="checkmark" size={14} color={colors.textMuted} style={styles.colCheckIcon} />
-      <View style={styles.colRemove} />
+      <View style={styles.line}>
+        <View style={[styles.inputs, compact ? styles.inputsCompact : null]}>
+          {fields.map((field) => (
+            <Text
+              maxFontSizeMultiplier={fontScaleCap.fixedColumn}
+              key={field}
+              numberOfLines={1}
+              style={[
+                styles.colInput,
+                field === 'duration' ? styles.colTimeLabel : null,
+                field === 'duration' && compact ? styles.colTimeWide : null,
+                styles.colLabel,
+                styles.colCentered,
+              ]}
+            >
+              {columnLabel(field, unit, t)}
+            </Text>
+          ))}
+        </View>
+        <View style={styles.colStatus} />
+        <View style={styles.colRemove} />
+      </View>
     </View>
   );
 }
@@ -183,46 +212,26 @@ type RowProps = {
   unilateral?: boolean;
   unit: WeightUnit;
   previousLabel: string;
+  /** The set to do now (spec 0034 FR-20). */
+  isUpNext?: boolean;
+  /** Records this done set beat (spec 0032), if any. */
+  recordHits?: LiveRecordHit[];
+  /** The tick that just happened earned the record: it pops (FR-7). */
+  recordPop?: boolean;
   onChange: (field: SetDraftField, value: string) => void;
   onCycleType: () => void;
   onToggleDone: () => void;
   onRemove: () => void;
 };
 
-/** Length of the done/undone transition (spec 0034 FR-6: about a third of a second at most). */
-export const DONE_TRANSITION_MS = 220;
-
 /**
- * 0 → 1 as the set becomes done, back on untick (spec 0034 FR-6). A tick and
- * untick in quick succession just retarget the running animation, so the row
- * always ends in its final state (EF-2). Instant under Reduce Motion (FR-9).
- */
-function useDoneTransition(done: boolean): Animated.Value {
-  const reducedMotion = useReducedMotion();
-  const progress = useRef(new Animated.Value(done ? 1 : 0)).current;
-
-  useEffect(() => {
-    if (reducedMotion) {
-      progress.setValue(done ? 1 : 0);
-      return;
-    }
-    const animation = Animated.timing(progress, {
-      toValue: done ? 1 : 0,
-      duration: DONE_TRANSITION_MS,
-      easing: Easing.out(Easing.quad),
-      useNativeDriver: true,
-    });
-    animation.start();
-    return () => animation.stop();
-  }, [done, progress, reducedMotion]);
-
-  return progress;
-}
-
-/**
- * One set of the active workout: type marker, previous, one input per
- * tracked field, done and remove. A time field carries the set timer
- * (FR-4) and is shown as m:ss once it loses focus (EF-2).
+ * One set of the active workout (spec 0034 FR-19), on two lines:
+ * 1. type marker (secondary) · one input per tracked field in Figure large ·
+ *    the status area (the done target) · remove;
+ * 2. "Last …" and, for a record, what it beat — muted, wrapping, omitted
+ *    when there is nothing to say.
+ * A time field carries the set timer (0021 FR-4) and is shown as m:ss once
+ * it loses focus (EF-2).
  */
 export function WorkoutSetRow({
   set,
@@ -230,6 +239,9 @@ export function WorkoutSetRow({
   unilateral,
   unit,
   previousLabel,
+  isUpNext = false,
+  recordHits,
+  recordPop = false,
   onChange,
   onCycleType,
   onToggleDone,
@@ -241,6 +253,14 @@ export function WorkoutSetRow({
   const fields = rowColumns(trackingType, unilateral);
   const compact = isCompact(fields);
   const doneProgress = useDoneTransition(set.done);
+  const hasRecord = Boolean(recordHits && recordHits.length > 0);
+  const status = setStatus(set, { hasRecord, isUpNext });
+  const recordText = hasRecord && set.done ? recordBadgeLabel(recordHits!, unit, t) : null;
+  const lastText = previousLabel !== '–' ? t('workouts.setStatus.last', { value: previousLabel }) : null;
+  const statusLabel =
+    status === 'record'
+      ? `${setStatusLabel(status, t)}: ${recordBadgeAccessibilityLabel(recordHits!, unit, t)}`
+      : setStatusLabel(status, t);
 
   const startOrStopTimer = () => {
     if (timer.isRunning) {
@@ -263,7 +283,6 @@ export function WorkoutSetRow({
   const renderInput = (field: SetColumn) => {
     const inputStyle = [
       styles.cellInput,
-      compact ? styles.cellInputCompact : null,
       styles.colInput,
       set.done ? styles.cellInputDone : null,
     ];
@@ -342,7 +361,6 @@ export function WorkoutSetRow({
               onBlur={normaliseDuration}
               style={[
                 styles.cellInput,
-                compact ? styles.cellInputCompact : null,
                 styles.timeInput,
                 set.done ? styles.cellInputDone : null,
                 timer.isRunning ? styles.timeInputRunning : null,
@@ -352,7 +370,7 @@ export function WorkoutSetRow({
               accessibilityRole="button"
               accessibilityLabel={timer.isRunning ? t('workouts.stopSetTimer') : t('workouts.startSetTimer')}
               onPress={startOrStopTimer}
-              hitSlop={4}
+              hitSlop={TIMER_HIT}
               style={[styles.timerButton, timer.isRunning ? styles.timerButtonRunning : null]}
             >
               <Ionicons
@@ -370,73 +388,73 @@ export function WorkoutSetRow({
     <View style={styles.row}>
       {/* The done tint fades in and out (spec 0034 FR-6). */}
       <Animated.View pointerEvents="none" style={[styles.doneTint, { opacity: doneProgress }]} />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={
-          set.generatedWarmup
-            ? t('workouts.generatedWarmupLabel', { type: setTypeLabel(set.type, t) })
-            : setTypeLabel(set.type, t)
-        }
-        onPress={onCycleType}
-        hitSlop={4}
-        style={[
-          styles.marker,
-          set.type === 'failure' ? styles.markerFailure : null,
-          typed ? styles.markerTyped : null,
-          set.generatedWarmup ? styles.markerGenerated : null,
-        ]}
-      >
-        <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn}
+      <View style={styles.markerSlot}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            set.generatedWarmup
+              ? t('workouts.generatedWarmupLabel', { type: setTypeLabel(set.type, t) })
+              : setTypeLabel(set.type, t)
+          }
+          onPress={onCycleType}
+          hitSlop={MARKER_HIT}
           style={[
-            styles.markerText,
-            set.type === 'failure' ? styles.markerTextFailure : null,
-            typed ? styles.markerTextTyped : null,
+            styles.marker,
+            set.type === 'failure' ? styles.markerFailure : null,
+            typed ? styles.markerTyped : null,
           ]}
         >
-          {set.type === 'normal' ? set.order : setTypeLabel(set.type, t)[0]}
-        </Text>
-        {/* Added by the warm-up action, untouched since (spec 0031 FR-6). */}
-        {set.generatedWarmup ? (
-          <View style={styles.generatedBadge} pointerEvents="none">
-            <Ionicons name="sparkles" size={9} color={colors.accent} />
+          <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn}
+            style={[
+              styles.markerText,
+              set.type === 'failure' ? styles.markerTextFailure : null,
+            ]}
+          >
+            {set.type === 'normal' ? set.order : setTypeLabel(set.type, t)[0]}
+          </Text>
+        </Pressable>
+      </View>
+      <View style={styles.body}>
+        <View style={styles.line}>
+          <View style={[styles.inputs, compact ? styles.inputsCompact : null]}>
+            {fields.map(renderInput)}
           </View>
+          <SetStatusArea
+            status={status}
+            pop={recordPop}
+            accessibilityLabel={statusLabel}
+            onPress={onToggleDone}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('common.remove')}
+            onPress={onRemove}
+            hitSlop={REMOVE_HIT}
+            style={styles.colRemove}
+          >
+            <Ionicons name="close" size={18} color={colors.textMuted} />
+          </Pressable>
+        </View>
+        {lastText || recordText ? (
+          <Text style={styles.secondLine}>
+            {lastText}
+            {lastText && recordText ? ' · ' : null}
+            {recordText ? <Text style={styles.recordText}>{recordText}</Text> : null}
+          </Text>
         ) : null}
-      </Pressable>
-      <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn}
-        numberOfLines={1}
-        style={[styles.colPrev, compact ? styles.colPrevCompact : null, styles.prevText]}
-      >
-        {previousLabel}
-      </Text>
-      {fields.map(renderInput)}
-      <Pressable
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: set.done }}
-        onPress={onToggleDone}
-        hitSlop={4}
-        style={[styles.checkBox, set.done ? styles.checkBoxDone : null]}
-      >
-        <Animated.View pointerEvents="none" style={[styles.checkFill, { opacity: doneProgress }]} />
-        <Ionicons name="checkmark" size={20} color={set.done ? colors.onPrimary : colors.controlBorder} />
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('common.remove')}
-        onPress={onRemove}
-        hitSlop={6}
-        style={styles.colRemove}
-      >
-        <Ionicons name="close" size={16} color={colors.textSubtle} />
-      </Pressable>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // Lined up with the rows below: same padding, same (invisible) border.
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: 'transparent',
     paddingHorizontal: spacing.xs,
   },
   colLabel: {
@@ -446,13 +464,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   colSet: {
-    width: 36,
-  },
-  colPrev: {
-    width: 64,
-  },
-  colPrevCompact: {
-    width: 48,
+    width: MARKER_SIZE,
   },
   colInput: {
     flex: 1,
@@ -466,20 +478,21 @@ const styles = StyleSheet.create({
   colTimeLabel: {
     paddingRight: spacing.xxxl,
   },
-  colCheckIcon: {
-    width: 44,
-    textAlign: 'center',
+  colStatus: {
+    width: STATUS_AREA_SIZE,
   },
   colRemove: {
-    width: 20,
+    width: REMOVE_WIDTH,
+    height: LINE_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',
   },
   row: {
-    minHeight: 52,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: radii.md,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.xs,
@@ -489,9 +502,13 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     backgroundColor: colors.successSoft,
   },
+  markerSlot: {
+    height: LINE_HEIGHT,
+    justifyContent: 'center',
+  },
   marker: {
-    width: 36,
-    height: 36,
+    width: MARKER_SIZE,
+    height: MARKER_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radii.sm,
@@ -501,61 +518,64 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.borderStrong,
   },
-  // A generated warm-up (spec 0031): dashed outline plus a badge, not colour alone.
-  markerGenerated: {
-    borderStyle: 'dashed',
-    borderColor: colors.accent,
-  },
-  generatedBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    width: 14,
-    height: 14,
-    borderRadius: radii.round,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.accent,
-  },
   markerFailure: {
     backgroundColor: colors.accentSoft,
   },
+  // The set number is secondary to the values (FR-19).
   markerText: {
-    color: colors.text,
+    color: colors.textMuted,
     fontFamily: fonts.displayBold,
     ...typeScale.body,
     fontVariant: ['tabular-nums'],
   },
-  markerTextTyped: {
-    color: colors.textMuted,
-  },
   markerTextFailure: {
     color: colors.accent,
   },
-  prevText: {
+  body: {
+    flex: 1,
+    minWidth: 0,
+    gap: spacing.xxs,
+  },
+  line: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  inputs: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  // Each input has its own edge; a narrower gap leaves the figures more room.
+  inputsCompact: {
+    gap: spacing.xs,
+  },
+  secondLine: {
     color: colors.textMuted,
-    fontFamily: fonts.display,
     ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
+  recordText: {
+    color: colors.accent,
+    fontWeight: '700',
+  },
   cellInput: {
-    minHeight: 44,
+    minHeight: LINE_HEIGHT,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radii.sm,
     backgroundColor: colors.surfaceRaised,
     color: colors.text,
     textAlign: 'center',
-    // Figure size; inputs take no line height (iOS would clip the glyphs).
+    // Figure large; inputs take no line height (iOS would clip the glyphs).
     fontFamily: fonts.displayBold,
-    fontSize: typeScale.figure.fontSize,
+    fontSize: typeScale.figureLarge.fontSize,
+    letterSpacing: -0.5,
     fontVariant: ['tabular-nums'],
-    paddingVertical: spacing.xs,
-  },
-  cellInputCompact: {
-    fontSize: typeScale.body.fontSize,
+    paddingVertical: 0,
     paddingHorizontal: 0,
   },
   cellInputDone: {
@@ -575,8 +595,8 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   timerButton: {
-    width: 28,
-    height: 28,
+    width: TIMER_SIZE,
+    height: TIMER_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radii.round,
@@ -584,26 +604,5 @@ const styles = StyleSheet.create({
   },
   timerButtonRunning: {
     backgroundColor: colors.primary,
-  },
-  checkBox: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radii.sm,
-    borderWidth: 1.5,
-    // An undone box must stand out from its fill at 3:1 (spec 0034 FR-16).
-    borderColor: colors.controlBorder,
-    backgroundColor: colors.surfaceRaised,
-    overflow: 'hidden',
-  },
-  // The green fill fades in with the row tint; the outline turns green at once.
-  checkBoxDone: {
-    borderColor: colors.success,
-  },
-  checkFill: {
-    ...StyleSheet.absoluteFill,
-    borderRadius: radii.sm,
-    backgroundColor: colors.success,
   },
 });

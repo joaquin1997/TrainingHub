@@ -137,11 +137,11 @@ native rebuild.
 
 | # | Task | Verify | Commit message |
 |---|---|---|---|
-| B1.1 | [ ] `setStatus` + `setStatusLabel` (five states by priority) and `stickyHeaderModel` (up next via `currentSetToDo`, round via `roundStatus`, target values) — pure, with tests | unit tests (AC-13, AC-14 logic) | `feat(workouts): set status and sticky header models` |
-| B1.2 | [ ] `figureLarge` 40/46 → 30/36; `SetStatusArea` (44 × 44, five looks, done fade and record pop moved into it); two-line `WorkoutSetRow` (marker secondary with 44 pt hit, inputs in Figure large, line 2 "Last …" + record label, remove and timer hit areas 44 pt); `WorkoutSetHeader` without "Previous"; status-area contrast pairs; i18n `workouts.setStatus` | unit + contrast tests; web screenshot at 375 pt: "102.5 × 8", L/R + weight, time row (AC-12); fallback 28/34 recorded if it clips | `feat(workouts): set row hierarchy with one status area` |
-| B1.3 | [ ] `ActiveWorkoutScreen`: pass `hasRecord` / `isUpNext` to rows; delete the up-next ring and the per-set `RecordBadge` chip; round tag stays on the rail | typecheck; web screenshot with a done record set, up next and an undone generated warm-up (AC-13) | `refactor(workouts): set status lives in the row` |
-| B1.4 | [ ] `StickyWorkoutHeader` (clock / paused, round chip, up next with target, tap → `scrollToSet`); threshold from the header card's layout, boolean state only on crossing; fade, instant under Reduce Motion; `RecordNotice` offset below it; i18n `workouts.stickyHeader` | unit tests; web export: scroll a superset workout, tap up next (AC-14) | `feat(workouts): sticky workout header` |
-| B1.5 | [ ] B1 progress log, `plan-b.md` *As built* (B1), web export | `expo export --platform web` | `docs(sdd): record 0034 phase B1` |
+| B1.1 | [x] `setStatus` + `setStatusLabel` (five states by priority) and `stickyHeaderModel` (up next via `currentSetToDo`, round via `roundStatus`, target values) — pure, with tests | unit tests (AC-13, AC-14 logic) | `feat(workouts): set status and sticky header models` |
+| B1.2 | [x] `figureLarge` 40/46 → 30/36; `SetStatusArea` (44 × 44, five looks, done fade and record pop moved into it); two-line `WorkoutSetRow` (marker secondary with 44 pt hit, inputs in Figure large, line 2 "Last …" + record label, remove and timer hit areas 44 pt); `WorkoutSetHeader` without "Previous"; status-area contrast pairs; i18n `workouts.setStatus` | unit + contrast tests; web screenshot at 375 pt: "102.5 × 8", L/R + weight, time row (AC-12); fallback 28/34 recorded if it clips | `feat(workouts): set row hierarchy with one status area` |
+| B1.3 | [x] `ActiveWorkoutScreen`: pass `hasRecord` / `isUpNext` to rows; delete the up-next ring and the per-set `RecordBadge` chip; round tag stays on the rail | typecheck; web screenshot with a done record set, up next and an undone generated warm-up (AC-13) | `refactor(workouts): set status lives in the row` |
+| B1.4 | [x] `StickyWorkoutHeader` (clock / paused, round chip, up next with target, tap → `scrollToSet`); threshold from the header card's layout, boolean state only on crossing; fade, instant under Reduce Motion; `RecordNotice` offset below it; i18n `workouts.stickyHeader` | unit tests; web export: scroll a superset workout, tap up next (AC-14) | `feat(workouts): sticky workout header` |
+| B1.5 | [x] B1 progress log, `plan-b.md` *As built* (B1), web export | `expo export --platform web` | `docs(sdd): record 0034 phase B1` |
 | B1.6 | [ ] [DEVICE] AC-12 hit areas and figure size on an iPhone; AC-13; AC-14 in a real superset; EF-8 / AC-11 re-run of the active workout at the largest accessibility size on an SE-width iPhone; ticking and scrolling a 10-exercise workout stay smooth (NFR) | owner | — |
 
 ## B2 — Progress charts
@@ -226,6 +226,32 @@ order); `expo prebuild` and a device build for `react-native-svg`,
   B2 adds one optional field to progress points; B3 needs no API change.
 
 ### B1 log
+
+- 2026-10-18 — B1.1: `setStatus` / `isStatusChecked` / `setStatusLabel` and
+  `stickyHeaderModel` / `upNextTargetLabel`, pure, 21 tests (AC-13 priority
+  cases; AC-14's A/B superset with A2 done → round 2 of 3, B2 "60 kg × 8").
+- 2026-10-18 — B1.2: measured on the web export at 375 pt with a mock API
+  (scratch script, not committed): at **30 pt "102.5" needs 81 pt in a 78 pt
+  value column**, so the plan's fallback **28/34** is the token; at 28 pt it
+  fits (75 pt). Compact rows keep Figure large and their gap between inputs
+  drops to 4 pt, which makes "1:30" fit the time column; long values in
+  compact and superset-indented rows still scroll inside their field (see
+  *As built*). The record pop is `usePop` in `RecordBadge.tsx`, shared by
+  the badge and the status area; the done fade is `useDoneTransition` in
+  `SetStatusArea.tsx`.
+- 2026-10-18 — B1.3: the ring and the per-set chip are gone; web screenshot
+  shows one indicator per set (record trophy on the two done record sets,
+  lime outline on set 3, sparkles on the undone generated warm-ups).
+- 2026-10-18 — B1.4: web export, superset workout scrolled to the last
+  exercise: the compact header shows the clock, "Round 2 of 3" and "Lat
+  pulldown … · Up next · 2B · Set 2 · 60 kg × 8"; tapping it scrolls B2 to a
+  third of the viewport, below the header. "Round 2 of 3" reuses
+  `supersets.roundOf`; "Paused" reuses `workouts.paused`.
+- 2026-10-18 — B1.5: `expo export --platform web` bundles. At a 188 pt
+  viewport (a 200 % zoom proxy) the compact header wraps cleanly; the set
+  rows' inputs collapse there exactly as they did before B1 (same check on
+  the pre-B1 export), so that proxy says nothing new about the rows — the
+  real EF-8 check stays on the device (B1.6).
 
 ### B2 log
 

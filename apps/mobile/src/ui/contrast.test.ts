@@ -64,3 +64,23 @@ describe('palette contrast (spec 0034 FR-16, AC-7)', () => {
     );
   });
 });
+
+describe('set status area contrast (spec 0034 FR-16, FR-19)', () => {
+  it('the trophy and check on the record and done fills are at least 3:1', () => {
+    expect(contrastRatio(colors.onPrimary, colors.accent)).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(colors.onPrimary, colors.success)).toBeGreaterThanOrEqual(3);
+  });
+
+  it('the up-next and warm-up outlines are at least 3:1 against the area and the card', () => {
+    for (const outline of [colors.primary, colors.accent]) {
+      expect(contrastRatio(outline, colors.surfaceRaised)).toBeGreaterThanOrEqual(3);
+      expect(contrastRatio(outline, colors.surface)).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('the record and done fills stand out from the done row tint at 3:1', () => {
+    const doneTint = composite(colors.successSoft, colors.surface);
+    expect(contrastRatio(colors.accent, doneTint)).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(colors.success, doneTint)).toBeGreaterThanOrEqual(3);
+  });
+});

@@ -464,6 +464,23 @@ export const es: TranslationCatalog = {
     // Series de tiempo y distancia (spec 0021).
     setTimeLabel: 'Tiempo en series',
     distanceLabel: 'Distancia',
+    // El área de estado de una serie y su segunda línea (spec 0034 FR-19).
+    setStatus: {
+      last: 'Última vez {{value}}',
+      record: 'Hecha, récord',
+      done: 'Hecha',
+      generatedWarmup: 'Calentamiento generado, sin hacer',
+      upNext: 'Siguiente',
+      none: 'Sin hacer',
+    },
+    // La cabecera compacta al desplazar el entrenamiento (spec 0034 FR-21).
+    stickyHeader: {
+      upNext: 'Siguiente',
+      set: 'Serie {{number}}',
+      warmup: 'Calentamiento',
+      allDone: 'Todas las series hechas',
+      scrollHint: 'Muestra la serie en la lista',
+    },
   },
   progress: {
     est1rmShort: '1RM est.',

@@ -461,6 +461,23 @@ export const en = {
     // Time and distance sets (spec 0021).
     setTimeLabel: 'Set time',
     distanceLabel: 'Distance',
+    // A set row's one status area and its second line (spec 0034 FR-19).
+    setStatus: {
+      last: 'Last {{value}}',
+      record: 'Done, record',
+      done: 'Done',
+      generatedWarmup: 'Generated warm-up, not done',
+      upNext: 'Up next',
+      none: 'Not done',
+    },
+    // The compact header while the workout is scrolled (spec 0034 FR-21).
+    stickyHeader: {
+      upNext: 'Up next',
+      set: 'Set {{number}}',
+      warmup: 'Warm-up',
+      allDone: 'All sets done',
+      scrollHint: 'Shows the set in the list',
+    },
   },
   progress: {
     est1rmShort: 'Est. 1RM',
