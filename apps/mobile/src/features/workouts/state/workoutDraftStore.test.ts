@@ -862,6 +862,123 @@ describe('time and distance sets (spec 0021)', () => {
   });
 });
 
+describe('unilateral sets (spec 0022)', () => {
+  const splitRoutine: Routine = {
+    id: 'routine-legs',
+    userId: 'u1',
+    name: 'Legs',
+    exercises: [
+      {
+        id: 're-split',
+        routineId: 'routine-legs',
+        exerciseId: 'ex-split',
+        exerciseName: 'Bulgarian split squat',
+        orderIndex: 1,
+        isUnilateral: true,
+        sets: [1, 2].map((setNumber) => ({
+          id: `s-split-${setNumber}`,
+          routineExerciseId: 're-split',
+          setNumber,
+          minReps: 8,
+          maxReps: 10,
+          targetWeight: 20,
+          createdAt: '',
+          updatedAt: '',
+        })),
+        createdAt: '',
+        updatedAt: '',
+      },
+    ],
+    createdAt: '',
+    updatedAt: '',
+  };
+
+  const split = (draft: WorkoutSessionDraft) => draft.exercises[0]!;
+
+  it('saves 10 L / 8 R at 20 kg with reps as their sum (AC-1)', () => {
+    const draft = buildWorkoutSessionDraft(splitRoutine);
+    const exercise = split(draft);
+    const set = exercise.entries[0]!;
+    expect(exercise.isUnilateral).toBe(true);
+
+    let next = updateWorkoutSetDraft(draft, exercise.id, set.id, 'repsLeft', '10');
+    next = updateWorkoutSetDraft(next, exercise.id, set.id, 'repsRight', '8');
+    next = toggleWorkoutSetDone(next, exercise.id, set.id, 90);
+
+    const saved = toCreateWorkoutSessionInput(next).exercises[0]!.sets[0]!;
+    expect(saved).toMatchObject({ weightKg: 20, repsLeft: 10, repsRight: 8, reps: 18 });
+  });
+
+  it('ghosts the routine target on both sides and logs it when untouched', () => {
+    const saved = toCreateWorkoutSessionInput(buildWorkoutSessionDraft(splitRoutine))
+      .exercises[0]!.sets[1]!;
+
+    expect(saved).toMatchObject({ repsLeft: 10, repsRight: 10, reps: 20 });
+  });
+
+  it('a side typed 0 is not done for that side (EF-1)', () => {
+    const draft = buildWorkoutSessionDraft(splitRoutine);
+    const exercise = split(draft);
+    const set = exercise.entries[0]!;
+    let next = updateWorkoutSetDraft(draft, exercise.id, set.id, 'repsLeft', '10');
+    next = updateWorkoutSetDraft(next, exercise.id, set.id, 'repsRight', '0');
+
+    const saved = toCreateWorkoutSessionInput(next).exercises[0]!.sets[0]!;
+    expect(saved).toMatchObject({ repsLeft: 10, reps: 10 });
+    expect(saved.repsRight).toBeUndefined();
+  });
+
+  it('a side with no value and no ghost is not done (EF-1)', () => {
+    const draft = addExerciseToWorkout(buildWorkoutSessionDraft(splitRoutine), {
+      id: 'ex-row',
+      name: 'One-arm row',
+      isUnilateral: true,
+    });
+    const row = draft.exercises[1]!;
+    const set = row.entries[0]!;
+    const next = updateWorkoutSetDraft(draft, row.id, set.id, 'repsRight', '12');
+
+    const saved = toCreateWorkoutSessionInput(next).exercises[1]!.sets[0]!;
+    expect(saved).toMatchObject({ repsRight: 12, reps: 12 });
+    expect(saved.repsLeft).toBeUndefined();
+
+    const empty = toCreateWorkoutSessionInput(draft).exercises[1]!.sets[0]!;
+    expect(empty.reps).toBeUndefined();
+  });
+
+  it('fills last time per side and carries the sides to a new set (FR-4)', () => {
+    const draft = applyLastPerformance(buildWorkoutSessionDraft(splitRoutine), 'ex-split', {
+      performedAt: '2026-10-01T10:00:00.000Z',
+      sets: [
+        { order: 1, reps: 18, repsLeft: 10, repsRight: 8, weightKg: 20 },
+        { order: 2, reps: 9, repsLeft: 9, weightKg: 20 },
+      ],
+    });
+    const [first, second] = split(draft).entries;
+
+    expect([first!.repsLeftPlaceholder, first!.repsRightPlaceholder]).toEqual(['10', '8']);
+    // A side not done last time ghosts the other side.
+    expect([second!.repsLeftPlaceholder, second!.repsRightPlaceholder]).toEqual(['9', '9']);
+
+    const typed = updateWorkoutSetDraft(draft, split(draft).id, second!.id, 'repsRight', '7');
+    const withSet = addSetToWorkoutExercise(typed, split(draft).id);
+    const added = split(withSet).entries[2]!;
+    expect([added.repsLeftPlaceholder, added.repsRightPlaceholder]).toEqual(['9', '7']);
+  });
+
+  it('a bilateral exercise saves exactly what it did before', () => {
+    const draft = buildWorkoutSessionDraft({
+      ...splitRoutine,
+      exercises: [{ ...splitRoutine.exercises[0]!, isUnilateral: undefined }],
+    });
+    const saved = toCreateWorkoutSessionInput(draft).exercises[0]!.sets[0]!;
+
+    expect(saved).toMatchObject({ reps: 10, weightKg: 20 });
+    expect('repsLeft' in saved).toBe(false);
+    expect('repsRight' in saved).toBe(false);
+  });
+});
+
 describe('completeSet (spec 0018 FR-1, spec 0025)', () => {
   const at = (seconds: number) => new Date(Date.UTC(2026, 9, 17, 9, 0, seconds));
 
