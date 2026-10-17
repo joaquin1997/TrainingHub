@@ -21,7 +21,7 @@ mobile → docs. The migration is additive; no native rebuild.
 | 5 | [x] Script `sweep-tracking-types.ts` (report / apply / undo), corrections JSON, npm scripts | api | typecheck; run on local PGlite with hand-inserted rows (`SWEEP_WITHOUT_TRANSLATIONS=true`) | `feat(exercises): tracking type sweep with report, apply and undo` |
 | 6 | [x] Records use only the values of the exercise's current type | api | aggregate tests (AC-6, FR-17) | `feat(progress): records follow the exercise's current tracking type` |
 | 7 | [x] Mobile: `setTrackingType` client, `TrackingTypeControl` on the exercise detail, confirm sheet when the exercise has sessions, rollback; i18n | mobile | typecheck; **[DEVICE]** FR-12, FR-14 | `feat(exercises): change the tracking type from the exercise detail` |
-| 8 | [ ] Progress log, definition of done | docs | — | `docs(sdd): record 0030 implementation` |
+| 8 | [x] Progress log, definition of done | docs | — | `docs(sdd): record 0030 implementation` |
 | 9 | [ ] (owner) Deploy the API (migration), run the report, review, correct, apply, re-apply (0 changed) — commands below | ops | — | — |
 | 10 | [ ] [DEVICE] Exercise detail: change a catalog type (Mountain climbers → time), the confirm sheet on an exercise with workouts, a custom exercise of someone else shows no control; a plank row after the sweep shows no previous value (AC-5, AC-6, FR-14) | mobile | device | — |
 
@@ -128,11 +128,22 @@ it before the sweep (harmless; the sweep re-decides those 44).
   exercise 403, its creator 200, unknown id 404; the next sweep apply listed
   "Plancha lateral" as skipped, set by a person (AC-5). Not checked: the
   screen itself (no web preview this time) — [DEVICE] task 10.
+- 2026-10-17 — Task 8. Code complete; left for the owner: the migration on
+  deploy, the report/review/apply on the server (task 9, commands above) and
+  the device check (task 10). Backlog row and roadmap 06 are the
+  coordinator's. Files shared with parallel work: `apps/api/src/routes/index.ts`
+  (one line), `apps/api/prisma/schema.prisma` (one column on `Exercise`),
+  `packages/domain/src/entities.ts` (one interface),
+  `apps/mobile/src/features/exercises/screens/ExerciseDetailScreen.tsx`,
+  `apps/mobile/src/i18n/locales/{en,es}.ts` (`customExercise` block) and
+  `apps/api/src/features/progress/aggregate.ts` (`buildRecordHistories`).
 
 ## Definition of done
 
-- [ ] Every functional requirement and acceptance criterion met or deferred
-- [ ] `pnpm -r typecheck` and `pnpm -r test` green
+- [x] Every functional requirement and acceptance criterion met or deferred
+      (AC-1/AC-2 on the real catalog wait for the owner's report; FR-14 and
+      the detail control wait for the device check; AC-7 by construction)
+- [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [ ] Migration deployed; sweep reported, reviewed and applied on the server (owner)
 - [ ] Device check of the detail control (owner)
 - [ ] Roadmap 06 and backlog updated (coordinator)
