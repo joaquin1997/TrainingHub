@@ -204,6 +204,18 @@ const db = vi.hoisted(() => {
     },
     routine: {
       count: async ({ where }: Row) => state.routines.filter((row) => matches(row, where)).length,
+      findFirst: async ({ where }: Row) => {
+        const routine = state.routines.find((row) => matches(row, where));
+        return routine
+          ? {
+              ...routine,
+              exercises: routine.exercises.map((slot: Row) => ({
+                ...slot,
+                exercise: state.exercises.find((exercise) => exercise.id === slot.exerciseId),
+              })),
+            }
+          : null;
+      },
     },
     workoutSession: {
       count: async ({ where }: Row) => state.workouts.filter((row) => matches(row, where)).length,
@@ -240,6 +252,7 @@ vi.mock('../../infrastructure/userContext.js', () => ({
 }));
 
 import { createApp } from '../../app.js';
+import { findUsableExercises } from './repository.js';
 
 const app = createApp({ logger: false });
 const { state } = db;
@@ -323,6 +336,44 @@ function workout(publicId: string, user: string, day: number, exerciseIds: bigin
   };
 }
 
+function routine(publicId: string, user: string, slots: Array<[bigint, string]>): Row {
+  return {
+    publicId,
+    user: { publicId: user },
+    name: publicId,
+    description: null,
+    folder: null,
+    warmUpItems: [],
+    createdAt: T0,
+    updatedAt: T0,
+    exercises: slots.map(([exerciseId, exerciseName], index) => ({
+      publicId: `${publicId}-re${index}`,
+      exerciseId,
+      exerciseName,
+      orderIndex: index + 1,
+      restSeconds: 90,
+      supersetGroup: null,
+      createdAt: T0,
+      updatedAt: T0,
+      sets: [
+        {
+          publicId: `${publicId}-re${index}-s1`,
+          setNumber: 1,
+          minReps: 8,
+          maxReps: 12,
+          targetWeight: 40,
+          targetDurationSeconds: null,
+          targetDistanceMeters: null,
+          isWarmup: false,
+          isGeneratedWarmup: false,
+          createdAt: T0,
+          updatedAt: T0,
+        },
+      ],
+    })),
+  };
+}
+
 const TYPO = 1n;
 const HAMMER = 2n;
 const CATALOG = 3n;
@@ -348,9 +399,9 @@ beforeEach(() => {
     { exerciseId: HAMMER, data: Buffer.from([0xff, 0xd8, 0xff]), updatedAt: T0 },
   ];
   state.routines = [
-    { publicId: 'r-ana-back', user: { publicId: ANA }, exercises: [{ exerciseId: HAMMER }, { exerciseId: CATALOG }] },
-    { publicId: 'r-ana-legs', user: { publicId: ANA }, exercises: [{ exerciseId: CATALOG }] },
-    { publicId: 'r-ben-back', user: { publicId: BEN }, exercises: [{ exerciseId: HAMMER }] },
+    routine('r-ana-back', ANA, [[HAMMER, 'Hammer row'], [CATALOG, 'Sentadilla']]),
+    routine('r-ana-legs', ANA, [[CATALOG, 'Sentadilla']]),
+    routine('r-ben-back', BEN, [[HAMMER, 'Hammer row']]),
   ];
   state.workouts = [
     workout('w-ana-1', ANA, 1, [HAMMER, CATALOG]),
@@ -590,6 +641,46 @@ describe('deleting a used exercise (AC-2, AC-3, FR-5, FR-6, FR-9, FR-10)', () =>
       headers: as(ANA),
     });
     expect(favourite.statusCode).toBe(404);
+  });
+});
+
+describe('routines that contain a deleted exercise (FR-7, AC-4)', () => {
+  it('keep it with its targets, rest and name, marked as deleted', async () => {
+    const before = await app.inject({ method: 'GET', url: '/routines/r-ana-back', headers: as(ANA) });
+    expect(before.json().exercises[0]).not.toHaveProperty('exerciseDeleted');
+
+    await remove(ANA, 'ex-hammer');
+
+    const response = await app.inject({ method: 'GET', url: '/routines/r-ana-back', headers: as(ANA) });
+    expect(response.statusCode).toBe(200);
+    const [hammer, squat] = response.json().exercises;
+    expect(hammer).toMatchObject({
+      exerciseId: 'ex-hammer',
+      exerciseName: 'Hammer row',
+      exerciseDeleted: true,
+      restSeconds: 90,
+      sets: [expect.objectContaining({ minReps: 8, maxReps: 12, targetWeight: 40 })],
+    });
+    expect(squat).not.toHaveProperty('exerciseDeleted');
+  });
+
+  it("stay saveable: the creator's deleted exercise is still usable for her saves (FR-7, FR-8, EF-5)", async () => {
+    await remove(ANA, 'ex-hammer');
+    await remove(ANA, 'ex-typo', '?inActiveWorkout=true'); // kept only for the active workout
+
+    const usable = await findUsableExercises(ANA, ['ex-hammer', 'ex-typo']);
+    expect([...usable.keys()].sort()).toEqual(['ex-hammer', 'ex-typo']);
+    expect(usable.get('ex-hammer')).toEqual({ id: 'ex-hammer', name: 'Hammer row' });
+  });
+
+  it('stay saveable for someone who held it, and give nobody else a way in', async () => {
+    await remove(ANA, 'ex-hammer');
+    await remove(ANA, 'ex-typo', '?inActiveWorkout=true');
+
+    // Ben held Ana's exercise in his routine and workouts (spec 0015).
+    expect([...(await findUsableExercises(BEN, ['ex-hammer', 'ex-typo'])).keys()]).toEqual([
+      'ex-hammer',
+    ]);
   });
 });
 

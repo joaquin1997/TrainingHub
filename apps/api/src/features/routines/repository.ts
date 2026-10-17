@@ -20,6 +20,7 @@ const routineInclude = {
           publicId: true,
           trackingType: true,
           isUnilateral: true,
+          deletedAt: true,
         },
       },
       sets: true,
@@ -63,6 +64,8 @@ function mapRoutine(userPublicId: string, record: RoutineRecord): Routine {
         supersetGroup: exercise.supersetGroup ?? undefined,
         trackingType: toExerciseTrackingType(exercise.exercise.trackingType),
         isUnilateral: exercise.exercise.isUnilateral,
+        // Spec 0033 FR-7: the slot keeps a deleted exercise, marked as such.
+        exerciseDeleted: exercise.exercise.deletedAt ? true : undefined,
         sets: exercise.sets
           .slice()
           .sort((left, right) => left.setNumber - right.setNumber)

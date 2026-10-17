@@ -17,7 +17,7 @@ API ships before the app (the app's delete action needs the endpoints).
 | 1 | [x] Plan and tasks; spec status `in-progress` | docs | — | `docs(sdd): plan and tasks for 0033` |
 | 2 | [x] `Exercise.deletedAt` + migration `20261018150000_add_exercise_deleted_at`; `visibility.ts`: visible excludes deleted custom exercises, usable keeps the creator's own whatever its lifecycle, classifier `isDeleted` → hidden; `findAccessibleExercise` passes it; tests | api | unit tests; `prisma:generate` | `feat(exercises): deleted lifecycle for custom exercises` |
 | 3 | [x] `ExerciseDeletionImpact` (domain); `deletion.ts` (`planExerciseDeletion`, `deletionImpactWhere`) + tests; repository `getExerciseDeletionImpact`, `deleteCustomExercise` (remove or archive, favourites, photo best effort, `P2003` fallback); `GET /exercises/:id/deletion-impact`, `DELETE /exercises/:id`; route tests | domain / api | unit + route tests (AC-1, 2, 5, 7, EF-2, EF-3) | `feat(exercises): delete custom exercises` |
-| 4 | [ ] `RoutineExercise.exerciseDeleted` (domain); routine reads set it | domain / api | typecheck; e2e (task 7) | `feat(exercises): routines mark deleted exercises` |
+| 4 | [x] `RoutineExercise.exerciseDeleted` (domain); routine reads set it | domain / api | typecheck; e2e (task 7) | `feat(exercises): routines mark deleted exercises` |
 | 5 | [ ] Mobile: client methods; `exerciseDeletion.ts` (`describeDeletionImpact`, `isAlreadyDeleted`) + tests; delete action on the custom exercise detail (impact → confirm → delete; EF-1, EF-2, EF-6); i18n en/es | mobile | unit tests; typecheck | `feat(exercises): delete a custom exercise from its detail` |
 | 6 | [ ] Mobile: "Deleted exercise" chip in routine detail and routine form | mobile | typecheck | `feat(exercises): show deleted exercises in routines` |
 | 7 | [ ] Local end-to-end check on PGlite (two users; AC-1…AC-8, EF-5); progress log; definition of done | docs | log | `docs(sdd): record 0033 implementation` |
@@ -77,6 +77,12 @@ device pass (task 8), the deploy (task 9).
   only, history/progress still named, and same-name create are checked
   through the real code, not through mocks of it. 30 new tests (11 unit, 19
   route).
+- 2026-10-17 — Task 4: `RoutineExercise.exerciseDeleted` (domain, optional,
+  present only when true); the routine read selects `exercise.deletedAt`.
+  Stand-in tests: after deletion the routine still has the slot with its
+  name, rest and targets, marked deleted; the creator's deleted exercise
+  stays usable for her saves (also one kept only for the active workout);
+  Ben, who held it, keeps it usable, and nothing else opens up for him.
 
 ## Definition of done
 
