@@ -76,7 +76,7 @@ import { formatDuration } from '@/lib/format';
 import { isPermanentRejection } from '@/lib/http';
 import { notify } from '@/lib/notify';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
-import { colors, commonStyles, createStyles, fonts, fontScaleCap, layout, radii, spacing, typeScale, useTheme } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, fontScaleCap, keyboardAppearance, layout, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import { tickFeedback } from '@/features/workouts/liveRecords/tickFeedback';
 import { haptics } from '@/ui/haptics';
 import { CardHeader } from '@/ui/CardHeader';
@@ -1053,7 +1053,7 @@ export function ActiveWorkoutScreen() {
             })}
           />
           <TextInput
-            keyboardAppearance="dark"
+            keyboardAppearance={keyboardAppearance()}
             value={workoutDraft.notes ?? ''}
             onChangeText={handleNotesChange}
             placeholder={t('workouts.notesPlaceholder')}

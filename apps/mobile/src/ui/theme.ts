@@ -38,6 +38,11 @@ export function getActiveTheme(): ThemeName {
   return activeTheme;
 }
 
+/** The keyboard text fields ask for: the app's theme, not a fixed one (FR-12). */
+export function keyboardAppearance(): 'light' | 'dark' {
+  return activeTheme;
+}
+
 /**
  * A read-through view of an object chosen at read time: property reads,
  * spreads and `Object.keys` all see the current one.

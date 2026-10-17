@@ -7,7 +7,7 @@ import { formatDuration } from '@/lib/format';
 import { parseDurationInput } from '@/lib/tracking';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
-import { colors, commonStyles, createStyles, fonts, radii, spacing, useTheme } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, keyboardAppearance, radii, spacing, useTheme } from '@/ui/theme';
 import { CardHeader } from '@/ui/CardHeader';
 
 type Props = {
@@ -45,7 +45,7 @@ export function WarmUpBlockEditor({ items, onChange, createId }: Props) {
       {items.map((item) => (
         <View key={item.id} style={styles.row}>
           <TextInput
-            keyboardAppearance="dark"
+            keyboardAppearance={keyboardAppearance()}
             value={item.name}
             onChangeText={(name) => update(item.id, { name })}
             placeholder={t('warmUp.itemPlaceholder')}
@@ -53,7 +53,7 @@ export function WarmUpBlockEditor({ items, onChange, createId }: Props) {
             style={[styles.input, styles.nameInput]}
           />
           <TextInput
-            keyboardAppearance="dark"
+            keyboardAppearance={keyboardAppearance()}
             value={item.target}
             onChangeText={(target) => update(item.id, { target })}
             onBlur={() => normaliseTime(item)}

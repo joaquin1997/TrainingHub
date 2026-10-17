@@ -371,6 +371,8 @@ const styles = createStyles(() => ({
     width: '100%',
     height: 220,
     borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.imageEdge,
     backgroundColor: colors.imageBackdrop,
   },
   card: {

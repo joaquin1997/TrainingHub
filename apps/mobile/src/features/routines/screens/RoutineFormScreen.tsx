@@ -62,7 +62,7 @@ import { kgToInputString, roundWeight, toKg } from '@/lib/weight';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, keyboardAppearance, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import { CardHeader } from '@/ui/CardHeader';
 import type {
   Exercise,
@@ -774,7 +774,7 @@ export function RoutineFormScreen({
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>{t('routineForm.routineName')}</Text>
             <TextInput
-              keyboardAppearance="dark"
+              keyboardAppearance={keyboardAppearance()}
               value={name}
               onChangeText={setName}
               placeholder={t('routineForm.routineNamePlaceholder')}
@@ -785,7 +785,7 @@ export function RoutineFormScreen({
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>{t('routineForm.description')}</Text>
             <TextInput
-              keyboardAppearance="dark"
+              keyboardAppearance={keyboardAppearance()}
               value={description}
               onChangeText={setDescription}
               placeholder={t('routineForm.descriptionPlaceholder')}
@@ -799,7 +799,7 @@ export function RoutineFormScreen({
             <View style={styles.iconInput}>
               <Ionicons name="folder-outline" size={18} color={colors.textMuted} />
               <TextInput
-                keyboardAppearance="dark"
+                keyboardAppearance={keyboardAppearance()}
                 value={folder}
                 onChangeText={setFolder}
                 placeholder={t('routineForm.folderPlaceholder')}
@@ -878,7 +878,7 @@ export function RoutineFormScreen({
                 <View style={styles.iconInput}>
                   <Ionicons name="search" size={18} color={colors.textMuted} />
                   <TextInput
-                    keyboardAppearance="dark"
+                    keyboardAppearance={keyboardAppearance()}
                     value={exercise.exerciseQuery}
                     onChangeText={(value) => updateExerciseQuery(exercise.id, value)}
                     onFocus={() => {
@@ -947,7 +947,7 @@ export function RoutineFormScreen({
                       <Text style={styles.fieldLabel}>{t('routineForm.restBetweenSets')}</Text>
                     </View>
                     <TextInput
-                      keyboardAppearance="dark"
+                      keyboardAppearance={keyboardAppearance()}
                       value={exercise.restSeconds}
                       onChangeText={(value) => updateExerciseRest(exercise.id, value)}
                       placeholder={t('routineForm.restPlaceholder')}

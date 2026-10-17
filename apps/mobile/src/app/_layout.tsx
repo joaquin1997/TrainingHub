@@ -1,7 +1,6 @@
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, View } from 'react-native';
@@ -14,6 +13,7 @@ import { useActiveWorkoutPersistence } from '@/features/workouts/persistence/use
 import { useRestTimerRunner } from '@/features/workouts/restTimer/useRestTimerRunner';
 import { getActiveWorkout } from '@/features/workouts/state/workoutDraftStore';
 import { I18nProvider } from '@/i18n/I18nProvider';
+import { ThemeProvider } from '@/ui/ThemeProvider';
 import { colors, fontAssets, screenHeader, useTheme } from '@/ui/theme';
 
 // The branded splash stays up until the first real screen is ready, so there
@@ -157,10 +157,11 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <SettingsProvider>
-        <I18nProvider>
-          <StatusBar style="light" />
-          <RootNavigator />
-        </I18nProvider>
+        <ThemeProvider>
+          <I18nProvider>
+            <RootNavigator />
+          </I18nProvider>
+        </ThemeProvider>
       </SettingsProvider>
     </AuthProvider>
   );

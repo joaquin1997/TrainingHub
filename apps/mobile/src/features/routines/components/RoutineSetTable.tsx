@@ -11,7 +11,7 @@ import {
 } from '@/features/routines/utils/routineSetInheritance';
 import { formatDuration } from '@/lib/format';
 import { parseDurationInput, trackingFields, type SetValueField } from '@/lib/tracking';
-import { colors, commonStyles, createStyles, fonts, spacing, typeScale, useTheme } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, keyboardAppearance, spacing, typeScale, useTheme } from '@/ui/theme';
 
 /** One target set as typed in the routine editor (weight in the display unit). */
 export type EditableRoutineSet = {
@@ -120,7 +120,7 @@ export function RoutineSetTable({ sets, trackingType, unit, onChange, onRemove }
           )}
           {columns.map((field) => (
             <TextInput
-              keyboardAppearance="dark"
+              keyboardAppearance={keyboardAppearance()}
               key={field}
               value={set[field]}
               onChangeText={(value) => onChange(set.id, field, value)}

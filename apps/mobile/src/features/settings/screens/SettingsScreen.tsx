@@ -19,9 +19,10 @@ import { colors, commonStyles, createStyles, fonts, fontScaleCap, radii, spacing
 import { ListRow } from '@/ui/ListRow';
 import { CardHeader } from '@/ui/CardHeader';
 import { ScreenTitle } from '@/ui/ScreenTitle';
-import type { AppLanguage, WeightUnit } from '@workout/domain';
+import type { AppLanguage, Appearance, WeightUnit } from '@workout/domain';
 
 const UNITS: WeightUnit[] = ['kg', 'lb'];
+const APPEARANCES: Appearance[] = ['system', 'light', 'dark'];
 
 type LanguageOption = { value: AppLanguage | null; label: string };
 
@@ -78,6 +79,20 @@ export function SettingsScreen() {
           }))}
         />
         <Text style={styles.hint}>{t('settings.languageHint')}</Text>
+      </View>
+
+      {/* Spec 0038 FR-1: an account that never chose reads as System (FR-4). */}
+      <View style={styles.section}>
+        <SectionHeader icon="contrast-outline" title={t('settings.appearance')} />
+        <Segmented
+          options={APPEARANCES.map((appearance) => ({
+            key: appearance,
+            label: t(`settings.appearance_${appearance}`),
+            selected: (settings.appearance ?? 'system') === appearance,
+            onPress: () => update({ appearance }),
+          }))}
+        />
+        <Text style={styles.hint}>{t('settings.appearanceHint')}</Text>
       </View>
 
       <View style={styles.section}>

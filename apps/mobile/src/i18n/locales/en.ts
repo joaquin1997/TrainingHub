@@ -208,6 +208,11 @@ export const en = {
     trackingError: 'What the exercise records could not be changed.',
   },
   settings: {
+    appearance: 'Appearance',
+    appearance_system: 'System',
+    appearance_light: 'Light',
+    appearance_dark: 'Dark',
+    appearanceHint: 'System follows your phone’s light or dark mode.',
     restAlerts: 'Rest alerts',
     restAlertsOn: 'On: the phone buzzes when a rest ends, also locked.',
     restAlertsOff: 'Off. Turn them on in the system settings.',

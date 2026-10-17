@@ -13,7 +13,7 @@ import {
 
 import { useAuth } from '@/features/auth/AuthContext';
 import { Button } from '@/ui/Button';
-import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, keyboardAppearance, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 export function AuthLandingScreen() {
   useTheme();
@@ -90,7 +90,7 @@ export function AuthLandingScreen() {
           {isRegister ? (
             <Field icon="person-outline">
               <TextInput
-                keyboardAppearance="dark"
+                keyboardAppearance={keyboardAppearance()}
                 value={displayName}
                 onChangeText={setDisplayName}
                 placeholder={t('auth.namePlaceholder')}
@@ -102,7 +102,7 @@ export function AuthLandingScreen() {
           ) : null}
           <Field icon="mail-outline">
             <TextInput
-              keyboardAppearance="dark"
+              keyboardAppearance={keyboardAppearance()}
               value={email}
               onChangeText={setEmail}
               placeholder={t('auth.emailPlaceholder')}
@@ -116,7 +116,7 @@ export function AuthLandingScreen() {
           </Field>
           <Field icon="lock-closed-outline">
             <TextInput
-              keyboardAppearance="dark"
+              keyboardAppearance={keyboardAppearance()}
               value={password}
               onChangeText={setPassword}
               placeholder={t('auth.passwordPlaceholder')}

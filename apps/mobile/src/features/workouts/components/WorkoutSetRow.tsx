@@ -31,7 +31,7 @@ import {
   type SetValueField,
 } from '@/lib/tracking';
 import { fromKg, roundWeight } from '@/lib/weight';
-import { colors, commonStyles, createStyles, fonts, fontScaleCap, radii, spacing, typeScale, useTheme } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, fontScaleCap, keyboardAppearance, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 import { SetStatusArea, STATUS_AREA_SIZE, useDoneTransition } from './SetStatusArea';
 
@@ -293,7 +293,7 @@ export function WorkoutSetRow({
       case 'weight':
         return (
           <TextInput maxFontSizeMultiplier={fontScaleCap.fixedColumn}
-            keyboardAppearance="dark"
+            keyboardAppearance={keyboardAppearance()}
             key={field}
             keyboardType="decimal-pad"
             value={set.weightKg}
@@ -306,7 +306,7 @@ export function WorkoutSetRow({
       case 'reps':
         return (
           <TextInput maxFontSizeMultiplier={fontScaleCap.fixedColumn}
-            keyboardAppearance="dark"
+            keyboardAppearance={keyboardAppearance()}
             key={field}
             keyboardType="number-pad"
             value={set.reps}
@@ -321,7 +321,7 @@ export function WorkoutSetRow({
         const side = field === 'repsLeft' ? 'left' : 'right';
         return (
           <TextInput maxFontSizeMultiplier={fontScaleCap.fixedColumn}
-            keyboardAppearance="dark"
+            keyboardAppearance={keyboardAppearance()}
             key={field}
             keyboardType="number-pad"
             accessibilityLabel={t(side === 'left' ? 'workouts.repsLeft' : 'workouts.repsRight')}
@@ -336,7 +336,7 @@ export function WorkoutSetRow({
       case 'distance':
         return (
           <TextInput maxFontSizeMultiplier={fontScaleCap.fixedColumn}
-            keyboardAppearance="dark"
+            keyboardAppearance={keyboardAppearance()}
             key={field}
             keyboardType="decimal-pad"
             value={set.distance ?? ''}
@@ -353,7 +353,7 @@ export function WorkoutSetRow({
             style={[styles.colInput, compact ? styles.colTimeWide : null, styles.timeCell]}
           >
             <TextInput maxFontSizeMultiplier={fontScaleCap.fixedColumn}
-              keyboardAppearance="dark"
+              keyboardAppearance={keyboardAppearance()}
               keyboardType="numbers-and-punctuation"
               editable={!timer.isRunning}
               value={timer.isRunning ? formatDuration(timer.displaySeconds) : (set.duration ?? '')}

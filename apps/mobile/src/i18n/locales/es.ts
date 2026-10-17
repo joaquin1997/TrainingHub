@@ -211,6 +211,11 @@ export const es: TranslationCatalog = {
     photoNotSaved: 'El ejercicio se creó, pero no se pudo guardar la foto. Vuelve a añadirla desde el ejercicio.',
   },
   settings: {
+    appearance: 'Apariencia',
+    appearance_system: 'Sistema',
+    appearance_light: 'Claro',
+    appearance_dark: 'Oscuro',
+    appearanceHint: 'Sistema sigue el modo claro u oscuro del móvil.',
     restAlerts: 'Avisos de descanso',
     restAlertsOn: 'Activados: el móvil vibra al acabar un descanso, también bloqueado.',
     restAlertsOff: 'Desactivados. Actívalos en los ajustes del sistema.',

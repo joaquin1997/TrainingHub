@@ -47,9 +47,9 @@ describe('brand and system appearance (spec 0034 FR-1 – FR-3, AC-1)', () => {
     expect(expo.android.adaptiveIcon.backgroundColor).toBe(expo.backgroundColor);
   });
 
-  it('declares the dark appearance to the system', () => {
-    expect(expo.userInterfaceStyle).toBe('dark');
-    expect(expo.ios.userInterfaceStyle).toBe('dark');
-    expect(expo.android.userInterfaceStyle).toBe('dark');
+  it('lets the app pick its appearance at run time (spec 0038 FR-12)', () => {
+    expect(expo.userInterfaceStyle).toBe('automatic');
+    expect(expo.ios.userInterfaceStyle).toBe('automatic');
+    expect(expo.android.userInterfaceStyle).toBe('automatic');
   });
 });

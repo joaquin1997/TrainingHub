@@ -21,7 +21,7 @@ import {
 } from '@/features/exercises/utils/exerciseAvailability';
 import { Button } from '@/ui/Button';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, keyboardAppearance, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import { ListRow } from '@/ui/ListRow';
 import type { Exercise } from '@workout/domain';
 
@@ -234,7 +234,7 @@ export function ExercisePickerModal({
             <View style={styles.search}>
               <Ionicons name="search" size={18} color={colors.textMuted} />
               <TextInput
-                keyboardAppearance="dark"
+                keyboardAppearance={keyboardAppearance()}
                 value={query}
                 onChangeText={setQuery}
                 placeholder={t('exercises.searchPlaceholder')}

@@ -24,6 +24,9 @@ const styles = createStyles(() => ({
     justifyContent: 'center',
     overflow: 'hidden',
     borderRadius: radii.md,
+    // Sets the white image apart from a white card on the light theme (spec 0038 FR-13).
+    borderWidth: 1,
+    borderColor: colors.imageEdge,
     backgroundColor: colors.surfaceRaised,
   },
   image: {

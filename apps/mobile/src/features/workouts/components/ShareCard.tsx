@@ -1,9 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ComponentRef, Ref } from 'react';
-import { Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import type { ShareCardModel } from '@/features/workouts/utils/shareCard';
-import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
+import { fonts, palettes, radii, spacing, typeScale } from '@/ui/theme';
+
+/**
+ * The share image has one fixed look, the dark brand look, whatever theme the
+ * app is in, both in the preview and in the shared image (spec 0038 FR-15).
+ */
+const colors = palettes.dark;
 
 /** The card's size in points (4:5); captured at 1080 × 1350 px. */
 export const SHARE_CARD_WIDTH = 360;
@@ -24,7 +30,6 @@ interface ShareCardProps {
  * `collapsable={false}` keeps the view in the native tree for the capture.
  */
 export function ShareCard({ card, ref }: ShareCardProps) {
-  useTheme();
   return (
     <View ref={ref} collapsable={false} style={styles.frame}>
       <View style={styles.panel}>
@@ -110,7 +115,7 @@ export function ShareCard({ card, ref }: ShareCardProps) {
   );
 }
 
-const styles = createStyles(() => ({
+const styles = StyleSheet.create({
   frame: {
     width: SHARE_CARD_WIDTH,
     height: SHARE_CARD_HEIGHT,
@@ -145,7 +150,9 @@ const styles = createStyles(() => ({
     minWidth: 0,
   },
   title: {
-    ...commonStyles.heading,
+    ...typeScale.heading,
+    color: colors.text,
+    letterSpacing: -0.2,
   },
   date: {
     ...typeScale.caption,
@@ -166,7 +173,11 @@ const styles = createStyles(() => ({
     gap: spacing.xxs,
   },
   statLabel: {
-    ...commonStyles.sectionLabel,
+    ...typeScale.caption,
+    color: colors.textMuted,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   statValue: {
     ...typeScale.figure,
@@ -223,4 +234,4 @@ const styles = createStyles(() => ({
     color: colors.textSubtle,
     textAlign: 'right',
   },
-}));
+});

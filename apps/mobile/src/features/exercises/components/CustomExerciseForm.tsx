@@ -17,7 +17,7 @@ import { TRACKING_TYPES, tracksField } from '@/lib/tracking';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, createStyles, spacing, typeScale, useTheme } from '@/ui/theme';
+import { colors, commonStyles, createStyles, keyboardAppearance, spacing, typeScale, useTheme } from '@/ui/theme';
 
 type CustomExerciseFormProps = {
   /** Prefilled name, usually the text searched (spec 0020 FR-2). */
@@ -180,7 +180,7 @@ export function CustomExerciseForm({
     >
       {showTitle ? <Text style={styles.title}>{t('customExercise.title')}</Text> : null}
       <TextInput
-        keyboardAppearance="dark"
+        keyboardAppearance={keyboardAppearance()}
         value={name}
         onChangeText={setName}
         placeholder={t('customExercise.namePlaceholder')}

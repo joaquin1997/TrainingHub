@@ -23,7 +23,7 @@ import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { ScreenTitle } from '@/ui/ScreenTitle';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, createStyles, fonts, spacing, typeScale, useTheme } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, keyboardAppearance, spacing, typeScale, useTheme } from '@/ui/theme';
 import { SkeletonRowList } from '@/ui/Skeleton';
 import { ListRow } from '@/ui/ListRow';
 import type { Exercise } from '@workout/domain';
@@ -190,7 +190,7 @@ export function ExercisesListScreen() {
         <View style={styles.search}>
           <Ionicons name="search" size={18} color={colors.textMuted} />
           <TextInput
-            keyboardAppearance="dark"
+            keyboardAppearance={keyboardAppearance()}
             value={query}
             onChangeText={setQuery}
             placeholder={t('exercises.searchPlaceholder')}

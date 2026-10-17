@@ -1,6 +1,6 @@
 import { Text, TextInput, View } from 'react-native';
 
-import { colors, commonStyles, createStyles, spacing, useTheme } from '@/ui/theme';
+import { colors, commonStyles, createStyles, keyboardAppearance, spacing, useTheme } from '@/ui/theme';
 
 interface UnitInputProps {
   value: string;
@@ -16,7 +16,7 @@ export function UnitInput({ value, onChangeText, unit, label }: UnitInputProps) 
   return (
     <View style={styles.container}>
       <TextInput
-        keyboardAppearance="dark"
+        keyboardAppearance={keyboardAppearance()}
         value={value}
         onChangeText={onChangeText}
         keyboardType="decimal-pad"

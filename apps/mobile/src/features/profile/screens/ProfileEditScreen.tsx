@@ -11,7 +11,7 @@ import { useSettings } from '@/features/settings/SettingsContext';
 import { cmToFeetInches, feetInchesToCm, formatHeight } from '@/lib/length';
 import { Button } from '@/ui/Button';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, createStyles, spacing, typeScale, useTheme } from '@/ui/theme';
+import { colors, commonStyles, createStyles, keyboardAppearance, spacing, typeScale, useTheme } from '@/ui/theme';
 
 const BIO_MAX = 300;
 
@@ -127,7 +127,7 @@ export function ProfileEditScreen() {
       <View style={styles.field}>
         <Text style={commonStyles.sectionLabel}>{t('profile.displayName')}</Text>
         <TextInput
-          keyboardAppearance="dark"
+          keyboardAppearance={keyboardAppearance()}
           value={name}
           onChangeText={setName}
           maxLength={50}
@@ -140,7 +140,7 @@ export function ProfileEditScreen() {
       <View style={styles.field}>
         <Text style={commonStyles.sectionLabel}>{t('profile.bio')}</Text>
         <TextInput
-          keyboardAppearance="dark"
+          keyboardAppearance={keyboardAppearance()}
           value={bio}
           onChangeText={setBio}
           maxLength={BIO_MAX}
