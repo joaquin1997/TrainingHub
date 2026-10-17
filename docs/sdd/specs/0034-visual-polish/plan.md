@@ -9,10 +9,11 @@ created: 2026-10-18
 How Phase A of `spec.md` (FR-1 – FR-18, AC-1 – AC-11, EF-1 – EF-4, EF-8) gets
 built. Mobile only: no domain contract, no migration, no API change.
 
-**Phase B (FR-19 – FR-25, AC-12 – AC-18, EF-5 – EF-7) gets its own plan
-later** (`plan-b.md`, or a new section here), written once Phase A has shipped
-and the owner has had a chance to send screenshots or mockups (spec
-assumption). Nothing below pre-commits Phase B's set-row layout, sticky
+**Phase B (FR-19 – FR-25, AC-12 – AC-18, EF-5 – EF-7) is planned in
+[`plan-b.md`](plan-b.md)** (2026-10-18), as three independent workstreams —
+B1 active workout (set row, status area, sticky header), B2 progress charts,
+B3 summary comparison and share card — with their tasks in `tasks.md`,
+*Phase B*. Nothing below pre-commits Phase B's set-row layout, sticky
 header, chart drawing or share card; Phase A only leaves them cheap — the
 type scale already names *Figure large* for the set-row figures, and the
 shared blocks are what Phase B composes.
