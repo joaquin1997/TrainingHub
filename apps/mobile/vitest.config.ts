@@ -10,6 +10,11 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      // Runtime values from the domain come only through this path (spec 0032):
+      // Metro cannot bundle the package index. Types still use `@workout/domain`.
+      '@workout/domain/records': fileURLToPath(
+        new URL('../../packages/domain/src/records.ts', import.meta.url),
+      ),
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },

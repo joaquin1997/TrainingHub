@@ -1,6 +1,17 @@
-import type { ExerciseRecord, RecordType } from '@workout/domain';
-
-import { recordReps } from '../workouts/sides.js';
+import {
+  estimateOneRepMax,
+  isLiftSet,
+  RECORD_TYPE_ORDER,
+  recordReps,
+  repsAtOrAbove as repsAtOrAboveEntries,
+  repsAtWeightOf,
+  sessionVolumeKg,
+  SET_RECORD_VALUES,
+  type ExerciseRecord,
+  type RecordSetValues,
+  type RecordType,
+  type SetRecordType,
+} from '@workout/domain';
 
 /**
  * Personal records by type (spec 0023). Pure: the input is one exercise's
@@ -8,31 +19,17 @@ import { recordReps } from '../workouts/sides.js';
  * not warm-up — the caller applies spec 0013's rule). Records are derived on
  * every read, never stored.
  *
- * Each single-value type is one small function in `SINGLE_VALUE_RECORDS`.
- * Time and distance (spec 0021) are entries there too; the weight-based types
- * read only lifting sets (no time, no distance), so a carry's 24 kg is never a
- * weight record — its record is the longest time (FR-6).
- *
- * A unilateral set (spec 0022) holds `reps` = left + right: volumes read that
- * total, while reps, reps at weight and estimated 1RM read the better side.
+ * How one set scores for each type lives in `@workout/domain` (records.ts),
+ * shared with the phone's live record badges (spec 0032): the weight-based
+ * types read only lifting sets (no time, no distance — spec 0021), so a
+ * carry's 24 kg is never a weight record; a unilateral set (spec 0022) reads
+ * its better side for reps, reps at weight and estimated 1RM, and its
+ * two-side total for volumes. This file walks the sessions and keeps the bests.
  */
 
-export type RecordSet = {
-  reps?: number | null;
-  repsLeft?: number | null;
-  repsRight?: number | null;
-  weightKg?: number | null;
-  durationSeconds?: number | null;
-  distanceMeters?: number | null;
-};
+export { estimateOneRepMax };
 
-/** A set measured by weight and reps, not by time or distance (spec 0021). */
-function isLiftSet(set: RecordSet): boolean {
-  return (
-    (set.durationSeconds === undefined || set.durationSeconds === null) &&
-    (set.distanceMeters === undefined || set.distanceMeters === null)
-  );
-}
+export type RecordSet = RecordSetValues;
 
 /** One exercise in one session: when, and its working sets. */
 export type ExerciseSessionWork = {
@@ -46,39 +43,6 @@ type SingleValueRecord = (sets: RecordSet[]) => RecordCandidate | undefined;
 
 /** How many of the heaviest weights get a "most reps at" best (spec assumption). */
 export const REPS_AT_WEIGHT_TOP = 3;
-
-/** Display order of the record types. */
-const RECORD_ORDER: RecordType[] = [
-  'heaviestWeight',
-  'mostReps',
-  'repsAtWeight',
-  'bestSetVolume',
-  'bestSessionVolume',
-  'bestEstimatedOneRepMax',
-  'longestTime',
-  'longestDistance',
-];
-
-function positive(value: number | null | undefined): value is number {
-  return typeof value === 'number' && value > 0;
-}
-
-/** Two decimals: enough for kg, and keeps float noise out of comparisons. */
-function round2(value: number): number {
-  return Math.round(value * 100) / 100;
-}
-
-/** Epley estimated one-rep max for a single set, rounded to one decimal. */
-export function estimateOneRepMax(
-  reps: number | null | undefined,
-  weightKg: number | null | undefined,
-): number | undefined {
-  if (typeof reps !== 'number' || !positive(weightKg)) {
-    return undefined;
-  }
-
-  return Math.round(weightKg * (1 + reps / 30) * 10) / 10;
-}
 
 /** The set with the highest score (the first one on a tie), as a candidate. */
 function bestSet(
@@ -101,42 +65,25 @@ function bestSet(
   return best;
 }
 
-export const heaviestWeight: SingleValueRecord = (sets) =>
-  bestSet(sets, (set) => (positive(set.weightKg) ? set.weightKg : undefined));
+/** The best set by the shared per-set score of `type`. */
+const bySetValue =
+  (type: SetRecordType): SingleValueRecord =>
+  (sets) =>
+    bestSet(sets, SET_RECORD_VALUES[type]);
 
-export const mostReps: SingleValueRecord = (sets) =>
-  bestSet(sets, (set) => {
-    const reps = recordReps(set);
-    return positive(reps) ? reps : undefined;
-  });
-
-export const bestSetVolume: SingleValueRecord = (sets) =>
-  bestSet(sets, (set) =>
-    positive(set.weightKg) && positive(set.reps)
-      ? round2(set.weightKg * set.reps)
-      : undefined,
-  );
+export const heaviestWeight = bySetValue('heaviestWeight');
+export const mostReps = bySetValue('mostReps');
+export const bestSetVolume = bySetValue('bestSetVolume');
+export const bestEstimatedOneRepMax = bySetValue('bestEstimatedOneRepMax');
+export const longestTime = bySetValue('longestTime');
+export const longestDistance = bySetValue('longestDistance');
 
 export const bestSessionVolume: SingleValueRecord = (sets) => {
-  const total = sets.reduce(
-    (sum, set) =>
-      positive(set.weightKg) && positive(set.reps) ? sum + set.weightKg * set.reps : sum,
-    0,
-  );
-
-  return total > 0 ? { value: round2(total) } : undefined;
+  const total = sessionVolumeKg(sets);
+  return total === undefined ? undefined : { value: total };
 };
 
-export const bestEstimatedOneRepMax: SingleValueRecord = (sets) =>
-  bestSet(sets, (set) => estimateOneRepMax(recordReps(set), set.weightKg));
-
-export const longestTime: SingleValueRecord = (sets) =>
-  bestSet(sets, (set) => (positive(set.durationSeconds) ? set.durationSeconds : undefined));
-
-export const longestDistance: SingleValueRecord = (sets) =>
-  bestSet(sets, (set) => (positive(set.distanceMeters) ? set.distanceMeters : undefined));
-
-/** Weight-based types read lifting sets only (see `isLiftSet`). */
+/** Weight-based types read lifting sets only (the shared scores check it too). */
 const onLiftSets =
   (derive: SingleValueRecord): SingleValueRecord =>
   (sets) =>
@@ -157,9 +104,12 @@ export function repsByWeight(sets: RecordSet[]): Map<number, number> {
   const byWeight = new Map<number, number>();
 
   for (const set of sets) {
-    const reps = recordReps(set);
-    if (positive(set.weightKg) && positive(reps)) {
-      byWeight.set(set.weightKg, Math.max(byWeight.get(set.weightKg) ?? 0, reps));
+    const atWeight = repsAtWeightOf(set);
+    if (atWeight) {
+      byWeight.set(
+        atWeight.weightKg,
+        Math.max(byWeight.get(atWeight.weightKg) ?? 0, atWeight.reps),
+      );
     }
   }
 
@@ -171,15 +121,10 @@ function repsAtOrAbove(
   earlier: Map<number, { reps: number; date: string }>,
   weightKg: number,
 ): number | undefined {
-  let most: number | undefined;
-
-  for (const [weight, best] of earlier) {
-    if (weight >= weightKg && (most === undefined || best.reps > most)) {
-      most = best.reps;
-    }
-  }
-
-  return most;
+  return repsAtOrAboveEntries(
+    [...earlier].map(([weight, best]) => ({ weightKg: weight, reps: best.reps })),
+    weightKg,
+  );
 }
 
 /**
@@ -205,7 +150,7 @@ function repsAtWeightHit(
 }
 
 function byRecordOrder(left: ExerciseRecord, right: ExerciseRecord): number {
-  return RECORD_ORDER.indexOf(left.type) - RECORD_ORDER.indexOf(right.type);
+  return RECORD_TYPE_ORDER.indexOf(left.type) - RECORD_TYPE_ORDER.indexOf(right.type);
 }
 
 export type ExerciseRecordHistory = {
@@ -213,6 +158,8 @@ export type ExerciseRecordHistory = {
   bests: ExerciseRecord[];
   /** `hits[i]`: the records session `i` beat. Empty when it beat none. */
   hits: ExerciseRecord[][];
+  /** Most reps ever done at every weight (kg → reps), for live badges (spec 0032). */
+  repsAtEveryWeight: Map<number, number>;
 };
 
 /**
@@ -283,5 +230,8 @@ export function deriveExerciseRecords(
   return {
     bests: [...bests.values(), ...heaviestWeights].sort(byRecordOrder),
     hits,
+    repsAtEveryWeight: new Map(
+      [...repsAtWeight].map(([weightKg, best]) => [weightKg, best.reps]),
+    ),
   };
 }
