@@ -15,7 +15,7 @@ mobile → docs. The migration is additive; no native rebuild.
 | # | Task | Area | Verify | Commit message |
 |---|---|---|---|---|
 | 1 | [x] Plan and tasks; spec status `in-progress` | docs | — | `docs(sdd): plan and tasks for 0030` |
-| 2 | [ ] Domain `SetExerciseTrackingTypeInput`; `Exercise.trackingTypeSetBy` + migration `20261018130000_add_exercise_tracking_type_set_by`; `PUT /exercises/:id/tracking-type` (new route/repository files, one line in `routes/index.ts`); route tests | domain, api | tests; `migrate deploy` + `migrate diff` on local PGlite | `feat(exercises): change an exercise's tracking type by hand` |
+| 2 | [x] Domain `SetExerciseTrackingTypeInput`; `Exercise.trackingTypeSetBy` + migration `20261018130000_add_exercise_tracking_type_set_by`; `PUT /exercises/:id/tracking-type` (new route/repository files, one line in `routes/index.ts`); route tests | domain, api | tests; `migrate deploy` + `migrate diff` on local PGlite | `feat(exercises): change an exercise's tracking type by hand` |
 | 3 | [ ] Pure classifier: normalisation, multilingual rules, 0021 list moved to `curated.ts` (old script reads it), corrections first; tests on real catalog names | api | unit tests (AC-2, AC-8) | `feat(exercises): classify catalog exercises into tracking types` |
 | 4 | [ ] Pure sweep: `parseCorrections`, `planSweep` (rows, totals, used-first order, person skips, EF-7 flags, missing ids), `toCsv`, `planUndo`; tests | api | unit tests (AC-1, AC-3, AC-5, AC-9, EF-1, EF-2, EF-7) | `feat(exercises): plan a tracking type sweep` |
 | 5 | [ ] Script `sweep-tracking-types.ts` (report / apply / undo), corrections JSON, npm scripts | api | typecheck; run on local PGlite with hand-inserted rows (`SWEEP_WITHOUT_TRANSLATIONS=true`) | `feat(exercises): tracking type sweep with report, apply and undo` |
@@ -73,6 +73,14 @@ it before the sweep (harmless; the sweep re-decides those 44).
 
 - 2026-10-17 — Plan and tasks written and self-approved under the owner's
   delegation.
+- 2026-10-17 — Task 2. Migration
+  `20261018130000_add_exercise_tracking_type_set_by` written by hand; on a
+  fresh local PGlite `prisma migrate deploy` applied every migration and
+  `prisma migrate diff --from-url … --to-schema-datamodel` reported "No
+  difference detected". `PUT /exercises/:id/tracking-type` lives in new
+  files (`trackingTypeRoutes.ts`, `trackingTypeRepository.ts`) registered
+  from `routes/index.ts`, so `exercises/routes.ts`, `repository.ts` and their
+  test (0015's area) are untouched.
 
 ## Definition of done
 

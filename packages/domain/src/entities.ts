@@ -101,6 +101,11 @@ export interface SetExerciseUnilateralInput {
   isUnilateral: boolean;
 }
 
+/** Body of `PUT /exercises/:id/tracking-type` (spec 0030 FR-12). */
+export interface SetExerciseTrackingTypeInput {
+  trackingType: ExerciseTrackingType;
+}
+
 /**
  * Represents one normalized muscle group option from the exercise catalog.
  */

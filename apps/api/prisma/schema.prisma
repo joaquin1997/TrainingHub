@@ -68,6 +68,8 @@ model Exercise {
   isSystemDefined           Boolean                      @default(true)
   /// What its sets record (spec 0021): weight_reps | reps | duration | weight_duration | distance_duration.
   trackingType              String                       @default("weight_reps")
+  /// Who set the tracking type (spec 0030): system (the default or a sweep) | person (by hand).
+  trackingTypeSetBy         String                       @default("system")
   /// Done one side at a time; its sets record left and right reps (spec 0022).
   isUnilateral              Boolean                      @default(false)
   createdByUserId           BigInt?
