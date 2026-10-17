@@ -141,6 +141,11 @@ export const es: TranslationCatalog = {
     loadError: 'No se han podido cargar los grupos musculares.',
     validation: 'El nombre y al menos un grupo muscular primario son obligatorios.',
     createError: 'No se ha podido crear el ejercicio.',
+    addPhoto: 'Añadir foto',
+    changePhoto: 'Cambiar foto',
+    removePhoto: 'Quitar foto',
+    photoError: 'No se pudo leer la foto.',
+    photoNotSaved: 'El ejercicio se creó, pero no se pudo guardar la foto. Vuelve a añadirla desde el ejercicio.',
   },
   settings: {
     language: 'Idioma',

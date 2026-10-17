@@ -14,6 +14,8 @@ import {
 
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
+import { ExerciseThumb } from '@/features/exercises/components/ExerciseThumb';
+import { exercisesClient } from '@/features/exercises/api/exercisesClient';
 import { ExercisePickerModal } from '@/features/exercises/components/ExercisePickerModal';
 import { useExerciseReplacement } from '@/features/workouts/hooks/useExerciseReplacement';
 import { RestBar } from '@/features/workouts/components/RestBar';
@@ -239,6 +241,30 @@ export function ActiveWorkoutScreen() {
         ',',
       )
     : '';
+
+  // Images of the exercises in the workout (catalog image or own photo).
+  const [imageByExercise, setImageByExercise] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!exerciseIdsKey) {
+      return;
+    }
+
+    let active = true;
+    for (const id of exerciseIdsKey.split(',')) {
+      void exercisesClient
+        .getById(id)
+        .then((exercise) => {
+          if (active && exercise.imageUrl) {
+            setImageByExercise((current) => ({ ...current, [id]: exercise.imageUrl as string }));
+          }
+        })
+        .catch(() => undefined);
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [exerciseIdsKey]);
 
   useEffect(() => {
     if (!exerciseIdsKey) {
@@ -601,6 +627,9 @@ export function ActiveWorkoutScreen() {
               {label.label}
             </Text>
           </View>
+          {imageByExercise[exercise.exerciseId] ? (
+            <ExerciseThumb imageUrl={imageByExercise[exercise.exerciseId]} size={40} />
+          ) : null}
           <View style={styles.exerciseTitleColumn}>
             <Text style={styles.exerciseTitle}>{exercise.exerciseName}</Text>
             <View style={styles.restChipRow}>
