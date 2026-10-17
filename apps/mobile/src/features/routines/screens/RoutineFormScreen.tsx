@@ -17,14 +17,20 @@ import {
 } from '@/features/exercises/api/exercisesClient';
 import { CustomExerciseModal } from '@/features/exercises/components/CustomExerciseModal';
 import { ExercisePickerModal } from '@/features/exercises/components/ExercisePickerModal';
+import {
+  RoutineSetTable,
+  type EditableRoutineSet,
+} from '@/features/routines/components/RoutineSetTable';
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { replaceRoutineRowExercise } from '@/features/routines/utils/replaceRoutineExercise';
 import {
   effectiveRoutineSetValue,
-  setFieldPlaceholder,
+  type NumericSetField,
 } from '@/features/routines/utils/routineSetInheritance';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { useActiveWorkout } from '@/features/workouts/hooks/useActiveWorkout';
+import { formatDuration } from '@/lib/format';
+import { parseDistanceInput, parseDurationInput, tracksField } from '@/lib/tracking';
 import { kgToInputString, roundWeight, toKg } from '@/lib/weight';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
@@ -32,6 +38,7 @@ import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, fonts, radii, spacing } from '@/ui/theme';
 import type {
   Exercise,
+  ExerciseTrackingType,
   Routine,
   RoutineExercise,
   RoutineExerciseInput,
@@ -44,19 +51,14 @@ type RoutineFormScreenProps = {
   routineId?: string;
 };
 
-type EditableRoutineSet = {
-  id: string;
-  minReps: string;
-  maxReps: string;
-  targetWeight: string;
-};
-
 type EditableRoutineExercise = {
   id: string;
   exerciseId?: string;
   exerciseQuery: string;
   restSeconds: string;
   supersetGroup: string;
+  /** The selected exercise's tracking type; decides the set columns (spec 0021). */
+  trackingType?: ExerciseTrackingType;
   sets: EditableRoutineSet[];
 };
 
@@ -75,6 +77,8 @@ function createEmptySetRow(): EditableRoutineSet {
     minReps: '',
     maxReps: '',
     targetWeight: '',
+    targetDuration: '',
+    targetDistance: '',
   };
 }
 
@@ -101,6 +105,14 @@ function toEditableSet(
       routineSet.targetWeight !== undefined
         ? kgToInputString(routineSet.targetWeight, unit)
         : '',
+    targetDuration:
+      routineSet.targetDurationSeconds !== undefined
+        ? formatDuration(routineSet.targetDurationSeconds)
+        : '',
+    targetDistance:
+      routineSet.targetDistanceMeters !== undefined
+        ? String(routineSet.targetDistanceMeters)
+        : '',
   };
 }
 
@@ -112,6 +124,7 @@ function toEditableExercise(
     id: routineExercise.id,
     exerciseId: routineExercise.exerciseId,
     exerciseQuery: routineExercise.exerciseName,
+    trackingType: routineExercise.trackingType,
     restSeconds:
       routineExercise.restSeconds !== undefined
         ? String(routineExercise.restSeconds)
@@ -295,6 +308,7 @@ export function RoutineFormScreen({
           ? {
               ...exercise,
               exerciseId: undefined,
+              trackingType: undefined,
               exerciseQuery: value,
             }
           : exercise,
@@ -354,7 +368,7 @@ export function RoutineFormScreen({
   function updateSetField(
     exerciseId: string,
     setId: string,
-    field: keyof EditableRoutineSet,
+    field: NumericSetField,
     value: string,
   ) {
     setExercises((currentExercises) =>
@@ -486,22 +500,32 @@ export function RoutineFormScreen({
 
         const sets: RoutineExerciseInput['sets'] = [];
 
+        // Only the fields the exercise tracks are saved (spec 0021 FR-3).
+        const tracks = (field: Parameters<typeof tracksField>[1]) =>
+          tracksField(exercise.trackingType, field);
+
         for (const [setIndex] of exercise.sets.entries()) {
           // Unedited fields inherit the previous set's value (the ghosted placeholder).
-          const minReps = parseOptionalInteger(
-            effectiveRoutineSetValue(exercise.sets, setIndex, 'minReps'),
-          );
-          const maxReps = parseOptionalInteger(
-            effectiveRoutineSetValue(exercise.sets, setIndex, 'maxReps'),
-          );
-          const targetWeight = parseOptionalNumber(
-            effectiveRoutineSetValue(exercise.sets, setIndex, 'targetWeight'),
-          );
+          const value = (field: NumericSetField) =>
+            effectiveRoutineSetValue(exercise.sets, setIndex, field);
+          const minReps = tracks('reps') ? parseOptionalInteger(value('minReps')) : undefined;
+          const maxReps = tracks('reps') ? parseOptionalInteger(value('maxReps')) : undefined;
+          const targetWeight = tracks('weight')
+            ? parseOptionalNumber(value('targetWeight'))
+            : undefined;
+          const targetDurationSeconds = tracks('duration')
+            ? parseDurationInput(value('targetDuration'))
+            : undefined;
+          const targetDistanceMeters = tracks('distance')
+            ? parseDistanceInput(value('targetDistance'))
+            : undefined;
 
           if (
             minReps === null ||
             maxReps === null ||
-            targetWeight === null
+            targetWeight === null ||
+            targetDurationSeconds === null ||
+            targetDistanceMeters === null
           ) {
             setErrorMessage(t('routineForm.setValuesInvalid'));
             return;
@@ -516,6 +540,8 @@ export function RoutineFormScreen({
               targetWeight !== undefined
                 ? roundWeight(toKg(targetWeight, unit))
                 : undefined,
+            targetDurationSeconds,
+            targetDistanceMeters,
           });
         }
 
@@ -801,59 +827,15 @@ export function RoutineFormScreen({
                   />
                 </View>
               </View>
-              <View style={styles.setTable}>
-                <View style={styles.setHeaderRow}>
-                  <Text style={[styles.colSet, styles.colLabel]}>{t('workouts.colSet')}</Text>
-                  <Text style={[styles.colField, styles.colLabel]}>{unit.toUpperCase()}</Text>
-                  <Text style={[styles.colField, styles.colLabel]}>{t('routineForm.colMin')}</Text>
-                  <Text style={[styles.colField, styles.colLabel]}>{t('routineForm.colMax')}</Text>
-                  <View style={styles.colRemove} />
-                </View>
-                {exercise.sets.map((set, setIndex) => (
-                  <View key={set.id} style={styles.setRow}>
-                    <Text style={[styles.colSet, styles.setNumber]}>{setIndex + 1}</Text>
-                    <TextInput
-                      value={set.targetWeight}
-                      onChangeText={(value) =>
-                        updateSetField(exercise.id, set.id, 'targetWeight', value)
-                      }
-                      placeholder={setFieldPlaceholder(exercise.sets, setIndex, 'targetWeight')}
-                      placeholderTextColor={colors.textSubtle}
-                      keyboardType="decimal-pad"
-                      style={[styles.input, styles.cellInput, styles.colField]}
-                    />
-                    <TextInput
-                      value={set.minReps}
-                      onChangeText={(value) =>
-                        updateSetField(exercise.id, set.id, 'minReps', value)
-                      }
-                      placeholder={setFieldPlaceholder(exercise.sets, setIndex, 'minReps')}
-                      placeholderTextColor={colors.textSubtle}
-                      keyboardType="number-pad"
-                      style={[styles.input, styles.cellInput, styles.colField]}
-                    />
-                    <TextInput
-                      value={set.maxReps}
-                      onChangeText={(value) =>
-                        updateSetField(exercise.id, set.id, 'maxReps', value)
-                      }
-                      placeholder={setFieldPlaceholder(exercise.sets, setIndex, 'maxReps')}
-                      placeholderTextColor={colors.textSubtle}
-                      keyboardType="number-pad"
-                      style={[styles.input, styles.cellInput, styles.colField]}
-                    />
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={t('routineForm.removeSet')}
-                      onPress={() => removeSetRow(exercise.id, set.id)}
-                      hitSlop={6}
-                      style={styles.colRemove}
-                    >
-                      <Ionicons name="close" size={18} color={colors.textSubtle} />
-                    </Pressable>
-                  </View>
-                ))}
-              </View>
+              <RoutineSetTable
+                sets={exercise.sets}
+                trackingType={exercise.trackingType}
+                unit={unit}
+                onChange={(setId, field, value) =>
+                  updateSetField(exercise.id, setId, field, value)
+                }
+                onRemove={(setId) => removeSetRow(exercise.id, setId)}
+              />
               <View style={styles.cardActions}>
                 <Button
                   label={t('routineForm.addSet')}
@@ -1074,44 +1056,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-  },
-  setTable: {
-    gap: spacing.xs,
-  },
-  setHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  colLabel: {
-    ...commonStyles.sectionLabel,
-    fontSize: 10,
-    textAlign: 'center',
-  },
-  colSet: {
-    width: 40,
-  },
-  colField: {
-    flex: 1,
-    flexBasis: 0,
-    minWidth: 0,
-  },
-  colRemove: {
-    width: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  setRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  setNumber: {
-    color: colors.textMuted,
-    fontFamily: fonts.displayBold,
-    fontSize: 15,
-    textAlign: 'center',
-    fontVariant: ['tabular-nums'],
   },
   cellInput: {
     minHeight: 46,

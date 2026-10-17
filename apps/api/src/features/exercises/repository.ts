@@ -3,6 +3,7 @@ import type { CreateExerciseInput, Exercise, MuscleGroup } from '@workout/domain
 
 import { prisma } from '../../infrastructure/prisma.js';
 import { photoImageUrl } from './photo.js';
+import { toExerciseTrackingType } from './trackingTypes.js';
 
 const exerciseInclude = {
   createdByUser: {
@@ -67,6 +68,7 @@ function mapExercise(record: ExerciseRecord): Exercise {
     lastSourceUpdate: record.lastSourceUpdate?.toISOString(),
     isSystemDefined: record.isSystemDefined,
     createdByUserId: record.createdByUser?.publicId,
+    trackingType: toExerciseTrackingType(record.trackingType),
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
   };
@@ -254,6 +256,7 @@ export async function createExercise(
       name: input.name,
       equipment: [],
       isSystemDefined: false,
+      trackingType: input.trackingType ?? 'weight_reps',
       createdByUser: {
         connect: {
           publicId: userPublicId,

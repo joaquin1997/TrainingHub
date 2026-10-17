@@ -138,6 +138,15 @@ export const es: TranslationCatalog = {
     optional: 'Opcional.',
     loadingMuscleGroups: 'Cargando grupos musculares…',
     saveExercise: 'Guardar ejercicio',
+    // Tipo de registro (spec 0021).
+    trackingTitle: 'Qué registra cada serie',
+    trackingTypes: {
+      weight_reps: 'Peso y repeticiones',
+      reps: 'Solo repeticiones',
+      duration: 'Tiempo',
+      weight_duration: 'Peso y tiempo',
+      distance_duration: 'Distancia y tiempo',
+    },
     loadError: 'No se han podido cargar los grupos musculares.',
     validation: 'El nombre y al menos un grupo muscular primario son obligatorios.',
     createError: 'No se ha podido crear el ejercicio.',
@@ -304,6 +313,11 @@ export const es: TranslationCatalog = {
     colSet: 'SERIE',
     colPrev: 'ANTERIOR',
     colReps: 'REPS',
+    // Series de tiempo y distancia (spec 0021).
+    colTime: 'TIEMPO',
+    colDistance: 'DIST',
+    startSetTimer: 'Iniciar cronómetro de la serie',
+    stopSetTimer: 'Parar cronómetro de la serie',
     addSet: 'Añadir serie',
     removeExercise: 'Quitar ejercicio',
     replaceExercise: 'Sustituir ejercicio',
@@ -345,6 +359,9 @@ export const es: TranslationCatalog = {
     backToHistory: 'Volver al historial',
     duration: 'Duración',
     restLabel: 'Descanso',
+    // Series de tiempo y distancia (spec 0021).
+    setTimeLabel: 'Tiempo en series',
+    distanceLabel: 'Distancia',
   },
   progress: {
     est1rmShort: '1RM est.',
@@ -368,6 +385,9 @@ export const es: TranslationCatalog = {
     notAvailable: 'Aún no hay datos de progreso para este ejercicio.',
     backToProgress: 'Volver al progreso',
     heaviestOverTime: 'Peso máximo en el tiempo',
+    // Récords de tiempo y distancia (spec 0021).
+    longestTime: 'Mayor tiempo',
+    longestDistance: 'Mayor distancia',
     volumeByCategory: 'Volumen por categoría',
     freqWeekStreak: 'Racha semanal',
     freqWorkouts: 'Entrenamientos',

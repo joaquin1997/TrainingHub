@@ -37,6 +37,17 @@ export interface UpdateUserSettingsInput {
   language?: AppLanguage | null;
 }
 
+/**
+ * What a set of an exercise records (spec 0021). Existing exercises are
+ * `weight_reps`; time is whole seconds and distance is metres.
+ */
+export type ExerciseTrackingType =
+  | 'weight_reps'
+  | 'reps'
+  | 'duration'
+  | 'weight_duration'
+  | 'distance_duration';
+
 export interface Exercise {
   id: EntityId;
   name: string;
@@ -54,6 +65,8 @@ export interface Exercise {
   lastSourceUpdate?: ISODateString;
   isSystemDefined: boolean;
   createdByUserId?: EntityId;
+  /** What its sets record; absent from older servers, meaning `weight_reps`. */
+  trackingType?: ExerciseTrackingType;
   createdAt: ISODateString;
   updatedAt: ISODateString;
 }
@@ -63,6 +76,17 @@ export interface CreateExerciseInput {
   name: string;
   primaryMuscleGroupIds: EntityId[];
   secondaryMuscleGroupIds: EntityId[];
+}
+
+/**
+ * Write contract for creating a custom exercise.
+ */
+export interface CreateExerciseInput {
+  name: string;
+  primaryMuscleGroupIds: string[];
+  secondaryMuscleGroupIds: string[];
+  /** Defaults to `weight_reps` (spec 0021 FR-2). */
+  trackingType?: ExerciseTrackingType;
 }
 
 /**
@@ -103,6 +127,8 @@ export interface RoutineExercise {
   restSeconds?: number;
   /** Exercises sharing a superset group number are performed together. */
   supersetGroup?: number;
+  /** The exercise's tracking type, read from the exercise (spec 0021). */
+  trackingType?: ExerciseTrackingType;
   sets: RoutineExerciseSet[];
   createdAt: ISODateString;
   updatedAt: ISODateString;
@@ -118,6 +144,10 @@ export interface RoutineExerciseSet {
   minReps?: number;
   maxReps?: number;
   targetWeight?: number;
+  /** Target time in whole seconds (spec 0021). */
+  targetDurationSeconds?: number;
+  /** Target distance in metres (spec 0021). */
+  targetDistanceMeters?: number;
   createdAt: ISODateString;
   updatedAt: ISODateString;
 }
@@ -131,6 +161,8 @@ export interface RoutineSetInput {
   minReps?: number;
   maxReps?: number;
   targetWeight?: number;
+  targetDurationSeconds?: number;
+  targetDistanceMeters?: number;
 }
 
 /**
@@ -279,6 +311,10 @@ export interface ExerciseProgressPoint {
   bestReps?: number;
   totalVolume: number;
   estimatedOneRepMax?: number;
+  /** Longest working set, in seconds (spec 0021). */
+  bestDurationSeconds?: number;
+  /** Longest working set, in metres (spec 0021). */
+  bestDistanceMeters?: number;
 }
 
 /**
@@ -294,7 +330,16 @@ export interface ExerciseProgressSummary {
   personalBestWeightKg?: number;
   personalBestReps?: number;
   bestEstimatedOneRepMax?: number;
-  /** True when the most recent session beat a record of any type (spec 0023). */
+  /** The exercise's current tracking type (spec 0021). */
+  trackingType?: ExerciseTrackingType;
+  latestDurationSeconds?: number;
+  latestDistanceMeters?: number;
+  personalBestDurationSeconds?: number;
+  personalBestDistanceMeters?: number;
+  /**
+   * True when the most recent session beat a record of any type (spec 0023),
+   * longest time and distance included (spec 0021).
+   */
   isRecordSession: boolean;
 }
 
@@ -308,14 +353,21 @@ export type RecordType =
   | 'repsAtWeight'
   | 'bestSetVolume'
   | 'bestSessionVolume'
-  | 'bestEstimatedOneRepMax';
+  | 'bestEstimatedOneRepMax'
+  /** Longest time in one set, from timed sets (spec 0021 FR-6). */
+  | 'longestTime'
+  /** Longest distance in one set (spec 0021 FR-6). */
+  | 'longestDistance';
 
 /**
  * One record of an exercise: its current best, or a best a session beat.
  */
 export interface ExerciseRecord {
   type: RecordType;
-  /** kg for weight, volume and 1RM types; a rep count for mostReps / repsAtWeight. */
+  /**
+   * kg for weight, volume and 1RM types; a rep count for mostReps / repsAtWeight;
+   * seconds for longestTime; metres for longestDistance.
+   */
   value: number;
   /** The set behind the record when one set made it; for repsAtWeight, the weight. */
   weightKg?: number;
@@ -380,6 +432,8 @@ export interface ExerciseLastSet {
   order: number;
   reps?: number;
   weightKg?: number;
+  durationSeconds?: number;
+  distanceMeters?: number;
 }
 
 /**

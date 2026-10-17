@@ -1,4 +1,5 @@
 import { prisma } from '../../infrastructure/prisma.js';
+import { toExerciseTrackingType } from '../exercises/trackingTypes.js';
 import {
   buildExerciseProgressDetail,
   buildExerciseProgressSummaries,
@@ -18,7 +19,9 @@ async function loadSessionInputs(
     include: {
       exercises: {
         include: {
-          exercise: { select: { publicId: true, name: true, category: true } },
+          exercise: {
+            select: { publicId: true, name: true, category: true, trackingType: true },
+          },
           sets: true,
         },
       },
@@ -33,9 +36,12 @@ async function loadSessionInputs(
       exerciseId: exercise.exercise.publicId,
       exerciseName: exercise.exercise.name,
       category: exercise.exercise.category,
+      trackingType: toExerciseTrackingType(exercise.exercise.trackingType),
       sets: exercise.sets.map((set) => ({
         reps: set.reps,
         weightKg: set.weightKg,
+        durationSeconds: set.durationSeconds,
+        distanceMeters: set.distanceMeters,
         completedAt: set.completedAt,
         type: set.type,
         isWarmup: set.isWarmup,

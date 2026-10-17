@@ -10,6 +10,7 @@ import { pickProfilePhoto } from '@/features/profile/photo/pickProfilePhoto';
 import { progressClient } from '@/features/progress/api/progressClient';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { formatDate } from '@/lib/format';
+import { formatSetValues } from '@/lib/tracking';
 import { formatWeightValue } from '@/lib/weight';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
@@ -211,7 +212,16 @@ export function ExerciseDetailScreen() {
               <View key={`${point.date}-${index}`} style={styles.historyRow}>
                 <Text style={styles.historyDate}>{formatDate(point.date, i18n.language)}</Text>
                 <Text style={styles.historyValue}>
-                  {`${formatWeightValue(point.bestWeightKg, unit)} ${unit} × ${formatHistoryValue(point.bestReps)}`}
+                  {point.bestDurationSeconds !== undefined || point.bestDistanceMeters !== undefined
+                    ? formatSetValues(
+                        {
+                          weightKg: point.bestWeightKg,
+                          durationSeconds: point.bestDurationSeconds,
+                          distanceMeters: point.bestDistanceMeters,
+                        },
+                        unit,
+                      )
+                    : `${formatWeightValue(point.bestWeightKg, unit)} ${unit} × ${formatHistoryValue(point.bestReps)}`}
                 </Text>
               </View>
             ))}

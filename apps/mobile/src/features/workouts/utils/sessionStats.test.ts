@@ -19,7 +19,26 @@ describe('summarizeSession', () => {
       ],
     });
 
-    expect(summary).toEqual({ totalSets: 4, doneSets: 3, volumeKg: 1486, restSeconds: 210 });
+    expect(summary).toEqual({
+      totalSets: 4,
+      doneSets: 3,
+      volumeKg: 1486,
+      restSeconds: 210,
+      durationSeconds: 0,
+      distanceMeters: 0,
+    });
+  });
+
+  it('totals time and distance apart from volume (spec 0021 AC-1, FR-5)', () => {
+    const summary = summarizeSession({
+      exercises: [
+        { sets: [{ reps: 8, weightKg: 50, ...done }] },
+        { sets: [{ durationSeconds: 60, ...done }, { durationSeconds: 45 }] },
+        { sets: [{ distanceMeters: 500, durationSeconds: 105, ...done }] },
+      ],
+    });
+
+    expect(summary).toMatchObject({ volumeKg: 400, durationSeconds: 165, distanceMeters: 500 });
   });
 
   it('trusts the server performed flag over completedAt', () => {

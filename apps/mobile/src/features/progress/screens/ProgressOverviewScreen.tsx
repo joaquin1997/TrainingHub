@@ -19,6 +19,8 @@ import { buildWeeklyVolumeSeries } from '@/features/progress/utils/chartData';
 import { summarizeTrainingFrequency } from '@/features/progress/utils/trainingFrequency';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { formatShortDate } from '@/lib/format';
+import { TimedProgressFigures } from '@/features/progress/components/TimedProgress';
+import { isTimedOrDistance } from '@/lib/tracking';
 import { formatWeightValue, fromKg, roundWeight } from '@/lib/weight';
 import { useRefresh } from '@/lib/useRefresh';
 import { Chip } from '@/ui/Chip';
@@ -158,25 +160,29 @@ export function ProgressOverviewScreen() {
                 ) : null}
                 <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
               </View>
-              <View style={styles.figures}>
-                <Figure
-                  label={t('progress.latestLabel')}
-                  value={formatWeightValue(exercise.latestWeightKg, unit)}
-                  unit={unit}
-                  reps={formatValue(exercise.latestReps)}
-                />
-                <Figure
-                  label={t('progress.bestLabel')}
-                  value={formatWeightValue(exercise.personalBestWeightKg, unit)}
-                  unit={unit}
-                  reps={formatValue(exercise.personalBestReps)}
-                />
-                <Figure
-                  label={t('progress.est1rmShort')}
-                  value={formatWeightValue(exercise.bestEstimatedOneRepMax, unit)}
-                  unit={unit}
-                />
-              </View>
+              {isTimedOrDistance(exercise.trackingType) ? (
+                <TimedProgressFigures summary={exercise} />
+              ) : (
+                <View style={styles.figures}>
+                  <Figure
+                    label={t('progress.latestLabel')}
+                    value={formatWeightValue(exercise.latestWeightKg, unit)}
+                    unit={unit}
+                    reps={formatValue(exercise.latestReps)}
+                  />
+                  <Figure
+                    label={t('progress.bestLabel')}
+                    value={formatWeightValue(exercise.personalBestWeightKg, unit)}
+                    unit={unit}
+                    reps={formatValue(exercise.personalBestReps)}
+                  />
+                  <Figure
+                    label={t('progress.est1rmShort')}
+                    value={formatWeightValue(exercise.bestEstimatedOneRepMax, unit)}
+                    unit={unit}
+                  />
+                </View>
+              )}
               <Text style={styles.meta}>
                 {t('progress.sessionsCount', { count: exercise.sessionCount })}
               </Text>

@@ -66,6 +66,8 @@ model Exercise {
   licenseAuthor             String?
   lastSourceUpdate          DateTime?
   isSystemDefined           Boolean                      @default(true)
+  /// What its sets record (spec 0021): weight_reps | reps | duration | weight_duration | distance_duration.
+  trackingType              String                       @default("weight_reps")
   createdByUserId           BigInt?
   createdAt                 DateTime                     @default(now())
   updatedAt                 DateTime                     @updatedAt
@@ -174,6 +176,10 @@ model RoutineExerciseSet {
   minReps           Int?
   maxReps           Int?
   targetWeight      Float?
+  /// Target time in whole seconds (spec 0021).
+  targetDurationSeconds Int?
+  /// Target distance in metres (spec 0021).
+  targetDistanceMeters Float?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
   routineExercise   RoutineExercise @relation(fields: [routineExerciseId], references: [id], onDelete: Cascade)

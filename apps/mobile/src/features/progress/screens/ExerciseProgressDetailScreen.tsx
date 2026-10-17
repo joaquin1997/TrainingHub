@@ -6,11 +6,13 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ProgressChart } from '@/features/progress/components/ProgressChart';
 import { RecordsCard } from '@/features/progress/components/RecordsCard';
+import { TimedProgressDetail } from '@/features/progress/components/TimedProgress';
 import { progressClient } from '@/features/progress/api/progressClient';
 import { buildProgressSeries } from '@/features/progress/utils/chartData';
 import { extractPersonalRecords } from '@/features/progress/utils/personalRecords';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { formatDate, formatShortDate } from '@/lib/format';
+import { isTimedOrDistance } from '@/lib/tracking';
 import { formatWeightValue, fromKg, roundWeight } from '@/lib/weight';
 import { Chip } from '@/ui/Chip';
 import { StatTile } from '@/ui/StatTile';
@@ -106,6 +108,11 @@ export function ExerciseProgressDetailScreen() {
         />
       </View>
     );
+  }
+
+  // Timed and distance exercises read in time or distance (spec 0021).
+  if (isTimedOrDistance(progress.trackingType)) {
+    return <TimedProgressDetail progress={progress} unit={unit} />;
   }
 
   // Convert the kg-scaled metrics into the user's display unit up front so the

@@ -1,5 +1,7 @@
 import type { ExerciseRecord, WeightUnit } from '@workout/domain';
 
+import { formatDuration } from '@/lib/format';
+import { formatDistance } from '@/lib/tracking';
 import { formatWeight } from '@/lib/weight';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
@@ -69,6 +71,18 @@ export function describeRecord(
         title: t('progress.records.bestEstimatedOneRepMax'),
         value: formatWeight(record.value, unit),
         set: formatSet(record, unit),
+      };
+    // Time and distance records (spec 0021 FR-6); a weighted hold names its weight.
+    case 'longestTime':
+      return {
+        title: t('progress.longestTime'),
+        value: formatDuration(record.value),
+        set: record.weightKg !== undefined ? formatWeight(record.weightKg, unit) : undefined,
+      };
+    case 'longestDistance':
+      return {
+        title: t('progress.longestDistance'),
+        value: formatDistance(record.value),
       };
   }
 }
