@@ -72,6 +72,14 @@ this is expected to fill in a prepared seam rather than reshape the domain.
 
 ## Open decisions
 
+> **Update 2026-10-18.** The owner asked for Apple and Google sign-in. A build
+> with the Sign in with Apple entitlement fails on the free team: *"Personal
+> development teams … do not support the Sign In with Apple capability"*. The
+> owner chose Google only for now (spec 0039) and **account linking by
+> verified email** — the same rule will apply here. This spec waits for a
+> paid Apple developer account; the platform question is answered by 0039
+> (Google on iPhone and web, email everywhere).
+
 - **[NEEDS DECISION: convenience or App Store requirement?]** Sets the priority.
 - **[NEEDS DECISION: account linking, or one account per sign-in method?]**
   The harder of the two; retrofitting linking later means migrating accounts

@@ -8,7 +8,7 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | Id | Title | Status | Roadmap area |
 |---|---|---|---|
 | [0001](specs/0001-auth-session-hardening/spec.md) | Auth session hardening | `ready` — plan written, awaiting review | 3 — Auth & users |
-| [0002](specs/0002-apple-sign-in/spec.md) | Sign in with Apple | `draft` — blocked on open decisions | 3 — Auth & users |
+| [0002](specs/0002-apple-sign-in/spec.md) | Sign in with Apple | `draft` — deferred (2026-10-18): the free Apple team cannot sign the capability (checked by building with it); waits for a paid developer account (owner's call). Decided meanwhile: link by verified email (as 0039) | 3 — Auth & users |
 | [0003](specs/0003-session-revocation/spec.md) | Session revocation | `draft` — deferred from 0001, before distribution | 3 — Auth & users |
 | [0010](specs/0010-persist-active-workout/spec.md) | Persist the active workout | `in-progress` — code complete on `feat/sdd-0013-0012`; awaiting a device rebuild (new native dependency) and device checks | 1 — Live workout logging |
 | [0011](specs/0011-workout-pause/spec.md) | Pause the active workout | `in-progress` — code complete on `feat/sdd-0013-0012`; awaiting the migration, redeploy and device checks (task 6) | 1 — Live workout logging |
@@ -39,6 +39,7 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0036](specs/0036-home-screen-widget/spec.md) | Home-screen widget | `in-progress` — code complete (2026-10-18); App Group signs on the free team (spike passed), installed on the iPhone with `TRAININGHUB_HOME_WIDGET=1`; awaiting the device checks (task 6). Was: depends on 0035; first plan task proves data sharing works on the free Apple team, else waits for a paid account (owner's call) | 8 — Integrations & platform |
 | [0037](specs/0037-first-run-and-celebration/spec.md) | First run and record celebration | `in-progress` — code complete (2026-10-18); awaiting a device rebuild (rest-alert permission state) and device checks (task 7). Scope: skippable 3-screen first run (units, rest, alerts explained before the prompt) and a celebration on the summary when records fall | 8 + 4 |
 | [0038](specs/0038-light-theme/spec.md) | Light theme | `in-progress` — code complete (2026-10-18); awaiting the migration `add_user_appearance` + API redeploy and a device rebuild (system appearance, lock-screen status), then device checks (task 9). Scope: Appearance System / Light / Dark; split off from 0034 | 8 — Integrations & platform |
+| [0039](specs/0039-google-sign-in/spec.md) | Sign in with Google | `in-progress` — code complete (2026-10-18), inactive until the owner creates the Google OAuth clients and sets `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` / `GOOGLE_CLIENT_IDS` (plan, *Owner steps*); then migration `add_user_identities`, API redeploy, native rebuild | 3 — Auth & users |
 
 Execution order agreed 2026-09-24: 0013 → 0014 → 0010 → 0011 → 0012 →
 visual redesign (to be specified; "functional first, then pretty") → 0001 →

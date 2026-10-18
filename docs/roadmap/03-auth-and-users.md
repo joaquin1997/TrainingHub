@@ -20,7 +20,8 @@ for what exists today.
 - [ ] Expire sessions (90 days, decided 2026-09-23) — spec 0001
 - [ ] Reassign the dev user's data to the owner's account — spec 0001
 - [ ] Server-side session revocation — spec 0003, **before any distribution**
-- [ ] Sign in with Apple — spec 0002
+- [ ] Sign in with Apple — spec 0002 (deferred: needs a paid Apple developer account)
+- [x] Sign in with Google — spec 0039 (code ready; active once the OAuth clients exist)
 - [ ] Password reset / account recovery — unspecified; needs an email capability
 - [x] Account / profile screen: name, bio, height, photo, body measurements
   with history (spec 0027 — migration, rebuild and photo check pending)
