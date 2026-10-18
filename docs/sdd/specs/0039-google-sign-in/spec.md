@@ -52,8 +52,11 @@ inactive until they are created**.
 ## Scope
 
 ### In scope
-- A "Continue with Google" action on the sign-in screen, on iPhone, Android
-  and the web build, shown only when the app has the Google credentials.
+- A "Continue with Google" action on the sign-in screen, on iPhone and the
+  web build, shown only when the app has the Google credentials.
+  `TODO(sdd): Android — Google no longer accepts the custom-scheme redirect
+  for Android clients; needs the Android client and its own flow when
+  Android is tested.`
 - Creating an account from a Google identity, or signing in to the account it
   already belongs to.
 - **Linking by verified email** (decided by the owner): a Google identity whose

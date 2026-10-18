@@ -12,13 +12,18 @@ import {
 } from 'react-native';
 
 import { useAuth } from '@/features/auth/AuthContext';
+import {
+  isGoogleSignInAvailable,
+  signInWithGoogleSheet,
+} from '@/features/auth/providers/googleSignIn';
+import { ApiError } from '@/lib/http';
 import { Button } from '@/ui/Button';
 import { colors, commonStyles, createStyles, fonts, keyboardAppearance, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 export function AuthLandingScreen() {
   useTheme();
   const { t } = useTranslation();
-  const { signIn, register } = useAuth();
+  const { signIn, register, signInWithGoogle } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,6 +44,33 @@ export function AuthLandingScreen() {
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : t('common.somethingWentWrong'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Spec 0039: only on a build with the Google client id (FR-1, AC-1).
+  const offersGoogle = isGoogleSignInAvailable();
+
+  const continueWithGoogle = async () => {
+    setError(undefined);
+    setIsSubmitting(true);
+    try {
+      const idToken = await signInWithGoogleSheet();
+      // Closed the sheet: back here, no message (EF-1).
+      if (idToken) {
+        await signInWithGoogle(idToken);
+      }
+    } catch (e) {
+      // Not configured on the server (EF-5), an unverified email that has an
+      // account (EF-4), or anything else: rejected or unreachable (EF-2, EF-3).
+      setError(
+        e instanceof ApiError && e.status === 503
+          ? t('auth.googleUnavailable')
+          : e instanceof ApiError && e.status === 409
+            ? t('auth.googleEmailTaken')
+            : t('auth.googleFailed'),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -142,6 +174,23 @@ export function AuthLandingScreen() {
           disabled={isSubmitting}
           fullWidth
         />
+        {offersGoogle ? (
+          <>
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>{t('auth.or')}</Text>
+              <View style={styles.dividerLine} />
+            </View>
+            <Button
+              label={t('auth.continueWithGoogle')}
+              icon="logo-google"
+              variant="secondary"
+              onPress={() => void continueWithGoogle()}
+              disabled={isSubmitting}
+              fullWidth
+            />
+          </>
+        ) : null}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -166,6 +215,20 @@ function Field({
 const styles = createStyles(() => ({
   screen: {
     ...commonStyles.screen,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  dividerText: {
+    ...typeScale.caption,
+    color: colors.textMuted,
   },
   container: {
     flexGrow: 1,

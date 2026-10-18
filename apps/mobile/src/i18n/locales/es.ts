@@ -35,6 +35,11 @@ export const es: TranslationCatalog = {
     pleaseWait: 'Espera…',
   },
   auth: {
+    googleUnavailable: 'El acceso con Google aún no está disponible.',
+    googleEmailTaken: 'Este email ya tiene cuenta: entra con su contraseña.',
+    or: 'o',
+    continueWithGoogle: 'Continuar con Google',
+    googleFailed: 'No se pudo entrar con Google. Revisa la conexión e inténtalo de nuevo.',
     subtitleRegister: 'Crea una cuenta para empezar a registrar.',
     subtitleLogin: 'Inicia sesión en tus entrenamientos.',
     namePlaceholder: 'Nombre (opcional)',

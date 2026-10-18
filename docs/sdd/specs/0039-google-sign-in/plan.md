@@ -13,13 +13,14 @@ created: 2026-10-18
 on iOS, Android and web; no Google SDK and no client secret in the app):
 
 - `config/google.ts`: `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`,
-  `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`;
+  `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` (Android follows the spec's TODO);
   `googleClientIdForPlatform()` and `isGoogleSignInConfigured()` (pure).
 - `features/auth/providers/googleSignIn.ts`: authorization code + PKCE
   against Google's discovery document, redirect
-  `com.googleusercontent.apps.<id>:/oauthredirect` on iOS/Android (the web
-  build uses its origin), code exchanged for tokens (public client), returns
-  the `id_token`; cancel → `null` (EF-1).
+  `com.googleusercontent.apps.<id>:/oauthredirect` on iOS, code exchanged for
+  tokens (iOS clients are public, no secret), returns the `id_token`; the
+  web build asks for the `id_token` directly with a nonce (Google web clients
+  need a secret for the code exchange); cancel → `null` (EF-1).
 - `AuthContext.signInWithGoogle(idToken)` → `authClient.google` →
   `persist` (FR-2). `AuthLandingScreen`: "Continue with Google" when
   configured (FR-1), one-line errors (EF-2, EF-3, EF-5).
@@ -54,8 +55,6 @@ on iOS, Android and web; no Google SDK and no client secret in the app):
    - **iOS**: bundle id `com.joaquin.traininghub` → iOS client id.
    - **Web application** (for the web build; optional): authorised origin
      of the web preview.
-   - **Android** (when Android is tested): package `com.joaquin.traininghub`
-     and the signing SHA-1.
 3. `apps/mobile/.env`: `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=…` (and the others);
    `apps/api/.env`: `GOOGLE_CLIENT_IDS=<ios id>,<web id>`; `scripts/run.sh`
    passes it to the container.

@@ -33,6 +33,11 @@ export const en = {
     pleaseWait: 'Please wait…',
   },
   auth: {
+    googleUnavailable: 'Google sign-in is not available yet.',
+    googleEmailTaken: 'This email already has an account — sign in with its password.',
+    or: 'or',
+    continueWithGoogle: 'Continue with Google',
+    googleFailed: 'Google sign-in failed. Check the connection and try again.',
     subtitleRegister: 'Create an account to start tracking.',
     subtitleLogin: 'Sign in to your workouts.',
     namePlaceholder: 'Name (optional)',
