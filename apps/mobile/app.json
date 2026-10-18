@@ -4,13 +4,18 @@
     "slug": "traininghub",
     "scheme": "traininghub",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "backgroundColor": "#101418",
     "ios": {
       "appleTeamId": "23X2PC36Y7",
+      "icon": {
+        "light": "./assets/icon.png",
+        "dark": "./assets/icon-dark.png",
+        "tinted": "./assets/icon-tinted.png"
+      },
       "bundleIdentifier": "com.joaquin.traininghub",
       "supportsTablet": true,
-      "userInterfaceStyle": "dark",
+      "userInterfaceStyle": "automatic",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true,
@@ -25,7 +30,7 @@
     },
     "android": {
       "package": "com.joaquin.traininghub",
-      "userInterfaceStyle": "dark",
+      "userInterfaceStyle": "automatic",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "monochromeImage": "./assets/adaptive-icon-monochrome.png",

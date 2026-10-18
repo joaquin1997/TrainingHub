@@ -6,12 +6,14 @@
  * - **type / shape / spacing** — a number other than 0 in the value of a font
  *   size, line height, corner radius, padding, margin or gap;
  * - **colour** — a hex, `rgb()`/`hsl()` or named colour value;
- * - **keyboard** — a `<TextInput` without `keyboardAppearance` (FR-3).
+ * - **keyboard** — a `<TextInput` without `keyboardAppearance`, or with a
+ *   fixed one instead of the theme's (0034 FR-3, 0038 FR-12);
+ * - **statusBar** — a `<StatusBar` with a fixed `style` (0038 AC-3).
  *
  * Widths, heights, border widths and icon sizes are not checked: they are
  * sizes, not steps of a scale (hairline borders are not spacing — FR-11).
  */
-export type ScaleViolationKind = 'type' | 'radius' | 'spacing' | 'colour' | 'keyboard';
+export type ScaleViolationKind = 'type' | 'radius' | 'spacing' | 'colour' | 'keyboard' | 'statusBar';
 
 export interface ScaleViolation {
   kind: ScaleViolationKind;
@@ -92,9 +94,19 @@ export function scanStyleSource(source: string): ScaleViolation[] {
 
   for (const match of code.matchAll(/<TextInput\b/g)) {
     const tag = openingTag(code, match.index);
+    const line = code.slice(0, match.index).split('\n').length;
     if (!/\bkeyboardAppearance\b/.test(tag)) {
-      const line = code.slice(0, match.index).split('\n').length;
       violations.push({ kind: 'keyboard', line, text: '<TextInput without keyboardAppearance' });
+    } else if (/\bkeyboardAppearance\s*=\s*["'{]\s*["']?(dark|light|default)/.test(tag)) {
+      violations.push({ kind: 'keyboard', line, text: '<TextInput with a fixed keyboardAppearance' });
+    }
+  }
+
+  for (const match of code.matchAll(/<StatusBar\b/g)) {
+    const tag = openingTag(code, match.index);
+    if (/\bstyle\s*=\s*["'{]\s*["']?(dark|light|auto|inverted)/.test(tag)) {
+      const line = code.slice(0, match.index).split('\n').length;
+      violations.push({ kind: 'statusBar', line, text: '<StatusBar with a fixed style' });
     }
   }
 

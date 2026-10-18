@@ -1,12 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
+import { BrandMark } from '@/ui/BrandMark';
 import { Button } from '@/ui/Button';
-import { colors, commonStyles, radii, spacing } from '@/ui/theme';
+import { colors, commonStyles, createStyles, radii, spacing, useTheme } from '@/ui/theme';
 
 export interface EmptyStateProps {
-  /** An icon in the screen's own subject. */
-  icon?: keyof typeof Ionicons.glyphMap;
+  /**
+   * An icon in the screen's own subject, or `brand` for the brand mark on the
+   * first screens a new account sees (spec 0035 FR-13).
+   */
+  icon?: keyof typeof Ionicons.glyphMap | 'brand';
   title?: string;
   message?: string;
   /** At most one action, leading to an existing place (spec 0034 FR-14). */
@@ -18,11 +22,18 @@ export interface EmptyStateProps {
  * a title, one sentence and at most one action.
  */
 export function EmptyState({ icon = 'file-tray-outline', title, message, action }: EmptyStateProps) {
+  useTheme();
   return (
     <View style={styles.container}>
-      <View style={styles.iconTile}>
-        <Ionicons name={icon} size={32} color={colors.primary} />
-      </View>
+      {icon === 'brand' ? (
+        <View style={styles.markSpacing}>
+          <BrandMark size={64} />
+        </View>
+      ) : (
+        <View style={styles.iconTile}>
+          <Ionicons name={icon} size={32} color={colors.primaryInk} />
+        </View>
+      )}
       {title ? (
         <Text accessibilityRole="header" style={styles.title}>
           {title}
@@ -36,7 +47,7 @@ export function EmptyState({ icon = 'file-tray-outline', title, message, action 
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -53,6 +64,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primarySoft,
     marginBottom: spacing.xs,
   },
+  markSpacing: {
+    marginBottom: spacing.xs,
+  },
   title: {
     ...commonStyles.cardTitle,
     textAlign: 'center',
@@ -65,4 +79,4 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: spacing.sm,
   },
-});
+}));

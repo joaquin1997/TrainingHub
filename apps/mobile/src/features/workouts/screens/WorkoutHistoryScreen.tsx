@@ -6,7 +6,6 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
@@ -14,6 +13,7 @@ import {
 import { progressClient } from '@/features/progress/api/progressClient';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
+import { WeekStrip } from '@/features/workouts/components/WeekStrip';
 import { summarizeSession } from '@/features/workouts/utils/sessionStats';
 import {
   activeDurationSeconds,
@@ -24,15 +24,18 @@ import {
 import { formatDistance } from '@/lib/tracking';
 import { formatWeightValue } from '@/lib/weight';
 import { useRefresh } from '@/lib/useRefresh';
+import { sameDay, weekDays } from '@/lib/week';
+import { Button } from '@/ui/Button';
 import { CardHeader } from '@/ui/CardHeader';
 import { Chip } from '@/ui/Chip';
 import { ScreenTitle } from '@/ui/ScreenTitle';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import { SkeletonCardList } from '@/ui/Skeleton';
 import type { WorkoutSession } from '@workout/domain';
 
 export function WorkoutHistoryScreen() {
+  useTheme();
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
@@ -40,6 +43,8 @@ export function WorkoutHistoryScreen() {
   const [recordCounts, setRecordCounts] = useState<Map<string, number>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
+  // The day picked on the week strip (spec 0035 FR-9); null shows every workout.
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const { settings } = useSettings();
   const unit = settings.unit;
 
@@ -91,6 +96,14 @@ export function WorkoutHistoryScreen() {
   const { isRefreshing, onRefresh } = useRefresh(loadSessions);
   const showLoading = isLoading && sessions.length === 0;
   const hasEmptyState = !isLoading && !errorMessage && sessions.length === 0;
+  const today = new Date();
+  const days = weekDays(today);
+  const dayCounts = days.map(
+    (day) => sessions.filter((session) => sameDay(new Date(session.startedAt), day)).length,
+  );
+  const shownSessions = selectedDay
+    ? sessions.filter((session) => sameDay(new Date(session.startedAt), selectedDay))
+    : sessions;
   const hasListState = !errorMessage && sessions.length > 0;
 
   return (
@@ -102,6 +115,16 @@ export function WorkoutHistoryScreen() {
       }
     >
       <ScreenTitle title={t('nav.history')} />
+      {/* Only with the history at hand: no dots are made up (spec 0035 EF-3). */}
+      {hasListState ? (
+        <WeekStrip
+          days={days}
+          today={today}
+          counts={dayCounts}
+          selected={selectedDay}
+          onSelect={setSelectedDay}
+        />
+      ) : null}
       {/* First load only: the shape of the cards to come (spec 0034 FR-15). */}
       {showLoading && !errorMessage ? <SkeletonCardList /> : null}
       {errorMessage ? (
@@ -115,16 +138,39 @@ export function WorkoutHistoryScreen() {
       {hasEmptyState ? (
         <StateView
           kind="empty"
-          icon="time-outline"
+          icon="brand"
           title={t('workouts.emptyTitle')}
           message={t('workouts.emptySubtitle')}
           actionLabel={t('workouts.emptyAction')}
           onAction={() => router.push('/routines')}
         />
       ) : null}
-      {hasListState ? (
+      {hasListState && selectedDay && shownSessions.length === 0 ? (
+        <View style={styles.dayEmpty}>
+          <Text style={styles.meta}>
+            {t('workouts.noWorkoutsOn', {
+              weekday: selectedDay.toLocaleDateString(i18n.language, { weekday: 'long' }),
+            })}
+          </Text>
+          <Button
+            label={t('workouts.showAllWorkouts')}
+            variant="ghost"
+            onPress={() => setSelectedDay(null)}
+          />
+        </View>
+      ) : null}
+      {hasListState && shownSessions.length > 0 ? (
         <View style={styles.list}>
-          {sessions.map((session) => {
+          {selectedDay ? (
+            <Button
+              label={t('workouts.showAllWorkouts')}
+              variant="ghost"
+              icon="close"
+              onPress={() => setSelectedDay(null)}
+              style={styles.clear}
+            />
+          ) : null}
+          {shownSessions.map((session) => {
             const when = session.completedAt ?? session.startedAt;
             const totals = summarizeSession(session);
             const exercises = session.exercises
@@ -222,7 +268,7 @@ export function WorkoutHistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   screen: {
     ...commonStyles.screen,
   },
@@ -241,6 +287,14 @@ const styles = StyleSheet.create({
   },
   meta: {
     ...commonStyles.meta,
+  },
+  dayEmpty: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.lg,
+  },
+  clear: {
+    alignSelf: 'flex-start',
   },
   chips: {
     flexDirection: 'row',
@@ -273,4 +327,4 @@ const styles = StyleSheet.create({
     color: colors.textSubtle,
     ...typeScale.caption,
   },
-});
+}));

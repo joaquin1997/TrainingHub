@@ -8,6 +8,9 @@ export interface RestAlertContent {
   body: string;
 }
 
+/** Whether this device may alert outside the app (spec 0037 FR-8, FR-14). */
+export type RestAlertPermission = 'notAsked' | 'denied' | 'granted' | 'unknown';
+
 /**
  * The alert when a rest ends, delivered by the system so it also reaches a
  * person with the app in the background or the phone locked (spec 0018 FR-6).
@@ -20,6 +23,12 @@ export interface RestAlerts {
   schedule(at: Date, content: RestAlertContent): Promise<void>;
   /** Removes the pending (and an already delivered) rest alert. */
   cancel(): Promise<void>;
+  /** Whether this device can alert outside the app at all (today iOS only). */
+  readonly outsideApp: boolean;
+  /** `unknown` when the build cannot tell (before spec 0037). */
+  permissionStatus(): Promise<RestAlertPermission>;
+  /** Opens the system settings where alerts are turned on. */
+  openSystemSettings(): Promise<void>;
 }
 
 /** No alert outside the app; the rest still alerts inside it (EF-1). */
@@ -27,6 +36,9 @@ export const noopRestAlerts: RestAlerts = {
   requestPermission: async () => false,
   schedule: async () => {},
   cancel: async () => {},
+  outsideApp: false,
+  permissionStatus: async () => 'unknown',
+  openSystemSettings: async () => {},
 };
 
 /** The iOS alert: a local notification from the `rest-alert` module. */
@@ -35,6 +47,11 @@ function iosRestAlerts(native: NonNullable<typeof RestAlert>): RestAlerts {
     requestPermission: () => native.requestPermission(),
     schedule: (at, content) => native.schedule(at.getTime(), content.title, content.body),
     cancel: () => native.cancel(),
+    outsideApp: true,
+    permissionStatus: async () => (native.permissionStatus ? native.permissionStatus() : 'unknown'),
+    openSystemSettings: async () => {
+      await native.openSettings?.();
+    },
   };
 }
 
@@ -49,3 +66,4 @@ function iosRestAlerts(native: NonNullable<typeof RestAlert>): RestAlerts {
 export function restAlertsForThisDevice(): RestAlerts {
   return Platform.OS === 'ios' && RestAlert ? iosRestAlerts(RestAlert) : noopRestAlerts;
 }
+

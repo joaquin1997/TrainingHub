@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { WheelPicker } from '@/features/workouts/components/WheelPicker';
 import { Button } from '@/ui/Button';
-import { colors, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 const REST_MINUTES = Array.from({ length: 11 }, (_, i) => i); // 0–10 min
 const REST_SECONDS = Array.from({ length: 12 }, (_, i) => i * 5); // 0,5,…,55
@@ -36,6 +36,7 @@ export function RestEditorSheet({
   onSave,
   onClose,
 }: RestEditorSheetProps) {
+  useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [value, setValue] = useState(() => toWheelSeconds(seconds));
@@ -95,7 +96,7 @@ export function RestEditorSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   backdrop: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -154,4 +155,4 @@ const styles = StyleSheet.create({
   action: {
     flex: 1,
   },
-});
+}));

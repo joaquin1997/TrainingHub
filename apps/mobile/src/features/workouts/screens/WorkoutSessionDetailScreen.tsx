@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { TFunction } from 'i18next';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
 import { progressClient } from '@/features/progress/api/progressClient';
 import { RecordsCard } from '@/features/progress/components/RecordsCard';
@@ -32,7 +32,7 @@ import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import { CardHeader } from '@/ui/CardHeader';
 import type { SessionRecord, WeightUnit, WorkoutSession, WorkoutSet } from '@workout/domain';
 
@@ -70,6 +70,7 @@ function setTypeLabel(type: WorkoutSet['type'], t: TFunction) {
 }
 
 export function WorkoutSessionDetailScreen() {
+  useTheme();
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const { workoutId } = useLocalSearchParams<{ workoutId?: string }>();
@@ -301,7 +302,7 @@ export function WorkoutSessionDetailScreen() {
                 <Ionicons
                   name={done ? 'checkmark-circle' : 'ellipse-outline'}
                   size={18}
-                  color={done ? colors.success : colors.textSubtle}
+                  color={done ? colors.successInk : colors.textSubtle}
                 />
                 <Text style={styles.setNum}>{set.order}</Text>
                 <Text style={styles.setValue}>
@@ -323,7 +324,7 @@ export function WorkoutSessionDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   screen: {
     ...commonStyles.screen,
   },
@@ -404,4 +405,4 @@ const styles = StyleSheet.create({
     ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
-});
+}));

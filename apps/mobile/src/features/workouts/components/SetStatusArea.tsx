@@ -4,7 +4,7 @@ import { Animated, Easing, Pressable, StyleSheet, View, type ViewStyle } from 'r
 
 import { usePop } from '@/features/workouts/liveRecords/RecordBadge';
 import { isStatusChecked, type SetStatus } from '@/features/workouts/utils/setStatus';
-import { colors, radii } from '@/ui/theme';
+import { colors, createStyles, radii, useTheme } from '@/ui/theme';
 import { useReducedMotion } from '@/ui/useReducedMotion';
 
 /** Length of the done/undone transition (spec 0034 FR-6: about a third of a second at most). */
@@ -47,21 +47,22 @@ type Look = {
 };
 
 /** Shape and colour of each status (FR-17: never colour alone). */
-const LOOKS: Record<SetStatus, Look> = {
-  record: { icon: 'trophy', iconColor: colors.onPrimary, frame: { borderColor: colors.accent } },
-  done: { icon: 'checkmark', iconColor: colors.onPrimary, frame: { borderColor: colors.success } },
+/** Read at render time, so it follows the theme (spec 0038). */
+const LOOKS = (): Record<SetStatus, Look> => ({
+  record: { icon: 'trophy', iconColor: colors.onPrimary, frame: { borderColor: colors.accentInk } },
+  done: { icon: 'checkmark', iconColor: colors.onPrimary, frame: { borderColor: colors.successInk } },
   generatedWarmup: {
     icon: 'sparkles',
-    iconColor: colors.accent,
-    frame: { borderColor: colors.accent, borderStyle: 'dashed' },
+    iconColor: colors.accentInk,
+    frame: { borderColor: colors.accentInk, borderStyle: 'dashed' },
   },
   upNext: {
     icon: 'checkmark',
-    iconColor: colors.primary,
-    frame: { borderColor: colors.primary, borderWidth: 2 },
+    iconColor: colors.primaryInk,
+    frame: { borderColor: colors.primaryInk, borderWidth: 2 },
   },
   none: { icon: 'checkmark', iconColor: colors.controlBorder, frame: {} },
-};
+});
 
 type Props = {
   status: SetStatus;
@@ -78,10 +79,11 @@ type Props = {
  * the tick earned it (FR-7).
  */
 export function SetStatusArea({ status, pop = false, accessibilityLabel, onPress }: Props) {
+  useTheme();
   const checked = isStatusChecked(status);
   const fill = useDoneTransition(checked);
   const scale = usePop(pop && status === 'record');
-  const look = LOOKS[status];
+  const look = LOOKS()[status];
   // An untick fades out the fill it had (orange stays orange while it fades).
   const recordFillRef = useRef(status === 'record');
   if (checked) {
@@ -113,7 +115,7 @@ export function SetStatusArea({ status, pop = false, accessibilityLabel, onPress
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   area: {
     width: STATUS_AREA_SIZE,
     height: STATUS_AREA_SIZE,
@@ -138,4 +140,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-});
+}));

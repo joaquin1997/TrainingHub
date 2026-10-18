@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { TRACKING_TYPES } from '@/lib/tracking';
 import { Chip } from '@/ui/Chip';
-import { colors, commonStyles, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, spacing, typeScale, useTheme } from '@/ui/theme';
 import type { ExerciseTrackingType } from '@workout/domain';
 
 type TrackingTypeControlProps = {
@@ -17,6 +17,7 @@ type TrackingTypeControlProps = {
  * five choices as when creating a custom exercise.
  */
 export function TrackingTypeControl({ value, onChange, disabled }: TrackingTypeControlProps) {
+  useTheme();
   const { t } = useTranslation();
 
   return (
@@ -37,7 +38,7 @@ export function TrackingTypeControl({ value, onChange, disabled }: TrackingTypeC
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   section: {
     gap: spacing.sm,
   },
@@ -53,4 +54,4 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     ...typeScale.caption,
   },
-});
+}));

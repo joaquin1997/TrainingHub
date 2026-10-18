@@ -88,6 +88,7 @@ describe('toWatchSnapshot', () => {
     expect(snapshot).toEqual({
       workoutSessionId: 'c1',
       routineName: 'Push',
+      setsDone: 1,
       startedAt: '2026-10-17T09:00:00.000Z',
       pausedAt: undefined,
       pausedSeconds: 0,

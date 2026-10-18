@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
 import type {
   ExerciseProgressDetail,
@@ -15,7 +15,7 @@ import { formatDate, formatDuration, formatShortDate } from '@/lib/format';
 import { formatDistance, formatSetValues } from '@/lib/tracking';
 import { Chip } from '@/ui/Chip';
 import { StatTile } from '@/ui/StatTile';
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 /**
  * Progress of a timed or distance exercise (spec 0021): its record is the
@@ -28,6 +28,7 @@ const formatMetric = (type: ExerciseTrackingType | undefined, value?: number) =>
 
 /** Latest and best figures for a progress overview card. */
 export function TimedProgressFigures({ summary }: { summary: ExerciseProgressSummary }) {
+  useTheme();
   const { t } = useTranslation();
   const distance = isDistance(summary.trackingType);
 
@@ -67,6 +68,7 @@ export function TimedProgressDetail({
   progress: ExerciseProgressDetail;
   unit: WeightUnit;
 }) {
+  useTheme();
   const { t, i18n } = useTranslation();
   const distance = isDistance(progress.trackingType);
   const metric = distance ? 'bestDistanceMeters' : 'bestDurationSeconds';
@@ -142,7 +144,7 @@ export function TimedProgressDetail({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   figures: {
     flexDirection: 'row',
     gap: spacing.sm,
@@ -211,4 +213,4 @@ const styles = StyleSheet.create({
     ...typeScale.body,
     fontVariant: ['tabular-nums'],
   },
-});
+}));

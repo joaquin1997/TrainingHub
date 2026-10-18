@@ -9,10 +9,17 @@ struct StartActivityPayload: Record {
   @Field var pausedSeconds: Double = 0
   @Field var activeKcal: Int? = nil
   @Field var restEndsAtMs: Double? = nil
+  @Field var upNext: String? = nil
+  @Field var setsDone: Int? = nil
+  @Field var setsTotal: Int? = nil
+  @Field var setsLabel: String? = nil
   @Field var pausedLabel: String = ""
   @Field var pauseLabel: String = ""
   @Field var resumeLabel: String = ""
   @Field var finishLabel: String = ""
+  @Field var discardLabel: String? = nil
+  @Field var nextLabel: String? = nil
+  @Field var allDoneLabel: String? = nil
 }
 
 public class WorkoutLiveActivityModule: Module {
@@ -75,6 +82,22 @@ public class WorkoutLiveActivityModule: Module {
       }
     }
 
+    AsyncFunction("setProgress") { (
+      workoutId: String,
+      upNext: String?,
+      setsDone: Int,
+      setsTotal: Int,
+      setsLabel: String
+    ) async in
+      guard #available(iOS 16.2, *) else { return }
+      await ActivityStore.update(workoutId: workoutId) { state in
+        state.upNext = upNext
+        state.setsDone = setsDone
+        state.setsTotal = setsTotal
+        state.setsLabel = setsLabel
+      }
+    }
+
     AsyncFunction("end") { () async in
       guard #available(iOS 16.2, *) else { return }
       await ActivityStore.endAll()
@@ -97,13 +120,20 @@ private enum ActivityStore {
       pausedLabel: payload.pausedLabel,
       pauseLabel: payload.pauseLabel,
       resumeLabel: payload.resumeLabel,
-      finishLabel: payload.finishLabel
+      finishLabel: payload.finishLabel,
+      discardLabel: payload.discardLabel,
+      nextLabel: payload.nextLabel,
+      allDoneLabel: payload.allDoneLabel
     )
     let state = WorkoutActivityAttributes.ContentState(
       pausedAt: payload.pausedAtMs.map { Date(timeIntervalSince1970: $0 / 1000) },
       pausedSeconds: payload.pausedSeconds,
       activeKcal: payload.activeKcal,
-      restEndsAt: payload.restEndsAtMs.map { Date(timeIntervalSince1970: $0 / 1000) }
+      restEndsAt: payload.restEndsAtMs.map { Date(timeIntervalSince1970: $0 / 1000) },
+      upNext: payload.upNext,
+      setsDone: payload.setsDone,
+      setsTotal: payload.setsTotal,
+      setsLabel: payload.setsLabel
     )
     // pushType nil: a free developer team has no push entitlement.
     _ = try Activity.request(

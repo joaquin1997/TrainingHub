@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { BrandMark } from '@/ui/BrandMark';
+import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 interface ScreenTitleProps {
   title: string;
@@ -16,16 +17,21 @@ interface ScreenTitleProps {
 
 /**
  * Large title at the top of a tab's root screen, which hides the native header
- * (spec 0017 FR-11). Rendered as the first child of the screen's scroll view.
+ * (spec 0017 FR-11), led by the small brand mark at the same place on every
+ * tab (spec 0035 FR-13). Rendered as the first child of the screen's scroll view.
  */
 export function ScreenTitle({ title, action }: ScreenTitleProps) {
+  useTheme();
   const insets = useSafeAreaInsets();
 
   return (
     <View style={[styles.row, { paddingTop: insets.top + spacing.sm }]}>
-      <Text accessibilityRole="header" style={styles.title}>
-        {title}
-      </Text>
+      <View style={styles.titleGroup}>
+        <BrandMark size={28} />
+        <Text accessibilityRole="header" style={styles.title}>
+          {title}
+        </Text>
+      </View>
       {action ? (
         <Pressable
           accessibilityRole="button"
@@ -35,7 +41,7 @@ export function ScreenTitle({ title, action }: ScreenTitleProps) {
           style={({ pressed }) => [styles.action, pressed ? commonStyles.pressed : null]}
         >
           {action.icon ? (
-            <Ionicons name={action.icon} size={18} color={colors.primary} />
+            <Ionicons name={action.icon} size={18} color={colors.primaryInk} />
           ) : null}
           <Text style={styles.actionLabel}>{action.label}</Text>
         </Pressable>
@@ -44,12 +50,18 @@ export function ScreenTitle({ title, action }: ScreenTitleProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
+  },
+  titleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flexShrink: 1,
   },
   title: {
     ...commonStyles.title,
@@ -68,7 +80,7 @@ const styles = StyleSheet.create({
   },
   actionLabel: {
     ...typeScale.body,
-    color: colors.primary,
+    color: colors.primaryInk,
     fontFamily: fonts.displayBold,
   },
-});
+}));

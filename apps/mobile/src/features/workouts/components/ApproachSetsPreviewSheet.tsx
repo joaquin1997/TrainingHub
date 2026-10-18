@@ -1,13 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { WeightUnit } from '@workout/domain';
 
 import type { ApproachSet } from '@/lib/approachSets';
 import { Button } from '@/ui/Button';
-import { colors, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 export type ApproachSetsPreviewContent = {
   exerciseName: string;
@@ -38,6 +38,7 @@ export function ApproachSetsPreviewSheet({
   onConfirm,
   onCancel,
 }: ApproachSetsPreviewSheetProps) {
+  useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
@@ -51,7 +52,7 @@ export function ApproachSetsPreviewSheet({
           >
             <View style={styles.grabber} />
             <View style={styles.titleRow}>
-              <Ionicons name="flame-outline" size={18} color={colors.accent} />
+              <Ionicons name="flame-outline" size={18} color={colors.accentInk} />
               <Text style={styles.title}>
                 {t('workouts.approachPreviewTitle', { exercise: preview.exerciseName })}
               </Text>
@@ -102,7 +103,7 @@ export function ApproachSetsPreviewSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   backdrop: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -168,4 +169,4 @@ const styles = StyleSheet.create({
   action: {
     flex: 1,
   },
-});
+}));

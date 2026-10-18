@@ -7,8 +7,51 @@
 // keeps the iPhone build exactly as before (Live Activity included).
 const withWatchApp = process.env.TRAININGHUB_WATCH_APP === '1';
 
+// Spec 0036: the home-screen widget reads the app's figures from an App Group
+// shared by the app and the widget extension (the plugin copies the app's App
+// Groups to the extension). Opt-in with TRAININGHUB_HOME_WIDGET=1 until the
+// free team is known to sign it; without it the widget shows "TrainingHub".
+const withHomeWidget = process.env.TRAININGHUB_HOME_WIDGET === '1';
+const HOME_WIDGET_APP_GROUP = 'group.com.joaquin.traininghub';
+
+// Spec 0039: Google returns to the app through the reversed iOS client id.
+const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+const googleUrlTypes = googleIosClientId
+  ? [
+      {
+        CFBundleURLSchemes: [
+          `com.googleusercontent.apps.${googleIosClientId.replace(/\.apps\.googleusercontent\.com$/, '')}`,
+        ],
+      },
+    ]
+  : [];
+
+function withGoogleUrlScheme(ios) {
+  if (googleUrlTypes.length === 0) {
+    return ios;
+  }
+  return {
+    ...ios,
+    infoPlist: {
+      ...ios.infoPlist,
+      CFBundleURLTypes: [...(ios.infoPlist?.CFBundleURLTypes ?? []), ...googleUrlTypes],
+    },
+  };
+}
+
 module.exports = ({ config }) => ({
   ...config,
+  ios: withGoogleUrlScheme(
+    withHomeWidget
+      ? {
+          ...config.ios,
+          entitlements: {
+            ...config.ios.entitlements,
+            'com.apple.security.application-groups': [HOME_WIDGET_APP_GROUP],
+          },
+        }
+      : config.ios,
+  ),
   plugins: config.plugins.map((plugin) =>
     plugin === '@bacons/apple-targets' && !withWatchApp
       ? ['@bacons/apple-targets', { match: 'workout-activity' }]

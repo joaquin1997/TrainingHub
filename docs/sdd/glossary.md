@@ -36,6 +36,7 @@ production.
 | **Deleted exercise** | A custom exercise its creator has deleted. Gone from the catalog and every picker, but kept, with its name, for the saved workouts and routines that already contain it (spec 0033). | An exercise removed outright, which history could no longer name |
 | **Held exercise** | Another person's custom exercise that someone's routines or saved workouts already contained before custom exercises became private. Readable there, under its name, and still usable in that routine; never shown in the catalog or pickers, never addable anew (spec 0015). | A custom exercise of my own |
 | **Unilateral exercise** | An exercise done one side at a time, logged per side (spec 0022). | — |
+| **Today's routine** | The routine the home screen suggests starting next: the one after the most recently performed routine in the Routines list's order, within its folder, wrapping round; the first routine when none has been performed. Derived, never stored; a suggestion only (spec 0035). | Up next, which is a set inside the active workout |
 
 ## Progress
 
@@ -48,6 +49,7 @@ production.
 | **Record type** | What a personal record measures: heaviest weight, most reps, best set volume, best session volume or best estimated 1RM (spec 0023). |
 | **Starting records** | An exercise's best of each record type as it stood when the exercise entered the active workout. Kept with the active workout, never changed by it (spec 0032). |
 | **Record badge** | A mark on a performed working set (or, for session volume, an exercise) of the active workout saying it beats a starting record. A notice only, never a stored record; the saved workout's records are authoritative (spec 0032). |
+| **Week streak** | The number of consecutive calendar weeks (Monday to Sunday, the person's local time) with at least one saved workout, ending this week — or last week while this week has none yet. Zero once a whole week passes without a workout. Derived (spec 0035). |
 
 ## Presentation
 
@@ -60,6 +62,12 @@ production.
 | **Skeleton** | Neutral placeholder shapes shown while a list's first load is in flight, laid out like the content to come; never invented data (spec 0034). |
 | **Set status area** | The one fixed place on an active-workout set row that shows its state: record, done, generated warm-up, up next, or nothing (spec 0034). |
 | **Up next** | The first set of the active workout, in workout order, not yet done — in a superset, the next set of the current round. At most one at a time (spec 0034). |
+| **Record celebration** | The one-off lime flash and *record* haptic behind "Records today" on the post-workout summary of a workout that beat records; once per workout, never blocking; a static highlight under Reduce Motion (spec 0037). |
+| **Theme** | One complete set of values for the named palette: Dark (the original) or Light. Every colour token has a value in each; accent meanings are the same in both (spec 0038). |
+| **Appearance** | The setting that picks the theme: System (follow the device's light/dark appearance), Light or Dark. Kept on the account like the other settings; presentation only (spec 0038). |
+| **Ink shade** | The shade of an accent used for text, icons, outlines and chart lines, as opposed to its fill (a filled button or chip). Same as the fill on Dark; darker than the brand lime fill on Light so it meets contrast (spec 0038). |
+| **Brand mark** | The app's mark: the lime pulse, as on the app icon (spec 0034). Decorative wherever it appears; never a control (spec 0035). |
+| **Week strip** | The seven days of the current week, Monday to Sunday, at the top of History, with a dot on each day that has a saved workout; tapping a day filters the list to it (spec 0035). |
 
 ## Identity and preferences
 
@@ -71,6 +79,7 @@ production.
 | **Measurement entry** | A dated record of body measurements (weight, body-fat %, muscle %, circumferences) owned by a user. BMI and waist-to-height are derived from the latest entries and the height, never stored (spec 0027). |
 | **Display unit** | A *presentation* preference only. Storage is always kilograms — constitution Article 4. |
 | **TokenStorage** | The interface behind which the auth token is kept (get/set/clear), so platform specifics stay isolated. |
+| **First run** | The short, skippable sequence after signing up or signing in that sets display unit, default rest and language and asks for rest alerts with an explanation first. Shown once per account per device, only to an account that is not set up (no routine, no saved workout, default settings) (spec 0037). |
 
 ## Integrations
 
@@ -81,6 +90,8 @@ production.
 | **Active energy** | Calories burned as measured by the person's health data (e.g. a watch), read with permission — never estimated by formula. Unknown when there is no data or no permission, never shown as 0 (spec 0012). |
 | **HealthSyncRecord** | Sync *metadata* only. Never a place to duplicate workout data. |
 | **HealthIntegration / WorkoutSyncService / LiveWorkoutBridge** | Interfaces for Apple Health, Android Health Connect and live surfaces. Implemented on iOS for the live workout status and active energy (spec 0012); the rest are stubs. |
+| **Discard from outside the app** | Discarding the active workout starting from the live workout status or the watch. Always ends in an explicit confirmation — in the app (lock screen) or on the watch — never in a one-tap action. Same pattern as Finish from the status (spec 0012) (spec 0035). |
+| **Home-screen widget** | The app's glance outside the app when no screen of it is open: on the iPhone home screen (small: week streak and performed sets this week; medium: the week's days, sets and a Start button for today's routine) and as lock-screen accessories (no routine names). Shows the active workout's routine and clock while one is in progress; only opens the app, never acts on the workout. Updated by the app, never on its own. Not the live workout status, which exists only during a workout and has buttons (spec 0036). |
 
 `TODO(sdd): terms not yet pinned down because the product decision is open —`
 `"program" or "training plan" (a multi-week structure above Routine), "cycle",`

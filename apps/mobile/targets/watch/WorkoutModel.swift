@@ -25,6 +25,8 @@ final class WorkoutModel: NSObject, ObservableObject {
   @Published private(set) var tickedSetId: String?
   /// Finish was asked here; the phone confirms.
   @Published private(set) var finishAsked = false
+  /// Discard could not reach the phone: it is never queued (spec 0035 EF-8).
+  @Published var discardUnreachable = false
 
   private let healthStore = HKHealthStore()
   private var session: HKWorkoutSession?
@@ -138,6 +140,29 @@ final class WorkoutModel: NSObject, ObservableObject {
     guard let workout = activeWorkout else { return }
     send(WatchEvent(id: UUID().uuidString, kind: .finishRequested, workoutId: workout.workoutId))
     finishAsked = true
+  }
+
+  /// Whether the phone can take a discard right now (spec 0035 EF-8).
+  var canReachPhone: Bool { WCSession.default.isReachable }
+
+  /// Discard, already confirmed here (FR-22). Sent as a live message, never
+  /// queued: a discard arriving late, after training went on on the phone,
+  /// would destroy work the person did not mean to lose (EF-8).
+  func requestDiscard() {
+    guard let workout = activeWorkout else { return }
+    guard WCSession.default.isReachable,
+          let json = WatchWire.encode(WatchEvent(
+            id: UUID().uuidString,
+            kind: .discardRequested,
+            workoutId: workout.workoutId
+          ))
+    else {
+      discardUnreachable = true
+      return
+    }
+    WCSession.default.sendMessage(["event": json], replyHandler: nil) { [weak self] _ in
+      Task { @MainActor in self?.discardUnreachable = true }
+    }
   }
 
   private func send(_ event: WatchEvent) {

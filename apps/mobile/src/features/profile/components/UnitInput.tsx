@@ -1,6 +1,6 @@
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Text, TextInput, View } from 'react-native';
 
-import { colors, commonStyles, spacing } from '@/ui/theme';
+import { colors, commonStyles, createStyles, keyboardAppearance, spacing, useTheme } from '@/ui/theme';
 
 interface UnitInputProps {
   value: string;
@@ -12,10 +12,11 @@ interface UnitInputProps {
 
 /** A decimal input with its unit set to the right. */
 export function UnitInput({ value, onChangeText, unit, label }: UnitInputProps) {
+  useTheme();
   return (
     <View style={styles.container}>
       <TextInput
-        keyboardAppearance="dark"
+        keyboardAppearance={keyboardAppearance()}
         value={value}
         onChangeText={onChangeText}
         keyboardType="decimal-pad"
@@ -29,7 +30,7 @@ export function UnitInput({ value, onChangeText, unit, label }: UnitInputProps) 
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     flex: 1,
     flexDirection: 'row',
@@ -45,4 +46,4 @@ const styles = StyleSheet.create({
     ...commonStyles.figureUnit,
     minWidth: 24,
   },
-});
+}));

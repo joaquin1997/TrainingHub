@@ -3,7 +3,13 @@ import type { ComponentRef, Ref } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { ShareCardModel } from '@/features/workouts/utils/shareCard';
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { fonts, palettes, radii, spacing, typeScale } from '@/ui/theme';
+
+/**
+ * The share image has one fixed look, the dark brand look, whatever theme the
+ * app is in, both in the preview and in the shared image (spec 0038 FR-15).
+ */
+const colors = palettes.dark;
 
 /** The card's size in points (4:5); captured at 1080 × 1350 px. */
 export const SHARE_CARD_WIDTH = 360;
@@ -144,7 +150,9 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   title: {
-    ...commonStyles.heading,
+    ...typeScale.heading,
+    color: colors.text,
+    letterSpacing: -0.2,
   },
   date: {
     ...typeScale.caption,
@@ -165,7 +173,11 @@ const styles = StyleSheet.create({
     gap: spacing.xxs,
   },
   statLabel: {
-    ...commonStyles.sectionLabel,
+    ...typeScale.caption,
+    color: colors.textMuted,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   statValue: {
     ...typeScale.figure,

@@ -31,8 +31,15 @@
 #   IMAGES=1                      run the image matching dry run again (0026)
 #   APPLY_IMAGES=1                with IMAGES=1, also write the matched images
 #   IOS_DEVICE=0                  skip the iPhone build, install and Metro
+#   RELEASE=1                     Release build: the JS bundle goes inside the app, so it
+#                                 runs without the Mac (no Metro); the free team's profile
+#                                 still expires after 7 days
+#   FORCE_IPHONE=1                build and install on the devices again (same commit),
+#                                 e.g. to renew the 7-day profile
 #   IOS_DEVICE_ID=<udid>          iPhone to build for (default: the paired iPhone)
 #   WATCH_APP=1                   prebuild with TRAININGHUB_WATCH_APP=1 (0025 Level 2)
+#   HOME_WIDGET=0                 prebuild without the widget's App Group (0036; on by
+#                                 default since the free team signs it)
 #   SKIP_BACKEND=1                skip the image rebuild
 #
 # Everything is logged to tmp/deploy-pending-<timestamp>.log.
@@ -68,7 +75,22 @@ close_tunnel() {
     TUNNEL_PID=""
   fi
 }
-trap close_tunnel EXIT
+# One run at a time: two runs share the database tunnel (one closes it under
+# the other) and step on each other's ios/ and image builds.
+LOCK_DIR="$LOG_DIR/deploy-pending.lock"
+release_lock() { rm -rf "$LOCK_DIR"; }
+if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+  other="$(cat "$LOCK_DIR/pid" 2>/dev/null || true)"
+  if [ -n "$other" ] && kill -0 "$other" 2>/dev/null; then
+    fail "another run is in progress (pid $other); wait for it or stop it"
+  fi
+  # Left behind by a run that was killed.
+  release_lock
+  mkdir "$LOCK_DIR"
+fi
+echo $$ > "$LOCK_DIR/pid"
+
+trap 'close_tunnel; release_lock' EXIT
 trap 'echo; echo "!! failed at line $LINENO — see $LOG. Re-run to continue from the failed step." >&2' ERR
 
 # --- resume bookkeeping ------------------------------------------------------
@@ -233,6 +255,7 @@ if is_done "$PREBUILD_STEP"; then
 else
   # --clean: @bacons/apple-targets 5.0.0 crashes updating an existing target.
   step "iOS: expo prebuild --clean"
+  export TRAININGHUB_HOME_WIDGET="${HOME_WIDGET:-1}"
   if [ "${WATCH_APP:-0}" = "1" ]; then
     TRAININGHUB_WATCH_APP=1 npx expo prebuild --platform ios --clean
   else
@@ -278,7 +301,14 @@ if [ -z "$DEVICE_ID" ]; then
 fi
 [ -n "$DEVICE_ID" ] || fail "no paired iPhone found (connect it, or set IOS_DEVICE_ID)"
 
-APP_PATH="ios/DerivedData/Build/Products/Debug-iphoneos/TrainingHub.app"
+CONFIGURATION=Debug
+[ "${RELEASE:-0}" = "1" ] && CONFIGURATION=Release
+PRODUCTS="ios/DerivedData/Build/Products"
+APP_PATH="$PRODUCTS/$CONFIGURATION-iphoneos/TrainingHub.app"
+IPHONE_STEP="iphone-$PREBUILD_STEP"
+[ "$CONFIGURATION" = "Release" ] && IPHONE_STEP="iphone-release-$PREBUILD_STEP"
+# A Release build bakes the API URL into its JS bundle.
+export EXPO_PUBLIC_API_URL="$API_URL"
 
 WATCH_ID=""
 if [ "${WATCH_APP:-0}" = "1" ]; then
@@ -294,8 +324,8 @@ if [ "${WATCH_APP:-0}" = "1" ]; then
   rm -f "$devices_json"
 fi
 
-if is_done "iphone-$PREBUILD_STEP"; then
-  step "iPhone: already built and installed for $COMMIT"
+if [ "${FORCE_IPHONE:-0}" != "1" ] && is_done "$IPHONE_STEP"; then
+  step "iPhone: $CONFIGURATION already built and installed for $COMMIT"
 else
   # Building the watch scheme for the watch first registers the watch on the
   # team, so the watch app's profile includes it (built only for the iPhone,
@@ -303,15 +333,15 @@ else
   if [ -n "$WATCH_ID" ]; then
     step "Apple Watch: xcodebuild for $WATCH_ID"
     xcodebuild -quiet -workspace ios/TrainingHub.xcworkspace -scheme TrainingHubWatch \
-      -configuration Debug -destination "id=$WATCH_ID" -derivedDataPath ios/DerivedData \
+      -configuration "$CONFIGURATION" -destination "id=$WATCH_ID" -derivedDataPath ios/DerivedData \
       -allowProvisioningUpdates build
   fi
 
   # Not `expo run:ios --device`: it does not pass -allowProvisioningUpdates, so
   # it fails once the free team's 7-day profile has expired.
-  step "iPhone: xcodebuild for $DEVICE_ID (slow)"
+  step "iPhone: xcodebuild $CONFIGURATION for $DEVICE_ID (slow)"
   xcodebuild -quiet -workspace ios/TrainingHub.xcworkspace -scheme TrainingHub \
-    -configuration Debug -destination "id=$DEVICE_ID" -derivedDataPath ios/DerivedData \
+    -configuration "$CONFIGURATION" -destination "id=$DEVICE_ID" -derivedDataPath ios/DerivedData \
     -allowProvisioningUpdates build
 
   step "iPhone: install"
@@ -322,14 +352,26 @@ else
   if [ -n "$WATCH_ID" ]; then
     step "Apple Watch: install"
     xcrun devicectl device install app --device "$WATCH_ID" \
-      ios/DerivedData/Build/Products/Debug-watchos/TrainingHubWatch.app \
+      "$PRODUCTS/$CONFIGURATION-watchos/TrainingHubWatch.app" \
       || echo "    could not install on the watch; use the iPhone's Watch app (My Watch → TrainingHub → Install)"
   elif [ "${WATCH_APP:-0}" = "1" ]; then
     echo "    no watch connected to the Mac; install it from the iPhone's Watch app (My Watch → TrainingHub → Install)"
   fi
-  mark_done "iphone-$PREBUILD_STEP"
+  mark_done "$IPHONE_STEP"
 fi
 
+if [ "$CONFIGURATION" = "Release" ]; then
+  step "iPhone: launch the Release build (no Metro needed)"
+  xcrun devicectl device process launch --device "$DEVICE_ID" --terminate-existing "$BUNDLE_ID" >/dev/null \
+    && echo "    [iphone] app launched" \
+    || echo "    [iphone] could not launch the app; open it by hand"
+  echo "    the signing profile expires in 7 days: re-run with RELEASE=1 FORCE_IPHONE=1 then"
+  step "done — log: $LOG"
+  exit 0
+fi
+
+# Metro can stay up for hours; another run may start meanwhile.
+release_lock
 step "Metro (API=$API_URL) — the app opens on the iPhone once Metro is up; Ctrl-C to stop"
 echo "    new signing profile? trust it on the iPhone: Settings → General → VPN & Device Management"
 echo "    then: device checks in each spec's tasks.md (see docs/sdd/backlog.md) — log: $LOG"
@@ -343,4 +385,4 @@ echo "    then: device checks in each spec's tasks.md (see docs/sdd/backlog.md) 
     || echo "    [iphone] could not launch the app; open it by hand"
 ) &
 # EXPO_PUBLIC_* is baked into the bundle: --clear so the URL is not a stale one.
-EXPO_PUBLIC_API_URL="$API_URL" npx expo start --clear
+npx expo start --clear

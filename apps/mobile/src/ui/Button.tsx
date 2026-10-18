@@ -2,12 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import {
   Pressable,
   type PressableProps,
-  StyleSheet,
   Text,
   type ViewStyle,
 } from 'react-native';
 
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 /**
  * `primary` is the screen's one primary action (spec 0017 FR-6); `ghost` is a
@@ -31,12 +30,13 @@ interface ButtonProps {
   maxFontScale?: number;
 }
 
-const labelColor: Record<ButtonVariant, string> = {
+/** Read at render time, so it follows the theme (spec 0038). */
+const labelColor = (): Record<ButtonVariant, string> => ({
   primary: colors.onPrimary,
   secondary: colors.text,
-  danger: colors.danger,
+  danger: colors.dangerInk,
   ghost: colors.textMuted,
-};
+});
 
 /**
  * Shared button used across screens. Wraps a plain Pressable (not Link asChild,
@@ -54,7 +54,8 @@ export function Button({
   style,
   maxFontScale,
 }: ButtonProps) {
-  const color = destructive ? colors.danger : labelColor[variant];
+  useTheme();
+  const color = destructive ? colors.dangerInk : labelColor()[variant];
 
   return (
     <Pressable
@@ -79,7 +80,7 @@ export function Button({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   base: {
     minHeight: 48,
     flexDirection: 'row',
@@ -98,7 +99,7 @@ const styles = StyleSheet.create({
   primary: {
     minHeight: 52,
     backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    borderColor: colors.primaryInk,
   },
   secondary: {
     backgroundColor: colors.surfaceRaised,
@@ -106,7 +107,7 @@ const styles = StyleSheet.create({
   },
   danger: {
     backgroundColor: colors.dangerSoft,
-    borderColor: colors.danger,
+    borderColor: colors.dangerInk,
   },
   ghost: {
     backgroundColor: 'transparent',
@@ -118,4 +119,4 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     textAlign: 'center',
   },
-});
+}));

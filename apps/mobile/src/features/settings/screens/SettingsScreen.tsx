@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/AuthContext';
 import { ProfileAvatar } from '@/features/profile/components/ProfileAvatar';
 import { useProfileData } from '@/features/profile/useProfileData';
+import { RestAlertsRow } from '@/features/settings/components/RestAlertsRow';
 import { useSettings } from '@/features/settings/SettingsContext';
 import {
   clearActiveWorkout,
@@ -14,17 +15,19 @@ import {
 import { confirmAction } from '@/lib/confirmAction';
 import { formatDuration } from '@/lib/format';
 import { Button } from '@/ui/Button';
-import { colors, commonStyles, fonts, fontScaleCap, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, fontScaleCap, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import { ListRow } from '@/ui/ListRow';
 import { CardHeader } from '@/ui/CardHeader';
 import { ScreenTitle } from '@/ui/ScreenTitle';
-import type { AppLanguage, WeightUnit } from '@workout/domain';
+import type { AppLanguage, Appearance, WeightUnit } from '@workout/domain';
 
 const UNITS: WeightUnit[] = ['kg', 'lb'];
+const APPEARANCES: Appearance[] = ['system', 'light', 'dark'];
 
 type LanguageOption = { value: AppLanguage | null; label: string };
 
 export function SettingsScreen() {
+  useTheme();
   const { t } = useTranslation();
   const { settings, update } = useSettings();
   const { user, signOut } = useAuth();
@@ -78,6 +81,20 @@ export function SettingsScreen() {
         <Text style={styles.hint}>{t('settings.languageHint')}</Text>
       </View>
 
+      {/* Spec 0038 FR-1: an account that never chose reads as System (FR-4). */}
+      <View style={styles.section}>
+        <SectionHeader icon="contrast-outline" title={t('settings.appearance')} />
+        <Segmented
+          options={APPEARANCES.map((appearance) => ({
+            key: appearance,
+            label: t(`settings.appearance_${appearance}`),
+            selected: (settings.appearance ?? 'system') === appearance,
+            onPress: () => update({ appearance }),
+          }))}
+        />
+        <Text style={styles.hint}>{t('settings.appearanceHint')}</Text>
+      </View>
+
       <View style={styles.section}>
         <SectionHeader icon="barbell-outline" title={t('settings.weightUnit')} />
         <Segmented
@@ -117,6 +134,7 @@ export function SettingsScreen() {
           </Pressable>
         </View>
         <Text style={styles.hint}>{t('settings.restHint')}</Text>
+        <RestAlertsRow />
       </View>
 
       <View style={styles.section}>
@@ -155,6 +173,7 @@ function SectionHeader({
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
 }) {
+  useTheme();
   return (
     <CardHeader
       title={title}
@@ -173,6 +192,7 @@ function Segmented({
 }: {
   options: Array<{ key: string; label: string; selected: boolean; onPress: () => void }>;
 }) {
+  useTheme();
   return (
     <View style={styles.segment}>
       {options.map((option) => (
@@ -195,7 +215,7 @@ function Segmented({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   screen: {
     ...commonStyles.screen,
   },
@@ -268,4 +288,4 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     ...typeScale.caption,
   },
-});
+}));

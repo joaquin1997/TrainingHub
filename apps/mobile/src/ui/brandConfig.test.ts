@@ -32,6 +32,14 @@ describe('brand and system appearance (spec 0034 FR-1 – FR-3, AC-1)', () => {
     }
   });
 
+  it('has iOS 18 dark and tinted icons drawn from the mark (spec 0035 FR-24)', () => {
+    const icons = expo.ios.icon;
+    expect(icons.light).toBe(expo.icon);
+    for (const path of [icons.dark, icons.tinted]) {
+      expect(ASSETS).toContain(path);
+    }
+  });
+
   it('shows the branded splash on the app background', () => {
     expect(splash).toBeDefined();
     expect(ASSETS).toContain(splash![1].image);
@@ -39,9 +47,9 @@ describe('brand and system appearance (spec 0034 FR-1 – FR-3, AC-1)', () => {
     expect(expo.android.adaptiveIcon.backgroundColor).toBe(expo.backgroundColor);
   });
 
-  it('declares the dark appearance to the system', () => {
-    expect(expo.userInterfaceStyle).toBe('dark');
-    expect(expo.ios.userInterfaceStyle).toBe('dark');
-    expect(expo.android.userInterfaceStyle).toBe('dark');
+  it('lets the app pick its appearance at run time (spec 0038 FR-12)', () => {
+    expect(expo.userInterfaceStyle).toBe('automatic');
+    expect(expo.ios.userInterfaceStyle).toBe('automatic');
+    expect(expo.android.userInterfaceStyle).toBe('automatic');
   });
 });

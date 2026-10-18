@@ -18,6 +18,12 @@ const labels: WatchLabels = {
   allDone: 'Todas las series hechas',
   waiting: 'Empieza un entrenamiento en el iPhone',
   setOf: (number, count) => `Serie ${number} de ${count}`,
+  more: 'Más',
+  discard: 'Descartar',
+  discardTitle: '¿Descartar?',
+  cancel: 'Cancelar',
+  connectToDiscard: 'Conecta con tu iPhone para descartar',
+  discardLost: (count) => `Se perderán ${count}`,
 };
 
 describe('watch wire format (spec 0025)', () => {
@@ -29,6 +35,7 @@ describe('watch wire format (spec 0025)', () => {
         startedAt: '2026-10-17T09:00:00.000Z',
         pausedSeconds: 30,
         restEndsAt: '2026-10-17T09:10:00.000Z',
+        setsDone: 3,
         currentSet: {
           workoutExerciseId: 'a',
           workoutSetId: 'a2',
@@ -60,6 +67,8 @@ describe('watch wire format (spec 0025)', () => {
         target: '60 kg × 8',
         restSeconds: 120,
       },
+      setsDone: 3,
+      discardMessage: 'Se perderán 3',
       labels: {
         done: 'Hecha',
         pause: 'Pausar',
@@ -70,6 +79,11 @@ describe('watch wire format (spec 0025)', () => {
         finishOnPhone: 'Confírmalo en el iPhone',
         allDone: 'Todas las series hechas',
         waiting: 'Empieza un entrenamiento en el iPhone',
+        more: 'Más',
+        discard: 'Descartar',
+        discardTitle: '¿Descartar?',
+        cancel: 'Cancelar',
+        connectToDiscard: 'Conecta con tu iPhone para descartar',
       },
     });
   });
@@ -124,5 +138,16 @@ describe('watch wire format (spec 0025)', () => {
     expect(decodeWatchMessage('event', JSON.stringify({ kind: 'pause', workoutId: 'c1', atMs }))).toBeNull();
     expect(decodeWatchMessage('metrics', '{"workoutId":"c1","kcal":-3}')).toBeNull();
     expect(decodeWatchMessage('other', '{"workoutId":"c1","kcal":3}')).toBeNull();
+  });
+});
+
+describe('discard from the watch (spec 0035)', () => {
+  it('reads a discard request', () => {
+    const json = JSON.stringify({ v: 1, id: 'e9', kind: 'discardRequested', workoutId: 'c1' });
+    expect(decodeWatchMessage('event', json)).toEqual({
+      kind: 'discardRequested',
+      id: 'e9',
+      workoutSessionId: 'c1',
+    });
   });
 });

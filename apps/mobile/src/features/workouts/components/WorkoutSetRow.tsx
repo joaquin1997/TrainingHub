@@ -31,7 +31,7 @@ import {
   type SetValueField,
 } from '@/lib/tracking';
 import { fromKg, roundWeight } from '@/lib/weight';
-import { colors, commonStyles, fontScaleCap, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, fontScaleCap, keyboardAppearance, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 import { SetStatusArea, STATUS_AREA_SIZE, useDoneTransition } from './SetStatusArea';
 
@@ -166,6 +166,7 @@ type HeaderProps = {
  * and remove (spec 0034 — "last time" is on the row's second line).
  */
 export function WorkoutSetHeader({ trackingType, unilateral, unit }: HeaderProps) {
+  useTheme();
   const { t } = useTranslation();
   const fields = rowColumns(trackingType, unilateral);
   const compact = isCompact(fields);
@@ -247,6 +248,7 @@ export function WorkoutSetRow({
   onToggleDone,
   onRemove,
 }: RowProps) {
+  useTheme();
   const { t } = useTranslation();
   const timer = useSetTimer((seconds) => onChange('duration', formatDuration(seconds)));
   const typed = set.type === 'warmup' || set.type === 'drop';
@@ -291,7 +293,7 @@ export function WorkoutSetRow({
       case 'weight':
         return (
           <TextInput maxFontSizeMultiplier={fontScaleCap.fixedColumn}
-            keyboardAppearance="dark"
+            keyboardAppearance={keyboardAppearance()}
             key={field}
             keyboardType="decimal-pad"
             value={set.weightKg}
@@ -304,7 +306,7 @@ export function WorkoutSetRow({
       case 'reps':
         return (
           <TextInput maxFontSizeMultiplier={fontScaleCap.fixedColumn}
-            keyboardAppearance="dark"
+            keyboardAppearance={keyboardAppearance()}
             key={field}
             keyboardType="number-pad"
             value={set.reps}
@@ -319,7 +321,7 @@ export function WorkoutSetRow({
         const side = field === 'repsLeft' ? 'left' : 'right';
         return (
           <TextInput maxFontSizeMultiplier={fontScaleCap.fixedColumn}
-            keyboardAppearance="dark"
+            keyboardAppearance={keyboardAppearance()}
             key={field}
             keyboardType="number-pad"
             accessibilityLabel={t(side === 'left' ? 'workouts.repsLeft' : 'workouts.repsRight')}
@@ -334,7 +336,7 @@ export function WorkoutSetRow({
       case 'distance':
         return (
           <TextInput maxFontSizeMultiplier={fontScaleCap.fixedColumn}
-            keyboardAppearance="dark"
+            keyboardAppearance={keyboardAppearance()}
             key={field}
             keyboardType="decimal-pad"
             value={set.distance ?? ''}
@@ -351,7 +353,7 @@ export function WorkoutSetRow({
             style={[styles.colInput, compact ? styles.colTimeWide : null, styles.timeCell]}
           >
             <TextInput maxFontSizeMultiplier={fontScaleCap.fixedColumn}
-              keyboardAppearance="dark"
+              keyboardAppearance={keyboardAppearance()}
               keyboardType="numbers-and-punctuation"
               editable={!timer.isRunning}
               value={timer.isRunning ? formatDuration(timer.displaySeconds) : (set.duration ?? '')}
@@ -447,7 +449,7 @@ export function WorkoutSetRow({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   // Lined up with the rows below: same padding, same (invisible) border.
   headerRow: {
     flexDirection: 'row',
@@ -529,7 +531,7 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   markerTextFailure: {
-    color: colors.accent,
+    color: colors.accentInk,
   },
   body: {
     flex: 1,
@@ -559,7 +561,7 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   recordText: {
-    color: colors.accent,
+    color: colors.accentInk,
     fontWeight: '700',
   },
   cellInput: {
@@ -592,7 +594,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   timeInputRunning: {
-    color: colors.primary,
+    color: colors.primaryInk,
   },
   timerButton: {
     width: TIMER_SIZE,
@@ -605,4 +607,4 @@ const styles = StyleSheet.create({
   timerButtonRunning: {
     backgroundColor: colors.primary,
   },
-});
+}));

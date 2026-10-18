@@ -8,7 +8,7 @@ import type { RunningRest } from '@/features/workouts/state/workoutDraftStore';
 import { useRestRemaining } from '@/features/workouts/restTimer/useRestRemaining';
 import { formatDuration } from '@/lib/format';
 import { Button } from '@/ui/Button';
-import { colors, commonStyles, fontScaleCap, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fontScaleCap, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import { useReducedMotion } from '@/ui/useReducedMotion';
 
 interface RestBarProps {
@@ -55,6 +55,7 @@ function useDrain(rest: RunningRest, enabled: boolean): Animated.Value {
  * the layout flow, so it never covers the last set or the Finish button.
  */
 export function RestBar({ rest, onAdjust, onSkip, next }: RestBarProps) {
+  useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const remaining = useRestRemaining(rest);
@@ -82,7 +83,7 @@ export function RestBar({ rest, onAdjust, onSkip, next }: RestBarProps) {
         </Text>
       ) : null}
       <View style={styles.row}>
-        <Ionicons name="timer-outline" size={18} color={colors.accent} />
+        <Ionicons name="timer-outline" size={18} color={colors.accentInk} />
         <View style={styles.text}>
           <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn} style={styles.label}>{t('workouts.rest')}</Text>
           <Text maxFontSizeMultiplier={fontScaleCap.fixedColumn} style={styles.clock}>{formatDuration(remaining)}</Text>
@@ -101,11 +102,11 @@ export function RestBar({ rest, onAdjust, onSkip, next }: RestBarProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   bar: {
     backgroundColor: colors.surfaceRaised,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.accent,
+    borderTopColor: colors.accentInk,
     paddingTop: spacing.sm,
     paddingHorizontal: spacing.lg,
     gap: spacing.sm,
@@ -118,7 +119,7 @@ const styles = StyleSheet.create({
   },
   fill: {
     height: '100%',
-    backgroundColor: colors.accent,
+    backgroundColor: colors.accentInk,
   },
   fillDraining: {
     width: '100%',
@@ -137,7 +138,7 @@ const styles = StyleSheet.create({
   },
   clock: {
     ...commonStyles.figure,
-    color: colors.accent,
+    color: colors.accentInk,
   },
   next: {
     ...commonStyles.meta,
@@ -147,4 +148,4 @@ const styles = StyleSheet.create({
     minHeight: 40,
     paddingHorizontal: spacing.sm,
   },
-});
+}));

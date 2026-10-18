@@ -1,6 +1,42 @@
 import type { HealthWorkoutPayload, LiveWorkoutState } from '@workout/domain';
 
-import type { WorkoutSessionDraft } from '@/features/workouts/state/workoutDraftStore';
+import { currentSetToDo } from '@/features/workouts/restTimer/nextSetToDo';
+import {
+  countWorkoutSets,
+  type WorkoutSessionDraft,
+} from '@/features/workouts/state/workoutDraftStore';
+import { roundIndexOf, supersetAround } from '@/features/workouts/superset/rounds';
+import { setTarget } from '@/features/workouts/watch/watchProtocol';
+
+/**
+ * The up-next set as the status shows it (spec 0035 FR-14): "Bench press ·
+ * 100 kg × 8", with the round inside a superset ("· Round 2"). The draft's
+ * strings are already in the workout's display unit. Null when every set is
+ * done.
+ */
+export function liveUpNext(
+  draft: WorkoutSessionDraft,
+  roundLabel: (round: number) => string,
+): string | null {
+  const target = currentSetToDo(draft);
+  const index = target
+    ? draft.exercises.findIndex((item) => item.id === target.workoutExerciseId)
+    : -1;
+  const exercise = draft.exercises[index];
+  const set = exercise?.entries.find((item) => item.id === target?.workoutSetId);
+  if (!exercise || !set) {
+    return null;
+  }
+  const parts = [
+    exercise.exerciseName,
+    setTarget(set, draft.unit ?? 'kg', exercise.trackingType, exercise.isUnilateral),
+  ];
+  const round = supersetAround(draft.exercises, index) ? roundIndexOf(exercise, set.id) : -1;
+  if (round >= 0) {
+    parts.push(roundLabel(round + 1));
+  }
+  return parts.filter(Boolean).join(' · ');
+}
 
 /**
  * The live surface is keyed by the workout identity (spec 0014), which is
@@ -9,7 +45,9 @@ import type { WorkoutSessionDraft } from '@/features/workouts/state/workoutDraft
 export function toLiveWorkoutPayload(
   draft: WorkoutSessionDraft,
   activeEnergyKcal: number | null,
+  upNext: (draft: WorkoutSessionDraft) => string | null = () => null,
 ): HealthWorkoutPayload {
+  const sets = countWorkoutSets(draft);
   return {
     workoutSessionId: draft.clientId,
     routineId: draft.routineId,
@@ -20,7 +58,26 @@ export function toLiveWorkoutPayload(
     pausedSeconds: draft.pausedSeconds ?? 0,
     activeEnergyKcal,
     restEndsAt: draft.rest?.endsAt,
+    upNext: upNext(draft),
+    setsDone: sets.done,
+    setsTotal: sets.total,
   };
+}
+
+/**
+ * Whether the surface already shows the workout's progress: the up-next set
+ * and the sets-done count (spec 0035 FR-17).
+ */
+export function sameProgress(
+  left: Pick<HealthWorkoutPayload, 'upNext' | 'setsDone' | 'setsTotal'> | null,
+  right: Pick<HealthWorkoutPayload, 'upNext' | 'setsDone' | 'setsTotal'>,
+) {
+  return (
+    left !== null &&
+    (left.upNext ?? null) === (right.upNext ?? null) &&
+    left.setsDone === right.setsDone &&
+    left.setsTotal === right.setsTotal
+  );
 }
 
 /** Whether the surface already shows the draft's running rest (spec 0018). */

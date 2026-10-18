@@ -34,6 +34,12 @@ const labels = {
   allDone: 'a',
   waiting: 'w',
   setOf: (number, count) => `${number}/${count}`,
+  more: 'm',
+  discard: 'd',
+  discardTitle: 't',
+  cancel: 'c',
+  connectToDiscard: 'c',
+  discardLost: (count) => `${count}`,
 };
 
 describe('watch wire format (spec 0025)', () => {
@@ -75,7 +81,7 @@ describe('watch wire format (spec 0025)', () => {
     expect([...keysOf(setDone), ...keysOf(metrics)].filter((key) => !declared(key))).toEqual([]);
     expect(decodeWatchMessage('event', JSON.stringify(setDone))?.kind).toBe('setDone');
     expect(decodeWatchMessage('metrics', JSON.stringify(metrics))?.kind).toBe('activeEnergy');
-    for (const kind of ['setDone', 'pause', 'resume', 'finishRequested']) {
+    for (const kind of ['setDone', 'pause', 'resume', 'finishRequested', 'discardRequested']) {
       expect(swift).toContain(`case ${kind}`);
     }
   });

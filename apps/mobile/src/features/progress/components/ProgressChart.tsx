@@ -29,7 +29,7 @@ import {
 } from '@/features/progress/utils/linePath';
 import { canDrawSvg } from '@/features/progress/utils/svgSupport';
 import { CardHeader } from '@/ui/CardHeader';
-import { colors, commonStyles, fonts, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, spacing, typeScale, useTheme } from '@/ui/theme';
 
 /** Height of the plot (not a type, radius or spacing size: no token). */
 const PLOT_HEIGHT = 140;
@@ -77,6 +77,7 @@ export function ProgressChart({
   formatLabel,
   formatValue = roundValue,
 }: ProgressChartProps) {
+  useTheme();
   const { t } = useTranslation();
   const [selected, setSelected] = useState<number | null>(null);
 
@@ -96,7 +97,7 @@ export function ProgressChart({
           point ? (
             <View style={styles.readout} accessibilityLiveRegion="polite">
               {point.isRecord ? (
-                <Ionicons name="trophy" size={RECORD_ICON} color={colors.accent} />
+                <Ionicons name="trophy" size={RECORD_ICON} color={colors.accentInk} />
               ) : null}
               <Text style={[styles.range, styles.readoutText]}>
                 {pointReadout(point, format, t)}
@@ -139,6 +140,7 @@ function LineChart({
   selected: number | null;
   onSelect: (index: number | null) => void;
 }) {
+  useTheme();
   const { t } = useTranslation();
   const [width, setWidth] = useState(0);
   // SVG ids are global on web: one gradient id per chart.
@@ -239,8 +241,8 @@ function LineChart({
                 <Svg width={width} height={PLOT_HEIGHT}>
                   <Defs>
                     <LinearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                      <Stop offset="0" stopColor={colors.primary} stopOpacity={AREA_OPACITY} />
-                      <Stop offset="1" stopColor={colors.primary} stopOpacity={0} />
+                      <Stop offset="0" stopColor={colors.primaryInk} stopOpacity={AREA_OPACITY} />
+                      <Stop offset="1" stopColor={colors.primaryInk} stopOpacity={0} />
                     </LinearGradient>
                   </Defs>
                   {area ? <Path d={area} fill={`url(#${gradientId})`} /> : null}
@@ -258,7 +260,7 @@ function LineChart({
                     <Path
                       d={line}
                       fill="none"
-                      stroke={colors.primary}
+                      stroke={colors.primaryInk}
                       strokeWidth={LINE_WIDTH}
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -275,7 +277,7 @@ function LineChart({
                         cx={plot.x}
                         cy={plot.y}
                         r={radius}
-                        fill={isRecord ? colors.accent : colors.primary}
+                        fill={isRecord ? colors.accentInk : colors.primaryInk}
                         stroke={colors.surface}
                         strokeWidth={DOT_RING}
                       />
@@ -335,7 +337,7 @@ function LineChart({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     ...commonStyles.card,
     gap: spacing.md,
@@ -356,7 +358,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   readoutRecord: {
-    color: colors.accent,
+    color: colors.accentInk,
   },
   body: {
     flexDirection: 'row',
@@ -401,4 +403,4 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     ...typeScale.caption,
   },
-});
+}));

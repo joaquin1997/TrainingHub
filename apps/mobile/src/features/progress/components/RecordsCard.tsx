@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { describeRecord } from '@/features/progress/utils/recordLabels';
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import { CardHeader } from '@/ui/CardHeader';
 import type { ExerciseRecord, WeightUnit } from '@workout/domain';
 
@@ -27,6 +27,7 @@ interface RecordsCardProps {
 
 /** A card of personal records (spec 0023): trophy, what it is, its figure. */
 export function RecordsCard({ title, items, unit, variant = 'default' }: RecordsCardProps) {
+  useTheme();
   const { t } = useTranslation();
 
   if (items.length === 0) {
@@ -43,7 +44,7 @@ export function RecordsCard({ title, items, unit, variant = 'default' }: Records
         return (
           <View key={key} style={styles.row}>
             <View style={styles.icon}>
-              <Ionicons name="trophy" size={14} color={colors.accent} />
+              <Ionicons name="trophy" size={14} color={colors.accentInk} />
             </View>
             <View style={styles.text}>
               <Text style={styles.title}>{label.title}</Text>
@@ -57,12 +58,12 @@ export function RecordsCard({ title, items, unit, variant = 'default' }: Records
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   card: {
     ...commonStyles.card,
   },
   highlight: {
-    borderColor: colors.accent,
+    borderColor: colors.accentInk,
     backgroundColor: colors.accentSoft,
   },
   row: {
@@ -99,4 +100,4 @@ const styles = StyleSheet.create({
     ...typeScale.body,
     fontVariant: ['tabular-nums'],
   },
-});
+}));

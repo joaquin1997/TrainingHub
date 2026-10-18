@@ -68,7 +68,7 @@ describe('scanStyleSource', () => {
     ]);
   });
 
-  it('requires the dark keyboard on every text input', () => {
+  it("requires every text input to ask for the theme's keyboard (spec 0038 AC-3)", () => {
     const found = scanStyleSource(
       [
         '<TextInput value={a} onChangeText={(v) => set(v)} />',
@@ -76,12 +76,21 @@ describe('scanStyleSource', () => {
         '  keyboardAppearance="dark"',
         '  onChangeText={(v) => set(v)}',
         '/>',
+        '<TextInput keyboardAppearance={keyboardAppearance()} />',
       ].join('\n'),
     );
 
     expect(found).toEqual([
       { kind: 'keyboard', line: 1, text: '<TextInput without keyboardAppearance' },
+      { kind: 'keyboard', line: 2, text: '<TextInput with a fixed keyboardAppearance' },
     ]);
+  });
+
+  it('fails on a fixed status bar style (spec 0038 AC-3)', () => {
+    expect(scanStyleSource('<StatusBar style="light" />')).toEqual([
+      { kind: 'statusBar', line: 1, text: '<StatusBar with a fixed style' },
+    ]);
+    expect(scanStyleSource("<StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />")).toEqual([]);
   });
 });
 

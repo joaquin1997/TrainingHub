@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 export interface SheetAction {
   label: string;
@@ -27,6 +27,7 @@ export function ActionSheet({
   actions,
   onClose,
 }: ActionSheetProps) {
+  useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
@@ -82,7 +83,7 @@ export function ActionSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   backdrop: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -132,7 +133,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.display,
   },
   destructive: {
-    color: colors.danger,
+    color: colors.dangerInk,
   },
   cancel: {
     minHeight: 48,
@@ -147,4 +148,4 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: fonts.displayBold,
   },
-});
+}));

@@ -3,7 +3,7 @@ import { I18nextProvider } from 'react-i18next';
 import { ActivityIndicator, View } from 'react-native';
 
 import { useSettings } from '@/features/settings/SettingsContext';
-import { colors } from '@/ui/theme';
+import { colors, useTheme } from '@/ui/theme';
 
 import { getDeviceLanguage } from './device';
 import i18n from './index';
@@ -14,6 +14,7 @@ import { resolveI18nLanguage } from './resolveLanguage';
  * the device locale when no explicit language has been chosen.
  */
 export function I18nProvider({ children }: { children: ReactNode }) {
+  useTheme();
   const { settings, isLoading } = useSettings();
   const language = resolveI18nLanguage({
     deviceLanguage: getDeviceLanguage(),
@@ -41,7 +42,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
           backgroundColor: colors.background,
         }}
       >
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={colors.primaryInk} />
       </View>
     );
   }

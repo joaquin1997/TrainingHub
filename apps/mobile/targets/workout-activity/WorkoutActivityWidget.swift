@@ -6,47 +6,200 @@ import WidgetKit
 private let activeWorkoutURL = URL(string: "traininghub://workouts/active")!
 private let finishWorkoutURL = URL(string: "traininghub://workouts/active?action=finish")!
 
-private let primary = Color(red: 0xC8 / 255, green: 0xFF / 255, blue: 0x2E / 255)
-private let onPrimary = Color(red: 0x10 / 255, green: 0x14 / 255, blue: 0x0D / 255)
-private let background = Color(red: 0x10 / 255, green: 0x14 / 255, blue: 0x18 / 255)
-private let textMuted = Color(red: 0xA7 / 255, green: 0xB0 / 255, blue: 0xBE / 255)
-private let accent = Color(red: 0xFF / 255, green: 0x8A / 255, blue: 0x3D / 255)
+/// A colour from 0xRRGGBB.
+private func rgb(_ hex: UInt32) -> UIColor {
+  UIColor(
+    red: CGFloat((hex >> 16) & 0xFF) / 255,
+    green: CGFloat((hex >> 8) & 0xFF) / 255,
+    blue: CGFloat(hex & 0xFF) / 255,
+    alpha: 1
+  )
+}
+
+/// The app palette's value for the system appearance the status is drawn in
+/// (spec 0038 FR-16): light on a light lock screen, dark otherwise. The
+/// Dynamic Island and the watch are always dark, so they get the dark values.
+private func adaptive(light: UInt32, dark: UInt32) -> Color {
+  Color(UIColor { traits in rgb(traits.userInterfaceStyle == .light ? light : dark) })
+}
+
+/// The lime of the primary action, the same in both appearances.
+private let primaryFill = Color(rgb(0xC8FF2E))
+private let onPrimary = Color(rgb(0x10140D))
+/// Lime as a mark or text: the brand lime on dark, its ink shade on light.
+private let primary = adaptive(light: 0x3F6300, dark: 0xC8FF2E)
+private let background = adaptive(light: 0xFFFFFF, dark: 0x101418)
+private let text = adaptive(light: 0x12171D, dark: 0xFFFFFF)
+private let textMuted = adaptive(light: 0x454E5A, dark: 0xA7B0BE)
+private let accent = adaptive(light: 0xA34700, dark: 0xFF8A3D)
+private let success = adaptive(light: 0x1C6F34, dark: 0x66E287)
+/// The secondary (Pause / Resume) button's ground.
+private let controlTint = adaptive(light: 0xE4E8E1, dark: 0x3A3F45)
+
+/// "Discard" on the lock screen opens the app on a confirmation for this
+/// workout; it never discards by itself (spec 0035 FR-20, FR-21).
+private func discardWorkoutURL(_ workoutId: String) -> URL {
+  var components = URLComponents(string: "traininghub://workouts/active")!
+  components.queryItems = [
+    URLQueryItem(name: "action", value: "discard"),
+    URLQueryItem(name: "workoutId", value: workoutId),
+  ]
+  return components.url ?? activeWorkoutURL
+}
+
+/// The app's brand mark: the pulse of the app icon (spec 0035 FR-13), drawn
+/// as a line so it stays sharp at any size and takes the tint it is given.
+struct BrandMarkShape: Shape {
+  /// The pulse of the Ionicons glyph, traced on a 280 × 250 box.
+  static let points: [CGPoint] = [
+    CGPoint(x: 0, y: 165), CGPoint(x: 48, y: 165), CGPoint(x: 85, y: 0),
+    CGPoint(x: 125, y: 250), CGPoint(x: 165, y: 98), CGPoint(x: 182, y: 165),
+    CGPoint(x: 245, y: 165),
+  ]
+  static let box = CGSize(width: 280, height: 250)
+
+  func path(in rect: CGRect) -> Path {
+    let scale = min(rect.width / Self.box.width, rect.height / Self.box.height)
+    let origin = CGPoint(
+      x: rect.midX - Self.box.width * scale / 2,
+      y: rect.midY - Self.box.height * scale / 2
+    )
+    let mapped = Self.points.map { CGPoint(x: origin.x + $0.x * scale, y: origin.y + $0.y * scale) }
+    var path = Path()
+    path.addLines(mapped)
+    return path
+  }
+}
+
+/// The dot that ends the pulse.
+struct BrandMarkDot: Shape {
+  func path(in rect: CGRect) -> Path {
+    let box = BrandMarkShape.box
+    let scale = min(rect.width / box.width, rect.height / box.height)
+    let center = CGPoint(
+      x: rect.midX - box.width * scale / 2 + 248 * scale,
+      y: rect.midY - box.height * scale / 2 + 165 * scale
+    )
+    let radius = 32 * scale
+    return Path(ellipseIn: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
+  }
+}
+
+/// The mark in lime, decorative (not read by VoiceOver).
+private struct BrandMark: View {
+  var size: CGFloat = 16
+  var color: Color = primary
+
+  var body: some View {
+    ZStack {
+      BrandMarkShape()
+        .stroke(color, style: StrokeStyle(lineWidth: max(1.5, size / 8), lineCap: .round, lineJoin: .round))
+      BrandMarkDot()
+        .fill(color)
+    }
+    .frame(width: size, height: size)
+    .accessibilityHidden(true)
+  }
+}
+
+/// Sets done over all sets, as a ring with the count (spec 0035 FR-14).
+private struct SetsRing: View {
+  let done: Int
+  let total: Int
+  let label: String?
+  var size: CGFloat = 52
+
+  var body: some View {
+    let fraction = total > 0 ? Double(done) / Double(total) : 0
+    ZStack {
+      Circle()
+        .stroke(textMuted.opacity(0.3), lineWidth: size / 10)
+      Circle()
+        .trim(from: 0, to: fraction)
+        .stroke(success, style: StrokeStyle(lineWidth: size / 10, lineCap: .round))
+        .rotationEffect(.degrees(-90))
+      Text("\(done)/\(total)")
+        .font(.system(size: size / 4.2, weight: .bold).monospacedDigit())
+        .foregroundStyle(text)
+        .minimumScaleFactor(0.6)
+        .lineLimit(1)
+        .padding(.horizontal, 4)
+    }
+    .frame(width: size, height: size)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(label ?? "\(done)/\(total)")
+  }
+}
+
+/// The up-next set, or "All sets done" once none is left.
+private func upNextText(_ context: ActivityViewContext<WorkoutActivityAttributes>) -> String? {
+  if let upNext = context.state.upNext { return upNext }
+  // Before spec 0035 the state carries no progress: show nothing.
+  guard context.state.setsTotal != nil else { return nil }
+  return context.attributes.allDoneLabel
+}
 
 struct WorkoutActivityWidget: Widget {
   var body: some WidgetConfiguration {
     ActivityConfiguration(for: WorkoutActivityAttributes.self) { context in
       FamilyAwareView(context: context)
         .activityBackgroundTint(background)
-        .activitySystemActionForegroundColor(.white)
+        .activitySystemActionForegroundColor(text)
         .widgetURL(activeWorkoutURL)
     } dynamicIsland: { context in
       DynamicIsland {
         DynamicIslandExpandedRegion(.leading) {
-          Label(context.attributes.routineName, systemImage: "dumbbell.fill")
-            .font(.caption)
-            .foregroundStyle(textMuted)
-            .lineLimit(1)
+          HStack(spacing: 4) {
+            BrandMark(size: 14)
+            Text(context.attributes.routineName)
+              .lineLimit(1)
+          }
+          .font(.caption)
+          .foregroundStyle(textMuted)
         }
         DynamicIslandExpandedRegion(.trailing) {
-          KcalText(kcal: context.state.activeKcal)
-            .font(.caption)
-            .foregroundStyle(accent)
+          VStack(alignment: .trailing, spacing: 2) {
+            if let done = context.state.setsDone, let total = context.state.setsTotal {
+              Text("\(done)/\(total)")
+                .font(.caption.weight(.semibold).monospacedDigit())
+                .foregroundStyle(success)
+                .accessibilityLabel(context.state.setsLabel ?? "\(done)/\(total)")
+            }
+            KcalText(kcal: context.state.activeKcal)
+              .font(.caption)
+              .foregroundStyle(accent)
+          }
         }
         DynamicIslandExpandedRegion(.center) {
-          ElapsedText(attributes: context.attributes, state: context.state)
-            .font(.title2.monospacedDigit().weight(.semibold))
-            .foregroundStyle(.white)
+          // During a rest the countdown is the figure (FR-15).
+          if let restEndsAt = runningRest(context) {
+            RestCountdown(endsAt: restEndsAt)
+              .font(.title2.monospacedDigit().weight(.bold))
+              .foregroundStyle(accent)
+          } else {
+            ElapsedText(attributes: context.attributes, state: context.state)
+              .font(.title2.monospacedDigit().weight(.semibold))
+              .foregroundStyle(text)
+          }
         }
         DynamicIslandExpandedRegion(.bottom) {
-          ControlsRow(attributes: context.attributes, state: context.state)
+          VStack(spacing: 6) {
+            if let upNext = upNextText(context) {
+              Text(runningRest(context) != nil ? "\(context.attributes.nextLabel ?? "Next"): \(upNext)" : upNext)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(text)
+                .lineLimit(1)
+            }
+            ControlsRow(attributes: context.attributes, state: context.state)
+          }
         }
       } compactLeading: {
-        if runningRest(context) != nil {
-          Image(systemName: "timer")
-            .foregroundStyle(accent)
-        } else {
-          Image(systemName: context.state.pausedAt == nil ? "dumbbell.fill" : "pause.fill")
+        // The mark leads; a paused workout shows that it is paused (FR-16).
+        if context.state.pausedAt != nil {
+          Image(systemName: "pause.fill")
             .foregroundStyle(primary)
+        } else {
+          BrandMark(size: 16)
         }
       } compactTrailing: {
         if let restEndsAt = runningRest(context) {
@@ -57,12 +210,19 @@ struct WorkoutActivityWidget: Widget {
         } else {
           ElapsedText(attributes: context.attributes, state: context.state)
             .font(.caption.monospacedDigit())
-            .foregroundStyle(.white)
+            .foregroundStyle(text)
             .frame(maxWidth: 56)
         }
       } minimal: {
-        Image(systemName: "dumbbell.fill")
-          .foregroundStyle(primary)
+        if let restEndsAt = runningRest(context) {
+          RestCountdown(endsAt: restEndsAt)
+            .font(.caption2.monospacedDigit())
+            .foregroundStyle(accent)
+            .frame(maxWidth: 36)
+            .minimumScaleFactor(0.6)
+        } else {
+          BrandMark(size: 16)
+        }
       }
       .widgetURL(activeWorkoutURL)
     }
@@ -121,8 +281,12 @@ private struct WatchSmallView: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 2) {
       HStack(spacing: 4) {
-        Image(systemName: context.state.pausedAt == nil ? "dumbbell.fill" : "pause.fill")
-          .foregroundStyle(primary)
+        if context.state.pausedAt == nil {
+          BrandMark(size: 12)
+        } else {
+          Image(systemName: "pause.fill")
+            .foregroundStyle(primary)
+        }
         Text(context.attributes.routineName)
           .foregroundStyle(textMuted)
           .lineLimit(1)
@@ -136,10 +300,21 @@ private struct WatchSmallView: View {
       .font(.caption2.weight(.semibold))
       ElapsedText(attributes: context.attributes, state: context.state)
         .font(.title2.weight(.bold).monospacedDigit())
-        .foregroundStyle(.white)
+        .foregroundStyle(text)
         .lineLimit(1)
         .minimumScaleFactor(0.7)
+      // The up-next set and the sets done, when they fit (spec 0035 FR-18).
+      if let upNext = upNextText(context) {
+        Text(upNext)
+          .font(.caption2)
+          .foregroundStyle(text)
+          .lineLimit(1)
+      }
       HStack(spacing: 4) {
+        if let done = context.state.setsDone, let total = context.state.setsTotal, runningRest(context) == nil {
+          Text("\(done)/\(total)")
+            .foregroundStyle(success)
+        }
         if let restEndsAt = runningRest(context) {
           Image(systemName: "timer")
           RestCountdown(endsAt: restEndsAt)
@@ -163,35 +338,79 @@ private struct LockScreenView: View {
   let context: ActivityViewContext<WorkoutActivityAttributes>
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 10) {
-      HStack {
-        Label(context.attributes.routineName, systemImage: "dumbbell.fill")
+    VStack(alignment: .leading, spacing: 8) {
+      HStack(spacing: 6) {
+        BrandMark(size: 16)
+        Text(context.attributes.routineName)
           .font(.subheadline.weight(.semibold))
           .foregroundStyle(textMuted)
           .lineLimit(1)
-        Spacer()
         if context.state.pausedAt != nil {
           Text(context.attributes.pausedLabel)
             .font(.caption.weight(.semibold))
             .foregroundStyle(accent)
         }
+        Spacer(minLength: 8)
+        // Small, unfilled and away from Pause: the least likely control to be
+        // hit by accident (FR-19). Opens the app on a confirmation (FR-20).
+        if let discard = context.attributes.discardLabel {
+          Link(destination: discardWorkoutURL(context.attributes.workoutId)) {
+            Text(discard)
+              .font(.caption)
+              .underline()
+              .foregroundStyle(textMuted)
+          }
+        }
       }
       if let restEndsAt = runningRest(context) {
-        HStack(spacing: 6) {
-          Image(systemName: "timer")
-          RestCountdown(endsAt: restEndsAt)
+        // During a rest the orange countdown is the largest figure (FR-15).
+        HStack(alignment: .center) {
+          VStack(alignment: .leading, spacing: 2) {
+            RestCountdown(endsAt: restEndsAt)
+              .font(.system(size: 40, weight: .bold).monospacedDigit())
+              .foregroundStyle(accent)
+            if let upNext = upNextText(context) {
+              Text("\(context.attributes.nextLabel ?? "Next"): \(upNext)")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(text)
+                .lineLimit(1)
+            }
+          }
+          Spacer(minLength: 8)
+          VStack(alignment: .trailing, spacing: 2) {
+            ElapsedText(attributes: context.attributes, state: context.state)
+              .font(.subheadline.weight(.semibold).monospacedDigit())
+              .foregroundStyle(textMuted)
+              .multilineTextAlignment(.trailing)
+            KcalText(kcal: context.state.activeKcal)
+              .font(.caption.weight(.semibold))
+              .foregroundStyle(accent)
+          }
+          .frame(maxWidth: 90, alignment: .trailing)
         }
-        .font(.title3.weight(.semibold).monospacedDigit())
-        .foregroundStyle(accent)
-      }
-      HStack(alignment: .firstTextBaseline) {
-        ElapsedText(attributes: context.attributes, state: context.state)
-          .font(.system(size: 34, weight: .bold).monospacedDigit())
-          .foregroundStyle(.white)
-        Spacer()
-        KcalText(kcal: context.state.activeKcal)
-          .font(.title3.weight(.semibold))
-          .foregroundStyle(accent)
+      } else {
+        HStack(alignment: .center, spacing: 12) {
+          VStack(alignment: .leading, spacing: 2) {
+            if let upNext = upNextText(context) {
+              Text(upNext)
+                .font(.headline)
+                .foregroundStyle(text)
+                .lineLimit(1)
+            }
+            HStack(alignment: .firstTextBaseline) {
+              ElapsedText(attributes: context.attributes, state: context.state)
+                .font(.system(size: 34, weight: .bold).monospacedDigit())
+                .foregroundStyle(text)
+              Spacer(minLength: 4)
+              KcalText(kcal: context.state.activeKcal)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(accent)
+            }
+          }
+          if let done = context.state.setsDone, let total = context.state.setsTotal {
+            SetsRing(done: done, total: total, label: context.state.setsLabel)
+          }
+        }
       }
       ControlsRow(attributes: context.attributes, state: context.state)
     }
@@ -254,21 +473,23 @@ private struct ControlsRow: View {
         Button(intent: PauseWorkoutIntent(workoutId: attributes.workoutId)) {
           Label(attributes.pauseLabel, systemImage: "pause.fill")
             .frame(maxWidth: .infinity)
+            .foregroundStyle(text)
         }
-        .tint(.white.opacity(0.2))
+        .tint(controlTint)
       } else {
         Button(intent: ResumeWorkoutIntent(workoutId: attributes.workoutId)) {
           Label(attributes.resumeLabel, systemImage: "play.fill")
             .frame(maxWidth: .infinity)
+            .foregroundStyle(text)
         }
-        .tint(.white.opacity(0.2))
+        .tint(controlTint)
       }
       Link(destination: finishWorkoutURL) {
         Label(attributes.finishLabel, systemImage: "flag.checkered")
           .font(.subheadline.weight(.semibold))
           .frame(maxWidth: .infinity, minHeight: 34)
           .foregroundStyle(onPrimary)
-          .background(primary, in: Capsule())
+          .background(primaryFill, in: Capsule())
       }
     }
     .font(.subheadline.weight(.semibold))

@@ -7,8 +7,9 @@ import WatchConnectivity
 /// app; this class only carries it.
 ///
 /// - Phone → watch: the application context `["context": json]` (latest wins).
-/// - Watch → phone: user info `["event": json]` (queued, in order) and the
-///   watch's application context `["metrics": json]` (latest wins).
+/// - Watch → phone: user info `["event": json]` (queued, in order), a live
+///   message `["event": json]` for a discard (never queued, spec 0035), and
+///   the watch's application context `["metrics": json]` (latest wins).
 final class PhoneWatchLink: NSObject, WCSessionDelegate {
   static let shared = PhoneWatchLink()
 
@@ -99,6 +100,12 @@ final class PhoneWatchLink: NSObject, WCSessionDelegate {
 
   func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
     deliver("event", userInfo["event"])
+  }
+
+  /// Live messages: a discard confirmed on the watch, sent only while the
+  /// phone is reachable (spec 0035 EF-8).
+  func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
+    deliver("event", message["event"])
   }
 
   func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {

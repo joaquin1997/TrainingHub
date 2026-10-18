@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { ProgressChart } from '@/features/progress/components/ProgressChart';
 import { scaleSeries } from '@/features/progress/utils/chartData';
@@ -19,7 +19,7 @@ import { useSettings } from '@/features/settings/SettingsContext';
 import { formatDate, formatShortDate, formatTime } from '@/lib/format';
 import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, spacing, typeScale, useTheme } from '@/ui/theme';
 import { ListRow } from '@/ui/ListRow';
 
 /** Bars shown at most; a weekly weigh-in fills about four months. */
@@ -30,6 +30,7 @@ const MAX_BARS = 16;
  * first entry, trend chart and every entry (spec 0027 FR-3).
  */
 export function MeasurementHistoryScreen() {
+  useTheme();
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const { kind } = useLocalSearchParams<{ kind?: string }>();
@@ -114,7 +115,7 @@ export function MeasurementHistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   screen: {
     ...commonStyles.screen,
   },
@@ -133,4 +134,4 @@ const styles = StyleSheet.create({
     ...commonStyles.card,
     gap: 0,
   },
-});
+}));

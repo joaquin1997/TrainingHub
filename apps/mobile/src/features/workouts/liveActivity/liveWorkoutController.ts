@@ -7,7 +7,13 @@ import {
   type WorkoutSessionDraft,
 } from '@/features/workouts/state/workoutDraftStore';
 
-import { reconcile, samePause, sameRest, toLiveWorkoutPayload } from './liveWorkoutPayload';
+import {
+  reconcile,
+  samePause,
+  sameProgress,
+  sameRest,
+  toLiveWorkoutPayload,
+} from './liveWorkoutPayload';
 
 export interface ActiveWorkoutStore {
   get(): WorkoutSessionDraft | null;
@@ -30,18 +36,22 @@ type ShownPause = { pausedAt?: string; pausedSeconds: number };
 
 /**
  * Drives the live workout surface from the active workout (spec 0012): starts
- * it when a workout starts, pushes pause and rest (spec 0018) changes, ends it when the workout is
- * finished or discarded, and applies pauses made on the surface itself. Only
- * the clock-relevant state is pushed; logging sets does not touch the surface.
- * Bridge calls run in order through one queue.
+ * it when a workout starts, pushes pause and rest (spec 0018) changes and the
+ * workout's progress — up-next set and sets done (spec 0035 FR-17) — ends it
+ * when the workout is finished or discarded, and applies pauses made on the
+ * surface itself. Typing a value pushes nothing unless it changes the up-next
+ * text. Bridge calls run in order through one queue.
  */
 export function startLiveWorkoutController({
   bridge,
   store = draftStore,
+  upNext,
   onError = logBridgeError,
 }: {
   bridge: LiveWorkoutBridge;
   store?: ActiveWorkoutStore;
+  /** The up-next set as display text, in the app's language (spec 0035). */
+  upNext?: (draft: WorkoutSessionDraft) => string | null;
   onError?: (error: unknown) => void;
 }) {
   let shownId: string | null = null;
@@ -59,7 +69,7 @@ export function startLiveWorkoutController({
   };
 
   const payloadFor = (draft: WorkoutSessionDraft) => {
-    lastPayload = toLiveWorkoutPayload(draft, activeEnergyKcal);
+    lastPayload = toLiveWorkoutPayload(draft, activeEnergyKcal, upNext);
     return lastPayload;
   };
 
@@ -110,7 +120,14 @@ export function startLiveWorkoutController({
       return;
     }
 
-    if (!shownPause || !samePause(draft, shownPause) || !sameRest(draft, shownRestEndsAt)) {
+    const shownProgress = lastPayload;
+    const next = toLiveWorkoutPayload(draft, activeEnergyKcal, upNext);
+    if (
+      !shownPause ||
+      !samePause(draft, shownPause) ||
+      !sameRest(draft, shownRestEndsAt) ||
+      !sameProgress(shownProgress, next)
+    ) {
       markShown(draft);
       const payload = payloadFor(draft);
       void run(() => bridge.updateLiveWorkout(payload));

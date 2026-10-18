@@ -188,6 +188,20 @@ describe('watch workout controller (spec 0025)', () => {
     expect(onFinishRequested).toHaveBeenCalledTimes(1);
   });
 
+  it('passes on a discard confirmed on the watch, once, for the workout in progress only (spec 0035)', () => {
+    const store = fakeStore(draft('c1'));
+    const bridge = fakeBridge();
+    const onDiscardRequested = vi.fn();
+    startWatchWorkoutController({ bridge, store, defaultRestSeconds: () => 90, onDiscardRequested });
+
+    bridge.emit({ kind: 'discardRequested', id: 'd0', workoutSessionId: 'old' });
+    bridge.emit({ kind: 'discardRequested', id: 'd1', workoutSessionId: 'c1' });
+    bridge.emit({ kind: 'discardRequested', id: 'd1', workoutSessionId: 'c1' });
+
+    expect(onDiscardRequested).toHaveBeenCalledTimes(1);
+    expect(onDiscardRequested).toHaveBeenCalledWith('c1');
+  });
+
   it('stops listening when stopped', () => {
     const store = fakeStore(draft('c1'));
     const bridge = fakeBridge();

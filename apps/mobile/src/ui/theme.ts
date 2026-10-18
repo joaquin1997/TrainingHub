@@ -1,22 +1,102 @@
+import { createContext, useContext } from 'react';
 import { StyleSheet } from 'react-native';
 
-import { colors, fonts, fontScaleCap, layout, radii, spacing, typeScale } from './tokens';
+import {
+  fonts,
+  fontScaleCap,
+  layout,
+  palettes,
+  radii,
+  spacing,
+  typeScale,
+  type Palette,
+  type ThemeName,
+} from './tokens';
 
 /**
  * Screens import the tokens from here (the values live in `tokens.ts`, the
  * only file where they are written — spec 0034 FR-10 – FR-12) together with
  * the shared styles built on them.
+ *
+ * Colours are resolved when they are read, from the active theme (spec 0038
+ * FR-19): `colors.text` and `styles.card` read the theme in force at render
+ * time, so switching themes re-colours every component that re-renders, with
+ * no restart and no lost state. Components re-render on a switch by calling
+ * `useTheme()`.
  */
-export { colors, fonts, fontScaleCap, layout, radii, spacing, typeScale };
-export type { TypeStyle } from './tokens';
+export { fonts, fontScaleCap, layout, palettes, radii, spacing, typeScale };
+export type { Palette, ThemeName, TypeStyle } from './tokens';
 
-export const fontAssets = {
-  [fonts.display]: require('../../assets/fonts/SpaceGrotesk-Medium.ttf'),
-  [fonts.displayBold]: require('../../assets/fonts/SpaceGrotesk-Bold.ttf'),
-};
+let activeTheme: ThemeName = 'dark';
 
-/** Shared navigation header styling so every stack matches the dark theme. */
-export const screenHeader = {
+/** Set by the theme provider before its subtree renders. */
+export function setActiveTheme(name: ThemeName) {
+  activeTheme = name;
+}
+
+export function getActiveTheme(): ThemeName {
+  return activeTheme;
+}
+
+/** The keyboard text fields ask for: the app's theme, not a fixed one (FR-12). */
+export function keyboardAppearance(): 'light' | 'dark' {
+  return activeTheme;
+}
+
+/**
+ * A read-through view of an object chosen at read time: property reads,
+ * spreads and `Object.keys` all see the current one.
+ */
+function readThrough<T extends object>(current: () => T): T {
+  return new Proxy({} as T, {
+    get: (_, key) => Reflect.get(current(), key),
+    has: (_, key) => Reflect.has(current(), key),
+    ownKeys: () => Reflect.ownKeys(current()),
+    getOwnPropertyDescriptor: (_, key) => {
+      const value = Reflect.get(current(), key);
+      return value === undefined
+        ? undefined
+        : { value, enumerable: true, configurable: true, writable: false };
+    },
+  });
+}
+
+/** The active theme's palette. */
+export const colors: Palette = readThrough(() => palettes[activeTheme]);
+
+/**
+ * `StyleSheet.create` for themed styles: `factory` reads `colors`, and is run
+ * (once per theme, then cached) for the theme active when a style is read.
+ */
+type StyleObject = Parameters<typeof StyleSheet.create>[0];
+
+export function createStyles<S extends StyleObject>(factory: () => S & StyleObject): Readonly<S> {
+  const cache: Partial<Record<ThemeName, Readonly<S>>> = {};
+  return readThrough(() => (cache[activeTheme] ??= StyleSheet.create(factory())));
+}
+
+export interface ThemeContextValue {
+  /** The theme drawn now. */
+  scheme: ThemeName;
+  /** Keyboard to ask text fields for (spec 0038 FR-12). */
+  keyboardAppearance: 'light' | 'dark';
+}
+
+export const ThemeContext = createContext<ThemeContextValue>({
+  scheme: 'dark',
+  keyboardAppearance: 'dark',
+});
+
+/**
+ * The theme in force. Every component that draws with `colors` or themed
+ * styles calls it, so a theme switch re-renders it in place (FR-19).
+ */
+export function useTheme(): ThemeContextValue {
+  return useContext(ThemeContext);
+}
+
+/** Shared navigation header styling so every stack matches the theme. */
+export const screenHeader = readThrough(() => ({
   headerStyle: { backgroundColor: colors.background },
   headerShadowVisible: false,
   headerTintColor: colors.text,
@@ -25,9 +105,14 @@ export const screenHeader = {
     fontFamily: fonts.displayBold,
     fontSize: typeScale.body.fontSize,
   },
+}));
+
+export const fontAssets = {
+  [fonts.display]: require('../../assets/fonts/SpaceGrotesk-Medium.ttf'),
+  [fonts.displayBold]: require('../../assets/fonts/SpaceGrotesk-Bold.ttf'),
 };
 
-export const commonStyles = StyleSheet.create({
+export const commonStyles = createStyles(() => ({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
@@ -162,12 +247,12 @@ export const commonStyles = StyleSheet.create({
   },
   link: {
     ...typeScale.body,
-    color: colors.primary,
+    color: colors.primaryInk,
     fontWeight: '700',
   },
   error: {
     ...typeScale.caption,
-    color: colors.danger,
+    color: colors.dangerInk,
   },
   pressed: {
     opacity: 0.82,
@@ -175,4 +260,4 @@ export const commonStyles = StyleSheet.create({
   disabled: {
     opacity: 0.5,
   },
-});
+}));

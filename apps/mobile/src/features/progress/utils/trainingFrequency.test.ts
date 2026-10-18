@@ -7,6 +7,9 @@ function week(weekStart: string, workoutCount: number): WeeklyVolumePoint {
   return { weekStart, workoutCount, totalVolume: workoutCount * 100 };
 }
 
+// Wednesday 2026-05-20, local time: this week starts Monday 05-18.
+const may20 = new Date(2026, 4, 20, 12);
+
 describe('summarizeTrainingFrequency', () => {
   it('returns zeroes for no data', () => {
     expect(summarizeTrainingFrequency([])).toEqual({
@@ -36,7 +39,7 @@ describe('summarizeTrainingFrequency', () => {
         week('2026-05-04', 1),
         week('2026-05-11', 1),
         week('2026-05-18', 1),
-      ]).currentStreak,
+      ], may20).currentStreak,
     ).toBe(3);
   });
 
@@ -47,7 +50,21 @@ describe('summarizeTrainingFrequency', () => {
         week('2026-04-27', 1),
         week('2026-05-04', 1),
         week('2026-05-18', 1),
-      ]).currentStreak,
+      ], may20).currentStreak,
     ).toBe(1);
+  });
+
+  it('keeps a run that ended last week (spec 0035)', () => {
+    expect(
+      summarizeTrainingFrequency([week('2026-05-04', 1), week('2026-05-11', 1)], may20)
+        .currentStreak,
+    ).toBe(2);
+  });
+
+  it('shows no streak once a whole week passed without a workout (spec 0035 AC-2)', () => {
+    expect(
+      summarizeTrainingFrequency([week('2026-04-20', 1), week('2026-04-27', 1)], may20)
+        .currentStreak,
+    ).toBe(0);
   });
 });

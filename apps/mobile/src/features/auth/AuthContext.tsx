@@ -24,6 +24,8 @@ interface AuthContextValue {
     password: string,
     displayName?: string,
   ) => Promise<void>;
+  /** Signs in with an ID token from Google's sheet (spec 0039 FR-2). */
+  signInWithGoogle: (idToken: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -99,6 +101,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [persist],
   );
 
+  const signInWithGoogle = useCallback(
+    async (idToken: string) => {
+      const { token, user: nextUser } = await authClient.google({ idToken });
+      await persist(token, nextUser);
+    },
+    [persist],
+  );
+
   return (
     <AuthContext.Provider
       value={{
@@ -107,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: user !== null,
         signIn,
         register,
+        signInWithGoogle,
         signOut,
       }}
     >

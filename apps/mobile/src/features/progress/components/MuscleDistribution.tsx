@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { formatWeightValue } from '@/lib/weight';
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import { CardHeader } from '@/ui/CardHeader';
 import type { MuscleGroupVolumePoint, WeightUnit } from '@workout/domain';
 
@@ -14,6 +14,7 @@ interface MuscleDistributionProps {
 
 /** Horizontal volume-by-muscle-group bars (proportional to the top group). */
 export function MuscleDistribution({ points, unit }: MuscleDistributionProps) {
+  useTheme();
   const { t } = useTranslation();
 
   if (points.length === 0) {
@@ -45,7 +46,7 @@ export function MuscleDistribution({ points, unit }: MuscleDistributionProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     ...commonStyles.card,
     gap: spacing.md,
@@ -80,4 +81,4 @@ const styles = StyleSheet.create({
     ...typeScale.caption,
     fontVariant: ['tabular-nums'],
   },
-});
+}));

@@ -1,4 +1,5 @@
 import ExpoModulesCore
+import UIKit
 import UserNotifications
 
 /// The alert at the end of a rest (spec 0018 FR-6). A local notification: it
@@ -16,6 +17,36 @@ public class RestAlertModule: Module {
       UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) {
         granted, _ in
         promise.resolve(granted)
+      }
+    }
+
+    // Whether the system was asked, and the answer (spec 0037 FR-8, FR-14).
+    AsyncFunction("permissionStatus") { (promise: Promise) in
+      UNUserNotificationCenter.current().getNotificationSettings { settings in
+        switch settings.authorizationStatus {
+        case .notDetermined:
+          promise.resolve("notAsked")
+        case .denied:
+          promise.resolve("denied")
+        default:
+          promise.resolve("granted")
+        }
+      }
+    }
+
+    // The app's notification settings, where alerts are turned back on (FR-14).
+    AsyncFunction("openSettings") { (promise: Promise) in
+      DispatchQueue.main.async {
+        let name: String
+        if #available(iOS 16.0, *) {
+          name = UIApplication.openNotificationSettingsURLString
+        } else {
+          name = UIApplication.openSettingsURLString
+        }
+        if let url = URL(string: name) {
+          UIApplication.shared.open(url)
+        }
+        promise.resolve(nil)
       }
     }
 

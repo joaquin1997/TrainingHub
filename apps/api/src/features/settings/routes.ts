@@ -34,10 +34,17 @@ export async function registerSettingsRoutes(app: FastifyInstance) {
         ? body.language
         : undefined;
 
+    // 'system' | 'light' | 'dark' (spec 0038); anything else leaves it unchanged.
+    const appearance =
+      body.appearance === 'system' || body.appearance === 'light' || body.appearance === 'dark'
+        ? body.appearance
+        : undefined;
+
     return updateUserSettings(await resolveUserPublicId(request), {
       unit,
       defaultRestSeconds,
       language,
+      appearance,
     });
   });
 }

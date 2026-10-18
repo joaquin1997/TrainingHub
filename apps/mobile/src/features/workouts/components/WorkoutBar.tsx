@@ -9,7 +9,7 @@ import { useRestRemaining } from '@/features/workouts/restTimer/useRestRemaining
 import type { WorkoutSessionDraft } from '@/features/workouts/state/workoutDraftStore';
 import { formatDuration } from '@/lib/format';
 import { useElapsedSeconds } from '@/lib/useElapsedSeconds';
-import { colors, commonStyles, fontScaleCap, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, fontScaleCap, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 interface WorkoutBarProps {
   /** Pad for the home indicator; only where no tab bar sits below the bar. */
@@ -22,6 +22,7 @@ interface WorkoutBarProps {
  * item of a list nor the tab bar (EF-2). Renders nothing with no workout.
  */
 export function WorkoutBar({ withBottomInset = false }: WorkoutBarProps) {
+  useTheme();
   const workout = useActiveWorkout();
 
   if (!workout) {
@@ -38,6 +39,7 @@ function ActiveWorkoutBar({
   withBottomInset: boolean;
   workout: WorkoutSessionDraft;
 }) {
+  useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const elapsedSeconds = useElapsedSeconds(workout.startedAt, {
@@ -85,12 +87,12 @@ function ActiveWorkoutBar({
       >
         {clock}
       </Text>
-      <Ionicons name="chevron-up" size={18} color={colors.primary} />
+      <Ionicons name="chevron-up" size={18} color={colors.primaryInk} />
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -99,7 +101,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     backgroundColor: colors.surfaceRaised,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.primary,
+    borderTopColor: colors.primaryInk,
   },
   pressed: {
     ...commonStyles.pressed,
@@ -108,7 +110,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: radii.round,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryInk,
   },
   dotPaused: {
     backgroundColor: colors.textMuted,
@@ -127,15 +129,15 @@ const styles = StyleSheet.create({
   },
   clock: {
     ...commonStyles.figure,
-    color: colors.primary,
+    color: colors.primaryInk,
   },
   clockPaused: {
     color: colors.textMuted,
   },
   labelResting: {
-    color: colors.accent,
+    color: colors.accentInk,
   },
   clockResting: {
-    color: colors.accent,
+    color: colors.accentInk,
   },
-});
+}));

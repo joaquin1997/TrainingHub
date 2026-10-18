@@ -6,7 +6,6 @@ import {
   Animated,
   Easing,
   Pressable,
-  StyleSheet,
   Text,
   View,
   type LayoutChangeEvent,
@@ -17,7 +16,7 @@ import {
   type StickyHeaderModel,
 } from '@/features/workouts/utils/stickyHeader';
 import { Chip } from '@/ui/Chip';
-import { colors, fontScaleCap, fonts, spacing, typeScale } from '@/ui/theme';
+import { colors, createStyles, fonts, fontScaleCap, spacing, typeScale, useTheme } from '@/ui/theme';
 import { useReducedMotion } from '@/ui/useReducedMotion';
 
 /** Fade of the compact header (spec 0034 FR-21); instant under Reduce Motion (FR-9). */
@@ -51,6 +50,7 @@ export function StickyWorkoutHeader({
   onPressUpNext,
   onLayout,
 }: Props) {
+  useTheme();
   const { t } = useTranslation();
   const reducedMotion = useReducedMotion();
   const opacity = useRef(new Animated.Value(visible ? 1 : 0)).current;
@@ -138,7 +138,7 @@ export function StickyWorkoutHeader({
         </Pressable>
       ) : (
         <View style={styles.upNext}>
-          <Ionicons name="checkmark-done" size={18} color={colors.success} />
+          <Ionicons name="checkmark-done" size={18} color={colors.successInk} />
           <Text style={styles.allDone}>{t('workouts.stickyHeader.allDone')}</Text>
         </View>
       )}
@@ -146,7 +146,7 @@ export function StickyWorkoutHeader({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   bar: {
     position: 'absolute',
     top: 0,
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   },
   clock: {
     ...typeScale.figure,
-    color: colors.primary,
+    color: colors.primaryInk,
   },
   clockPaused: {
     color: colors.textMuted,
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   upNextWord: {
-    color: colors.primary,
+    color: colors.primaryInk,
     fontFamily: fonts.displayBold,
   },
   allDone: {
@@ -220,4 +220,4 @@ const styles = StyleSheet.create({
     ...typeScale.body,
     fontWeight: '700',
   },
-});
+}));

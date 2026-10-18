@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
-import { colors, commonStyles, fontScaleCap, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fontScaleCap, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 interface StatTileProps {
   label: string;
@@ -29,8 +29,9 @@ export function StatTile({
   icon,
   tone = 'neutral',
 }: StatTileProps) {
-  const figureColor = tone === 'record' ? colors.accent : colors.text;
-  const captionColor = captionTone === 'success' ? colors.success : colors.textMuted;
+  useTheme();
+  const figureColor = tone === 'record' ? colors.accentInk : colors.text;
+  const captionColor = captionTone === 'success' ? colors.successInk : colors.textMuted;
 
   return (
     <View style={styles.tile}>
@@ -65,7 +66,7 @@ export function StatTile({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   tile: {
     flex: 1,
     minWidth: 96,
@@ -107,4 +108,4 @@ const styles = StyleSheet.create({
   captionText: {
     flex: 1,
   },
-});
+}));

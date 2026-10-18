@@ -1,10 +1,10 @@
 import type { LiveRecordHit, WeightUnit } from '@workout/domain';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Animated, Easing, StyleSheet } from 'react-native';
+import { Animated, Easing } from 'react-native';
 
 import { Chip } from '@/ui/Chip';
-import { spacing } from '@/ui/theme';
+import { createStyles, spacing, useTheme } from '@/ui/theme';
 import { useReducedMotion } from '@/ui/useReducedMotion';
 
 import { recordBadgeAccessibilityLabel, recordBadgeLabel } from './recordBadgeLabel';
@@ -65,6 +65,7 @@ export function RecordBadge({
   unit: WeightUnit;
   pop?: boolean;
 }) {
+  useTheme();
   const { t } = useTranslation();
   const scale = usePop(pop);
 
@@ -79,10 +80,10 @@ export function RecordBadge({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   badge: {
     flexDirection: 'row',
     alignSelf: 'flex-start',
     paddingTop: spacing.xs,
   },
-});
+}));

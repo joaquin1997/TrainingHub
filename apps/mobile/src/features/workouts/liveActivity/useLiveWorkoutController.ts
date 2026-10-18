@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import i18n from '@/i18n';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppState, Platform } from 'react-native';
@@ -13,15 +14,18 @@ import {
 import { useSettings } from '@/features/settings/SettingsContext';
 import { startWatchWorkoutController } from '@/features/workouts/watch/watchWorkoutController';
 import {
+  clearActiveWorkout,
   getActiveWorkout,
   subscribeActiveWorkout,
 } from '@/features/workouts/state/workoutDraftStore';
+import { haptics } from '@/ui/haptics';
 
 import { startActiveEnergyRefresher } from './activeEnergyRefresher';
 import { publishActiveEnergy } from './activeEnergyStore';
 import { createKcalSources } from './kcalSources';
 
 import { startLiveWorkoutController } from './liveWorkoutController';
+import { liveUpNext } from './liveWorkoutPayload';
 
 /**
  * Runs the live workout status for the whole app (spec 0012) and the workout
@@ -45,6 +49,10 @@ export function useLiveWorkoutController(enabled: boolean) {
       pause: t('workouts.pause'),
       resume: t('workouts.resume'),
       finish: t('workouts.finish'),
+      discard: t('workouts.liveDiscard'),
+      next: t('workouts.liveNext'),
+      allDone: t('workouts.liveAllDone'),
+      setsDone: (done, total) => t('workouts.liveSetsDone', { done, total }),
     });
     setWatchLabels({
       done: t('workouts.watchDone'),
@@ -57,6 +65,13 @@ export function useLiveWorkoutController(enabled: boolean) {
       allDone: t('workouts.watchAllDone'),
       waiting: t('workouts.watchWaiting'),
       setOf: (number, count) => t('workouts.watchSetOf', { number, count }),
+      more: t('workouts.watchMore'),
+      discard: t('workouts.liveDiscard'),
+      discardTitle: t('workouts.discardTitle'),
+      cancel: t('common.cancel'),
+      connectToDiscard: t('workouts.watchConnectToDiscard'),
+      discardLost: (count) =>
+        count > 0 ? t('workouts.discardLost', { count }) : t('workouts.discardNoneDone'),
     });
   }, [t, i18n.language]);
 
@@ -70,7 +85,11 @@ export function useLiveWorkoutController(enabled: boolean) {
       return;
     }
 
-    const controller = startLiveWorkoutController({ bridge });
+    const controller = startLiveWorkoutController({
+      bridge,
+      upNext: (draft) =>
+        liveUpNext(draft, (round) => i18n.t('workouts.liveRound', { round })),
+    });
     // The phone's Health reading until the watch measures the workout (0025).
     const kcal = createKcalSources((clientId, value) => {
       controller.setActiveEnergyKcal(value);
@@ -94,6 +113,13 @@ export function useLiveWorkoutController(enabled: boolean) {
           // Finishing is confirmed on the phone, as from the lock screen.
           onFinishRequested: () => {
             routerRef.current.navigate('/workouts/active?action=finish');
+          },
+          // Confirmed on the watch (spec 0035 FR-22): discard as from the
+          // app, which also ends the watch workout without saving to Health.
+          onDiscardRequested: () => {
+            haptics.destructiveConfirm();
+            clearActiveWorkout();
+            routerRef.current.navigate('/routines');
           },
         })
       : null;

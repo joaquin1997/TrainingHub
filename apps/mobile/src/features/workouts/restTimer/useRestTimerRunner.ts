@@ -6,7 +6,9 @@ import { AppState } from 'react-native';
 import type { WorkoutSessionDraft } from '@/features/workouts/state/workoutDraftStore';
 
 import { nextSetLabel } from './nextSetLabel';
+import { withNotNow } from './notNow';
 import { restAlertsForThisDevice, type RestAlertContent } from './restAlerts';
+import { deviceKeys, deviceStore } from '@/lib/deviceStore';
 import { startRestTimerRunner } from './restTimerRunner';
 import { haptics } from '@/ui/haptics';
 
@@ -38,7 +40,10 @@ export function useRestTimerRunner(enabled: boolean) {
     }
 
     const runner = startRestTimerRunner({
-      alerts: restAlertsForThisDevice(),
+      alerts: withNotNow(
+        restAlertsForThisDevice(),
+        async () => (await deviceStore.get(deviceKeys.restAlertsNotNow)) === '1',
+      ),
       alertContent: (draft) => restOverContent(draft, tRef.current),
       // TODO(sdd): possible double alert in the foreground — iOS does not
       // present a local notification while the app is in front unless a

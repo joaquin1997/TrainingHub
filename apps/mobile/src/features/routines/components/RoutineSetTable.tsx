@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 
 import type { ExerciseTrackingType, WeightUnit } from '@workout/domain';
 
@@ -11,7 +11,7 @@ import {
 } from '@/features/routines/utils/routineSetInheritance';
 import { formatDuration } from '@/lib/format';
 import { parseDurationInput, trackingFields, type SetValueField } from '@/lib/tracking';
-import { colors, commonStyles, fonts, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, keyboardAppearance, spacing, typeScale, useTheme } from '@/ui/theme';
 
 /** One target set as typed in the routine editor (weight in the display unit). */
 export type EditableRoutineSet = {
@@ -52,6 +52,7 @@ type Props = {
 
 /** The target sets of one routine exercise, with the columns of its type. */
 export function RoutineSetTable({ sets, trackingType, unit, onChange, onRemove }: Props) {
+  useTheme();
   const { t } = useTranslation();
   const columns = routineSetColumns(trackingType);
 
@@ -110,7 +111,7 @@ export function RoutineSetTable({ sets, trackingType, unit, onChange, onRemove }
               <Text style={styles.setNumber}>
                 {routineSetLabel(sets, setIndex, t('workouts.setType.warmup'))}
               </Text>
-              <Ionicons name="sparkles" size={10} color={colors.accent} />
+              <Ionicons name="sparkles" size={10} color={colors.accentInk} />
             </View>
           ) : (
             <Text style={[styles.colSet, styles.setNumber]}>
@@ -119,7 +120,7 @@ export function RoutineSetTable({ sets, trackingType, unit, onChange, onRemove }
           )}
           {columns.map((field) => (
             <TextInput
-              keyboardAppearance="dark"
+              keyboardAppearance={keyboardAppearance()}
               key={field}
               value={set[field]}
               onChangeText={(value) => onChange(set.id, field, value)}
@@ -145,7 +146,7 @@ export function RoutineSetTable({ sets, trackingType, unit, onChange, onRemove }
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   table: {
     gap: spacing.xs,
   },
@@ -198,4 +199,4 @@ const styles = StyleSheet.create({
     fontSize: typeScale.figure.fontSize,
     fontVariant: ['tabular-nums'],
   },
-});
+}));

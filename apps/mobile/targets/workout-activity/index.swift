@@ -5,5 +5,6 @@ import WidgetKit
 struct WorkoutActivityBundle: WidgetBundle {
   var body: some Widget {
     WorkoutActivityWidget()
+    HomeWidget()
   }
 }

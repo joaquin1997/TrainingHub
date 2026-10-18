@@ -24,17 +24,26 @@ export type WeightUnit = 'kg' | 'lb';
 /** Supported UI languages. `null`/absent means "follow the device locale". */
 export type AppLanguage = 'en' | 'es';
 
+/**
+ * The theme the app is drawn in (spec 0038): follow the device, or always
+ * light or dark. Presentation only.
+ */
+export type Appearance = 'system' | 'light' | 'dark';
+
 /** Per-user client preferences. */
 export interface UserSettings {
   unit: WeightUnit;
   defaultRestSeconds: number;
   language: AppLanguage | null;
+  /** Absent from servers before spec 0038, which means `system` (EF-7). */
+  appearance?: Appearance;
 }
 
 export interface UpdateUserSettingsInput {
   unit?: WeightUnit;
   defaultRestSeconds?: number;
   language?: AppLanguage | null;
+  appearance?: Appearance;
 }
 
 /**

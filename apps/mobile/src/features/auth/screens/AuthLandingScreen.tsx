@@ -6,19 +6,24 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 
 import { useAuth } from '@/features/auth/AuthContext';
+import {
+  isGoogleSignInAvailable,
+  signInWithGoogleSheet,
+} from '@/features/auth/providers/googleSignIn';
+import { ApiError } from '@/lib/http';
 import { Button } from '@/ui/Button';
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, keyboardAppearance, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
 export function AuthLandingScreen() {
+  useTheme();
   const { t } = useTranslation();
-  const { signIn, register } = useAuth();
+  const { signIn, register, signInWithGoogle } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -44,6 +49,33 @@ export function AuthLandingScreen() {
     }
   };
 
+  // Spec 0039: only on a build with the Google client id (FR-1, AC-1).
+  const offersGoogle = isGoogleSignInAvailable();
+
+  const continueWithGoogle = async () => {
+    setError(undefined);
+    setIsSubmitting(true);
+    try {
+      const idToken = await signInWithGoogleSheet();
+      // Closed the sheet: back here, no message (EF-1).
+      if (idToken) {
+        await signInWithGoogle(idToken);
+      }
+    } catch (e) {
+      // Not configured on the server (EF-5), an unverified email that has an
+      // account (EF-4), or anything else: rejected or unreachable (EF-2, EF-3).
+      setError(
+        e instanceof ApiError && e.status === 503
+          ? t('auth.googleUnavailable')
+          : e instanceof ApiError && e.status === 409
+            ? t('auth.googleEmailTaken')
+            : t('auth.googleFailed'),
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const switchMode = (next: 'login' | 'register') => {
     if (next !== mode) {
       setError(undefined);
@@ -59,7 +91,7 @@ export function AuthLandingScreen() {
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.brandBlock}>
           <View style={styles.mark}>
-            <Ionicons name="pulse" size={30} color={colors.primary} />
+            <Ionicons name="pulse" size={30} color={colors.primaryInk} />
           </View>
           <Text style={styles.brand}>TrainingHub</Text>
           <Text style={styles.subtitle}>
@@ -90,7 +122,7 @@ export function AuthLandingScreen() {
           {isRegister ? (
             <Field icon="person-outline">
               <TextInput
-                keyboardAppearance="dark"
+                keyboardAppearance={keyboardAppearance()}
                 value={displayName}
                 onChangeText={setDisplayName}
                 placeholder={t('auth.namePlaceholder')}
@@ -102,7 +134,7 @@ export function AuthLandingScreen() {
           ) : null}
           <Field icon="mail-outline">
             <TextInput
-              keyboardAppearance="dark"
+              keyboardAppearance={keyboardAppearance()}
               value={email}
               onChangeText={setEmail}
               placeholder={t('auth.emailPlaceholder')}
@@ -116,7 +148,7 @@ export function AuthLandingScreen() {
           </Field>
           <Field icon="lock-closed-outline">
             <TextInput
-              keyboardAppearance="dark"
+              keyboardAppearance={keyboardAppearance()}
               value={password}
               onChangeText={setPassword}
               placeholder={t('auth.passwordPlaceholder')}
@@ -142,6 +174,23 @@ export function AuthLandingScreen() {
           disabled={isSubmitting}
           fullWidth
         />
+        {offersGoogle ? (
+          <>
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>{t('auth.or')}</Text>
+              <View style={styles.dividerLine} />
+            </View>
+            <Button
+              label={t('auth.continueWithGoogle')}
+              icon="logo-google"
+              variant="secondary"
+              onPress={() => void continueWithGoogle()}
+              disabled={isSubmitting}
+              fullWidth
+            />
+          </>
+        ) : null}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -154,6 +203,7 @@ function Field({
   icon: keyof typeof Ionicons.glyphMap;
   children: ReactNode;
 }) {
+  useTheme();
   return (
     <View style={styles.field}>
       <Ionicons name={icon} size={18} color={colors.textMuted} />
@@ -162,9 +212,23 @@ function Field({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   screen: {
     ...commonStyles.screen,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  dividerText: {
+    ...typeScale.caption,
+    color: colors.textMuted,
   },
   container: {
     flexGrow: 1,
@@ -243,4 +307,4 @@ const styles = StyleSheet.create({
     ...commonStyles.error,
     textAlign: 'center',
   },
-});
+}));

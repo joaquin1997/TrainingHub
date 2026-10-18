@@ -1,16 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 
 import { Button } from '@/ui/Button';
 import { EmptyState } from '@/ui/EmptyState';
-import { colors, fonts, spacing, typeScale } from '@/ui/theme';
+import { colors, createStyles, fonts, spacing, typeScale, useTheme } from '@/ui/theme';
 
 interface StateViewProps {
   kind: 'loading' | 'empty' | 'error';
   title?: string;
   message?: string;
-  /** Empty states: the icon above the title. */
-  icon?: keyof typeof Ionicons.glyphMap;
+  /** Empty states: the icon above the title, or `brand` for the brand mark. */
+  icon?: keyof typeof Ionicons.glyphMap | 'brand';
   /** The single action the screen already offers here (retry, create). */
   actionLabel?: string;
   onAction?: () => void;
@@ -23,6 +23,7 @@ interface StateViewProps {
  * show a skeleton instead of the spinner while they first load (FR-15).
  */
 export function StateView({ kind, title, message, icon, actionLabel, onAction }: StateViewProps) {
+  useTheme();
   if (kind === 'empty') {
     return (
       <EmptyState
@@ -37,9 +38,9 @@ export function StateView({ kind, title, message, icon, actionLabel, onAction }:
   return (
     <View style={styles.container}>
       {kind === 'loading' ? (
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={colors.primaryInk} />
       ) : (
-        <Ionicons name="alert-circle-outline" size={40} color={colors.danger} />
+        <Ionicons name="alert-circle-outline" size={40} color={colors.dangerInk} />
       )}
       {title ? <Text style={styles.title}>{title}</Text> : null}
       {message ? (
@@ -54,7 +55,7 @@ export function StateView({ kind, title, message, icon, actionLabel, onAction }:
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -74,10 +75,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   errorMessage: {
-    color: colors.danger,
+    color: colors.dangerInk,
   },
   action: {
     alignSelf: 'center',
     marginTop: spacing.sm,
   },
-});
+}));

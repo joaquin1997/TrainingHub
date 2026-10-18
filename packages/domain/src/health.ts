@@ -24,6 +24,14 @@ export interface HealthWorkoutPayload {
   activeEnergyKcal?: number | null;
   /** End of the running rest, absent when no rest runs (spec 0018). */
   restEndsAt?: ISODateString;
+  /**
+   * The up-next set as display text, e.g. "Bench press · 100 kg × 8", already
+   * in the workout's display unit; null when every set is done (spec 0035).
+   */
+  upNext?: string | null;
+  /** Sets done and all sets of the workout, warm-ups included (spec 0035). */
+  setsDone?: number;
+  setsTotal?: number;
 }
 
 /**
@@ -97,6 +105,8 @@ export interface WatchWorkoutSnapshot {
   restEndsAt?: ISODateString;
   /** The set to do now; absent when every set is done. */
   currentSet?: WatchWorkoutSet;
+  /** Sets done so far, warm-ups included: named by the watch's discard confirmation (spec 0035). */
+  setsDone?: number;
 }
 
 export interface WatchWorkoutSet {
@@ -128,6 +138,8 @@ export type WatchWorkoutEvent =
     }
   | { kind: 'pause' | 'resume'; id: string; workoutSessionId: string; at: ISODateString }
   | { kind: 'finishRequested'; id: string; workoutSessionId: string }
+  /** Confirmed on the watch; never queued while the phone is unreachable (spec 0035 EF-8). */
+  | { kind: 'discardRequested'; id: string; workoutSessionId: string }
   | { kind: 'activeEnergy'; workoutSessionId: string; kcal: number };
 
 export type WatchWorkoutOutcome = 'finished' | 'discarded';

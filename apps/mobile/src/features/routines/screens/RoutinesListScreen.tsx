@@ -1,17 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Pressable,
   RefreshControl,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
 
+import { profileClient } from '@/features/profile/api/profileClient';
 import { routinesClient } from '@/features/routines/api/routinesClient';
+import { HomeHeader } from '@/features/routines/components/HomeHeader';
+import { todaysRoutine } from '@/features/routines/utils/todaysRoutine';
+import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { buildRoutineCopyInput } from '@/features/routines/utils/duplicateRoutine';
 import { groupRoutinesByFolder } from '@/features/routines/utils/groupRoutinesByFolder';
 import { getRoutineExerciseNames } from '@/features/routines/utils/routineSummary';
@@ -22,19 +25,27 @@ import { CardHeader } from '@/ui/CardHeader';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { confirmAction } from '@/lib/confirmAction';
+import { ApiError } from '@/lib/http';
+import { countInWeek, weekStreak } from '@/lib/week';
 import { useRefresh } from '@/lib/useRefresh';
-import { colors, commonStyles, spacing } from '@/ui/theme';
+import { colors, commonStyles, createStyles, spacing, useTheme } from '@/ui/theme';
 import { SkeletonCardList } from '@/ui/Skeleton';
 import { ScreenTitle } from '@/ui/ScreenTitle';
 import { StateView } from '@/ui/StateView';
-import type { Routine } from '@workout/domain';
+import type { Routine, UserProfile, WorkoutSession } from '@workout/domain';
 
 export function RoutinesListScreen() {
+  useTheme();
   const { t } = useTranslation();
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
   const [menuRoutine, setMenuRoutine] = useState<Routine | null>(null);
+  // The header's data (spec 0035): null when it could not be loaded, which
+  // hides the parts that depend on it (EF-3).
+  const [sessions, setSessions] = useState<WorkoutSession[] | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [todayNotice, setTodayNotice] = useState<string>();
 
   const loadRoutines = useCallback(
     async (shouldUpdate: () => boolean = () => true) => {
@@ -42,10 +53,20 @@ export function RoutinesListScreen() {
       setErrorMessage(undefined);
 
       try {
-        const nextRoutines = await routinesClient.list();
+        // One load for the list and its header, so the header never pops in
+        // after the list (spec 0035 NFR).
+        const [nextRoutines, nextSessions, nextProfile] = await Promise.all([
+          routinesClient.list(),
+          workoutsClient.list().catch(() => null),
+          profileClient.get().catch(() => null),
+        ]);
 
         if (shouldUpdate()) {
           setRoutines(nextRoutines);
+          setSessions(nextSessions);
+          if (nextProfile) {
+            setProfile(nextProfile);
+          }
         }
       } catch (error) {
         if (shouldUpdate()) {
@@ -122,6 +143,45 @@ export function RoutinesListScreen() {
   // Another routine's Start asks before replacing the workout (spec 0019).
   const { startRoutine, sheet: switchSheet } = useRoutineStart();
 
+  const starts = sessions?.map((session) => new Date(session.startedAt)) ?? null;
+  const now = new Date();
+  const week = starts
+    ? { streak: weekStreak(starts, now), thisWeek: countInWeek(starts, now) }
+    : null;
+  // Hidden while a workout is in progress (FR-7) and when the history is unknown (EF-3).
+  const today = sessions && !activeWorkout ? todaysRoutine(routines, sessions) : null;
+
+  // The suggested routine may have been deleted elsewhere since the list
+  // loaded: never start it (EF-5).
+  const startToday = async (routine: Routine) => {
+    setTodayNotice(undefined);
+    try {
+      const fresh = await routinesClient.getById(routine.id);
+      startRoutine(fresh);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        setTodayNotice(t('home.todayGone'));
+        void loadRoutines();
+        return;
+      }
+      // Offline: the workout screen reports it, as from any other Start.
+      startRoutine(routines.find((item) => item.id === routine.id) ?? routine);
+    }
+  };
+
+  // "Start <routine>" on the home-screen widget opens Routines with
+  // ?start=<id> (spec 0036 FR-9, FR-10): the routine is re-read, a deleted
+  // one is never started (EF-6), and 0019's question applies when another
+  // workout is in progress. The widget's routine is used even when stale (EF-7).
+  const { start: startParam } = useLocalSearchParams<{ start?: string }>();
+  useEffect(() => {
+    if (!startParam) {
+      return;
+    }
+    router.setParams({ start: undefined });
+    void startToday({ id: startParam, name: '' } as Routine);
+  }, [startParam]);
+
   const startLabel = (routine: Routine) =>
     activeWorkout?.routineId === routine.id
       ? t('routines.continueWorkout')
@@ -144,6 +204,18 @@ export function RoutinesListScreen() {
           onPress: () => router.push('/routines/create'),
         }}
       />
+      {/* The greeting shows on an error too; the parts without data hide (EF-3). */}
+      {!showLoading || errorMessage ? (
+        <HomeHeader
+          profile={profile}
+          week={week}
+          today={today}
+          notice={todayNotice}
+          onOpenProfile={() => router.push('/settings/profile')}
+          onOpenRoutine={(routine) => router.push(`/routines/${routine.id}`)}
+          onStart={(routine) => void startToday(routine)}
+        />
+      ) : null}
       {/* First load only: the shape of the cards to come (spec 0034 FR-15). */}
       {showLoading && !errorMessage ? <SkeletonCardList withButton /> : null}
       {errorMessage ? (
@@ -157,7 +229,7 @@ export function RoutinesListScreen() {
       {hasEmptyState ? (
         <StateView
           kind="empty"
-          icon="clipboard-outline"
+          icon="brand"
           title={t('routines.emptyTitle')}
           message={t('routines.emptySubtitle')}
           actionLabel={t('routines.createRoutine')}
@@ -295,7 +367,7 @@ export function RoutinesListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   screen: {
     ...commonStyles.screen,
   },
@@ -328,7 +400,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   cardActive: {
-    borderColor: colors.primary,
+    borderColor: colors.primaryInk,
   },
   cardPressed: {
     ...commonStyles.pressed,
@@ -351,4 +423,4 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.xs,
   },
-});
+}));

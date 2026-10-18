@@ -108,6 +108,14 @@ export interface EmailLoginInput {
   password: string;
 }
 
+/**
+ * Sign-in with a Google ID token obtained on the device (spec 0039). The
+ * server verifies it with Google's keys before trusting anything in it.
+ */
+export interface GoogleSignInInput {
+  idToken: string;
+}
+
 /** Response for register/login: a bearer token plus the user. */
 export interface AuthTokenResponse {
   token: string;

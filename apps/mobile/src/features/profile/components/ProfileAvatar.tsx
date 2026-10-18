@@ -1,6 +1,7 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Image, Text, View } from 'react-native';
 
-import { colors, fonts, radii, typeScale } from '@/ui/theme';
+import { colors, createStyles, fonts, radii, typeScale, useTheme } from '@/ui/theme';
 
 interface ProfileAvatarProps {
   photoDataUrl: string | null | undefined;
@@ -16,22 +17,31 @@ function initialsOf(name: string | null | undefined): string {
     .join('');
 }
 
-/** The profile photo, or the name's initials on a neutral circle. */
+/**
+ * The profile photo, or the name's initials on a neutral circle; a neutral
+ * person mark when there are no initials either (spec 0035 EF-2).
+ */
 export function ProfileAvatar({ photoDataUrl, name, size = 56 }: ProfileAvatarProps) {
+  useTheme();
   const shape = { width: size, height: size, borderRadius: radii.round };
 
   if (photoDataUrl) {
     return <Image source={{ uri: photoDataUrl }} style={[styles.base, shape]} accessibilityIgnoresInvertColors />;
   }
 
+  const initials = initialsOf(name);
   return (
     <View style={[styles.base, styles.placeholder, shape]}>
-      <Text style={[styles.initials, size >= 80 ? typeScale.title : typeScale.heading]}>{initialsOf(name) || '?'}</Text>
+      {initials ? (
+        <Text style={[styles.initials, size >= 80 ? typeScale.title : typeScale.heading]}>{initials}</Text>
+      ) : (
+        <Ionicons name="person" size={Math.round(size * 0.5)} color={colors.textMuted} />
+      )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   base: {
     backgroundColor: colors.surfaceRaised,
     overflow: 'hidden',
@@ -46,4 +56,4 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: fonts.displayBold,
   },
-});
+}));

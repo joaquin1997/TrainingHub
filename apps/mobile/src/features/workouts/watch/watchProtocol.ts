@@ -15,6 +15,7 @@ import {
   type WorkoutSetDraft,
   type WorkoutSessionDraft,
 } from '@/features/workouts/state/workoutDraftStore';
+import { countWorkoutSets } from '@/features/workouts/state/workoutDraftStore';
 import { trackingFields } from '@/lib/tracking';
 
 /**
@@ -81,6 +82,7 @@ export function toWatchSnapshot(
     pausedAt: draft.pausedAt,
     pausedSeconds: draft.pausedSeconds ?? 0,
     restEndsAt: draft.rest?.endsAt,
+    setsDone: countWorkoutSets(draft).done,
     currentSet:
       exercise && set
         ? {

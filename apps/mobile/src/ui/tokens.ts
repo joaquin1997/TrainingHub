@@ -14,7 +14,7 @@ import type { TextStyle } from 'react-native';
  * personal record or a failure set, `success` (green) a done set, `danger`
  * (red) destructive actions and errors.
  */
-export const colors = {
+const dark = {
   background: '#101418',
   surface: '#151A21',
   surfaceRaised: '#1D2530',
@@ -40,6 +40,66 @@ export const colors = {
   overlay: 'rgba(4, 8, 13, 0.76)',
   /** Behind catalog images, which are line drawings on white. */
   imageBackdrop: '#FFFFFF',
+  /**
+   * Ink shades (spec 0038 FR-8): each accent as text, icon, outline, chart
+   * line or point. On dark they are the fills themselves.
+   */
+  primaryInk: '#C8FF2E',
+  accentInk: '#FF8A3D',
+  successInk: '#66E287',
+  dangerInk: '#FF6B6B',
+  /** Edge that sets the white image tile apart from the surface (FR-13). */
+  imageEdge: 'rgba(255, 255, 255, 0)',
+};
+
+/**
+ * The light theme (spec 0038 FR-6 – FR-10): the same structure and accent
+ * meanings; the lime fill stays the brand lime with dark text on it, and
+ * every accent has a darker ink for text, icons, outlines and chart marks.
+ */
+const light: Palette = {
+  background: '#F3F5F1',
+  surface: '#FFFFFF',
+  surfaceRaised: '#EAEEE7',
+  surfaceMuted: '#EEF1EB',
+  primary: '#C8FF2E',
+  primaryPressed: '#B6EC1E',
+  primarySoft: 'rgba(110, 160, 0, 0.14)',
+  onPrimary: '#10140D',
+  accent: '#CC6A15',
+  accentSoft: 'rgba(214, 102, 18, 0.12)',
+  success: '#2F9A50',
+  successSoft: 'rgba(29, 140, 60, 0.12)',
+  danger: '#D63B3B',
+  dangerSoft: 'rgba(200, 40, 40, 0.10)',
+  text: '#12171D',
+  textMuted: '#454E5A',
+  textSubtle: '#58636F',
+  border: '#D6DBD2',
+  borderStrong: '#BCC4B9',
+  controlBorder: '#77828F',
+  overlay: 'rgba(17, 22, 28, 0.45)',
+  imageBackdrop: '#FFFFFF',
+  primaryInk: '#3F6300',
+  accentInk: '#A34700',
+  successInk: '#1C6F34',
+  dangerInk: '#BD2323',
+  imageEdge: '#D6DBD2',
+};
+
+/** The named colours of one theme (spec 0038): every theme has every token. */
+export type Palette = { [Key in keyof typeof dark]: string };
+
+
+export type ThemeName = 'dark' | 'light';
+
+/**
+ * Both themes (spec 0038 FR-5). The app reads the active one through
+ * `colors` in `theme.ts`; tests read these directly.
+ */
+export const palettes: Record<ThemeName, Palette> = {
+  dark,
+  light,
 };
 
 /**

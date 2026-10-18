@@ -4,7 +4,6 @@ import {
   Modal,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -22,7 +21,7 @@ import {
 } from '@/features/exercises/utils/exerciseAvailability';
 import { Button } from '@/ui/Button';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, fonts, radii, spacing, typeScale } from '@/ui/theme';
+import { colors, commonStyles, createStyles, fonts, keyboardAppearance, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import { ListRow } from '@/ui/ListRow';
 import type { Exercise } from '@workout/domain';
 
@@ -57,6 +56,7 @@ export function ExercisePickerModal({
   title,
   confirm,
 }: ExercisePickerModalProps) {
+  useTheme();
   const { t } = useTranslation();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [query, setQuery] = useState('');
@@ -234,7 +234,7 @@ export function ExercisePickerModal({
             <View style={styles.search}>
               <Ionicons name="search" size={18} color={colors.textMuted} />
               <TextInput
-                keyboardAppearance="dark"
+                keyboardAppearance={keyboardAppearance()}
                 value={query}
                 onChangeText={setQuery}
                 placeholder={t('exercises.searchPlaceholder')}
@@ -248,7 +248,7 @@ export function ExercisePickerModal({
               onPress={() => setStep('create')}
               style={({ pressed }) => [styles.createRow, pressed ? styles.rowPressed : null]}
             >
-              <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
+              <Ionicons name="add-circle-outline" size={22} color={colors.primaryInk} />
               <Text style={styles.createLabel} numberOfLines={1}>
                 {trimmedQuery
                   ? t('exercises.createNamed', { name: trimmedQuery })
@@ -284,7 +284,7 @@ export function ExercisePickerModal({
                     subtitle={details.length > 0 ? details.join(' · ') : undefined}
                     leading={<ExerciseThumb imageUrl={exercise.imageUrl} />}
                     trailing={
-                      <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+                      <Ionicons name="add-circle-outline" size={24} color={colors.primaryInk} />
                     }
                     onPress={() => void choose(exercise)}
                     disabled={checkingId !== undefined}
@@ -304,7 +304,7 @@ export function ExercisePickerModal({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     flex: 1,
     padding: spacing.lg,
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   notice: {
-    color: colors.danger,
+    color: colors.dangerInk,
     ...typeScale.caption,
   },
   createRow: {
@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
   },
   createLabel: {
     flex: 1,
-    color: colors.primary,
+    color: colors.primaryInk,
     fontFamily: fonts.displayBold,
     ...typeScale.body,
   },
@@ -385,4 +385,4 @@ const styles = StyleSheet.create({
     ...commonStyles.meta,
     textAlign: 'center',
   },
-});
+}));

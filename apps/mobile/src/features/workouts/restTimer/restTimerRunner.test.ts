@@ -44,6 +44,9 @@ function fakeAlerts() {
     requestPermission: vi.fn(async () => true),
     schedule: vi.fn(async () => undefined),
     cancel: vi.fn(async () => undefined),
+    outsideApp: true,
+    permissionStatus: vi.fn(async () => 'notAsked' as const),
+    openSystemSettings: vi.fn(async () => undefined),
   } satisfies RestAlerts;
 }
 
