@@ -49,6 +49,7 @@ deploy_backend() {
     -e NODE_ENV=production -e HOST=0.0.0.0 -e PORT=3000 \
     -e DATABASE_URL \
     -e JWT_SECRET \
+    -e GOOGLE_CLIENT_IDS \
     "$IMAGE" >/dev/null
 
   echo "==> [backend] waiting for health at $API_URL/health"
