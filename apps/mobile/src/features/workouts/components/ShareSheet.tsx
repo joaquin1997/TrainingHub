@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Pressable, Text, View, useWindowDimensions } from 'react-native';
+import { Modal, Platform, Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -23,6 +23,12 @@ interface ShareSheetProps {
   onClose: () => void;
 }
 
+/**
+ * Longest wait for the sheet to finish closing before the text share opens
+ * anyway, in case the dismissal is never reported.
+ */
+const DISMISS_FALLBACK_MS = 600;
+
 /** Share of the window height the preview may take, so the actions stay in view. */
 const PREVIEW_MAX_HEIGHT_RATIO = 0.5;
 
@@ -40,12 +46,46 @@ export function ShareSheet({ visible, card, onShareText, onClose }: ShareSheetPr
   const cardRef = useRef<ShareCardRef>(null);
   const [status, setStatus] = useState<'idle' | 'busy' | 'failed'>('idle');
   const imageAvailable = shareImageAvailable();
+  // The text share waits for this sheet to be gone: iOS drops a share sheet
+  // presented while another one is still closing (spec 0040 FR-6).
+  const [closingForText, setClosingForText] = useState(false);
+  const pendingTextRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (visible) {
       setStatus('idle');
+      setClosingForText(false);
     }
   }, [visible]);
+
+  useEffect(
+    () => () => {
+      if (pendingTextRef.current) {
+        clearTimeout(pendingTextRef.current);
+      }
+    },
+    [],
+  );
+
+  const shareTextOnceClosed = () => {
+    if (!pendingTextRef.current) {
+      return;
+    }
+    clearTimeout(pendingTextRef.current);
+    pendingTextRef.current = null;
+    onShareText();
+    onClose();
+  };
+
+  const shareText = () => {
+    if (Platform.OS !== 'ios') {
+      onClose();
+      onShareText();
+      return;
+    }
+    pendingTextRef.current = setTimeout(shareTextOnceClosed, DISMISS_FALLBACK_MS);
+    setClosingForText(true);
+  };
 
   // The preview is the card itself, scaled to fit; the capture reads the
   // unscaled card inside the scaled wrapper.
@@ -65,7 +105,13 @@ export function ShareSheet({ visible, card, onShareText, onClose }: ShareSheetPr
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible && !closingForText}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      onDismiss={shareTextOnceClosed}
+    >
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable
           style={[styles.sheet, { paddingBottom: insets.bottom + spacing.sm }]}
@@ -115,10 +161,8 @@ export function ShareSheet({ visible, card, onShareText, onClose }: ShareSheetPr
             icon="document-text-outline"
             variant={imageAvailable ? 'secondary' : 'primary'}
             fullWidth
-            onPress={() => {
-              onClose();
-              onShareText();
-            }}
+            disabled={closingForText}
+            onPress={shareText}
           />
           <Button
             label={t('common.cancel')}
