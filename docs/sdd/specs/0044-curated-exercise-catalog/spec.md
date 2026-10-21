@@ -1,7 +1,7 @@
 ---
 id: 0044
 title: A curated exercise catalog
-status: ready        # gate 1 passed 2026-10-21: owner answered the open decisions
+status: in-progress  # gate 1 passed 2026-10-21: owner answered the open decisions
 decided: 2026-10-21
 roadmap: docs/roadmap/06-exercises-advanced.md
 created: 2026-10-21
@@ -160,8 +160,8 @@ and muscle) is only as good as this data.
 
 ## Assumptions
 
-- **[ASSUMPTION: about 250–350 exercises cover what a gym-goer logs; more can
-  be added later the same reviewed way.]**
+- **[ASSUMPTION: about 200 exercises cover what a gym-goer logs at first (195
+  written); more are added later the same reviewed way.]**
 - **[ASSUMPTION: the reviewed catalog is drafted by the assistant from common
   gym practice and reviewed by the owner in a list, not typed by hand.]**
 - **[ASSUMPTION: the tracking type sweep of 0030 is not run on the old
