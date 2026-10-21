@@ -1,3 +1,5 @@
+import i18n from 'i18next';
+
 import { API_BASE_URL } from '@/config/api';
 
 type ErrorResponse = {
@@ -65,6 +67,11 @@ export async function apiRequest<T>(
 
   if (authToken) {
     headers.set('Authorization', `Bearer ${authToken}`);
+  }
+
+  // Catalog names come back in the app's language (spec 0044 FR-2).
+  if (!headers.has('Accept-Language') && i18n.language) {
+    headers.set('Accept-Language', i18n.language);
   }
 
   const url = `${API_BASE_URL}${path}`;

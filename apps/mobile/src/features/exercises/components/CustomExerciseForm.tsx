@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 
+import { muscleLabel } from '@/features/exercises/utils/catalogLabels';
 import type { Exercise, ExerciseTrackingType, MuscleGroup } from '@workout/domain';
 
 import { exercisesClient } from '@/features/exercises/api/exercisesClient';
@@ -164,7 +165,7 @@ export function CustomExerciseForm({
         {muscleGroups.map((muscleGroup) => (
           <Chip
             key={`${keyPrefix}-${muscleGroup.id}`}
-            label={muscleGroup.name}
+            label={muscleLabel(muscleGroup.name, t)}
             selected={selectedIds.includes(muscleGroup.id)}
             onPress={() => onToggle(muscleGroup.id)}
           />
