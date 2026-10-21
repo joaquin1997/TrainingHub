@@ -685,6 +685,18 @@ export const en = {
     createRoutine: 'Create a routine',
     signIn: 'Sign in',
     openApp: 'Open TrainingHub',
+    today: 'Today',
+    next: 'Next',
+    rest: 'Rest',
+    allDone: 'All sets done',
+    exerciseCount_one: '{{count}} exercise',
+    exerciseCount_other: '{{count}} exercises',
+    lastTime: 'Last time',
+    firstTime: 'First time',
+    workoutsThisWeek: 'workouts',
+    sets: 'sets',
+    more: '+{{count}} more',
+    noRoutine: 'No routine for today',
   },
 };
 

@@ -4,7 +4,9 @@ import { AppState, Platform } from 'react-native';
 
 import { routinesClient } from '@/features/routines/api/routinesClient';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
+import { liveUpNext } from '@/features/workouts/liveActivity/liveWorkoutPayload';
 import {
+  countWorkoutSets,
   getActiveWorkout,
   subscribeActiveWorkout,
   type WorkoutSessionDraft,
@@ -20,21 +22,46 @@ import {
   type HomeWidgetLabels,
 } from './snapshot';
 
-function activeOf(draft: WorkoutSessionDraft | null): HomeWidgetActive | null {
+type RoundLabel = (round: number) => string;
+
+function activeOf(draft: WorkoutSessionDraft | null, roundLabel: RoundLabel): HomeWidgetActive | null {
   if (!draft) {
     return null;
   }
+  const sets = countWorkoutSets(draft);
+  const restEndsAtMs = draft.rest ? Date.parse(draft.rest.endsAt) : null;
   return {
     routineName: draft.routineName,
     startedAtMs: Date.parse(draft.startedAt),
     pausedAtMs: draft.pausedAt ? Date.parse(draft.pausedAt) : null,
     pausedSeconds: draft.pausedSeconds ?? 0,
+    // Spec 0041 FR-6: progress, the set to do and the rest while it is ahead.
+    setsDone: sets.done,
+    setsTotal: sets.total,
+    upNext: liveUpNext(draft, roundLabel),
+    restEndsAtMs: restEndsAtMs !== null && restEndsAtMs > Date.now() ? restEndsAtMs : null,
   };
 }
 
-/** What the widget shows of the active workout; a change pushes the widget. */
-const activeKey = (draft: WorkoutSessionDraft | null) =>
-  draft ? `${draft.clientId}|${draft.pausedAt ?? ''}|${draft.pausedSeconds ?? 0}` : '';
+/**
+ * What the widget shows of the active workout; a change pushes the widget —
+ * a tick, an untick, a rest started or skipped, a pause (spec 0041 FR-8).
+ */
+const activeKey = (draft: WorkoutSessionDraft | null, roundLabel: RoundLabel) => {
+  if (!draft) {
+    return '';
+  }
+  const active = activeOf(draft, roundLabel)!;
+  return [
+    draft.clientId,
+    draft.pausedAt ?? '',
+    draft.pausedSeconds ?? 0,
+    active.setsDone,
+    active.setsTotal,
+    active.upNext ?? '',
+    draft.rest?.endsAt ?? '',
+  ].join('|');
+};
 
 /**
  * Keeps the home-screen widget current (spec 0036 FR-13): on sign-in and
@@ -61,7 +88,7 @@ export function useHomeWidgetSync({
       return;
     }
 
-    const labels = (todayName?: string): HomeWidgetLabels => {
+    const labels = (todayName?: string, todayExercises?: number): HomeWidgetLabels => {
       const translate = tRef.current;
       return {
         start: todayName ? translate('widget.start', { name: todayName }) : '',
@@ -74,8 +101,20 @@ export function useHomeWidgetSync({
         weekdays: weekDays(new Date()).map((day) =>
           day.toLocaleDateString(i18n.language, { weekday: 'narrow' }),
         ),
+        today: translate('widget.today'),
+        next: translate('widget.next'),
+        rest: translate('widget.rest'),
+        allDone: translate('widget.allDone'),
+        exerciseCount: translate('widget.exerciseCount', { count: todayExercises ?? 0 }),
+        lastTime: translate('widget.lastTime'),
+        firstTime: translate('widget.firstTime'),
+        workoutsThisWeek: translate('widget.workoutsThisWeek'),
+        sets: translate('widget.sets'),
+        more: translate('widget.more'),
+        noRoutine: translate('widget.noRoutine'),
       };
     };
+    const roundLabel: RoundLabel = (round) => tRef.current('workouts.liveRound', { round });
 
     if (!userId) {
       // Nothing of the previous account may show (EF-1, EF-3).
@@ -90,8 +129,8 @@ export function useHomeWidgetSync({
         v: 1,
         signedIn: true,
         history,
-        active: activeOf(getActiveWorkout()),
-        labels: labels(history?.today?.name),
+        active: activeOf(getActiveWorkout(), roundLabel),
+        labels: labels(history?.today?.name, history?.today?.exercises?.length),
       });
     };
 
@@ -115,10 +154,10 @@ export function useHomeWidgetSync({
 
     void refresh();
 
-    let shown = activeKey(getActiveWorkout());
+    let shown = activeKey(getActiveWorkout(), roundLabel);
     const unsubscribe = subscribeActiveWorkout(() => {
       const draft = getActiveWorkout();
-      const next = activeKey(draft);
+      const next = activeKey(draft, roundLabel);
       if (next === shown) {
         return;
       }
