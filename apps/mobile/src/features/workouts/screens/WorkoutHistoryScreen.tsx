@@ -24,7 +24,7 @@ import {
 import { formatDistance } from '@/lib/tracking';
 import { formatWeightValue } from '@/lib/weight';
 import { useRefresh } from '@/lib/useRefresh';
-import { sameDay, weekDays } from '@/lib/week';
+import { addDays, sameDay, sameWeek, weekDays, weeksBack } from '@/lib/week';
 import { Button } from '@/ui/Button';
 import { CardHeader } from '@/ui/CardHeader';
 import { Chip } from '@/ui/Chip';
@@ -45,6 +45,8 @@ export function WorkoutHistoryScreen() {
   const [errorMessage, setErrorMessage] = useState<string>();
   // The day picked on the week strip (spec 0035 FR-9); null shows every workout.
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  // Weeks back from this one on the strip (spec 0040 FR-9); 0 is this week.
+  const [weeksAgo, setWeeksAgo] = useState(0);
   const { settings } = useSettings();
   const unit = settings.unit;
 
@@ -97,14 +99,38 @@ export function WorkoutHistoryScreen() {
   const showLoading = isLoading && sessions.length === 0;
   const hasEmptyState = !isLoading && !errorMessage && sessions.length === 0;
   const today = new Date();
-  const days = weekDays(today);
+  const shownWeek = addDays(today, -7 * weeksAgo);
+  const days = weekDays(shownWeek);
   const dayCounts = days.map(
     (day) => sessions.filter((session) => sameDay(new Date(session.startedAt), day)).length,
   );
+  // This week lists every workout, as before; an earlier week only its own.
+  const weekSessions =
+    weeksAgo === 0
+      ? sessions
+      : sessions.filter((session) => sameWeek(new Date(session.startedAt), shownWeek));
   const shownSessions = selectedDay
     ? sessions.filter((session) => sameDay(new Date(session.startedAt), selectedDay))
-    : sessions;
+    : weekSessions;
   const hasListState = !errorMessage && sessions.length > 0;
+  const oldestWeek = weeksBack(
+    sessions.map((session) => new Date(session.startedAt)),
+    today,
+  );
+  const goToWeek = (weeks: number) => {
+    setSelectedDay(null);
+    setWeeksAgo(weeks);
+  };
+  const weekLabel =
+    weeksAgo === 0
+      ? t('workouts.weekStripLabel')
+      : weeksAgo === 1
+        ? t('workouts.lastWeek')
+        : t('workouts.weekOf', {
+            from: days[0]!.toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }),
+            to: days[6]!.toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }),
+          });
+  const isFiltered = selectedDay !== null || weeksAgo > 0;
 
   return (
     <ScrollView
@@ -119,6 +145,9 @@ export function WorkoutHistoryScreen() {
       {hasListState ? (
         <WeekStrip
           days={days}
+          weekLabel={weekLabel}
+          onPrevious={weeksAgo < oldestWeek ? () => goToWeek(weeksAgo + 1) : undefined}
+          onNext={weeksAgo > 0 ? () => goToWeek(weeksAgo - 1) : undefined}
           today={today}
           counts={dayCounts}
           selected={selectedDay}
@@ -145,28 +174,30 @@ export function WorkoutHistoryScreen() {
           onAction={() => router.push('/routines')}
         />
       ) : null}
-      {hasListState && selectedDay && shownSessions.length === 0 ? (
+      {hasListState && isFiltered && shownSessions.length === 0 ? (
         <View style={styles.dayEmpty}>
           <Text style={styles.meta}>
-            {t('workouts.noWorkoutsOn', {
-              weekday: selectedDay.toLocaleDateString(i18n.language, { weekday: 'long' }),
-            })}
+            {selectedDay
+              ? t('workouts.noWorkoutsOn', {
+                  weekday: selectedDay.toLocaleDateString(i18n.language, { weekday: 'long' }),
+                })
+              : t('workouts.noWorkoutsThatWeek')}
           </Text>
           <Button
             label={t('workouts.showAllWorkouts')}
             variant="ghost"
-            onPress={() => setSelectedDay(null)}
+            onPress={() => goToWeek(0)}
           />
         </View>
       ) : null}
       {hasListState && shownSessions.length > 0 ? (
         <View style={styles.list}>
-          {selectedDay ? (
+          {isFiltered ? (
             <Button
               label={t('workouts.showAllWorkouts')}
               variant="ghost"
               icon="close"
-              onPress={() => setSelectedDay(null)}
+              onPress={() => goToWeek(0)}
               style={styles.clear}
             />
           ) : null}
