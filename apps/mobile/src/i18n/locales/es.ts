@@ -439,6 +439,7 @@ export const es: TranslationCatalog = {
     watchDone: 'Hecha',
     watchSetOf: 'Serie {{number}} de {{count}}',
     watchWarmUpOf: 'Calentamiento {{number}} de {{count}}',
+    watchReps: 'reps',
     watchRest: 'Descanso',
     watchFinishOnPhone: 'Confírmalo en el iPhone',
     watchAllDone: 'Todas las series hechas',

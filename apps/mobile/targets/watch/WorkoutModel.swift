@@ -106,7 +106,9 @@ final class WorkoutModel: NSObject, ObservableObject {
 
   // MARK: Requests from the wrist
 
-  func tickCurrentSet() {
+  /// Ticks the set to do; `reps` are the ones chosen here (spec 0041), nil
+  /// for a set without a reps control.
+  func tickCurrentSet(reps: Int? = nil) {
     guard let workout = activeWorkout, let set = currentSet else { return }
     let now = Date()
     send(WatchEvent(
@@ -115,7 +117,8 @@ final class WorkoutModel: NSObject, ObservableObject {
       workoutId: workout.workoutId,
       exerciseId: set.exerciseId,
       setId: set.setId,
-      atMs: now.epochMs
+      atMs: now.epochMs,
+      reps: set.reps != nil ? reps : nil
     ))
     tickedSetId = set.setId
     // The rest starts here at once; the phone counts it from the same instant.

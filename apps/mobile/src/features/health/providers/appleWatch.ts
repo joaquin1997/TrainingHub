@@ -22,6 +22,7 @@ let watchLabels: WatchLabels = {
   setOf: (number, count, isWarmup) =>
     isWarmup ? `Warm-up ${number} of ${count}` : `Set ${number} of ${count}`,
   more: 'More',
+  reps: 'reps',
   discard: 'Discard',
   discardTitle: 'Discard this workout?',
   cancel: 'Cancel',

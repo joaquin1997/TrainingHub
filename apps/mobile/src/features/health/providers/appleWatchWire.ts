@@ -30,6 +30,8 @@ export interface WatchLabels {
   discardTitle: string;
   cancel: string;
   connectToDiscard: string;
+  /** Spec 0041: the unit under the watch's reps control. */
+  reps: string;
   /** "3 sets done will be lost." / "No sets done yet." */
   discardLost: (count: number) => string;
 }
@@ -51,6 +53,9 @@ export interface WatchContextWire {
     setTitle: string;
     target: string;
     restSeconds: number;
+    /** Spec 0041: the reps control's start and the values beside it. */
+    reps?: number;
+    load?: string;
   };
   /** Sets done, and the confirmation's message naming them (spec 0035). */
   setsDone?: number;
@@ -87,6 +92,7 @@ export function encodeActiveContext(
           setTitle: setOf(set.setNumber, set.setCount, set.isWarmup ?? false),
           target: set.target,
           restSeconds: set.restSeconds,
+          ...(set.reps !== undefined ? { reps: set.reps, load: set.load ?? '' } : {}),
         }
       : undefined,
     setsDone,
@@ -115,6 +121,8 @@ export interface WatchEventWire {
   exerciseId?: string;
   setId?: string;
   atMs?: number;
+  /** Spec 0041: reps chosen on the watch. */
+  reps?: number;
 }
 
 /** The watch's latest measurement (its application context `metrics`). */
@@ -168,6 +176,10 @@ export function decodeWatchMessage(kind: string, json: string): WatchWorkoutEven
             workoutExerciseId: raw.exerciseId,
             workoutSetId: raw.setId,
             at,
+            // Spec 0041: whole reps between 0 and 100; anything else is ignored.
+            ...(isNumber(raw.reps) && raw.reps >= 0 && raw.reps <= 100
+              ? { reps: Math.round(raw.reps) }
+              : {}),
           }
         : null;
     case 'pause':

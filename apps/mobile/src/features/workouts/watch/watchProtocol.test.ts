@@ -102,8 +102,16 @@ describe('toWatchSnapshot', () => {
         isWarmup: false,
         target: '60 lb × 8',
         restSeconds: 150,
+        reps: 8,
+        load: '60 lb',
       },
     });
+  });
+
+  it('offers no reps control for a unilateral set (spec 0041 AC-6)', () => {
+    const set = toWatchSnapshot(workout(exercise('a', [false], { isUnilateral: true })), 90).currentSet;
+    expect(set?.reps).toBeUndefined();
+    expect(set?.load).toBeUndefined();
   });
 
   it('numbers working sets after the warm-ups from 1 (spec 0040 FR-1)', () => {
@@ -245,5 +253,32 @@ describe('applyWatchEvent (spec 0025 AC-3, EF-1)', () => {
     const draft = workout(exercise('a', [false]));
     expect(applyWatchEvent(draft, { kind: 'finishRequested', id: 'f', workoutSessionId: 'c1' }, 90)).toBe(draft);
     expect(applyWatchEvent(draft, { kind: 'activeEnergy', workoutSessionId: 'c1', kcal: 120 }, 90)).toBe(draft);
+  });
+});
+
+describe('reps chosen on the watch (spec 0041)', () => {
+  it('stores them on the set, then ticks it with its rest (FR-12, AC-4)', () => {
+    const draft = applyWatchEvent(
+      workout(exercise('a', [false, false], { restSeconds: 120 })),
+      { ...tick('a', 'a1', 0), reps: 6 } as WatchWorkoutEvent,
+      90,
+    );
+    const set = draft.exercises[0]!.entries[0]!;
+    expect(set.reps).toBe('6');
+    expect(set.done).toBe(true);
+    expect(draft.rest?.totalSeconds).toBe(120);
+  });
+
+  it('leaves no reps for 0 (EF-1) and the planned ones without the field (EF-2)', () => {
+    const zero = applyWatchEvent(workout(exercise('a', [false])), { ...tick('a', 'a1', 0), reps: 0 } as WatchWorkoutEvent, 90);
+    expect(zero.exercises[0]!.entries[0]!.reps).toBe('');
+    const older = applyWatchEvent(workout(exercise('a', [false])), tick('a', 'a1', 0), 90);
+    expect(older.exercises[0]!.entries[0]!.reps).toBe('');
+    expect(older.exercises[0]!.entries[0]!.done).toBe(true);
+  });
+
+  it('never rewrites a set already done', () => {
+    const base = workout(exercise('a', [true]));
+    expect(applyWatchEvent(base, { ...tick('a', 'a1', 0), reps: 3 } as WatchWorkoutEvent, 90)).toBe(base);
   });
 });

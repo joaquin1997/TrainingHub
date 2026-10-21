@@ -67,6 +67,7 @@ export function useLiveWorkoutController(enabled: boolean) {
       setOf: (number, count, isWarmup) =>
         t(isWarmup ? 'workouts.watchWarmUpOf' : 'workouts.watchSetOf', { number, count }),
       more: t('workouts.watchMore'),
+      reps: t('workouts.watchReps'),
       discard: t('workouts.liveDiscard'),
       discardTitle: t('workouts.discardTitle'),
       cancel: t('common.cancel'),

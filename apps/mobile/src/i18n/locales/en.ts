@@ -436,6 +436,7 @@ export const en = {
     watchDone: 'Done',
     watchSetOf: 'Set {{number}} of {{count}}',
     watchWarmUpOf: 'Warm-up {{number}} of {{count}}',
+    watchReps: 'reps',
     watchRest: 'Rest',
     watchFinishOnPhone: 'Confirm on your iPhone',
     watchAllDone: 'All sets done',

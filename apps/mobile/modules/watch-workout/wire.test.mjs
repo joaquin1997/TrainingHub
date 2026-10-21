@@ -39,6 +39,7 @@ const labels = {
   discardTitle: 't',
   cancel: 'c',
   connectToDiscard: 'c',
+  reps: 'r',
   discardLost: (count) => `${count}`,
 };
 
@@ -63,6 +64,8 @@ describe('watch wire format (spec 0025)', () => {
             setCount: 3,
             target: '60 kg × 8',
             restSeconds: 90,
+            reps: 8,
+            load: '60 kg',
           },
         },
         labels,
@@ -75,11 +78,11 @@ describe('watch wire format (spec 0025)', () => {
 
   it('reads every key the watch app sends', () => {
     // As `WatchEvent` / `WatchMetrics` encode them.
-    const setDone = { v: 1, id: 'e1', kind: 'setDone', workoutId: 'c1', exerciseId: 'a', setId: 'a1', atMs: 0 };
+    const setDone = { v: 1, id: 'e1', kind: 'setDone', workoutId: 'c1', exerciseId: 'a', setId: 'a1', atMs: 0, reps: 8 };
     const metrics = { v: 1, workoutId: 'c1', kcal: 12 };
 
     expect([...keysOf(setDone), ...keysOf(metrics)].filter((key) => !declared(key))).toEqual([]);
-    expect(decodeWatchMessage('event', JSON.stringify(setDone))?.kind).toBe('setDone');
+    expect(decodeWatchMessage('event', JSON.stringify(setDone))).toMatchObject({ kind: 'setDone', reps: 8 });
     expect(decodeWatchMessage('metrics', JSON.stringify(metrics))?.kind).toBe('activeEnergy');
     for (const kind of ['setDone', 'pause', 'resume', 'finishRequested', 'discardRequested']) {
       expect(swift).toContain(`case ${kind}`);

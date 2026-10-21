@@ -123,6 +123,13 @@ export interface WatchWorkoutSet {
   isWarmup?: boolean;
   /** Planned values as shown on the phone, e.g. "60 kg × 8"; empty when none. */
   target: string;
+  /**
+   * The reps to start the watch's control from (spec 0041 FR-10): present
+   * only for a set that records reps on one side; 0 when none is planned.
+   */
+  reps?: number;
+  /** The other planned values beside the reps control, e.g. "60 kg"; empty when none. */
+  load?: string;
   /** The rest that ticking this set starts, in seconds; 0 starts none. */
   restSeconds: number;
 }
@@ -140,6 +147,8 @@ export type WatchWorkoutEvent =
       workoutExerciseId: string;
       workoutSetId: string;
       at: ISODateString;
+      /** Reps chosen on the watch (spec 0041 FR-12); absent from older watch builds. */
+      reps?: number;
     }
   | { kind: 'pause' | 'resume'; id: string; workoutSessionId: string; at: ISODateString }
   | { kind: 'finishRequested'; id: string; workoutSessionId: string }

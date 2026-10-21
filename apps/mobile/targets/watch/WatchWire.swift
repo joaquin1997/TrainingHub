@@ -13,6 +13,11 @@ struct WatchContext: Codable, Equatable {
     let setTitle: String
     let target: String
     let restSeconds: Double
+    /// Spec 0041: where the reps control starts, for a set that records reps
+    /// on one side, and the planned values beside it. Absent otherwise or
+    /// from an older phone build.
+    var reps: Int? = nil
+    var load: String? = nil
   }
 
   struct Labels: Codable, Equatable {
@@ -31,6 +36,8 @@ struct WatchContext: Codable, Equatable {
     var discardTitle: String? = nil
     var cancel: String? = nil
     var connectToDiscard: String? = nil
+    /// Spec 0041: the unit under the reps control.
+    var reps: String? = nil
 
     static let fallback = Labels(
       done: "Done",
@@ -46,7 +53,8 @@ struct WatchContext: Codable, Equatable {
       discard: "Discard",
       discardTitle: "Discard this workout?",
       cancel: "Cancel",
-      connectToDiscard: "Connect to your iPhone to discard"
+      connectToDiscard: "Connect to your iPhone to discard",
+      reps: "reps"
     )
   }
 
@@ -89,6 +97,8 @@ struct WatchEvent: Codable {
   var exerciseId: String? = nil
   var setId: String? = nil
   var atMs: Double? = nil
+  /// Spec 0041: the reps chosen here; the phone stores them before ticking.
+  var reps: Int? = nil
 }
 
 /// Watch → phone: the watch's application context `["metrics": json]`.
