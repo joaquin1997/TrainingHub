@@ -12,6 +12,7 @@ created: 2026-10-21
 | [x] 2 | Watch app: reps control (crown, −/+), sent with Done | watch | swiftc typecheck (watchOS) | `feat(watch): change the reps before ticking` |
 | [x] 3 | Widget snapshot: today's exercises and last time, workouts this week, active progress, next set and rest; pushed on every tick | mobile | unit tests | `feat(widget): richer snapshot, refreshed on every tick` |
 | [x] 4 | Widget redesign: light/dark, centred, large and inline sizes, workout view with ring, next set and rest | widget | swiftc typecheck; renders on the Mac in both modes | `feat(widget): redesign` |
+| [x] 4b | Watch Smart Stack status redesign (FR-9a) | widget | swiftc typecheck; render on the Mac | `feat(live-status): watch Smart Stack in the widget's language` |
 | [ ] 5 | **[DEVICE]** rebuild (with 0040's), AC-1–AC-6 | owner | — | — |
 
 ## Progress log
@@ -31,3 +32,8 @@ created: 2026-10-21
   `HomeWidgetContent` (renders in `renders/`; the Mac cannot draw `Link`, so
   the render shows the button's look; relative dates come out in the Mac's
   language). Lock-screen sizes not rendered (unavailable on macOS).
+- 2026-10-21 — Task 4b (owner: the watch status had not changed): the
+  Smart Stack view drawn from `WatchStatusContent` (plain values, rendered on
+  the Mac — `renders/watch-smart-stack.png`): ring of sets done, rest
+  countdown or clock, the set to do in two lines, "Paused". Calories left
+  out there (the watch app shows them).

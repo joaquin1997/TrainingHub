@@ -100,6 +100,13 @@ training.
 - **FR-9.** Tapping opens the workout during one and the app otherwise;
   Start starts today's routine (0036, unchanged).
 
+### Watch Smart Stack
+- **FR-9a.** The workout status in the Apple Watch's Smart Stack (the small
+  version of the lock-screen status) MUST use the widget's language: the
+  sets done as a ring, the rest countdown in orange as the main figure
+  during a rest (else the clock), and the set to do; "Paused" while paused.
+  Added 2026-10-21 at the owner's request.
+
 ### Watch
 - **FR-10.** For a set that records reps (not per side), the watch MUST show
   the reps as a value the person can change before ticking, starting from
