@@ -4,9 +4,10 @@ type Translate = (key: string, options?: Record<string, unknown>) => string;
 
 /**
  * What a set row's one status area shows (spec 0034 FR-19), by priority:
- * a done set that earned a record shows the record; a done set, done; an
- * undone generated warm-up (0031), its mark; the set to do now, up next;
- * otherwise nothing.
+ * a done set that earned a record shows the record; a done set, done; the
+ * set to do now, up next — also a generated warm-up, so the outline never
+ * goes missing (spec 0040 FR-2); an undone generated warm-up (0031), its
+ * mark; otherwise nothing.
  */
 export type SetStatus = 'record' | 'done' | 'generatedWarmup' | 'upNext' | 'none';
 
@@ -17,10 +18,10 @@ export function setStatus(
   if (set.done) {
     return hasRecord ? 'record' : 'done';
   }
-  if (set.generatedWarmup) {
-    return 'generatedWarmup';
+  if (isUpNext) {
+    return 'upNext';
   }
-  return isUpNext ? 'upNext' : 'none';
+  return set.generatedWarmup ? 'generatedWarmup' : 'none';
 }
 
 /** The status area ticks and unticks: it is checked exactly when the set is done. */
