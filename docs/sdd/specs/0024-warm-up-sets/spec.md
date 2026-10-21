@@ -1,7 +1,7 @@
 ---
 id: 0024
 title: Warm-up sets
-status: in-progress
+status: done
 decided: 2026-10-16
 roadmap: docs/roadmap/01-live-workout-logging.md
 created: 2026-10-16

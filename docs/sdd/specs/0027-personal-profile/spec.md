@@ -1,7 +1,7 @@
 ---
 id: 0027
 title: Personal profile and body measurements
-status: in-progress
+status: done
 decided: 2026-10-16
 roadmap: docs/roadmap/03-auth-and-users.md
 created: 2026-10-16

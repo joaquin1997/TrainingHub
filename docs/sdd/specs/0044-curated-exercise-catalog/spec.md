@@ -1,7 +1,7 @@
 ---
 id: 0044
 title: A curated exercise catalog
-status: in-progress  # gate 1 passed 2026-10-21: owner answered the open decisions
+status: done
 decided: 2026-10-21
 roadmap: docs/roadmap/06-exercises-advanced.md
 created: 2026-10-21

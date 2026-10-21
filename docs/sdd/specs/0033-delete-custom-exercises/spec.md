@@ -1,7 +1,7 @@
 ---
 id: 0033
 title: Delete custom exercises
-status: in-progress
+status: done
 roadmap: docs/roadmap/06-exercises-advanced.md
 created: 2026-10-17
 ---

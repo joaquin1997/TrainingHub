@@ -1,7 +1,7 @@
 ---
 id: 0036
 title: Home-screen widget
-status: in-progress
+status: done
 roadmap: docs/roadmap/08-integrations-and-platform.md
 created: 2026-10-18
 decided: 2026-10-18

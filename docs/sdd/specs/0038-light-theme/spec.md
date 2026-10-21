@@ -1,7 +1,7 @@
 ---
 id: 0038
 title: Light theme
-status: in-progress
+status: done
 roadmap: docs/roadmap/08-integrations-and-platform.md#settings — "Theme (the app is dark-only today)"
 created: 2026-10-18
 decided: 2026-10-18

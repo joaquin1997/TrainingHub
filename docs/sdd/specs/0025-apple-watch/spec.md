@@ -1,7 +1,7 @@
 ---
 id: 0025
 title: The workout on the Apple Watch
-status: in-progress
+status: done
 decided: 2026-10-16
 roadmap: docs/roadmap/08-integrations-and-platform.md
 created: 2026-10-16
