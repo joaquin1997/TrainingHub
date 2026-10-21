@@ -12,8 +12,8 @@
 #   2. migrate    — pg_dump of the database on the server, then
 #                   `prisma migrate deploy` through an SSH tunnel. The new
 #                   columns are additive, so the running API keeps working.
-#   3. scripts    — tracking type sweep report (0030); asks before applying it
-#                   (or APPLY_SWEEP=1), image matching (0026, only with IMAGES=1)
+#   3. scripts    — reviewed catalog report (0044); asks before applying it
+#                   (or APPLY_CATALOG=1), image matching (0026, only with IMAGES=1)
 #   4. ios        — expo prebuild
 #   5. backend    — rebuild the image on the server and replace the container
 #   6. iphone     — build, sign and install on the connected iPhone (after the
@@ -25,9 +25,8 @@
 # Overrides (env vars):
 #   BRANCH=<name>                 branch to deploy (default: the current one)
 #   DOCKER_CONTEXT=docker-ts      passed to run.sh (default there: docker-lan)
-#   APPLY_SWEEP=1|0               apply the tracking type sweep after its report, or
-#                                 not (default: ask on a terminal, report only otherwise;
-#                                 corrections go in src/scripts/data/tracking-type-corrections.json)
+#   APPLY_CATALOG=1|0             apply the reviewed catalog (0044) after its report, or
+#                                 not (default: ask on a terminal, report only otherwise)
 #   IMAGES=1                      run the image matching dry run again (0026)
 #   APPLY_IMAGES=1                with IMAGES=1, also write the matched images
 #   IOS_DEVICE=0                  skip the iPhone build, install and Metro
@@ -188,37 +187,33 @@ fi
 # --- 3. scripts --------------------------------------------------------------
 cd "$ROOT/apps/api"
 
-# The report is not recorded as done: after editing the corrections file (not
-# committed yet, same commit) a re-run must report again.
-if is_done sweep-apply; then
-  step "0030: tracking type sweep already applied for $COMMIT"
-else
-  step "0030: tracking type sweep report (no write → tmp/tracking-type-sweep.csv)"
-  pnpm run catalog:tracking-sweep
+# Reviewed exercise catalog (spec 0044; replaces 0030's sweep, whose wger
+# exercises are all retired). The report never writes; the apply is
+# repeatable — a second run changes nothing — and keeps a run file for undo.
+# Not recorded as done: a re-run after editing the catalog must report again.
+step "0044: reviewed catalog report (no write)"
+pnpm run catalog:curate | tee "$LOG_DIR/catalog-report.txt"
 
-  if [ -z "${APPLY_SWEEP:-}" ]; then
-    APPLY_SWEEP=0
+if grep -q "0 changed\|0 to create, 0 to update, 0 to bring back" "$LOG_DIR/catalog-report.txt" \
+  && grep -q "To retire: 0 old catalog exercises, 0 merged custom ones; 0 reviewed" "$LOG_DIR/catalog-report.txt"; then
+  echo "    catalog already up to date"
+else
+  if [ -z "${APPLY_CATALOG:-}" ]; then
+    APPLY_CATALOG=0
     if [ -t 0 ]; then
       echo
-      echo "    Review apps/api/tmp/tracking-type-sweep.csv (start with certainty = uncertain)."
-      echo "    To correct a call: edit src/scripts/data/tracking-type-corrections.json, answer n"
-      echo "    and re-run. The apply can be undone (catalog:tracking-sweep:undo)."
-      read -r -p "    Apply the tracking type sweep now? [y/N] " answer || answer=""
-      case "$answer" in [yYsS]*) APPLY_SWEEP=1 ;; esac
+      echo "    Read the report above. The apply keeps a run file in apps/api/tmp/catalog-curate-runs"
+      echo "    (undo: CURATE_UNDO=<file> pnpm run catalog:curate:undo)."
+      read -r -p "    Apply the reviewed catalog now? [y/N] " answer || answer=""
+      case "$answer" in [yYsS]*) APPLY_CATALOG=1 ;; esac
     fi
   fi
 
-  if [ "$APPLY_SWEEP" = "1" ]; then
-    step "0030: apply the tracking type sweep"
-    pnpm run catalog:tracking-sweep:apply
-    # A second run must change nothing (idempotent, spec 0030).
-    step "0030: apply again — must report 0 changed"
-    pnpm run catalog:tracking-sweep:apply | tee "$LOG_DIR/sweep-second-run.txt"
-    grep -Eq "(^|[^0-9])0 changed" "$LOG_DIR/sweep-second-run.txt" \
-      || fail "second sweep run changed exercises; check $LOG_DIR/sweep-second-run.txt"
-    mark_done sweep-apply
+  if [ "$APPLY_CATALOG" = "1" ]; then
+    step "0044: apply the reviewed catalog"
+    pnpm run catalog:curate:apply
   else
-    echo "    sweep not applied — review tmp/tracking-type-sweep.csv, then re-run (or APPLY_SWEEP=1)"
+    echo "    catalog not applied — re-run with APPLY_CATALOG=1 after reading the report"
   fi
 fi
 
