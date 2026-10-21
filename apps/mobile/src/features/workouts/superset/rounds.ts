@@ -2,6 +2,7 @@ import { runAt } from '@/features/routines/utils/supersetGroups';
 import {
   completeSet,
   resolveRestSeconds,
+  resolveSetRestSeconds,
   skipRest,
   startRest,
   toggleWorkoutSetDone,
@@ -97,7 +98,8 @@ function planTick(
 
 /**
  * Seconds of rest that ticking this set would start: the exercise's own rest
- * outside a superset and for a warm-up (FR-6, FR-9); inside a round, none
+ * outside a superset and for a warm-up (FR-6, FR-9), capped for a warm-up
+ * (spec 0040 FR-8); inside a round, none
  * unless the tick completes the round, then the rest of the round's last
  * exercise (FR-2, FR-3). 0 means no rest.
  */
@@ -112,7 +114,8 @@ export function restAfterTick(
     return 0;
   }
   if (plan.kind === 'single') {
-    return resolveRestSeconds(plan.exercise, defaultRestSeconds);
+    const set = plan.exercise.entries.find((item) => item.id === workoutSetId);
+    return set ? resolveSetRestSeconds(plan.exercise, set, defaultRestSeconds) : 0;
   }
   return plan.completes ? resolveRestSeconds(plan.owner, defaultRestSeconds) : 0;
 }

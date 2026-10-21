@@ -19,6 +19,7 @@ import {
   adjustRest,
   pauseWorkout,
   resolveRestSeconds,
+  resolveSetRestSeconds,
   restPhase,
   restRemainingSeconds,
   resumeWorkout,
@@ -689,6 +690,31 @@ describe('rest timer (spec 0018)', () => {
     expect(resolveRestSeconds({ restSeconds: 210 }, 90)).toBe(210);
     expect(resolveRestSeconds({ restSeconds: 0 }, 90)).toBe(0);
     expect(resolveRestSeconds({}, 90)).toBe(90);
+  });
+
+  it('caps the rest after a warm-up, and keeps a rest that is off (spec 0040 FR-8)', () => {
+    expect(resolveSetRestSeconds({ restSeconds: 150 }, { type: 'warmup' }, 90)).toBe(60);
+    expect(resolveSetRestSeconds({ restSeconds: 45 }, { type: 'warmup' }, 90)).toBe(45);
+    expect(resolveSetRestSeconds({ restSeconds: 0 }, { type: 'warmup' }, 90)).toBe(0);
+    expect(resolveSetRestSeconds({ restSeconds: 150 }, { type: 'normal' }, 90)).toBe(150);
+  });
+
+  it('starts the shorter rest when a warm-up is ticked (spec 0040 FR-8)', () => {
+    const base = fresh();
+    const first = base.exercises[0]!;
+    const draft = {
+      ...base,
+      exercises: [
+        {
+          ...first,
+          restSeconds: 150,
+          entries: first.entries.map((set, i) => (i === 0 ? { ...set, type: 'warmup' as const } : set)),
+        },
+        ...base.exercises.slice(1),
+      ],
+    };
+    const next = completeSet(draft, first.id, first.entries[0]!.id, 90, at(0));
+    expect(next.rest?.totalSeconds).toBe(60);
   });
 
   it('changes one exercise rest without touching others, the routine or a running rest (FR-2, AC-1)', () => {
