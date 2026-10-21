@@ -41,7 +41,7 @@ created: 2026-10-21
 - 2026-10-21 — Spec decisions recorded; plan and tasks self-approved.
 - 2026-10-21 — Tasks 1–7 landed on `feat/sdd-0040-device-fixes`. The catalog
   has 195 exercises (fewer than the 250–350 assumed: the common gym lifts,
-  machines, cables, core and cardio; more can be added the same way). 186
+  machines, cables, core and cardio; more can be added the same way). 185
   have a free-exercise-db picture, all checked to exist. The carry-over list
   was produced read-only from the server: 54 old exercises in use, 52 with a
   proposal after a review pass (added bird dog, split squat, band external
