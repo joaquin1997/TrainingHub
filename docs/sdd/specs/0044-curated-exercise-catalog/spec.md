@@ -1,7 +1,8 @@
 ---
 id: 0044
 title: A curated exercise catalog
-status: draft        # gate 1 waits on the owner's answers (Open decisions)
+status: ready        # gate 1 passed 2026-10-21: owner answered the open decisions
+decided: 2026-10-21
 roadmap: docs/roadmap/06-exercises-advanced.md
 created: 2026-10-21
 ---
@@ -72,7 +73,7 @@ and muscle) is only as good as this data.
   licensed one exists (0026).
 - Showing and searching each exercise in the app's language.
 - What happens to the catalog exercises that are not in the reviewed catalog
-  (see Open decisions).
+  (see Decisions).
 - Keeping every saved workout and routine readable and correct after the
   change, and records and progress continuous for the exercises that are
   carried over.
@@ -84,7 +85,7 @@ and muscle) is only as good as this data.
 - Letting people suggest or edit catalog entries in the app.
 - Languages other than Spanish and English.
 - A custom exercise's own data (its owner keeps it as is), unless merged
-  (Open decision 2).
+  (Decisions).
 - Muscle-group distribution or filters built on the new data — they read it,
   but changing them is their own spec.
 
@@ -106,11 +107,14 @@ and muscle) is only as good as this data.
   be lost.
 - **FR-6.** An old exercise carried over to a reviewed one MUST keep its
   history: its sets count toward the reviewed exercise's records and progress.
-- **FR-7.** Choices a person made on an exercise (favourite, tracking type or
-  loading kind set by hand, own photo) MUST survive the change for the
-  exercises carried over.
+- **FR-7.** A favourite on an exercise carried over MUST move to the reviewed
+  one. A tracking type a person set by hand on an old exercise that differs
+  from the reviewed one MUST be listed in the review, not silently dropped.
 - **FR-8.** Applying the catalog MUST be repeatable and reversible, with a
   report reviewed before it is applied, like the tracking type sweep (0030).
+- **FR-9.** Categories, equipment and muscles MUST be shown in the app's
+  language (filter chips, detail, custom exercise form).
+- **FR-10.** Search MUST ignore case and accents ("biceps" finds "Bíceps").
 
 ## Behaviour when things go wrong
 
@@ -127,7 +131,7 @@ and muscle) is only as good as this data.
 - **Exercise** gains names per language and reviewed data; the catalog stops
   being "seeded from wger" (glossary to update).
 - Possibly a new relationship: an old exercise *carried over* to a reviewed
-  one, so history and progress join (Open decision 1).
+  one, so history and progress join (Decisions).
 - Reads and may re-point **WorkoutExercise** and **RoutineExercise** — data
   changes are a script, never a migration (Article 5). Schema change for names
   per language: a migration.
@@ -140,11 +144,10 @@ and muscle) is only as good as this data.
 - **AC-2.** No catalog exercise has a name only in the other language, and no
   two catalog exercises are the same movement.
 - **AC-3.** A plank records time and a treadmill run distance and time; no
-  stretch or foam-rolling drill appears unless the owner decided to keep them
-  (Open decision 3).
+  stretch or foam-rolling drill appears .
 - **AC-4.** The owner's saved workouts all open with every exercise and set,
   and the progress of the bench press includes the sets logged under their
-  custom "Bench Press" (if Open decision 2 is yes).
+  custom "Bench Press" .
 - **AC-5.** The apply report lists every change; applying twice changes
   nothing the second time; undo restores the catalog as it was.
 
@@ -164,21 +167,18 @@ and muscle) is only as good as this data.
 - **[ASSUMPTION: the tracking type sweep of 0030 is not run on the old
   catalog; this spec replaces that step.]**
 
-## Open decisions
+## Decisions (owner, 2026-10-21)
 
-- **[NEEDS DECISION 1: replace or clean? (a) a new reviewed catalog; the old
-  imported exercises disappear from the catalog and pickers, are kept by name
-  where workouts and routines use them, and those that match a reviewed one
-  are carried over to it (recommended — the old data is wrong too often to
-  fix one by one); or (b) keep the imported catalog and fix it in place:
-  translate, remove junk, correct data.]**
-- **[NEEDS DECISION 2: should custom exercises that are the same as a
-  reviewed one (the owner's "Bench Press", "Backsquat"…) be merged into it,
-  so their history joins the catalog exercise? Recommended: yes, from a list
-  the owner confirms once, not automatically.]**
-- **[NEEDS DECISION 3: stretches, mobility and foam rolling — keep a small
-  reviewed set (they can live in the routine's warm-up block, 0024), or leave
-  them out of the catalog entirely?]**
+- **Replace, not clean.** A new reviewed catalog. The imported exercises are
+  **retired**: gone from the catalog and pickers, kept by name where workouts
+  and routines use them; those that match a reviewed exercise are carried over
+  to it with their history.
+- **Merge own duplicates.** Custom exercises that are the same as a reviewed
+  one are merged into it, from a list the owner confirms once.
+- **Stretches, mobility and foam rolling stay out of the catalog** (decided by
+  the assistant at the owner's "vamos con lo que has planteado"; revisable):
+  they belong in a routine's warm-up block (0024). Core holds such as planks
+  are exercises and stay.
 
 ## Related
 

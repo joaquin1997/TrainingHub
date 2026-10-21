@@ -8,7 +8,7 @@ production.
 
 | Term | Meaning | Not to be confused with |
 |---|---|---|
-| **Exercise** | A movement in the catalog (e.g. "Back Squat"). System-defined (seeded from wger) and visible to everyone, or user-defined (custom) and visible only to its creator (spec 0015). | `RoutineExercise`, `WorkoutExercise` |
+| **Exercise** | A movement in the catalog (e.g. "Back Squat"). System-defined (the reviewed catalog, spec 0044; formerly seeded from wger) and visible to everyone, or user-defined (custom) and visible only to its creator (spec 0015). | `RoutineExercise`, `WorkoutExercise` |
 | **Generated warm-up set** | A warm-up set the warm-up action added and nobody changed since (ticking it done is fine); editing a value or its type makes it the person's own. Only generated sets are removed by the action's remove toggle (spec 0031). | Warm-up set typed by the person |
 | **Routine** | A reusable *template* describing intended training. | `WorkoutSession` — a routine is never a record of anything performed |
 | **RoutineExercise** | An exercise slot inside a routine template, with intended sets, target values and rest. May belong to a superset group. | `WorkoutExercise` |
@@ -36,6 +36,8 @@ production.
 | **Loading kind** | How an exercise's weight is loaded: barbell (plates on a bar, EZ bar included), dumbbells (or kettlebells, weight per hand), or machine or cable. Worked out from the catalog until a person sets it; decides where the approach-set ramp starts and how it rounds (spec 0043). | Equipment, the catalog's raw list; tracking type |
 | **Muscle already worked** | In a workout, a primary muscle (or category) that an earlier exercise trained with at least one working set done; in a routine, one an earlier exercise trains. Shortens the approach-set ramp (spec 0043). | — |
 | **Deleted exercise** | A custom exercise its creator has deleted. Gone from the catalog and every picker, but kept, with its name, for the saved workouts and routines that already contain it (spec 0033). | An exercise removed outright, which history could no longer name |
+| **Retired exercise** | A catalog exercise from the old import that the reviewed catalog replaced. Gone from the catalog and pickers, kept by name for the workouts and routines that still contain it; when it matched a reviewed exercise, its history was carried over to that one (spec 0044). | Deleted exercise (custom, by its creator) |
+| **Reviewed catalog** | The catalog exercises written and checked by hand: names in Spanish and English, search names, category, muscles, equipment, loading kind, tracking type, unilateral, picture (spec 0044). | The old import from wger |
 | **Held exercise** | Another person's custom exercise that someone's routines or saved workouts already contained before custom exercises became private. Readable there, under its name, and still usable in that routine; never shown in the catalog or pickers, never addable anew (spec 0015). | A custom exercise of my own |
 | **Unilateral exercise** | An exercise done one side at a time, logged per side (spec 0022). | — |
 | **Today's routine** | The routine the home screen suggests starting next: the one after the most recently performed routine in the Routines list's order, within its folder, wrapping round; the first routine when none has been performed. Derived, never stored; a suggestion only (spec 0035). | Up next, which is a set inside the active workout |
