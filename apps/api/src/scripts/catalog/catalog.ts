@@ -16,7 +16,7 @@ function catalogDirectory(): string {
   const here = dirname(fileURLToPath(import.meta.url));
   const candidates = [
     join(here, '../data/catalog'),
-    join(here, '../../../../../src/scripts/data/catalog'),
+    join(here, '../../../../../../src/scripts/data/catalog'),
   ];
   for (const candidate of candidates) {
     try {
