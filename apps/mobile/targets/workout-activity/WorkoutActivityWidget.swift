@@ -426,7 +426,11 @@ private struct LockScreenView: View {
 /// on staleDate re-rendering the widget with isStale; unverified on the device
 /// — worst case the row shows 0:00 until the app next updates the activity.
 private func runningRest(_ context: ActivityViewContext<WorkoutActivityAttributes>) -> Date? {
-  guard let restEndsAt = context.state.restEndsAt, !context.isStale else { return nil }
+  // Also checked against the clock: an update after the end must not bring
+  // back a countdown at 0:00 (spec 0040 FR-3).
+  guard let restEndsAt = context.state.restEndsAt, !context.isStale, restEndsAt > Date() else {
+    return nil
+  }
   return restEndsAt
 }
 

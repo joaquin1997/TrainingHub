@@ -151,6 +151,11 @@ private enum ActivityStore {
     where activity.attributes.workoutId == workoutId {
       var state = activity.content.state
       change(&state)
+      // A rest that has ended is no rest: kept, it would clear the stale date
+      // and leave the countdown at 0:00 (spec 0040 FR-3).
+      if let restEndsAt = state.restEndsAt, restEndsAt <= Date() {
+        state.restEndsAt = nil
+      }
       await activity.update(ActivityContent(state: state, staleDate: state.staleDate))
     }
   }
