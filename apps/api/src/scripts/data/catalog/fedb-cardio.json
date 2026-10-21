@@ -1,0 +1,5 @@
+[
+  {"slug": "recumbent-bike", "es": "Bicicleta reclinada", "en": "Recumbent Bike", "aliases": [], "category": "Cardio", "primary": ["quads"], "secondary": ["calves", "glutes", "hamstrings"], "equipment": ["Machine"], "trackingType": "distance_duration", "unilateral": false, "image": "Recumbent_Bike"},
+  {"slug": "skating", "es": "Patinaje", "en": "Skating", "aliases": [], "category": "Cardio", "primary": ["quads"], "secondary": ["abductors", "adductors", "calves", "glutes", "hamstrings"], "equipment": ["Other"], "trackingType": "duration", "unilateral": false, "image": "Skating"},
+  {"slug": "jogging-treadmill", "es": "Trote en cinta", "en": "Jogging, Treadmill", "aliases": [], "category": "Cardio", "primary": ["quads"], "secondary": ["glutes", "hamstrings"], "equipment": ["Machine"], "trackingType": "distance_duration", "unilateral": false, "image": "Jogging_Treadmill"}
+]

@@ -19,6 +19,13 @@ const TITLES: Record<string, string> = {
   'full-body': 'Cuerpo completo',
   legs: 'Piernas y gemelos',
   shoulders: 'Hombros',
+  'fedb-arms': 'Brazos (free-exercise-db)',
+  'fedb-back': 'Espalda (free-exercise-db)',
+  'fedb-cardio': 'Cardio (free-exercise-db)',
+  'fedb-chest': 'Pecho (free-exercise-db)',
+  'fedb-core': 'Core (free-exercise-db)',
+  'fedb-legs': 'Piernas y gemelos (free-exercise-db)',
+  'fedb-shoulders': 'Hombros (free-exercise-db)',
 };
 
 const problems = validateCatalog(loadCatalog());

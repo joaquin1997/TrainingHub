@@ -555,6 +555,7 @@ export const es: TranslationCatalog = {
       cardioMachine: 'Máquina de cardio',
       jumpRope: 'Comba',
       gymMat: 'Esterilla',
+      other: 'Otro',
     },
     muscle: {
       abs: 'Abdomen',

@@ -45,6 +45,7 @@ const EQUIPMENT_ES: Record<string, string> = {
   Plate: 'disco',
   'Cardio machine': 'máquina de cardio',
   'Jump rope': 'comba',
+  Other: 'otro',
 };
 
 const LOADING_ES: Record<string, string> = {

@@ -61,6 +61,8 @@ export const CATALOG_EQUIPMENT = [
   'Plate',
   'Cardio machine',
   'Jump rope',
+  /** Sleds, chains, stones, kegs… (free-exercise-db "other"). */
+  'Other',
 ] as const;
 
 export const CATALOG_TRACKING_TYPES = [

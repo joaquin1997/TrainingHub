@@ -40,6 +40,7 @@ const EQUIPMENT_KEYS: Record<string, string> = {
   'Cardio machine': 'cardioMachine',
   'Jump rope': 'jumpRope',
   'Gym mat': 'gymMat',
+  Other: 'other',
 };
 
 const MUSCLE_KEYS: Record<string, string> = {

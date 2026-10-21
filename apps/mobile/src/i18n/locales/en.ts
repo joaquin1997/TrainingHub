@@ -552,6 +552,7 @@ export const en = {
       cardioMachine: 'Cardio machine',
       jumpRope: 'Jump rope',
       gymMat: 'Mat',
+      other: 'Other',
     },
     muscle: {
       abs: 'Abs',
