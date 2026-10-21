@@ -160,8 +160,9 @@ and muscle) is only as good as this data.
 
 ## Assumptions
 
-- **[ASSUMPTION: about 200 exercises cover what a gym-goer logs at first (195
-  written); more are added later the same reviewed way.]**
+- **[ASSUMPTION: 195 hand-written exercises cover what a gym-goer logs; the
+  owner then asked for every non-stretch exercise of free-exercise-db (568
+  more, 763 in total), with the plain exercises ranked first in search.]**
 - **[ASSUMPTION: the reviewed catalog is drafted by the assistant from common
   gym practice and reviewed by the owner in a list, not typed by hand.]**
 - **[ASSUMPTION: the tracking type sweep of 0030 is not run on the old

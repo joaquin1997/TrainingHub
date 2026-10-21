@@ -53,3 +53,14 @@ created: 2026-10-21
   exercises, `Bench press` with `Accept-Language: en`, `Press de banca`
   otherwise, retired ones hidden. Note: PGlite socket 0.2.x breaks Prisma
   writes; 0.1.6 with PGlite 0.4 works. Not checked on the web preview.
+- 2026-10-21 — First apply on the server by the owner (195 created, 847
+  retired, 14 own exercises merged). Then, at the owner's request ("vamos con
+  los 750 de free-exercise-db"), 568 more from free-exercise-db: every entry
+  that is not a stretch, not already used as a picture and not the same name
+  as an existing one. Fields filled from the dataset (muscles, equipment,
+  category; loading kind, tracking type and unilateral by rule), Spanish names
+  written by hand, 44 rule misses corrected (rings, TRX, chin-ups, jumps and
+  sprints record reps; drag curl is not a carry). New equipment value
+  `Other`. 763 in total, 753 with a picture; files `data/catalog/fedb-*.json`,
+  review tables `review/fedb-*.md`. Apply transaction timeout raised to 10
+  minutes for the 568 creates through the tunnel.
