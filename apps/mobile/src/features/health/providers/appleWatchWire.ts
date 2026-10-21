@@ -22,8 +22,8 @@ export interface WatchLabels {
   finishOnPhone: string;
   allDone: string;
   waiting: string;
-  /** "Set 2 of 4". */
-  setOf: (number: number, count: number) => string;
+  /** "Set 2 of 4", or "Warm-up 1 of 3" (spec 0040). */
+  setOf: (number: number, count: number, isWarmup: boolean) => string;
   /** Spec 0035: the secondary menu and the discard confirmation. */
   more: string;
   discard: string;
@@ -84,7 +84,7 @@ export function encodeActiveContext(
           exerciseId: set.workoutExerciseId,
           setId: set.workoutSetId,
           exerciseName: set.exerciseName,
-          setTitle: setOf(set.setNumber, set.setCount),
+          setTitle: setOf(set.setNumber, set.setCount, set.isWarmup ?? false),
           target: set.target,
           restSeconds: set.restSeconds,
         }

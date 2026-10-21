@@ -99,10 +99,22 @@ describe('toWatchSnapshot', () => {
         exerciseName: 'A',
         setNumber: 2,
         setCount: 3,
+        isWarmup: false,
         target: '60 lb × 8',
         restSeconds: 150,
       },
     });
+  });
+
+  it('numbers working sets after the warm-ups from 1 (spec 0040 FR-1)', () => {
+    const base = exercise('a', [true, true, false, false]);
+    const withWarmUps = {
+      ...base,
+      entries: base.entries.map((set, i) => (i < 2 ? { ...set, type: 'warmup' as const } : set)),
+    };
+    const set = toWatchSnapshot(workout(withWarmUps), 90).currentSet;
+
+    expect(set).toMatchObject({ workoutSetId: 'a3', setNumber: 1, setCount: 2, isWarmup: false });
   });
 
   it('has no current set when all are done', () => {

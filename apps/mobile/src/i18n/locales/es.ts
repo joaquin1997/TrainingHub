@@ -433,6 +433,7 @@ export const es: TranslationCatalog = {
     nextWarmUp: '{{exercise}} · calentamiento',
     watchDone: 'Hecha',
     watchSetOf: 'Serie {{number}} de {{count}}',
+    watchWarmUpOf: 'Calentamiento {{number}} de {{count}}',
     watchRest: 'Descanso',
     watchFinishOnPhone: 'Confírmalo en el iPhone',
     watchAllDone: 'Todas las series hechas',

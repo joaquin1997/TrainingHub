@@ -14,6 +14,7 @@ import {
   toWorkoutSessionSkeleton,
 } from '@/features/workouts/state/workoutDraftStore';
 import { ShareSheet } from '@/features/workouts/components/ShareSheet';
+import { setNumberOf } from '@/features/workouts/utils/setNumber';
 import { useWorkoutComparison } from '@/features/workouts/hooks/useWorkoutComparison';
 import { buildShareCard } from '@/features/workouts/utils/shareCard';
 import {
@@ -266,7 +267,7 @@ export function WorkoutSummaryScreen() {
               const type = setTypeLabel(set.type, t);
               return (
                 <View key={set.id} style={[styles.setRow, done ? null : styles.setRowSkipped]}>
-                  <Text style={styles.setOrder}>{set.order}</Text>
+                  <Text style={styles.setOrder}>{setNumberOf(exercise.sets, set.id)?.number ?? set.order}</Text>
                   <Text style={styles.setValue}>
                     {formatSetValues(set, unit, sideLabels(t))}
                   </Text>

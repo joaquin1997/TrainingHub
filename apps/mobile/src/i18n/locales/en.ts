@@ -430,6 +430,7 @@ export const en = {
     nextWarmUp: '{{exercise}} · warm-up',
     watchDone: 'Done',
     watchSetOf: 'Set {{number}} of {{count}}',
+    watchWarmUpOf: 'Warm-up {{number}} of {{count}}',
     watchRest: 'Rest',
     watchFinishOnPhone: 'Confirm on your iPhone',
     watchAllDone: 'All sets done',

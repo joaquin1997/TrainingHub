@@ -10,6 +10,7 @@ import { RecordsCard } from '@/features/progress/components/RecordsCard';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { ShareSheet } from '@/features/workouts/components/ShareSheet';
+import { setNumberOf } from '@/features/workouts/utils/setNumber';
 import { WarmUpChecklist } from '@/features/workouts/components/WarmUpChecklist';
 import { isPerformedSet } from '@/features/workouts/utils/performedSet';
 import { buildShareCard } from '@/features/workouts/utils/shareCard';
@@ -304,7 +305,7 @@ export function WorkoutSessionDetailScreen() {
                   size={18}
                   color={done ? colors.successInk : colors.textSubtle}
                 />
-                <Text style={styles.setNum}>{set.order}</Text>
+                <Text style={styles.setNum}>{setNumberOf(exercise.sets, set.id)?.number ?? set.order}</Text>
                 <Text style={styles.setValue}>
                   {formatSetValues(set, unit, sideLabels(t))}
                 </Text>

@@ -11,6 +11,7 @@ import {
   type WorkoutSetDraft,
 } from '@/features/workouts/state/workoutDraftStore';
 import { roundStatus, type RoundStatus } from '@/features/workouts/superset/rounds';
+import { setNumberOf } from '@/features/workouts/utils/setNumber';
 import { formatDuration } from '@/lib/format';
 import {
   formatDistance,
@@ -111,7 +112,7 @@ export function stickyHeaderModel(draft: WorkoutSessionDraft): StickyHeaderModel
       workoutSetId: set.id,
       exerciseName: exercise.exerciseName,
       blockLabel: exerciseBlockLabels(draft.exercises)[index]?.label ?? String(index + 1),
-      setNumber: set.order,
+      setNumber: setNumberOf(exercise.entries, set.id)?.number ?? set.order,
       isWarmup: set.type === 'warmup',
       values: setValues(exercise, set),
     },

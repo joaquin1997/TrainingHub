@@ -113,9 +113,14 @@ export interface WatchWorkoutSet {
   workoutExerciseId: string;
   workoutSetId: string;
   exerciseName: string;
-  /** 1-based position of the set in its exercise. */
+  /**
+   * 1-based number of the set among its exercise's sets of the same kind —
+   * warm-ups apart from working sets (spec 0040 FR-1) — and how many there are.
+   */
   setNumber: number;
   setCount: number;
+  /** The set is a warm-up (spec 0040); absent means a working set. */
+  isWarmup?: boolean;
   /** Planned values as shown on the phone, e.g. "60 kg × 8"; empty when none. */
   target: string;
   /** The rest that ticking this set starts, in seconds; 0 starts none. */

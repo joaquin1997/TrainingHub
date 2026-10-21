@@ -2,12 +2,15 @@ import type { TFunction } from 'i18next';
 
 import type { WorkoutSessionDraft } from '@/features/workouts/state/workoutDraftStore';
 
+import { setNumberOf } from '@/features/workouts/utils/setNumber';
+
 import { currentSetToDo } from './nextSetToDo';
 
 /**
  * The set to do now as words, e.g. "Barbell row · set 2" — for the rest bar
- * and the rest-over alert (spec 0029 FR-10). The number is the set's position
- * in its exercise, as its row shows it; a warm-up says so. Null when every set is done.
+ * and the rest-over alert (spec 0029 FR-10). The number is the one its row
+ * shows, counting working sets only (spec 0040 FR-1); a warm-up says so. Null
+ * when every set is done.
  */
 export function nextSetLabel(draft: WorkoutSessionDraft, t: TFunction): string | null {
   const target = currentSetToDo(draft);
@@ -20,5 +23,8 @@ export function nextSetLabel(draft: WorkoutSessionDraft, t: TFunction): string |
   }
   return set.type === 'warmup'
     ? t('workouts.nextWarmUp', { exercise: exercise.exerciseName })
-    : t('workouts.nextSet', { exercise: exercise.exerciseName, number: set.order });
+    : t('workouts.nextSet', {
+        exercise: exercise.exerciseName,
+        number: setNumberOf(exercise.entries, set.id)?.number ?? set.order,
+      });
 }

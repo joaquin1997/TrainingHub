@@ -17,6 +17,7 @@ import {
 } from '@/features/workouts/state/workoutDraftStore';
 import { countWorkoutSets } from '@/features/workouts/state/workoutDraftStore';
 import { trackingFields } from '@/lib/tracking';
+import { setNumberOf } from '@/features/workouts/utils/setNumber';
 
 /**
  * The set the watch offers to tick (spec 0025 FR-4): the same set the phone
@@ -72,8 +73,9 @@ export function toWatchSnapshot(
   const exercise = target
     ? draft.exercises.find((item) => item.id === target.workoutExerciseId)
     : undefined;
-  const setIndex = exercise?.entries.findIndex((set) => set.id === target?.workoutSetId) ?? -1;
-  const set = exercise?.entries[setIndex];
+  const set = exercise?.entries.find((item) => item.id === target?.workoutSetId);
+  // Counted as the phone's row counts them (spec 0040 FR-1).
+  const numbered = exercise && set ? setNumberOf(exercise.entries, set.id) : null;
 
   return {
     workoutSessionId: draft.clientId,
@@ -89,8 +91,9 @@ export function toWatchSnapshot(
             workoutExerciseId: exercise.id,
             workoutSetId: set.id,
             exerciseName: exercise.exerciseName,
-            setNumber: setIndex + 1,
-            setCount: exercise.entries.length,
+            setNumber: numbered?.number ?? 1,
+            setCount: numbered?.count ?? exercise.entries.length,
+            isWarmup: numbered?.isWarmup ?? false,
             target: setTarget(
               set,
               draft.unit ?? 'kg',

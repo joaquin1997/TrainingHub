@@ -54,6 +54,7 @@ import {
 import { RestEditorSheet } from '@/features/workouts/components/RestEditorSheet';
 import { StickyWorkoutHeader } from '@/features/workouts/components/StickyWorkoutHeader';
 import { stickyHeaderModel } from '@/features/workouts/utils/stickyHeader';
+import { setNumberOf } from '@/features/workouts/utils/setNumber';
 import { currentSetToDo } from '@/features/workouts/restTimer/nextSetToDo';
 import { nextSetLabel } from '@/features/workouts/restTimer/nextSetLabel';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -865,6 +866,7 @@ export function ActiveWorkoutScreen() {
               ) : null}
               <WorkoutSetRow
                 set={set}
+                setNumber={setNumberOf(exercise.entries, set.id)?.number ?? set.order}
                 trackingType={exercise.trackingType}
                 unilateral={exercise.isUnilateral}
                 unit={unit}
