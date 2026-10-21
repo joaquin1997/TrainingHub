@@ -110,7 +110,8 @@ export function useHomeWidgetSync({
         firstTime: translate('widget.firstTime'),
         workoutsThisWeek: translate('widget.workoutsThisWeek'),
         sets: translate('widget.sets'),
-        more: translate('widget.more'),
+        // The widget puts the count in place of '#'.
+        more: translate('widget.more', { n: '#' }),
         noRoutine: translate('widget.noRoutine'),
       };
     };

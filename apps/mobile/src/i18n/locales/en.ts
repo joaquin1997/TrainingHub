@@ -695,7 +695,7 @@ export const en = {
     firstTime: 'First time',
     workoutsThisWeek: 'workouts',
     sets: 'sets',
-    more: '+{{count}} more',
+    more: '+{{n}} more',
     noRoutine: 'No routine for today',
   },
 };

@@ -41,7 +41,7 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0038](specs/0038-light-theme/spec.md) | Light theme | `done` — in daily use on the iPhone since the 2026-10-18 build, deployed | 8 — Integrations & platform |
 | [0039](specs/0039-google-sign-in/spec.md) | Sign in with Google | `in-progress` — code complete and deployed (migration `add_user_identities` applied), inactive until the owner creates the Google OAuth clients and sets `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` / `GOOGLE_CLIENT_IDS` (plan, *Owner steps*), then a native rebuild | 3 — Auth & users |
 | [0040](specs/0040-device-test-fixes/spec.md) | Fixes from the device test of 2026-10-21 | `in-progress` — code complete (2026-10-21) on `feat/sdd-0040-device-fixes`, API deployed from that branch; awaiting the native rebuild (rest alert with the app in front, lock-screen view) and the device checks (task 10) | 1 + 2 + 8 |
-| 0041 | Home-screen widget redesign and reps on the watch | `draft` — not written yet (owner, 2026-10-21: the widget is off-centre and plain; change the reps done on the watch before ticking). One spec for both, by the owner's choice | 8 — Integrations & platform |
+| [0041](specs/0041-widget-redesign-and-watch-reps/spec.md) | Widget redesign and reps on the watch | `in-progress` — code complete (2026-10-21); widget rendered in light and dark (`renders/`); awaiting the native rebuild (with 0040's) and the device checks (AC-1–AC-6) | 8 — Integrations & platform |
 | 0042 | Progress per exercise that is easy to read and to find | `draft` — not written yet (owner, 2026-10-21: hard to understand, hard to find the exercise) | 4 — Progress |
 | [0043](specs/0043-smarter-warm-ups/spec.md) | Smarter warm-ups and warm-ups marked by hand | `ready` — gate 1 self-approved (2026-10-21); next to plan. Ramps by loading kind and muscle (now in the reviewed catalog, 0044) and a visible set-type list in the workout and the routine editor | 1 — Live workout logging |
 | [0044](specs/0044-curated-exercise-catalog/spec.md) | A curated exercise catalog | `done` — applied on the server 2026-10-21: 763 reviewed exercises (195 by hand + 568 from free-exercise-db), 847 imported ones retired, 14 own duplicates merged with their history; API deployed, names in the app's language, search by other names | 6 — Exercises |
@@ -69,14 +69,14 @@ catalog (0044), the image matching (0026) by its pictures.
 
 ### Owner's steps (pending)
 
-1. Native rebuild for 0040 (rest alert with the app in front, lock-screen
-   view), then its device checks.
+1. Native rebuild for 0040 and 0041 (rest alert with the app in front,
+   lock-screen view, widget, watch app), then their device checks.
 2. Device checks left in 0015 (needs a second account), 0020, 0022, 0026,
    0029, 0032 and 0037 — listed in each row above.
 3. Google OAuth clients for 0039, when wanted.
 4. Merge `feat/sdd-0040-device-fixes` into `master` and push.
 
-Next specs, in order: 0043 → 0042 → 0041.
+Next specs, in order: 0043 → 0042 (0041 done first at the owner's request).
 
 Since 2026-10-16 the owner has delegated the gates: specs, plans and tasks are
 self-approved and decisions recorded as assumptions; only decisions with a

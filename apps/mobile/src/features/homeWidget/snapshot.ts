@@ -33,7 +33,7 @@ export interface HomeWidgetLabels {
   workoutsThisWeek?: string;
   /** "sets" after the sets done, e.g. "9/20 sets". */
   sets?: string;
-  /** "+2 more" under a cut list, with {{count}} replaced by the widget. */
+  /** "+2 more" under a cut list, with "#" replaced by the widget. */
   more?: string;
   /** "No routine yet" when there is no routine for today. */
   noRoutine?: string;

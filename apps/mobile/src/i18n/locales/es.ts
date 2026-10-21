@@ -698,7 +698,7 @@ export const es: TranslationCatalog = {
     firstTime: 'Primera vez',
     workoutsThisWeek: 'entrenos',
     sets: 'series',
-    more: '+{{count}} más',
+    more: '+{{n}} más',
     noRoutine: 'Sin rutina para hoy',
   },
 };
