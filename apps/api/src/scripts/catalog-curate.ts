@@ -324,7 +324,7 @@ async function apply(plan: CuratePlan, dropped: string[]) {
         });
       }
     },
-    { timeout: 120_000 },
+    { timeout: 600_000, maxWait: 30_000 },
   );
 
   console.log(`Applied. Run file (for undo): ${runFile}`);
@@ -428,7 +428,7 @@ async function undo(runPath: string) {
         }
       }
     },
-    { timeout: 120_000 },
+    { timeout: 600_000, maxWait: 30_000 },
   );
 
   for (const line of kept) {
