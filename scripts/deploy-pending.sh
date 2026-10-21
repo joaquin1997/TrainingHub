@@ -194,8 +194,9 @@ cd "$ROOT/apps/api"
 step "0044: reviewed catalog report (no write)"
 pnpm run catalog:curate | tee "$LOG_DIR/catalog-report.txt"
 
-if grep -q "0 changed\|0 to create, 0 to update, 0 to bring back" "$LOG_DIR/catalog-report.txt" \
-  && grep -q "To retire: 0 old catalog exercises, 0 merged custom ones; 0 reviewed" "$LOG_DIR/catalog-report.txt"; then
+if grep -q "0 to create, 0 to update, 0 to bring back" "$LOG_DIR/catalog-report.txt" \
+  && grep -q "To retire: 0 old catalog exercises, 0 merged custom ones; 0 reviewed" "$LOG_DIR/catalog-report.txt" \
+  && ! grep -q "Carry over" "$LOG_DIR/catalog-report.txt"; then
   echo "    catalog already up to date"
 else
   if [ -z "${APPLY_CATALOG:-}" ]; then
