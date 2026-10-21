@@ -2,11 +2,13 @@ import { Prisma } from '@prisma/client';
 import type {
   CreateExerciseInput,
   Exercise,
+  ExerciseLoadingKind,
   ExerciseDeletionImpact,
   MuscleGroup,
 } from '@workout/domain';
 
 import { prisma } from '../../infrastructure/prisma.js';
+import { exerciseDisplayName } from '../../infrastructure/requestLanguage.js';
 import { deletionImpactWhere, planExerciseDeletion } from './deletion.js';
 import { photoImageUrl } from './photo.js';
 import { toExerciseTrackingType } from './trackingTypes.js';
@@ -56,10 +58,28 @@ export class InvalidMuscleGroupSelectionError extends Error {
   }
 }
 
+const LOADING_KINDS: readonly ExerciseLoadingKind[] = ['barbell', 'dumbbell', 'machine'];
+
+function toLoadingKind(value: string | null): ExerciseLoadingKind | undefined {
+  return LOADING_KINDS.find((kind) => kind === value);
+}
+
+/** Search names: the stored ones plus every name not shown (spec 0044 FR-3). */
+function searchAliases(record: ExerciseRecord, shown: string): string[] | undefined {
+  const names = [record.nameEs, record.nameEn, record.name, ...(record.aliases ?? [])].filter(
+    (name): name is string => Boolean(name) && name !== shown,
+  );
+  const unique = [...new Set(names)];
+  return unique.length > 0 ? unique : undefined;
+}
+
 function mapExercise(record: ExerciseRecord): Exercise {
+  const name = exerciseDisplayName(record);
   return {
     id: record.publicId,
-    name: record.name,
+    name,
+    aliases: searchAliases(record, name),
+    loadingKind: toLoadingKind(record.loadingKind),
     description: record.description ?? undefined,
     category: record.category ?? undefined,
     language: record.language ?? undefined,

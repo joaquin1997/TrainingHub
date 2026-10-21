@@ -51,11 +51,15 @@ created: 2026-10-21
    entries have a loading kind, others none).
 2. **Names per language live on the exercise** (`nameEs`, `nameEn`,
    `aliases`). `name` stays as today (the Spanish name for reviewed ones) for
-   anything that reads it raw. The API picks the display name per request:
-   `Accept-Language` (es/en) sent by the app → else the user's stored language
-   → else Spanish. Applied in `mapExercise`, the workout and progress joins,
-   and routine reads (reviewed exercise → its localized name; otherwise the
-   snapshot).
+   anything that reads it raw. The API picks the display name per request from
+   `Accept-Language` (es/en) sent by the app, else Spanish (older apps send no
+   header; the owner uses Spanish). The language is held in a per-request
+   context (`infrastructure/requestLanguage.ts`, set in an `onRequest` hook)
+   instead of a parameter through ~20 repository functions; one helper,
+   `exerciseDisplayName`, is used by `mapExercise`, the workout and progress
+   joins, and routine reads (reviewed exercise → its localized name;
+   otherwise the snapshot). The stored user language is not read: an extra
+   query per request for older builds only.
 3. **Apply script** `catalog:curate` (dry run by default, `CURATE_APPLY=true`,
    `CURATE_MODE=undo`): upserts reviewed exercises by `(source='curated',
    sourceId=slug)`, adds missing muscle groups, re-points the rows listed in

@@ -7,6 +7,7 @@ import type {
 } from '@workout/domain';
 
 import { prisma } from '../../infrastructure/prisma.js';
+import { exerciseDisplayName } from '../../infrastructure/requestLanguage.js';
 import { usableExerciseWhere } from '../exercises/visibility.js';
 import {
   isLegacySession,
@@ -33,7 +34,7 @@ const workoutSessionInclude = {
   routine: { select: { publicId: true } },
   exercises: {
     include: {
-      exercise: { select: { publicId: true, name: true } },
+      exercise: { select: { publicId: true, name: true, nameEs: true, nameEn: true } },
       routineExercise: { select: { publicId: true } },
       sets: true,
     },
@@ -87,7 +88,7 @@ function mapWorkoutSession(
         id: exercise.publicId,
         workoutSessionId: record.publicId,
         exerciseId: exercise.exercise.publicId,
-        exerciseName: exercise.exercise.name,
+        exerciseName: exerciseDisplayName(exercise.exercise),
         routineExerciseId: exercise.routineExercise?.publicId ?? undefined,
         order: exercise.order,
         notes: exercise.notes ?? undefined,

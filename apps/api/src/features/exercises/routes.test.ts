@@ -24,6 +24,7 @@ vi.mock('../../infrastructure/userContext.js', () => ({
 }));
 
 import { createApp } from '../../app.js';
+import { currentCatalogLanguage } from '../../infrastructure/requestLanguage.js';
 import { resolveUserPublicId } from '../../infrastructure/userContext.js';
 import { classifyExerciseAccess } from './visibility.js';
 import {
@@ -57,6 +58,19 @@ afterAll(async () => {
 });
 
 describe('GET /exercises', () => {
+  it('runs in the language the app asks for (spec 0044 FR-2)', async () => {
+    const seen: string[] = [];
+    vi.mocked(listExercises).mockImplementation(async () => {
+      seen.push(currentCatalogLanguage());
+      return [];
+    });
+
+    await app.inject({ method: 'GET', url: '/exercises', headers: { 'accept-language': 'en-GB' } });
+    await app.inject({ method: 'GET', url: '/exercises' });
+
+    expect(seen).toEqual(['en', 'es']);
+  });
+
   it('returns the list from the repository', async () => {
     vi.mocked(listExercises).mockResolvedValue([{ id: 'e1' }] as never);
 

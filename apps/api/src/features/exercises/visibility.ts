@@ -9,13 +9,13 @@ import type { Prisma } from '@prisma/client';
  */
 
 /**
- * Exercises the person can see: the catalog plus their own custom ones that
- * they have not deleted (spec 0033 FR-5). Catalog exercises are never deleted.
+ * Exercises the person can see: the catalog that is not retired (spec 0044)
+ * plus their own custom ones that they have not deleted (spec 0033 FR-5).
  */
 export function visibleExerciseWhere(userPublicId: string): Prisma.ExerciseWhereInput {
   return {
     OR: [
-      { isSystemDefined: true },
+      { isSystemDefined: true, deletedAt: null },
       {
         isSystemDefined: false,
         createdByUser: { publicId: userPublicId },

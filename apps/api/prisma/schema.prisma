@@ -61,6 +61,12 @@ model Exercise {
   source                    String
   sourceId                  String
   name                      String
+  /// Reviewed catalog names per language and other names to search by (spec 0044).
+  nameEs                    String?
+  nameEn                    String?
+  aliases                   String[]                     @default([])
+  /// barbell | dumbbell | machine, for exercises that record weight (spec 0044).
+  loadingKind               String?
   description               String?
   category                  String?
   language                  String?

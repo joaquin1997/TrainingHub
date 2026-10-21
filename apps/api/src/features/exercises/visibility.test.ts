@@ -10,7 +10,7 @@ describe('visibleExerciseWhere', () => {
   it('is the catalog or the person own custom exercises', () => {
     expect(visibleExerciseWhere('user-ana')).toEqual({
       OR: [
-        { isSystemDefined: true },
+        { isSystemDefined: true, deletedAt: null },
         {
           isSystemDefined: false,
           createdByUser: { publicId: 'user-ana' },
@@ -23,8 +23,8 @@ describe('visibleExerciseWhere', () => {
   it('leaves out custom exercises their creator deleted (spec 0033 FR-5, FR-11)', () => {
     const [catalog, own] = visibleExerciseWhere('user-ana').OR ?? [];
     expect(own).toMatchObject({ deletedAt: null });
-    // Catalog exercises are never deleted: no lifecycle filter on them.
-    expect(catalog).toEqual({ isSystemDefined: true });
+    // Retired catalog exercises are hidden too (spec 0044).
+    expect(catalog).toEqual({ isSystemDefined: true, deletedAt: null });
   });
 
   it('never matches custom exercises without a creator (EF-3)', () => {

@@ -5,6 +5,7 @@ import Fastify, {
   type FastifyServerOptions,
 } from 'fastify';
 
+import { parseCatalogLanguage, runWithCatalogLanguage } from './infrastructure/requestLanguage.js';
 import { registerRoutes } from './routes/index.js';
 
 declare module 'fastify' {
@@ -55,6 +56,11 @@ export function createApp(
     } catch {
       // anonymous request
     }
+  });
+
+  // Catalog names in the app's language for the rest of the request (spec 0044).
+  app.addHook('onRequest', (request, _reply, done) => {
+    runWithCatalogLanguage(parseCatalogLanguage(request.headers['accept-language']), done);
   });
 
   app.register(registerRoutes);
