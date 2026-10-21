@@ -1,4 +1,4 @@
-# Hombros (23)
+# Hombros (25)
 
 Marca lo que esté mal en la columna que toque (nombre, músculos, equipo, carga, registro, unilateral o imagen).
 
@@ -18,7 +18,7 @@ Marca lo que esté mal en la columna que toque (nombre, músculos, equipo, carga
 | 12 | **Elevación frontal en polea**<br>Cable front raise |  | hombros | pecho | polea | máquina/polea | peso × reps |  | [ver](https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Cable_Raise/0.jpg) |
 | 13 | **Elevación frontal con disco**<br>Plate front raise |  | hombros | pecho | disco | máquina/polea | peso × reps |  | [ver](https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Plate_Raise/0.jpg) |
 | 14 | **Pájaros con mancuernas**<br>Rear delt dumbbell fly | pajaros, elevaciones posteriores, reverse fly, bent over rear delt raise | hombros | trapecio | mancuernas | mancuernas | peso × reps |  | [ver](https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Bent-Over_Rear_Delt_Raise/0.jpg) |
-| 15 | **Aperturas posteriores en máquina**<br>Reverse pec deck | pec deck inverso, reverse machine fly, deltoides posterior maquina | hombros | trapecio | máquina | máquina/polea | peso × reps |  | [ver](https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Machine_Flyes/0.jpg) |
+| 15 | **Aperturas posteriores en máquina**<br>Reverse pec deck | pec deck inverso, reverse machine fly, deltoides posterior maquina, pec deck rear delt fly, rear delt machine fly | hombros | trapecio | máquina | máquina/polea | peso × reps |  | [ver](https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Machine_Flyes/0.jpg) |
 | 16 | **Aperturas posteriores en polea**<br>Cable rear delt fly | cruces inversos en polea | hombros | trapecio | polea | máquina/polea | peso × reps |  | [ver](https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Rear_Delt_Fly/0.jpg) |
 | 17 | **Face pull**<br>Face pull | tirón a la cara, face pull en polea | hombros | trapecio | polea | máquina/polea | peso × reps |  | [ver](https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Face_Pull/0.jpg) |
 | 18 | **Remo al mentón con barra**<br>Barbell upright row | remo al menton, upright row | hombros, trapecio | bíceps | barra | barra | peso × reps |  | [ver](https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Upright_Barbell_Row/0.jpg) |
@@ -27,3 +27,5 @@ Marca lo que esté mal en la columna que toque (nombre, músculos, equipo, carga
 | 21 | **Aperturas con banda**<br>Band pull-apart | pull apart con goma | hombros | trapecio | banda elástica | — | reps |  | [ver](https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Band_Pull_Apart/0.jpg) |
 | 22 | **Flexiones de pino**<br>Handstand push-up | flexiones en pino, hspu | hombros | tríceps | peso corporal | — | reps |  | [ver](https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Handstand_Push-Ups/0.jpg) |
 | 23 | **Press landmine**<br>Landmine press | press con mina | hombros | pecho, tríceps | landmine | máquina/polea | peso × reps | sí | [ver](https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Landmine_Linear_Jammer/0.jpg) |
+| 24 | **Rotación externa con banda**<br>Band external rotation | rotacion externa goma, manguito rotador con banda | hombros |  | banda elástica | — | reps | sí | [ver](https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/External_Rotation_with_Band/0.jpg) |
+| 25 | **Elevaciones Y-T en banco inclinado**<br>Incline Y-T raise | y t en banco inclinado, y-t raises, elevaciones en y | hombros, trapecio |  | mancuernas, banco inclinado | mancuernas | peso × reps |  | [ver](https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Incline_Shoulder_Raise/0.jpg) |

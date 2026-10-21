@@ -1,4 +1,4 @@
-# Core (23)
+# Core (24)
 
 Marca lo que esté mal en la columna que toque (nombre, músculos, equipo, carga, registro, unilateral o imagen).
 
@@ -19,7 +19,7 @@ Marca lo que esté mal en la columna que toque (nombre, músculos, equipo, carga
 | 13 | **Elevación de piernas tumbado**<br>Lying leg raise | elevaciones de piernas en el suelo, leg raises | abdomen |  | peso corporal | — | reps |  | [ver](https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Flat_Bench_Lying_Leg_Raise/0.jpg) |
 | 14 | **Giros rusos**<br>Russian twist | russian twists, giro ruso | oblicuos | abdomen | peso corporal | — | reps |  | [ver](https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Russian_Twist/0.jpg) |
 | 15 | **Rueda abdominal**<br>Ab wheel rollout | rodillo abdominal, ab roller | abdomen | dorsales, hombros | rueda abdominal | — | reps |  | [ver](https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ab_Roller/0.jpg) |
-| 16 | **Dead bug**<br>Dead bug | bicho muerto | abdomen |  | peso corporal | — | reps |  | [ver](https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dead_Bug/0.jpg) |
+| 16 | **Dead bug**<br>Dead bug | bicho muerto, deadbug | abdomen |  | peso corporal | — | reps |  | [ver](https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dead_Bug/0.jpg) |
 | 17 | **Press Pallof**<br>Pallof press | pallof, pallof hold, antirrotacion en polea | abdomen, oblicuos |  | polea | máquina/polea | peso × reps | sí | [ver](https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pallof_Press/0.jpg) |
 | 18 | **Leñador en polea**<br>Cable woodchop | wood chop, leñadores | oblicuos | abdomen, hombros | polea | máquina/polea | peso × reps | sí | [ver](https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Cable_Wood_Chop/0.jpg) |
 | 19 | **Inclinación lateral con mancuerna**<br>Dumbbell side bend | flexion lateral, side bend | oblicuos |  | mancuernas | mancuernas | peso × reps | sí | [ver](https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Side_Bend/0.jpg) |
@@ -27,3 +27,4 @@ Marca lo que esté mal en la columna que toque (nombre, músculos, equipo, carga
 | 21 | **Hollow hold**<br>Hollow body hold | hollow, posicion hueca | abdomen |  | peso corporal | — | tiempo |  | — |
 | 22 | **L-sit**<br>L-sit | l sit en paralelas | abdomen | tríceps, cuádriceps | paralelas | — | tiempo |  | — |
 | 23 | **Colgarse de la barra**<br>Dead hang | colgado en barra, dead hang | antebrazos | dorsales | barra de dominadas | — | tiempo |  | — |
+| 24 | **Bird dog**<br>Bird dog | perro pájaro, cuadrupedia alterna | abdomen | lumbar, glúteos | peso corporal | — | reps | sí | — |
