@@ -57,9 +57,21 @@ export type ExerciseTrackingType =
   | 'weight_duration'
   | 'distance_duration';
 
+/**
+ * How an exercise's weight is loaded (spec 0043): plates on a bar (EZ bar
+ * included), dumbbells or kettlebells (weight per hand), or a machine or cable
+ * stack. Only for exercises that record weight.
+ */
+export type ExerciseLoadingKind = 'barbell' | 'dumbbell' | 'machine';
+
 export interface Exercise {
   id: EntityId;
+  /** In the app's language for a reviewed catalog exercise (spec 0044). */
   name: string;
+  /** Other names to search by, in either language (spec 0044). */
+  aliases?: string[];
+  /** Reviewed catalog exercises that record weight (spec 0044). */
+  loadingKind?: ExerciseLoadingKind;
   description?: string;
   category?: string;
   language?: string;
