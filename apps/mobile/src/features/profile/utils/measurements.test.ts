@@ -99,6 +99,12 @@ describe('display units', () => {
     expect(toDisplayValue('weightKg', 82.4, 'kg')).toBe(82.4);
   });
 
+  it('keeps two decimals of body weight in kg (spec 0040 FR-7)', () => {
+    expect(toDisplayValue('weightKg', 78.35, 'kg')).toBe(78.35);
+    expect(formatMeasurement('weightKg', 78.354, 'kg')).toBe('78.35 kg');
+    expect(toDisplayValue('waistCm', 88.25, 'kg')).toBe(88.3);
+  });
+
   it('signs positive changes and leaves zero bare', () => {
     expect(formatChange('waistCm', 1.2, 'kg')).toBe('+1.2 cm');
     expect(formatChange('weightKg', 0, 'kg')).toBe('0 kg');

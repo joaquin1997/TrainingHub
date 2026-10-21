@@ -25,9 +25,9 @@ export function parseDecimalInput(text: string): number | null | undefined {
   return Number.isFinite(value) ? value : undefined;
 }
 
-/** A number as an input string, one decimal at most (`80` → `'80'`). */
+/** A number as an input string, two decimals at most (`80` → `'80'`, spec 0040 FR-7). */
 export function toInputString(value: number | null | undefined): string {
-  return value === null || value === undefined ? '' : String(Math.round(value * 10) / 10);
+  return value === null || value === undefined ? '' : String(Math.round(value * 100) / 100);
 }
 
 /** The API's range error carried by a 400, or `null` for any other failure. */
