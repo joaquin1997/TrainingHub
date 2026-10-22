@@ -99,6 +99,9 @@ struct WorkoutView: View {
         .tint(primary)
         .buttonStyle(.borderedProminent)
         .disabled(model.isPaused)
+        // watchOS caps a button's width, so in this leading stack it would
+        // hug the left edge; centred it lines up with Pause below.
+        .frame(maxWidth: .infinity)
       }
     } else if model.tickedSetId == nil {
       Text(model.labels.allDone)
