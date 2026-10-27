@@ -45,6 +45,21 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | 0042 | Progress per exercise that is easy to read and to find | `draft` — not written yet (owner, 2026-10-21: hard to understand, hard to find the exercise) | 4 — Progress |
 | [0043](specs/0043-smarter-warm-ups/spec.md) | Smarter warm-ups and warm-ups marked by hand | `ready` — gate 1 self-approved (2026-10-21); next to plan. Ramps by loading kind and muscle (now in the reviewed catalog, 0044) and a visible set-type list in the workout and the routine editor | 1 — Live workout logging |
 | [0044](specs/0044-curated-exercise-catalog/spec.md) | A curated exercise catalog | `done` — applied on the server 2026-10-21: 763 reviewed exercises (195 by hand + 568 from free-exercise-db), 847 imported ones retired, 14 own duplicates merged with their history; API deployed, names in the app's language, search by other names | 6 — Exercises |
+| [0045](specs/0045-set-rows-read-right/spec.md) | Set rows that read right, undo that selects, Finish within reach | `draft` — written 2026-10-27 from the owner's checklist; no open decisions, two assumptions (Finish asks for confirmation; rest unchanged on untick) | 1 — Live workout logging |
+| [0046](specs/0046-watch-keeps-going/spec.md) | The watch keeps going with the phone away, and can skip a rest | `draft` — written 2026-10-27; amends 0025/0041; no blocking decision, EF-3 (late rest alert after a skip) to check on the device | 8 — Integrations & platform |
+| [0047](specs/0047-record-badges-trustworthy/spec.md) | Record badges that can be trusted and read | `draft` — written 2026-10-27; amends 0032; **two open decisions** (a concrete case of a missing badge; what the owner meant by the "+3" note) | 4 — Progress |
+| [0048](specs/0048-weight-per-side/spec.md) | A different weight on each side | `draft` — written 2026-10-27; amends 0022; **two open decisions** (where "configurable" lives; whether the left/right gap is shown) | 1 — Live workout logging |
+| [0049](specs/0049-correct-saved-workout/spec.md) | Correct a saved workout | `draft` — written 2026-10-27; amends 0005's invariant; **three open decisions** (what "editar erratas" meant; how far a correction goes; deleting a workout) | 1 — Live workout logging |
+
+Owner's checklist of 2026-10-27 (device-test notes, 14 lines) and where each
+line went: *revisar calentamientos* → already 0040 FR-1/FR-2 (code complete) and
+0043 (ready, not planned); *botón de guardar arriba*, *número blanco al marcar*,
+*deshacer vuelve a seleccionar* → 0045; *el reloj no carga la siguiente serie* and
+*saltar descanso en reloj* → 0046; *no marca los récords* and *"+3" no cuadra* →
+0047; *tipo de serie no se entiende* → 0043 FR-10, with one question (does the list
+also explain each type?); *izda y drch peso diferente* → 0048; *editar erratas* →
+0049. The empty checklist lines carried nothing. Numbers 0016 and 0042 stay
+reserved.
 
 Execution order agreed 2026-09-24: 0013 → 0014 → 0010 → 0011 → 0012 →
 visual redesign (to be specified; "functional first, then pretty") → 0001 →

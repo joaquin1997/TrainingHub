@@ -14,6 +14,7 @@ production.
 | **RoutineExercise** | An exercise slot inside a routine template, with intended sets, target values and rest. May belong to a superset group. | `WorkoutExercise` |
 | **Routine folder** | Grouping of routines for organisation. | — |
 | **WorkoutSession** | One real training session actually performed. | `Routine` |
+| **Correction** | A change the owner makes to a saved `WorkoutSession` after the fact — a set's values, done or not, type, notes. Never touches the routine it came from; derived figures follow on their next derivation (spec 0049). | An edit of the active workout, which is not a correction |
 | **WorkoutExercise** | An exercise as performed inside one `WorkoutSession`. | `RoutineExercise` |
 | **WorkoutSet** | The logged data for one set of a `WorkoutExercise`: weight in kg, reps, set type, rest, and whether it was marked done. | Target values, which live on the template |
 | **Performed set** | A `WorkoutSet` marked done — or, in a legacy session, any set. The only sets that count as work for progress and "last time" (spec 0013). | A logged set left unmarked |
@@ -40,6 +41,7 @@ production.
 | **Reviewed catalog** | The catalog exercises written and checked by hand: names in Spanish and English, search names, category, muscles, equipment, loading kind, tracking type, unilateral, picture (spec 0044). | The old import from wger |
 | **Held exercise** | Another person's custom exercise that someone's routines or saved workouts already contained before custom exercises became private. Readable there, under its name, and still usable in that routine; never shown in the catalog or pickers, never addable anew (spec 0015). | A custom exercise of my own |
 | **Unilateral exercise** | An exercise done one side at a time, logged per side (spec 0022). | — |
+| **Weight per side** | On a unilateral exercise that records weight and reps, a weight for the left and another for the right within one set, chosen by the person; without it both sides share one weight (spec 0048). |
 | **Today's routine** | The routine the home screen suggests starting next: the one after the most recently performed routine in the Routines list's order, within its folder, wrapping round; the first routine when none has been performed. Derived, never stored; a suggestion only (spec 0035). | Up next, which is a set inside the active workout |
 
 ## Progress
@@ -53,6 +55,7 @@ production.
 | **Record type** | What a personal record measures: heaviest weight, most reps, best set volume, best session volume or best estimated 1RM (spec 0023). |
 | **Starting records** | An exercise's best of each record type as it stood when the exercise entered the active workout. Kept with the active workout, never changed by it (spec 0032). |
 | **Record badge** | A mark on a performed working set (or, for session volume, an exercise) of the active workout saying it beats a starting record. A notice only, never a stored record; the saved workout's records are authoritative (spec 0032). |
+| **Records unavailable** | An exercise of the active workout whose starting records could not be loaded. Shown as a quiet sign with its reason, never as a badge; distinct from an exercise with nothing to beat (spec 0047). |
 | **Week streak** | The number of consecutive calendar weeks (Monday to Sunday, the person's local time) with at least one saved workout, ending this week — or last week while this week has none yet. Zero once a whole week passes without a workout. Derived (spec 0035). |
 
 ## Presentation
