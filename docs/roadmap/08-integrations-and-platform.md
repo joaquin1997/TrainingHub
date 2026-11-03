@@ -11,6 +11,8 @@
   - [x] watchOS app mirroring the active workout: heart rate, calories, Done,
     rest with haptic, pause/resume, finish request; saves the workout to
     Health (Level 2, opt-in build flag)
+  - [~] Ticks from the watch applied with the phone locked (spec 0045 — code
+    complete, device check pending)
 - [~] Push notifications (rest timer, reminders)
   - [x] Rest timer: local notification when a rest ends outside the app
     (spec 0018, iOS; no push server needed)
@@ -65,3 +67,16 @@
   `TRAININGHUB_WATCH_APP=1` at prebuild (the watchOS platform must be
   installed; HealthKit signing on a free team is unverified). All device
   checks pending.
+- (2026-11-03) Spec 0045 — the watch keeps going with the phone locked. The
+  owner found that with the iPhone locked a set ticked on the watch waited for
+  the app to open: the app was suspended and WatchConnectivity's queue does not
+  wake it. The watch now mirrors its HealthKit workout session to the iPhone
+  (`startMirroringToCompanionDevice`); the phone takes it at launch through an
+  Expo AppDelegate subscriber in `modules/watch-workout`, and with the
+  `workout-processing` background mode the system keeps the app running while
+  it is mirrored. Events and contexts also travel over that session; the queue
+  stays as the fallback and repeats are dropped (event ids on the phone, an
+  identical context on the watch). The watch says "Waiting for your iPhone…"
+  5 s after a tick with no answer. A token read that fails in a background
+  launch (keychain locked) is retried when the app comes to the front instead
+  of opening signed out. Needs prebuild + native rebuild.
