@@ -7,8 +7,13 @@ import {
   useRef,
   useState,
 } from 'react';
+import { AppState } from 'react-native';
 
-import { sessionBootDecision, type SessionBootOutcome } from '@/features/auth/sessionBoot';
+import {
+  sessionBootDecision,
+  type SessionBootOutcome,
+  tokenReadFailureAction,
+} from '@/features/auth/sessionBoot';
 import { authClient } from '@/features/auth/api/authClient';
 import { tokenStorage } from '@/features/auth/tokenStorage';
 import { discardActiveWorkoutIfForeign } from '@/features/workouts/state/workoutDraftStore';
@@ -76,21 +81,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const version = ++generation.current;
-    void (async () => {
+    let waitForActive: { remove: () => void } | null = null;
+
+    const readToken = async (): Promise<'done' | 'retry'> => {
       try {
         const token = await tokenStorage.get();
-        if (version !== generation.current) return;
+        if (version !== generation.current) return 'done';
         if (token) {
           setAuthToken(token);
           await validateSession(token, version);
         }
+        return 'done';
       } catch {
-        // A storage failure must release the startup screen too.
-      } finally {
-        if (version === generation.current) setIsLoading(false);
+        // A storage failure must release the startup screen too — unless the
+        // app was launched in the background with the phone locked, where the
+        // token cannot be read until it is unlocked (spec 0045 EF-2).
+        return tokenReadFailureAction(AppState.currentState) === 'retry-when-active' ? 'retry' : 'done';
       }
+    };
+    const release = () => {
+      if (version === generation.current) setIsLoading(false);
+    };
+
+    void (async () => {
+      if ((await readToken()) === 'done' || version !== generation.current) {
+        release();
+        return;
+      }
+      waitForActive = AppState.addEventListener('change', (state) => {
+        if (state !== 'active') return;
+        waitForActive?.remove();
+        waitForActive = null;
+        void readToken().finally(release);
+      });
     })();
-    return () => { generation.current += 1; };
+    return () => {
+      generation.current += 1;
+      waitForActive?.remove();
+    };
   }, [validateSession]);
 
   const retrySession = useCallback(async () => {

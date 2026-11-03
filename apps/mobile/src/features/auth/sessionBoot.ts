@@ -27,3 +27,14 @@ export function sessionBootDecision(token: string | null, outcome: SessionBootOu
     clearToken: false,
   };
 }
+
+/**
+ * What to do when the stored token could not be read (spec 0045 EF-2). The
+ * token store is locked until the phone is unlocked, so a launch in the
+ * background with the phone locked fails to read it: keep the start-up screen
+ * and read again when the app comes to the front, instead of opening signed
+ * out. A failure in the front is a real one and opens signed out, as before.
+ */
+export function tokenReadFailureAction(appState: string | null | undefined): 'retry-when-active' | 'start-signed-out' {
+  return appState === 'active' ? 'start-signed-out' : 'retry-when-active';
+}

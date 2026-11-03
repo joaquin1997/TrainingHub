@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { sessionBootDecision } from './sessionBoot';
+import { sessionBootDecision, tokenReadFailureAction } from './sessionBoot';
 
 const token = `header.${btoa(JSON.stringify({ sub: 'ana' }))}.signature`;
 const user = { id: 'ana', displayName: 'Ana', createdAt: '', updatedAt: '' };
@@ -41,5 +41,17 @@ describe('session startup (0001)', () => {
     expect(sessionBootDecision(null, { kind: 'unreachable' })).toEqual({
       status: 'signed-out', user: null, clearToken: false,
     });
+  });
+});
+
+describe('token read failure (0045 EF-2)', () => {
+  it('waits for the front to read again when launched in the background', () => {
+    expect(tokenReadFailureAction('background')).toBe('retry-when-active');
+    expect(tokenReadFailureAction('inactive')).toBe('retry-when-active');
+    expect(tokenReadFailureAction(null)).toBe('retry-when-active');
+  });
+
+  it('opens signed out when the read fails in the front', () => {
+    expect(tokenReadFailureAction('active')).toBe('start-signed-out');
   });
 });
