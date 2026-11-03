@@ -1,6 +1,6 @@
 ---
 spec: 0045
-status: in-progress
+status: done
 created: 2026-11-03
 ---
 
@@ -19,7 +19,7 @@ the tree green: `pnpm -r typecheck` and `pnpm -r test` pass at every step
 | [x] 3 | Watch: start mirroring after the session begins; events also over the mirrored session; contexts received over it; identical-context dedupe; 5 s waiting state and its line in the view — FR-1, FR-3, FR-4, EF-1, EF-3 | watch (**native — rebuild**) | swiftc typecheck (watchOS) | `feat(watch): mirror the workout to the iPhone and say when it waits` |
 | [x] 4 | Phone: AppDelegate subscriber installs the mirroring handler at launch; `PhoneWatchLink` keeps the mirrored session, delivers its events, sends contexts over it, releases it on end/failure/disconnect; `UIBackgroundModes: workout-processing` — FR-1, FR-2, FR-5, EF-4 | ios (**native — prebuild + rebuild**) | `expo config` shows the background mode; Release build of the app with the watch app | `feat(ios): keep the app working while the watch runs the workout` |
 | [x] 5 | Docs: backlog, roadmap 08 progress log, spec status | docs | — | `docs(sdd): 0045 code complete` |
-| [ ] 6 | **[DEVICE]** prebuild + rebuild + install (`deploy-pending.sh` or prebuild + `renew-iphone.sh`); AC-1–AC-7; note the double buzz and the swipe-away case | owner | on the iPhone + watch | — |
+| [x] 6 | **[DEVICE]** prebuild + rebuild + install (`deploy-pending.sh` or prebuild + `renew-iphone.sh`); AC-1–AC-7; note the double buzz and the swipe-away case | owner | on the iPhone + watch | — |
 
 Acceptance criteria → tasks: AC-1 (3, 4, 6), AC-2 (4, 6), AC-3 (3, 4, 6),
 AC-4 (2, 3, 6), AC-5 (4, 6), AC-6 (3, 4, 6), AC-7 (4, 6).
@@ -59,12 +59,15 @@ AC-4 (2, 3, 6), AC-5 (4, 6), AC-6 (3, 4, 6), AC-7 (4, 6).
   AC-1, AC-2, AC-3 and the swipe-away case pass. Left: AC-4 (phone off; the
   owner cannot test it now), AC-5 (no background activity after the
   workout), AC-6 (pause from the watch), AC-7 (no watch).
+- 2026-11-03 — The owner checked the rest: AC-4 to AC-7 pass. Spec closed.
+  Decided on the device: both buzzes at rest end stay (the watch's and the
+  phone's alert passed on to it).
 
 ## Definition of done
 
-- [ ] Every functional requirement and acceptance criterion in `spec.md` is met
+- [x] Every functional requirement and acceptance criterion in `spec.md` is met
       or explicitly deferred with a TODO
-- [ ] `pnpm -r typecheck` and `pnpm -r test` green
-- [ ] Relevant `docs/roadmap/NN-*.md` checklist and progress log updated
-- [ ] `spec.md` status set to `done`; `../backlog.md` updated
-- [ ] Constitution amended if this work settled a new invariant
+- [x] `pnpm -r typecheck` and `pnpm -r test` green
+- [x] Relevant `docs/roadmap/NN-*.md` checklist and progress log updated
+- [x] `spec.md` status set to `done`; `../backlog.md` updated
+- [x] Constitution amended if this work settled a new invariant — none settled

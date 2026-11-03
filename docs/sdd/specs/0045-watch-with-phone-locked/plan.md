@@ -1,6 +1,6 @@
 ---
 spec: 0045
-status: approved     # self-approved under the delegated gates, 2026-11-03
+status: done         # self-approved 2026-11-03; shipped and checked on the device the same day
 created: 2026-11-03
 ---
 

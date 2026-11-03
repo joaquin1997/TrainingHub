@@ -11,8 +11,8 @@
   - [x] watchOS app mirroring the active workout: heart rate, calories, Done,
     rest with haptic, pause/resume, finish request; saves the workout to
     Health (Level 2, opt-in build flag)
-  - [~] Ticks from the watch applied with the phone locked (spec 0045 — code
-    complete, device check pending)
+  - [x] Ticks from the watch applied with the phone locked (spec 0045,
+    checked on the device 2026-11-03)
 - [~] Push notifications (rest timer, reminders)
   - [x] Rest timer: local notification when a rest ends outside the app
     (spec 0018, iOS; no push server needed)

@@ -1,7 +1,7 @@
 ---
 id: 0045
 title: The watch keeps going with the phone locked
-status: in-progress
+status: done
 roadmap: docs/roadmap/08-integrations-and-platform.md
 created: 2026-11-03
 ---
