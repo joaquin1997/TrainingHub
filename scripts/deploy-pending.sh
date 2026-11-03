@@ -16,8 +16,9 @@
 #                   (or APPLY_CATALOG=1), image matching (0026, only with IMAGES=1)
 #   4. ios        — expo prebuild
 #   5. backend    — rebuild the image on the server and replace the container
-#   6. iphone     — build, sign and install on the connected iPhone (after the
-#                   API: the new app needs its endpoints), then Metro + launch
+#   6. iphone     — build, sign and install on every iPhone (and watch) within
+#                   reach (after the API: the new app needs its endpoints), then
+#                   Metro + launch
 #
 # Steps that finished are recorded in tmp/deploy-pending.done (per commit), so a
 # re-run after a failure skips them. FORCE=1 runs everything again.
@@ -35,7 +36,10 @@
 #                                 still expires after 7 days
 #   FORCE_IPHONE=1                build and install on the devices again (same commit),
 #                                 e.g. to renew the 7-day profile
-#   IOS_DEVICE_ID=<udid>          iPhone to build for (default: the paired iPhone)
+#   IOS_DEVICE_ID="<udid> …"      iPhones to install on (default: every paired iPhone
+#                                 within reach)
+#   WATCH_DEVICE_ID="<udid> …"    with WATCH_APP=1, watches to install on (default:
+#                                 every paired watch within reach)
 #   WATCH_APP=1                   prebuild with TRAININGHUB_WATCH_APP=1 (0025 Level 2)
 #   HOME_WIDGET=0                 prebuild without the widget's App Group (0036; on by
 #                                 default since the free team signs it)
@@ -281,21 +285,12 @@ fi
 
 cd "$ROOT/apps/mobile"
 
-DEVICE_ID="${IOS_DEVICE_ID:-}"
-if [ -z "$DEVICE_ID" ]; then
-  devices_json="$(mktemp)"
-  xcrun devicectl list devices --json-output "$devices_json" >/dev/null
-  DEVICE_ID="$(node -e '
-    const devices = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).result.devices;
-    // Simulators are listed as paired iPhones too.
-    const phone = devices.find((d) => d.hardwareProperties?.deviceType === "iPhone"
-      && d.hardwareProperties?.reality === "physical"
-      && d.connectionProperties?.pairingState === "paired");
-    process.stdout.write(phone?.hardwareProperties?.udid ?? "");
-  ' "$devices_json")"
-  rm -f "$devices_json"
-fi
-[ -n "$DEVICE_ID" ] || fail "no paired iPhone found (connect it, or set IOS_DEVICE_ID)"
+# shellcheck source=lib/devices.sh
+. "$ROOT/scripts/lib/devices.sh"
+# One "udid<TAB>name" line per device: every reachable iPhone (and watch), so the
+# app lands on each person's phone that is around.
+IPHONES="$(target_devices iPhone "${IOS_DEVICE_ID:-}")"
+[ -n "$IPHONES" ] || fail "no paired iPhone within reach (connect it, or set IOS_DEVICE_ID)"
 
 CONFIGURATION=Debug
 [ "${RELEASE:-0}" = "1" ] && CONFIGURATION=Release
@@ -306,50 +301,58 @@ IPHONE_STEP="iphone-$PREBUILD_STEP"
 # A Release build bakes the API URL into its JS bundle.
 export EXPO_PUBLIC_API_URL="$API_URL"
 
-WATCH_ID=""
-if [ "${WATCH_APP:-0}" = "1" ]; then
-  devices_json="$(mktemp)"
-  xcrun devicectl list devices --json-output "$devices_json" >/dev/null
-  WATCH_ID="$(node -e '
-    const devices = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).result.devices;
-    const watch = devices.find((d) => d.hardwareProperties?.deviceType === "appleWatch"
-      && d.hardwareProperties?.reality === "physical"
-      && d.connectionProperties?.pairingState === "paired");
-    process.stdout.write(watch?.hardwareProperties?.udid ?? "");
-  ' "$devices_json")"
-  rm -f "$devices_json"
-fi
+WATCHES=""
+[ "${WATCH_APP:-0}" = "1" ] && WATCHES="$(target_devices appleWatch "${WATCH_DEVICE_ID:-}")"
+
+# Runs the app on every iPhone.
+launch_on_iphones() {
+  local udid name
+  while IFS=$'\t' read -r udid name <&3; do
+    xcrun devicectl device process launch --device "$udid" --terminate-existing "$BUNDLE_ID" >/dev/null \
+      && echo "    [$name] app launched" \
+      || echo "    [$name] could not launch the app; open it by hand"
+  done 3<<< "$IPHONES"
+}
 
 if [ "${FORCE_IPHONE:-0}" != "1" ] && is_done "$IPHONE_STEP"; then
   step "iPhone: $CONFIGURATION already built and installed for $COMMIT"
 else
-  # Building the watch scheme for the watch first registers the watch on the
-  # team, so the watch app's profile includes it (built only for the iPhone,
-  # the watch refuses it: "This provisioning profile cannot be installed").
-  if [ -n "$WATCH_ID" ]; then
-    step "Apple Watch: xcodebuild for $WATCH_ID"
+  # Building the watch scheme for a watch first registers it on the team, so
+  # the watch app's profile includes it (built only for the iPhone, the watch
+  # refuses it: "This provisioning profile cannot be installed").
+  while IFS=$'\t' read -r udid name <&3; do
+    [ -n "$udid" ] || continue
+    step "Apple Watch: xcodebuild for $name ($udid)"
     xcodebuild -quiet -workspace ios/TrainingHub.xcworkspace -scheme TrainingHubWatch \
-      -configuration "$CONFIGURATION" -destination "id=$WATCH_ID" -derivedDataPath ios/DerivedData \
+      -configuration "$CONFIGURATION" -destination "id=$udid" -derivedDataPath ios/DerivedData \
       -allowProvisioningUpdates build
-  fi
+  done 3<<< "$WATCHES"
 
+  # One build per iPhone, so each one is registered on the team; the later
+  # builds are incremental and the last one's profile includes them all.
   # Not `expo run:ios --device`: it does not pass -allowProvisioningUpdates, so
   # it fails once the free team's 7-day profile has expired.
-  step "iPhone: xcodebuild $CONFIGURATION for $DEVICE_ID (slow)"
-  xcodebuild -quiet -workspace ios/TrainingHub.xcworkspace -scheme TrainingHub \
-    -configuration "$CONFIGURATION" -destination "id=$DEVICE_ID" -derivedDataPath ios/DerivedData \
-    -allowProvisioningUpdates build
+  while IFS=$'\t' read -r udid name <&3; do
+    step "iPhone: xcodebuild $CONFIGURATION for $name ($udid) (slow)"
+    xcodebuild -quiet -workspace ios/TrainingHub.xcworkspace -scheme TrainingHub \
+      -configuration "$CONFIGURATION" -destination "id=$udid" -derivedDataPath ios/DerivedData \
+      -allowProvisioningUpdates build
+  done 3<<< "$IPHONES"
 
-  step "iPhone: install"
-  xcrun devicectl device install app --device "$DEVICE_ID" "$APP_PATH"
+  while IFS=$'\t' read -r udid name <&3; do
+    step "iPhone: install on $name"
+    xcrun devicectl device install app --device "$udid" "$APP_PATH"
+  done 3<<< "$IPHONES"
 
   # The watch app is embedded in the iPhone app; installing it straight onto a
   # connected watch saves going through the iPhone's Watch app.
-  if [ -n "$WATCH_ID" ]; then
-    step "Apple Watch: install"
-    xcrun devicectl device install app --device "$WATCH_ID" \
-      "$PRODUCTS/$CONFIGURATION-watchos/TrainingHubWatch.app" \
-      || echo "    could not install on the watch; use the iPhone's Watch app (My Watch → TrainingHub → Install)"
+  if [ -n "$WATCHES" ]; then
+    while IFS=$'\t' read -r udid name <&3; do
+      step "Apple Watch: install on $name"
+      xcrun devicectl device install app --device "$udid" \
+        "$PRODUCTS/$CONFIGURATION-watchos/TrainingHubWatch.app" \
+        || echo "    could not install on $name; use the iPhone's Watch app (My Watch → TrainingHub → Install)"
+    done 3<<< "$WATCHES"
   elif [ "${WATCH_APP:-0}" = "1" ]; then
     echo "    no watch connected to the Mac; install it from the iPhone's Watch app (My Watch → TrainingHub → Install)"
   fi
@@ -358,9 +361,7 @@ fi
 
 if [ "$CONFIGURATION" = "Release" ]; then
   step "iPhone: launch the Release build (no Metro needed)"
-  xcrun devicectl device process launch --device "$DEVICE_ID" --terminate-existing "$BUNDLE_ID" >/dev/null \
-    && echo "    [iphone] app launched" \
-    || echo "    [iphone] could not launch the app; open it by hand"
+  launch_on_iphones
   echo "    the signing profile expires in 7 days: re-run with RELEASE=1 FORCE_IPHONE=1 then"
   step "done — log: $LOG"
   exit 0
@@ -368,17 +369,15 @@ fi
 
 # Metro can stay up for hours; another run may start meanwhile.
 release_lock
-step "Metro (API=$API_URL) — the app opens on the iPhone once Metro is up; Ctrl-C to stop"
-echo "    new signing profile? trust it on the iPhone: Settings → General → VPN & Device Management"
+step "Metro (API=$API_URL) — the app opens on the iPhones once Metro is up; Ctrl-C to stop"
+echo "    new signing profile? trust it on each iPhone: Settings → General → VPN & Device Management"
 echo "    then: device checks in each spec's tasks.md (see docs/sdd/backlog.md) — log: $LOG"
 (
   for _ in $(seq 1 120); do
     curl -fsS http://localhost:8081/status 2>/dev/null | grep -q running && break
     sleep 1
   done
-  xcrun devicectl device process launch --device "$DEVICE_ID" --terminate-existing "$BUNDLE_ID" >/dev/null \
-    && echo "    [iphone] app launched" \
-    || echo "    [iphone] could not launch the app; open it by hand"
+  launch_on_iphones
 ) &
 # EXPO_PUBLIC_* is baked into the bundle: --clear so the URL is not a stale one.
 npx expo start --clear

@@ -8,17 +8,17 @@
 #
 # Builds what is checked out, in Release (the JS bundle goes inside the app, so
 # it runs without Metro), from the existing apps/mobile/ios — no pull, no
-# prebuild: run deploy-pending.sh for that. The iPhone must be reachable by
-# CoreDevice (cable or same Wi-Fi; FortiClient disconnected). The watch app is
-# embedded in the iPhone app (an ios/ prebuilt with TRAININGHUB_WATCH_APP=1) and
-# installed straight onto the paired watch when CoreDevice sees it; otherwise it
-# is left to the iPhone's Watch app.
+# prebuild: run deploy-pending.sh for that. It installs on every paired iPhone
+# CoreDevice can reach (cable or same Wi-Fi; FortiClient disconnected); a phone
+# that is away is skipped. The watch app is embedded in the iPhone app (an ios/
+# prebuilt with TRAININGHUB_WATCH_APP=1) and installed straight onto each paired
+# watch CoreDevice sees; otherwise it is left to the iPhone's Watch app.
 #
 # Overrides (env vars):
-#   IOS_DEVICE_ID=<udid>   iPhone to install on (default: the paired iPhone)
-#   WATCH_DEVICE_ID=<udid> watch to install on (default: the paired Apple Watch)
-#   RENEW_HOURS=48         drop cached profiles that expire within this many hours,
-#                          so Xcode fetches new ones instead of reusing them
+#   IOS_DEVICE_ID="<udid> …"   iPhones to install on (default: every one within reach)
+#   WATCH_DEVICE_ID="<udid> …" watches to install on (default: every one within reach)
+#   RENEW_HOURS=48             drop cached profiles that expire within this many
+#                              hours, so Xcode fetches new ones instead of reusing them
 #
 # Logged to tmp/renew-iphone-<timestamp>.log; a notification tells how it went.
 #
@@ -74,26 +74,15 @@ for profile in "$PROFILES_DIR"/*.mobileprovision; do
   fi
 done
 
-# UDID of the first paired physical device of a CoreDevice deviceType.
-paired_device() {
-  local devices_json
-  devices_json="$(mktemp)"
-  xcrun devicectl list devices --json-output "$devices_json" >/dev/null
-  node -e '
-    const devices = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).result.devices;
-    const device = devices.find((d) => d.hardwareProperties?.deviceType === process.argv[2]
-      && d.hardwareProperties?.reality === "physical"
-      && d.connectionProperties?.pairingState === "paired");
-    process.stdout.write(device?.hardwareProperties?.udid ?? "");
-  ' "$devices_json" "$1"
-  rm -f "$devices_json"
-}
+# shellcheck source=lib/devices.sh
+. "$ROOT/scripts/lib/devices.sh"
+# One "udid<TAB>name" line per device: every reachable iPhone and watch, so the
+# app is renewed on each person's phone that is around.
+IPHONES="$(target_devices iPhone "${IOS_DEVICE_ID:-}")"
+[ -n "$IPHONES" ] || fail "no paired iPhone within reach"
+WATCHES="$(target_devices appleWatch "${WATCH_DEVICE_ID:-}")"
 
-DEVICE_ID="${IOS_DEVICE_ID:-$(paired_device iPhone)}"
-[ -n "$DEVICE_ID" ] || fail "no paired iPhone found"
-WATCH_ID="${WATCH_DEVICE_ID:-$(paired_device appleWatch)}"
-
-# Generic destination: the iPhone is already in the team's profile, and
+# Generic destination: the iPhones are already in the team's profile, and
 # `-destination id=` hangs while CoreDevice is still connecting.
 step "iPhone: xcodebuild Release at $(git -C "$ROOT" rev-parse --short HEAD) (slow)"
 xcodebuild -quiet -workspace ios/TrainingHub.xcworkspace -scheme TrainingHub \
@@ -108,38 +97,53 @@ if [ -d "$WATCH_APP_PATH" ]; then
   echo "    watch app signed with a profile that expires $WATCH_EXPIRES"
 fi
 
-step "iPhone: install on $DEVICE_ID"
-# Over Wi-Fi the CoreDevice tunnel is often stale ("Connection reset by peer");
-# restarting its daemons brings it back.
-if ! xcrun devicectl device install app --device "$DEVICE_ID" "$APP_PATH"; then
-  echo "    install failed; restarting CoreDevice and retrying"
-  killall CoreDeviceService remotepairingd >/dev/null 2>&1 || true
-  sleep 10
-  xcrun devicectl device install app --device "$DEVICE_ID" "$APP_PATH"
-fi
+# One device failing does not stop the others; the notification lists them.
+INSTALLED=""
+FAILED=""
+while IFS=$'\t' read -r udid name <&3; do
+  step "iPhone: install on $name ($udid)"
+  # Over Wi-Fi the CoreDevice tunnel is often stale ("Connection reset by peer");
+  # restarting its daemons brings it back.
+  if ! xcrun devicectl device install app --device "$udid" "$APP_PATH"; then
+    echo "    install failed; restarting CoreDevice and retrying"
+    killall CoreDeviceService remotepairingd >/dev/null 2>&1 || true
+    sleep 10
+    if ! xcrun devicectl device install app --device "$udid" "$APP_PATH"; then
+      echo "    could not install on $name"
+      FAILED="$FAILED, $name"
+      continue
+    fi
+  fi
+  INSTALLED="$INSTALLED, $name"
 
-step "iPhone: launch"
-xcrun devicectl device process launch --device "$DEVICE_ID" --terminate-existing "$BUNDLE_ID" >/dev/null \
-  && echo "    app launched" \
-  || echo "    could not launch the app (iPhone locked, or a new profile to trust: Settings → General → VPN & Device Management); it is installed"
+  step "iPhone: launch on $name"
+  xcrun devicectl device process launch --device "$udid" --terminate-existing "$BUNDLE_ID" >/dev/null \
+    && echo "    app launched" \
+    || echo "    could not launch the app (iPhone locked, or a new profile to trust: Settings → General → VPN & Device Management); it is installed"
+done 3<<< "$IPHONES"
 
 # Straight onto the watch often fails (IXRemoteErrorDomain 6); the iPhone's
 # Watch app can still install the copy embedded in the app just installed.
-WATCH_RESULT=""
 if [ ! -d "$WATCH_APP_PATH" ]; then
   echo "    no watch app in the build (ios/ prebuilt without TRAININGHUB_WATCH_APP=1)"
-elif [ -z "$WATCH_ID" ]; then
-  echo "    no paired Apple Watch found; install it from the iPhone's Watch app (My Watch → TrainingHub → Install)"
-  WATCH_RESULT="; watch: install it from the Watch app"
+elif [ -z "$WATCHES" ]; then
+  echo "    no paired Apple Watch within reach; install it from the iPhone's Watch app (My Watch → TrainingHub → Install)"
 else
-  step "Apple Watch: install on $WATCH_ID"
-  if xcrun devicectl device install app --device "$WATCH_ID" "$WATCH_APP_PATH"; then
-    WATCH_RESULT=" and the watch; watch profile until $WATCH_EXPIRES"
-  else
-    echo "    could not install on the watch; use the iPhone's Watch app (My Watch → TrainingHub → Install)"
-    WATCH_RESULT="; watch failed, install it from the Watch app"
-  fi
+  while IFS=$'\t' read -r udid name <&3; do
+    step "Apple Watch: install on $name ($udid)"
+    if xcrun devicectl device install app --device "$udid" "$WATCH_APP_PATH"; then
+      INSTALLED="$INSTALLED, $name"
+    else
+      echo "    could not install on $name; use the iPhone's Watch app (My Watch → TrainingHub → Install)"
+      FAILED="$FAILED, $name (use the Watch app)"
+    fi
+  done 3<<< "$WATCHES"
 fi
 
-notify "Installed on the iPhone$WATCH_RESULT; iPhone profile until $EXPIRES"
-step "done — log: $LOG"
+SUMMARY="Installed on ${INSTALLED#, }; profile until $EXPIRES"
+[ -z "$INSTALLED" ] && SUMMARY="Installed nowhere"
+[ -n "$FAILED" ] && SUMMARY="$SUMMARY. Failed: ${FAILED#, }"
+notify "$SUMMARY"
+step "done — $SUMMARY — log: $LOG"
+# Not a failing test: that would fire the ERR trap and a second notification.
+if [ -z "$INSTALLED" ] || [ -n "$FAILED" ]; then exit 1; fi
