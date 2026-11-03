@@ -347,6 +347,7 @@ export const es: TranslationCatalog = {
     liveRound: 'Ronda {{round}}',
     watchMore: 'Más',
     watchConnectToDiscard: 'Conecta con tu iPhone para descartar',
+    watchWaitingPhone: 'Esperando al iPhone…',
     weekStripLabel: 'Esta semana',
     lastWeek: 'Semana pasada',
     weekOf: '{{from}} – {{to}}',

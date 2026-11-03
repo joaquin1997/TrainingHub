@@ -72,6 +72,7 @@ export function useLiveWorkoutController(enabled: boolean) {
       discardTitle: t('workouts.discardTitle'),
       cancel: t('common.cancel'),
       connectToDiscard: t('workouts.watchConnectToDiscard'),
+      waitingPhone: t('workouts.watchWaitingPhone'),
       discardLost: (count) =>
         count > 0 ? t('workouts.discardLost', { count }) : t('workouts.discardNoneDone'),
     });

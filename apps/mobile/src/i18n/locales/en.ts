@@ -344,6 +344,7 @@ export const en = {
     liveRound: 'Round {{round}}',
     watchMore: 'More',
     watchConnectToDiscard: 'Connect to your iPhone to discard',
+    watchWaitingPhone: 'Waiting for your iPhone…',
     weekStripLabel: 'This week',
     lastWeek: 'Last week',
     weekOf: '{{from}} – {{to}}',

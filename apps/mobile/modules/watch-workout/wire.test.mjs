@@ -39,6 +39,7 @@ const labels = {
   discardTitle: 't',
   cancel: 'c',
   connectToDiscard: 'c',
+  waitingPhone: 'w',
   reps: 'r',
   discardLost: (count) => `${count}`,
 };

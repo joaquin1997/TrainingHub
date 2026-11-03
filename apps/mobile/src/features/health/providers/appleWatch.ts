@@ -27,6 +27,7 @@ let watchLabels: WatchLabels = {
   discardTitle: 'Discard this workout?',
   cancel: 'Cancel',
   connectToDiscard: 'Connect to your iPhone to discard',
+  waitingPhone: 'Waiting for your iPhone…',
   discardLost: (count) =>
     count > 0 ? `${count} sets done will be lost.` : 'No sets done yet.',
 };

@@ -38,6 +38,8 @@ struct WatchContext: Codable, Equatable {
     var connectToDiscard: String? = nil
     /// Spec 0041: the unit under the reps control.
     var reps: String? = nil
+    /// Spec 0045: in place of the set while the next one has not arrived.
+    var waitingPhone: String? = nil
 
     static let fallback = Labels(
       done: "Done",
@@ -54,7 +56,8 @@ struct WatchContext: Codable, Equatable {
       discardTitle: "Discard this workout?",
       cancel: "Cancel",
       connectToDiscard: "Connect to your iPhone to discard",
-      reps: "reps"
+      reps: "reps",
+      waitingPhone: "Waiting for your iPhone…"
     )
   }
 

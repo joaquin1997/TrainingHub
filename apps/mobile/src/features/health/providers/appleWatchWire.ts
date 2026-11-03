@@ -32,6 +32,8 @@ export interface WatchLabels {
   connectToDiscard: string;
   /** Spec 0041: the unit under the watch's reps control. */
   reps: string;
+  /** Spec 0045: in place of the set while the next one has not arrived. */
+  waitingPhone: string;
   /** "3 sets done will be lost." / "No sets done yet." */
   discardLost: (count: number) => string;
 }

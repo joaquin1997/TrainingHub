@@ -23,6 +23,7 @@ const labels: WatchLabels = {
   discardTitle: '¿Descartar?',
   cancel: 'Cancelar',
   connectToDiscard: 'Conecta con tu iPhone para descartar',
+  waitingPhone: 'Esperando al iPhone…',
   reps: 'reps',
   discardLost: (count) => `Se perderán ${count}`,
 };
@@ -85,6 +86,7 @@ describe('watch wire format (spec 0025)', () => {
         discardTitle: '¿Descartar?',
         cancel: 'Cancelar',
         connectToDiscard: 'Conecta con tu iPhone para descartar',
+        waitingPhone: 'Esperando al iPhone…',
         reps: 'reps',
       },
     });
