@@ -1,14 +1,22 @@
 ---
 id: 0001
 title: Auth session hardening
-status: ready
+status: in-progress
 roadmap: docs/roadmap/03-auth-and-users.md
 created: 2026-09-23
 decided: 2026-09-23
-amended: 2026-09-24
+amended: 2026-11-03
 ---
 
 # Auth session hardening
+
+## Implementation status — 2026-11-03
+
+Code complete locally, with automated checks. Server data reassignment,
+deployment and device acceptance remain open in `tasks.md`; this is not yet
+`done`. Existing Google sign-in (0039) is also a credential-acquisition
+exception under FR-10. Legacy credentials without expiration are rejected
+once deployed; the person signs in again to obtain a 90-day credential.
 
 ## Problem
 
@@ -198,9 +206,8 @@ knowingly rather than rediscovered.
    database forever). Cost: a one-off operation run once against the existing
    database — not part of the schema history, which must keep working on a
    fresh database (constitution Article 5) — plus FR-9/EF-5.
-   `TODO(sdd): the target account must be named before the migration is`
-   `written. It is the owner's existing account — readable from the users table`
-   `on the dev database, so this closes during planning, not now.`
+   The reassignment script accepts the owner's existing account explicitly;
+   the target public ID must be selected and its dry run reviewed before apply.
 2. **Session lifetime → 90 days, fixed, no renewal.** Delegated to the
    implementer; recorded here as the decision, not as an assumption. Reasoning:
    the only installs are the owner's own devices, so the exposure of a leaked

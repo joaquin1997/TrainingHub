@@ -1,109 +1,148 @@
-# Mobile App
+# TrainingHub mobile
 
-Expo + React Native mobile shell for the workout tracker. iOS-first, with Android
-and web (`react-native-web`) supported by the same code.
+React Native + Expo + TypeScript application using Expo Router. iOS is the
+primary device target. Android and web share the UI and domain code, while
+Apple-specific integrations use native modules and platform boundaries.
+Android/web behaviour has not received the same device validation as iOS.
 
-- `src/app/` contains Expo Router route files
-- `src/features/` contains feature-local placeholder screens
-- `src/ui/theme.ts` is the shared design system (see below)
-- `src/config/api.ts` resolves the API base URL (`EXPO_PUBLIC_API_URL`, falling
-  back to the Metro dev host)
+## Feature areas
 
-## Design system
+- Email/password authentication, stored-session validation, offline startup
+  notice and retry; Google sign-in once OAuth clients are configured.
+- Routine editing, catalog search, private custom exercises and replacements.
+- Active workouts with persistent drafts, set types, unilateral/time/distance
+  values, supersets, warm-ups, pause/resume and rest timers.
+- Workout history, summaries, sharing, personal records and progress charts.
+- Profile/measurements, ES/EN, kg/lb and System/Light/Dark appearance.
+- iOS Live Activities, rest notifications, active energy, an optional Watch
+  companion and an optional home-screen widget data bridge.
 
-`src/ui/theme.ts` centralizes a dark, gym-oriented visual language so screens stay
-consistent across iOS/Android/web:
+A stored workout can be reopened offline; saving and uncached server data need
+connectivity. This is not a full offline sync system. Apple sign-in and Android
+Health Connect remain unfinished. Read the [spec backlog](../../docs/sdd/backlog.md)
+for rollout and device checks rather than assuming every implemented path is
+already verified on every platform.
 
-- `colors` — near-black surfaces with a volt-green primary and orange accent
-- `spacing` / `radii` — layout scale
-- `commonStyles` — shared `StyleSheet` primitives (screen, card, inputs, buttons,
-  typography) reused across feature screens
+## Structure
 
-Screens import tokens from `@/ui/theme` instead of hardcoding colors. When wrapping
-a child of an Expo Router `<Link asChild>` (a Radix `Slot`), pass `style` as a
-function (`({ pressed }) => [...]`) rather than a raw array — an array style on a
-Slot child throws at runtime.
+- `src/app/`: file-based routes.
+- `src/features/`: screens, API clients, state and feature rules.
+- `src/lib/`: HTTP, device storage, units and shared presentation helpers.
+- `src/ui/`: reusable components and theme scales.
+- `src/i18n/`: English/Spanish catalogs and language selection.
+- `modules/`: local Expo modules.
+- `targets/`: generated native extension and Watch app sources.
+
+The shared theme supports light and dark appearance. Reuse its colors,
+spacing, radii and type scales; do not introduce a second visual system.
+
+## Start development
+
+Use the configured API deployment described in [development](../../docs/development.md).
+From the repository root:
+
+```bash
+pnpm mobile
+```
+
+The default API address is the Metro development host on port 3000. Override
+it from this app directory when necessary:
+
+```bash
+EXPO_PUBLIC_API_URL=http://127.0.0.1:3000 pnpm dev --clear
+```
+
+A physical phone needs a reachable LAN/HTTPS address, and an Android emulator
+usually uses `10.0.2.2` for its host machine. Public Expo variables are baked
+into the bundle; restart Metro after changing them. Browser access also needs
+an appropriate CORS/proxy setup when the API has a different origin.
+
+Use a **development build** for native flows. Expo Go cannot supply the local
+ActivityKit, HealthKit, rest-alert and Watch modules. Web can be useful for
+shared UI work, but does not emulate those capabilities.
 
 ## Native builds
 
-The native projects are generated on demand by `expo prebuild` (`ios/`, `android/`
-are gitignored). `app.json` (the `expo` config) is the source of truth for native
-settings: `ios.bundleIdentifier` / `android.package` and the iOS ATS exception that
-allows the app to reach the `http://` backend over Tailscale.
-
-Native code that lives in the repo (spec 0012):
-
-- `targets/workout-activity/` — the Live Activity widget extension, generated
-  into the Xcode project by `@bacons/apple-targets`. `_shared/` is compiled into
-  both the app and the extension (activity attributes, Pause/Resume intents).
-- `modules/workout-live-activity/` — local Expo module (ActivityKit). Keeps its
-  own copy of `WorkoutActivityAttributes.swift`; `attributes.test.mjs` fails if
-  it drifts from `_shared/`.
-- `modules/health-energy/` — local Expo module (HealthKit active energy).
-- `modules/rest-alert/` — local Expo module (the rest-end notification, spec 0018).
-- `modules/watch-workout/` — local Expo module (spec 0025): WatchConnectivity
-  link to the watch app and HealthKit's "start the watch app". The JSON it
-  carries is `src/features/health/providers/appleWatchWire.ts`;
-  `wire.test.mjs` fails if a key is missing from the watch's `WatchWire.swift`.
-- `targets/watch/` — the Apple Watch app (spec 0025 Level 2, watchOS 11,
-  bundle id `com.joaquin.traininghub.watchkitapp`, HealthKit entitlement). It
-  is **opt-in**: generated only with `TRAININGHUB_WATCH_APP=1` at prebuild (see
-  `app.config.js`). The Live Activity's watch Smart Stack layout (Level 1) is
-  part of `targets/workout-activity/` and needs no flag.
-
-Local modules under `modules/` are autolinked. Run
-`EXPO_NO_GIT_STATUS=1 npx expo prebuild -p ios --clean` after changing
-`app.json`, anything under `targets/` or `modules/`, or a native dependency;
-a JS-only change needs only a Metro reload. To check that the native code
-compiles without a device or signing:
+`app.json`, `app.config.js`, `modules/` and `targets/` are the maintained
+sources. The generated `ios/` and `android/` projects are gitignored.
+Regenerate after native configuration, target, module or dependency changes:
 
 ```bash
-cd ios && xcodebuild -workspace TrainingHub.xcworkspace -scheme TrainingHub \
+# From apps/mobile; this regenerates the native project.
+EXPO_NO_GIT_STATUS=1 pnpm exec expo prebuild -p ios --clean
+```
+
+Xcode needs the SDKs required by the generated project and a matching iOS
+simulator runtime. For a simulator development build:
+
+```bash
+pnpm exec expo run:ios
+```
+
+To compile without device signing:
+
+```bash
+xcodebuild -workspace ios/TrainingHub.xcworkspace -scheme TrainingHub \
   -configuration Debug -sdk iphonesimulator \
   -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 ```
 
-To install a dev build on a connected iPhone, see the root `README.md`
-("Run the mobile app on a physical iPhone").
+Physical devices require your own development team and provisioning profiles.
+The repository's bundle IDs and team setting describe the maintainer's build;
+configure your own identity before signing or distributing. A development build
+needs Metro; a Release build embeds its JS and runs independently of the Mac.
 
-### With the watch app (spec 0025 Level 2)
+Do not use `prebuild --clean` to preserve hand edits inside `ios/`; put durable
+native changes in the maintained source files instead.
 
-1. Install the watchOS platform once: Xcode → Settings → Components →
-   watchOS 26.x. Without it every build of the scheme stops with "This scheme
-   builds an embedded Apple Watch app. watchOS … must be installed".
-2. `TRAININGHUB_WATCH_APP=1 EXPO_NO_GIT_STATUS=1 npx expo prebuild -p ios --clean`
-3. Build and install the iPhone app as usual (`-allowProvisioningUpdates`
-   creates the watch app's development profile on the free team too). The
-   watch app is embedded; it installs through the iPhone's Watch app
-   (My Watch → TrainingHub → Install, or automatic installs), or directly with
-   `xcrun devicectl device install app --device <watch-id>
-   <DerivedData>/Build/Products/Debug-watchos/TrainingHubWatch.app`. The
-   watch needs Developer Mode on.
+## Native boundaries
 
-To check only that the watch app compiles (no watchOS simulator runtime needed):
+| Source | Capability |
+|---|---|
+| `targets/workout-activity/` | iOS Live Activity and widget extension views/intents |
+| `modules/workout-live-activity/` | ActivityKit bridge |
+| `modules/health-energy/` | HealthKit active-energy access |
+| `modules/rest-alert/` | Local rest-end notification |
+| `modules/watch-workout/` | WatchConnectivity and Watch workout coordination |
+| `targets/watch/` | watchOS workout app |
+
+Shared native payload contracts have source tests to detect drift between
+TypeScript and Swift. They do not replace compilation and device checks.
+
+### Optional Apple Watch and home widget bridge
+
+The default prebuild includes the Live Activity target. The Watch app is
+opt-in; install the watchOS platform required by Xcode first:
 
 ```bash
-cd ios && xcodebuild -project TrainingHub.xcodeproj -target TrainingHubWatch \
-  -sdk watchsimulator CODE_SIGNING_ALLOWED=NO build
+TRAININGHUB_WATCH_APP=1 EXPO_NO_GIT_STATUS=1 pnpm exec expo prebuild -p ios --clean
 ```
 
-Current feature areas:
+`TRAININGHUB_HOME_WIDGET=1` opts into the App Group entitlement needed for live
+home-widget data. The extension may still render its placeholder without it.
+Enable both in the same prebuild command when signing supports them:
 
-- `auth`: provider-based Apple sign-in placeholder flow
-- `routines`: mock routine list, detail, and create/edit screens
-- `workouts`: local workout execution draft, active workout, and summary flow
-- `progress`: mock overview and exercise detail screens
-- `health`: Apple Health / Health Connect abstractions and Apple extension points only
+```bash
+TRAININGHUB_WATCH_APP=1 TRAININGHUB_HOME_WIDGET=1 EXPO_NO_GIT_STATUS=1 \
+  pnpm exec expo prebuild -p ios --clean
+```
 
-Implemented now:
+The Watch app is embedded in the iPhone app and installs through the paired
+phone or Xcode/CoreDevice. Developer Mode, signing capabilities and actual
+Health permissions must be checked on your devices; free-team capability and
+provisioning limits are environment-dependent.
 
-- File-based routing with Expo Router
-- Local mock data and local state for early flows
-- Clear mobile-side extension points for auth and health integrations
+For physical installation, profile renewal and Release builds, see
+[deployment](../../docs/deployment.md#native-device-builds).
 
-Intentionally stubbed:
+## Checks
 
-- Backend integration
-- Real Apple sign-in
-- Native Apple Health / Apple Watch behavior
-- Advanced state management or reusable UI systems
+```bash
+# From the repository root.
+pnpm --filter @workout/mobile typecheck
+pnpm --filter @workout/mobile test
+```
+
+Tests cover pure feature/state rules and native-source contracts. Real keyboard,
+notification, Health, Watch, sharing, layout and permission behaviour requires
+separate platform acceptance.

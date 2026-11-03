@@ -1,13 +1,19 @@
-# Future Features
+# API feature modules
 
-Add feature modules here incrementally, for example `auth`, `routines`, or `workouts`.
+Implemented modules are `auth`, `exercises`, `routines`, `workouts`, `progress`,
+`profile`, `measurements` and `settings`. They are registered from
+`src/routes/index.ts`; the liveness route lives under `src/routes/health.ts`.
 
-Each feature should keep its HTTP routes and any future application/domain code local to the feature, then register its routes from `src/routes/index.ts`.
+- `routes.ts` handles HTTP input, status codes and response wiring.
+- `repository.ts` and focused persistence modules use Prisma and enforce user
+  ownership on reads, writes and referenced records.
+- Validation and business rules that do not need HTTP or a database stay in
+  pure modules, with focused tests.
+- Route tests use signed requests and mock the persistence boundary; they
+  must not bypass authentication by mocking the acting user.
+- Historical `mock-*.ts` files are not the running API's persistence layer.
 
-Current pattern:
-
-- `routes.ts` exposes Fastify route registration for the feature
-- `mock-*.ts` or provider files hold placeholder behavior only
-- TODOs mark where Prisma-backed persistence, validation, or provider logic will replace stubs
-
-Keep this layer thin. Avoid adding service hierarchies unless a real problem appears.
+`app.ts` protects routes globally, so adding a feature does not make it public.
+Shared entities and DTOs belong in `packages/domain`, not a second local copy.
+Keep each feature explicit and small; add a service layer only when an actual
+behaviour needs it. See the [architecture guide](../../../../docs/codex-project-context.md).

@@ -15,8 +15,8 @@ created: 2026-10-21
 | [x] 5 | Carry-over proposal script (read-only) → list for the owner | api (script) | run against the server read-only | `feat(catalog): carry-over proposals` |
 | [x] 6 | Apply / undo script `catalog:curate` with report and run file | api (script) | unit tests on the pure planner; dry run on PGlite | `feat(catalog): apply the reviewed catalog` |
 | [x] 7 | Mobile: `Accept-Language`, ranked accent-insensitive search, labels for categories/equipment/muscles | mobile | unit tests | `feat(exercises): search and labels in the app's language` |
-| [ ] 8 | **[OWNER]** review the tables and the carry-over list | owner | — | — |
-| [ ] 9 | **[DEPLOY]** backup, migration, redeploy, dry run, apply, check AC-1–AC-5 | owner | — | — |
+| [x] 8 | **[OWNER]** review the tables and the carry-over list | owner | — | — |
+| [x] 9 | **[DEPLOY]** backup, migration, redeploy, dry run, apply, check AC-1–AC-5 | owner | — | — |
 
 ## Owner steps (tasks 8–9)
 

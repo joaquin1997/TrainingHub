@@ -1,7 +1,7 @@
 /**
  * The subject (`sub`, the user's public id) of a JWT, read without verifying
  * it — the server verifies on every request. Used to know who is signed in
- * after a restart, until spec 0001's `/auth/me` replaces it. Returns null for
+ * during offline startup when the server cannot validate it. Returns null for
  * anything that is not a readable token.
  */
 export function tokenSubject(token: string): string | null {

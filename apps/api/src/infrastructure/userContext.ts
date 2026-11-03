@@ -1,23 +1,10 @@
 import type { FastifyRequest } from 'fastify';
 
-import {
-  DEVELOPMENT_USER_PUBLIC_ID,
-  ensureDevelopmentUser,
-} from './developmentUser.js';
-
-/**
- * Resolves the acting user's publicId for a request: the authenticated user
- * (JWT `sub`) when present, otherwise the dev user (kept as a fallback during
- * the multi-user transition so unauthenticated clients keep working).
- */
-export async function resolveUserPublicId(
-  request: FastifyRequest,
-): Promise<string> {
+/** Only called behind the global authentication boundary. Never invent an owner. */
+export async function resolveUserPublicId(request: FastifyRequest): Promise<string> {
   const sub = request.user?.sub;
-  if (sub) {
-    return sub;
+  if (typeof sub !== 'string' || !sub) {
+    throw Object.assign(new Error('Unauthorized'), { statusCode: 401 });
   }
-
-  await ensureDevelopmentUser();
-  return DEVELOPMENT_USER_PUBLIC_ID;
+  return sub;
 }

@@ -1,7 +1,7 @@
 ---
 id: 0043
 title: Smarter warm-ups and warm-ups marked by hand
-status: ready        # gate 1 self-approved 2026-10-21 (delegated gates, 2026-10-16)
+status: planned      # plan self-approved 2026-11-03 under the delegated gates
 amends: 0024, 0031
 roadmap: docs/roadmap/01-live-workout-logging.md
 created: 2026-10-21
@@ -41,17 +41,28 @@ followed with nonsense weights.
 - One ramp for every exercise that records weight and reps: empty bar × 10,
   40 % × 5, 60 % × 3, 75 % × 2, 90 % × 1, rounded to 2.5 kg / 5 lb, never
   below the bar, steps too close together left out.
-- The catalog records some equipment per exercise (barbell, dumbbell, EZ bar,
+- Historical state before the reviewed catalog (0044): the catalog recorded
+  some equipment per exercise (barbell, dumbbell, EZ bar,
   kettlebell, bench, bodyweight…) but **has no machine or cable at all**:
   machine and cable exercises carry no equipment, and a few are wrong (a cable
   curl listed as bodyweight). Checked on the server's catalog: 862 exercises,
   318 with no equipment.
-- The primary muscle is known for 668 of 862 exercises; the body-part
+- Before 0044, the primary muscle was known for 668 of 862 exercises; the body-part
   category (legs, back, chest, arms, shoulders, abs, calves, cardio) for all
   but 16.
 - In the workout, a set's type changes by tapping its label, cycling through
   the four types. In the routine editor a set is a warm-up only if the action
   generated it.
+
+### Planning update — 2026-11-03
+
+Spec 0044 has since supplied reviewed loading kinds, equipment and muscles.
+Use those loading kinds before name/equipment inference, preserving a person's
+explicit correction above both. The existing single barbell ramp and hidden
+set-type cycle still need this feature. The chest example and AC-4 now use
+two shortened approach sets, matching FR-4's large-muscle row; the former
+single-set example contradicted that row. The same fallback rules apply to
+custom exercises or old drafts without reviewed metadata.
 
 ## Users and scenarios
 
@@ -62,7 +73,7 @@ followed with nonsense weights.
   stack's steps and no bar; the person sees "machine or cable" in the preview.
 - **Squat first thing.** 140 kg: the full barbell ramp, as today.
 - **Third chest exercise.** After bench press and dumbbell press, cable flyes
-  at 25 kg: one approach set, because the chest was already worked in this
+  at 25 kg: two approach sets, because the chest was already worked in this
   workout.
 - **Curls.** A small muscle: two approach sets at most.
 - **Wrong guess.** The app thinks a cable curl is a dumbbell exercise. In the
@@ -109,7 +120,8 @@ followed with nonsense weights.
   *dumbbells* (dumbbells or kettlebells; the weight is per hand), or *machine
   or cable*.
 - **FR-2.** Until a person sets it, the loading kind MUST be worked out from
-  the catalog: the exercise's name first (words for machine, cable, pulley,
+  the catalog: a reviewed loading kind first when available, then the exercise's
+  name (words for machine, cable, pulley,
   dumbbell, barbell, bar, kettlebell in English and Spanish), then its
   equipment; with neither, *machine or cable*.
 - **FR-3.** The approach sets MUST follow the loading kind:
@@ -169,7 +181,8 @@ followed with nonsense weights.
 
 - New concept **loading kind** on **Exercise** (catalog), worked out by the
   system or set by a person — the same pattern as the tracking type (0030).
-  Persisted; a migration.
+  Persisted; 0044 already supplied its value. A migration adds provenance so
+  catalog maintenance cannot overwrite a person's choice.
 - Reads the primary muscle and category of **Exercise**; reads which
   **WorkoutExercise** working sets are done (performed) or which
   **RoutineExercise** come earlier (template) — never mixing the two
@@ -189,7 +202,7 @@ followed with nonsense weights.
 - **AC-3.** Given back squat at 140 kg first in the workout, then the ramp is
   today's (20 × 10, 55 × 5, 85 × 3, 105 × 2, 125 × 1).
 - **AC-4.** Given bench press done, when previewing cable flyes (chest), then
-  one approach set is proposed and the preview says the chest was already
+  two approach sets are proposed and the preview says the chest was already
   worked.
 - **AC-5.** Given barbell curls first in the workout, then at most two
   approach sets.

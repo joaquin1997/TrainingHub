@@ -5,12 +5,13 @@ import Fastify, {
   type FastifyServerOptions,
 } from 'fastify';
 
+import { findSessionUser } from './infrastructure/sessionUser.js';
 import { parseCatalogLanguage, runWithCatalogLanguage } from './infrastructure/requestLanguage.js';
 import { registerRoutes } from './routes/index.js';
 
 declare module 'fastify' {
   interface FastifyInstance {
-    /** preHandler that 401s unless the request carries a valid bearer token. */
+    /** Rejects requests without an expiring token for an existing account. */
     authenticate: (
       request: FastifyRequest,
       reply: FastifyReply,
@@ -28,12 +29,18 @@ declare module '@fastify/jwt' {
 export function createApp(
   options: { logger?: FastifyServerOptions['logger'] } = {},
 ) {
+  const secret = process.env.JWT_SECRET;
+  if (!secret?.trim() && !['development', 'test'].includes(process.env.NODE_ENV ?? '')) {
+    throw new Error('JWT_SECRET is required outside development and test');
+  }
+
   const app = Fastify({
     logger: options.logger ?? true,
   });
 
   app.register(fastifyJwt, {
-    secret: process.env.JWT_SECRET ?? 'dev-insecure-secret-change-me',
+    secret: secret?.trim() ? secret : 'dev-insecure-secret-change-me',
+    sign: { expiresIn: '90d' },
   });
 
   app.decorate(
@@ -41,20 +48,35 @@ export function createApp(
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         await request.jwtVerify();
+        const claims = request.user as { sub?: unknown; exp?: unknown };
+        if (
+          typeof claims.sub !== 'string' || !claims.sub ||
+          typeof claims.exp !== 'number' || !Number.isFinite(claims.exp)
+        ) {
+          await reply.code(401).send({ message: 'Unauthorized' });
+          return;
+        }
       } catch {
+        await reply.code(401).send({ message: 'Unauthorized' });
+      }
+      if (reply.sent) return;
+      if (!await findSessionUser(request.user.sub)) {
         await reply.code(401).send({ message: 'Unauthorized' });
       }
     },
   );
 
-  // Optional auth: populate request.user when a valid bearer token is present,
-  // otherwise stay anonymous (repos fall back to the dev user during the
-  // multi-user transition). Flip to a strict `authenticate` preHandler later.
-  app.addHook('onRequest', async (request) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      // anonymous request
+  // Public credential acquisition only; every future route is protected by default.
+  const publicRoutes = new Set([
+    'GET /health',
+    'POST /auth/login',
+    'POST /auth/register',
+    'POST /auth/google',
+  ]);
+  app.addHook('onRequest', async (request, reply) => {
+    const path = request.url.split('?')[0];
+    if (!publicRoutes.has(`${request.method} ${path}`)) {
+      await app.authenticate(request, reply);
     }
   });
 

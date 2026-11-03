@@ -25,8 +25,8 @@ be deployed before routine warm-up sets and the warm-up block persist.
 | 7 | [x] Routine editor warm-up card (name, target time/reps, add/remove); routine detail block; duplicate copies it; i18n | mobile | typecheck; unit test (duplicate) | `feat(routines): edit the warm-up block` |
 | 8 | [x] `warmUpDraft.ts` (`buildWarmUpDraft`, `toggleWarmUpItem`, `toWarmUpItemsInput`); store builds and sends it; active screen checklist card first; history detail shows done items; i18n | mobile | unit tests (AC-3, FR-6, FR-7) | `feat(workouts): warm-up checklist in the active workout` |
 | 9 | [x] Progress log, definition of done | docs | — | `docs(sdd): close spec 0024 implementation` |
-| 10 | [ ] [DEVICE] Approach-set button, notice and generated rows in the active workout and the routine editor; warm-up card first in the workout, ticking leaves the sets-done bar alone; history detail shows the ticked items | device | owner, iOS | — |
-| 11 | [ ] (owner) Apply both migrations on the server and deploy the API | ops | `npm run db:deploy` | — |
+| 10 | [x] [DEVICE] Approach-set button, notice and generated rows in the active workout and the routine editor; warm-up card first in the workout, ticking leaves the sets-done bar alone; history detail shows the ticked items | device | owner, iOS | — |
+| 11 | [x] (owner) Apply both migrations on the server and deploy the API | ops | `npm run db:deploy` | — |
 
 Not verifiable in CI: tasks 10–11.
 
@@ -93,6 +93,6 @@ Not verifiable in CI: tasks 10–11.
       or explicitly deferred with a TODO
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [x] Roadmap 01, backlog and glossary updates handed to the coordinator
-- [ ] Checked on the owner's device (task 10)
-- [ ] Migrations applied on the server (task 11)
-- [ ] `spec.md` status set to `done`
+- [x] Checked on the owner's device (task 10)
+- [x] Migrations applied on the server (task 11)
+- [x] `spec.md` status set to `done`

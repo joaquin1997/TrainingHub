@@ -35,6 +35,7 @@ export const es: TranslationCatalog = {
     pleaseWait: 'Espera…',
   },
   auth: {
+    offlineNotice: 'No se pudo contactar con el servidor. Puedes seguir con tu entrenamiento.',
     googleUnavailable: 'El acceso con Google aún no está disponible.',
     googleEmailTaken: 'Este email ya tiene cuenta: entra con su contraseña.',
     or: 'o',

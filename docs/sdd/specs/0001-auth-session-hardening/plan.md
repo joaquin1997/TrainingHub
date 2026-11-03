@@ -1,246 +1,172 @@
 ---
 spec: 0001
-status: draft        # ready for review — not self-approved
+status: approved
 created: 2026-09-23
-updated: 2026-09-24
+updated: 2026-11-03
 ---
 
 # Plan — Auth session hardening
 
-Spec 0001 passed gate 1 on 2026-09-23 (all decisions resolved), so this plan is
-now concrete. It is **pending human approval**, not approved: gate 2 is passed
-by review, not by the author.
-
-**Amended 2026-09-24** after a review against the code: the public surface
-includes sign-in and registration (FR-10); an unreachable server opens the app
-with a notice (EF-3); the reassignment is a one-off script, not a migration
-(constitution Article 5, amended); the data-model notes now match
-`schema.prisma`.
-
-## Current state (verified, not assumed)
-
-Read on 2026-09-23.
-
-- `apps/api/src/app.ts` registers `@fastify/jwt` and decorates the instance
-  with `authenticate` — a preHandler that 401s when `jwtVerify` fails. **It is
-  defined but never applied.**
-- The same file adds an `onRequest` hook that calls `jwtVerify` inside a
-  `try/catch` and swallows the failure, explicitly to let anonymous requests
-  through during the multi-user transition. Its own comment says "flip to a
-  strict `authenticate` preHandler later" — that flip is FR-1.
-- `apps/api/src/infrastructure/userContext.ts` — `resolveUserPublicId` returns
-  `request.user?.sub` when present and otherwise calls `ensureDevelopmentUser()`
-  and returns `DEVELOPMENT_USER_PUBLIC_ID`. This is FR-2, and it *creates* the
-  legacy account on demand, which is why it keeps accumulating data.
-- `apps/api/src/features/auth/routes.ts` signs tokens with
-  `app.jwt.sign({ sub: user.publicId })` at two call sites (register, login),
-  **with no `expiresIn`** — tokens never expire today. That is FR-5.
-- There is **no `/auth/me` route** in the API and nothing in the app calls one.
-  That is FR-3.
-- `JWT_SECRET` comes from the environment with an insecure dev fallback baked
-  into `app.ts`.
-- Mobile already has an `AuthProvider` that restores a token at boot, exposes
-  signIn/register/signOut and auto-logs-out on a 401; `lib/http.ts` attaches
-  `Authorization: Bearer`. The token sits behind the `TokenStorage` interface
-  over `expo-secure-store` (Article 6). FR-4 and FR-6 attach to existing seams.
-- `GET /health` exists (`apps/api/src/routes/health.ts`) and is what FR-8 keeps
-  public.
+Approved for implementation by the owner's request of 2026-11-03, under the
+previously delegated gates. The original 2026-09-24 design is retained, with
+changes for Google sign-in, body measurements and the reviewed catalog.
+Implementation is local; rollout and device acceptance are still pending.
 
 ## Constitution check
 
 | Article | Engaged? | Compliance |
 |---|---|---|
-| 1 — Scope control | yes | Providers, password reset, revocation and draft persistence are all pushed out by the spec's out-of-scope list. |
-| 2 — Template vs performed | no | — |
-| 3 — Shared domain types | yes | The identity shape returned by FR-3 goes in `packages/domain`, consumed by both apps. |
-| 4 — Weight in kg | no | — |
-| 5 — Prisma migrations | yes | No migration. FR-9 is a data change, so it is a one-off script under `apps/api/src/scripts/` (Article 5, amended 2026-09-24): a migration would run on every database, and fail on a fresh one where the legacy account does not exist. |
-| 6 — Integrations behind interfaces | yes | No new provider; `TokenStorage` stays the only storage seam. No renewal mechanism, so nothing new to hide behind an interface. |
-| 7 — Secrets | yes | The insecure `JWT_SECRET` fallback must hard-fail outside development, otherwise a missing env var makes every token forgeable. |
-| 8 — Committable + verified | yes | Task ordering below keeps the tree green; the breaking task lands after the app can cope. |
-| 9 — Dependencies | yes | No new dependency. The 90-day fixed lifetime is what avoids a refresh-token library. |
-| 10 — TODOs over half-solutions | yes | One open TODO remains (target account for the migration). |
+| 1 — Scope | yes | Close the auth boundary, validate at boot and provide a one-off data reassignment. No refresh tokens, revocation or new providers. |
+| 2 — Templates vs performed | yes | Ownership changes only; routine targets and logged sets remain separate and unchanged. |
+| 3 — Shared contracts | yes | `AuthIdentityResponse` reuses `AuthTokenResponse.user` in domain. |
+| 4 — kg | no | No measurement values or conversions change. |
+| 5 — Prisma | yes | No schema migration. Data reassignment is a separate transaction-backed script. |
+| 6 — Interfaces | yes | Token storage and provider boundaries remain in place. |
+| 7 — Secrets | yes | Missing/blank JWT secret is fatal outside explicit development/test; nothing is printed or committed. |
+| 8 — Verified changes | yes | Typecheck and full mobile/API suites; rollout checks tracked separately. |
+| 9 — Dependencies | yes | No new packages or native rebuild requirement. |
+| 10 — Unknowns | yes | Target account, live reassignment and deployment remain explicit rollout items; no account guessed. |
 
 ## Approach
 
-The change is a *removal* more than an addition: delete the anonymous path and
-the fallback account so the existing per-user scoping becomes the only path.
-Four pieces, in dependency order.
+`createApp` installs one strict global `onRequest` hook. Its allowlist is
+method and exact path: `GET /health`, `POST /auth/login`,
+`POST /auth/register`, `POST /auth/google`. Query parameters do not change
+the matched path. Every other route, including future routes, is protected.
+Google is an existing credential-acquisition operation introduced by 0039,
+so it must remain public. The unfinished Apple demo remains protected until
+0002 implements an actual provider; it must not be used to obtain app access.
 
-1. **Identity contract + validation operation.** A read-only operation that
-   answers "who am I" for a bearer token (FR-3), with its DTO in
-   `packages/domain`. Additive — nothing breaks.
-2. **Expiry and secret handling.** Add a 90-day lifetime at both signing call
-   sites (FR-5), and make a missing `JWT_SECRET` fatal outside development
-   (Article 7).
-3. **Reassignment script.** Move the legacy account's rows to the owner's
-   real account (FR-9), failing loudly on anything unmappable (EF-5). Run once
-   against the dev database; not part of the migration history.
-4. **Close the boundary.** Replace the swallowing `onRequest` hook with strict
-   authentication plus an allowlist of `GET /health`, `POST /auth/login` and
-   `POST /auth/register` (FR-8, FR-10), and make `resolveUserPublicId` fail
-   instead of inventing a user. This is the breaking step; the app change lands
-   with it.
+Verification checks signature/expiry, a nonempty string subject, an explicit
+expiration, and that the subject still belongs to an existing account.
+Missing, malformed, expired, unknown-account and old non-expiring tokens
+receive the same `401 { message: 'Unauthorized' }`. Database failures are
+server errors, not credential rejections. `resolveUserPublicId` can only
+return the verified subject and never creates or returns a default account.
 
-On the app side, `AuthProvider` calls the validation operation while it restores
-the token, and — the part that needs care — distinguishes *rejected* from
-*unreachable* (EF-2 vs EF-3). The current auto-logout-on-401 does not make that
-distinction, so a network error must not be allowed to fall into the logout
-path. *Unreachable* renders the app as signed in, with a non-blocking notice and
-a retry, so an active workout on the device (0010) stays reachable.
+Set a 90-day default at JWT registration, covering email register, email
+login and Google equally. Old tokens have no expiration and require one
+new sign-in. A missing secret is allowed only for explicit development/test.
 
 ### Alternatives considered
 
-- **Global strict hook with an allowlist vs per-route preHandler.** Chosen:
-  global. A new route added later cannot silently be born public, which is the
-  failure mode that actually matters; a per-route preHandler is more explicit
-  but relies on remembering it every time.
-- **Keeping the dev-user fallback behind an environment flag.** Rejected: it
-  preserves the exact code path this spec exists to delete, and a flag that
-  disables authentication is the kind of thing that ends up enabled.
-- **Token lifetime enforced only client-side.** Rejected outright — a client
-  cannot enforce expiry on an attacker. `expiresIn` at signing time is the only
-  place it means anything.
+- **Per-route protection** — rejected: a forgotten handler creates a new
+  anonymous data path. Existing explicit handlers may remain as defense in
+  depth; the global hook is authoritative.
+- **Only checking that a token is signed** — rejected: an unknown or deleted
+  account must not have an authenticated identity; old non-expiring tokens
+  would otherwise remain usable indefinitely.
+- **Treating every startup failure as logout** — rejected: outside the
+  tailnet, a stored workout must remain usable under its own user's identity.
+- **Refresh tokens or server revocation** — excluded by the accepted scope;
+  revocation remains 0003.
 
-## Shared contracts (`packages/domain`)
+## Contracts and API
 
-An identity DTO for FR-3, holding what the app needs at boot to render a
-signed-in shell. Should reuse whatever the sign-in response already returns for
-`user` rather than inventing a second shape — two shapes for one concept is an
-Article 3 violation in spirit even if both live in `packages/domain`.
+`AuthIdentityResponse = Pick<AuthTokenResponse, 'user'>` in domain.
+`GET /auth/me` returns this identity read-only after global validation.
+The same rejection applies to every protected operation. Public health
+continues to return service/database availability only.
 
-`TODO(sdd): confirm the sign-in response's user shape and reuse it; check what`
-`AuthProvider actually stores today before defining anything new.`
+## Mobile
 
-## Data model and migrations
+`sessionBootDecision` handles validated, rejected and unreachable outcomes.
+`AuthProvider` reads storage and checks `/auth/me` before exposing user data.
+Only a 401 clears credentials. Network, timeout and server failures keep the
+token, derive the local workout owner from its subject and open offline.
+Unreadable tokens never create a guessed owner. Validation has a five-second
+network timeout so a silent server cannot hold the startup screen forever.
 
-No schema change and no migration — this is a **data** change, done by a
-one-off script: `apps/api/src/scripts/reassign-dev-user.ts`, with an npm script
-following the `import:wger` pattern in `apps/api/package.json`.
+The root navigator shows an ES/EN non-blocking notice and Retry; startup
+onboarding checks do not hold the offline workout behind server requests.
+Retry checks the same credentials and either removes the notice or signs out
+on rejection. Late validation responses cannot override a newer sign-in or
+sign-out. A late 401 from an older request cannot sign out a newer token.
+The shared HTTP wrapper handles mid-session 401s; sign-in attempts and the
+boot check handle their own errors without an unrelated logout callback.
 
-What moves, checked against `schema.prisma` (2026-09-24). Ownership sits on the
-parent only, so children follow without being touched:
+No active-workout discard on involuntary sign-out. Existing 0010 persistence
+keeps it until the same user returns; a different user is handled by the
+existing owner checks. No new screen, dependency or native capability.
 
-- `Routine.userId` → owner. `RoutineExercise` / `RoutineExerciseSet` follow;
-  `Routine.folder` is a column, so folders travel with their routines.
-- `WorkoutSession.userId` → owner. `WorkoutExercise` / `WorkoutSet` follow.
-- `Exercise.createdByUserId` → owner (user-defined exercises).
-- `ExerciseFavorite.userId` → owner, **except** where the owner already has the
-  same favorite: `@@unique([userId, exerciseId])` would reject the move, so
-  those legacy rows are deleted instead.
-- Settings are columns on `User` (`unit`, `defaultRestSeconds`, `language`),
-  not rows: the owner's values win and nothing is copied.
-- Then delete the legacy `User`, so `ensureDevelopmentUser` cannot resurrect it
-  and FR-2 is verifiable by its absence.
+## Data reassignment — no schema migration
 
-Script behaviour: `--dry-run` by default (prints counts per table); `--apply`
-runs everything in one transaction; the owner is passed as an argument, never
-hardcoded; it prints the moved row ids (for a manual rollback) and aborts on
-anything it cannot map (EF-5). Idempotent: once the legacy account is gone it
-reports "nothing to do".
+`pnpm --filter @workout/api auth:reassign-dev-user --to <owner-public-id>`
+is a dry run by default; add `--apply` to write. The owner is explicit,
+never inferred from a name or hardcoded. It reports counts and row IDs; keep
+the apply report with the server backup.
 
-`TODO(sdd): the target account must be named before the script is run — it is`
-`the owner's existing account, readable from the users table on the dev`
-`database. Blocking for running task 4 only; writing it can proceed.`
+Use one serializable transaction, moving:
 
-## API surface (`apps/api`)
+- Routine ownership; its exercises, sets, folder and warm-up items follow.
+- Workout ownership; performed exercises, sets and warm-up items follow.
+- Custom exercise creators; photos and usage references stay attached.
+- Body measurements introduced since the original plan.
+- Favorites, deduplicating only existing target favorites of the same exercise.
 
-| Operation | Auth | Notes |
-|---|---|---|
-| Validation of current credentials (FR-3) | required | Read-only, no side effects. Returns the identity DTO. Rejects per EF-1. |
-| `GET /health` | **public** (FR-8) | Allowlisted. Must not gain any user-derived field. |
-| `POST /auth/login`, `POST /auth/register` | **public** (FR-10) | Allowlisted: they are how credentials are obtained. |
-| Every other existing route | required | Behaviour change only: 401 instead of falling back to the legacy account. |
+Keep the target profile and settings; settings are columns on User, not a
+second settings collection to merge. Abort on a workout client-ID collision,
+legacy provider identities or any unmapped ownership remaining after the
+moves. Delete the legacy account only when all owned collections are empty.
+Errors roll back the transaction. With no legacy account, report nothing to
+do. No IDs, workout measurements or routine targets are rewritten.
 
-All rejections must be indistinguishable per EF-1 — same status, same body, no
-hint about whether the token was missing, malformed, expired or unknown.
+## Files changed
 
-## Mobile surface (`apps/mobile`)
-
-Attaches to existing code: `AuthProvider` (boot validation, and the EF-2 vs
-EF-3 distinction), `lib/http.ts` (already attaches the bearer token and already
-has `[api]` diagnostic logging). No new screen — the sign-in screen and the
-`_layout.tsx` gating exist.
-
-EF-4 is covered by spec 0010: its FR-7 keeps the active workout across an
-involuntary sign-out (and an app restart), and it discards the workout when a
-different user signs in. Nothing to build here; verify it once both land.
-
-EF-3 needs a small non-blocking notice ("could not reach the server · retry")
-rendered by `RootNavigator` in `src/app/_layout.tsx` while the boot decision is
-`offline`.
-
-**No native rebuild expected** — no new native dependency, no `app.json` change.
-Worth stating because `EXPO_PUBLIC_*` values are baked into the Metro bundle: if
-this work touches the API URL for any reason, it needs
-`npx expo start --clear` and an app reload, not just an `.env` edit.
+- `packages/domain/src/auth.ts` — shared identity response.
+- `apps/api/src/app.ts` — default-deny hook, account verification, expiry/secret.
+- `apps/api/src/infrastructure/sessionUser.ts` — account lookup boundary.
+- `apps/api/src/infrastructure/userContext.ts` — strict identity resolution.
+- `apps/api/src/infrastructure/developmentUser.ts` — removed.
+- `apps/api/src/features/auth/routes.ts` — identity endpoint.
+- `apps/api/src/scripts/reassign-dev-user.ts`, script/tests and package command.
+- API feature route tests — real signed requests and real user resolution,
+  mocking persistence rather than the boundary under test.
+- `apps/mobile/src/features/auth/{AuthContext,sessionBoot,tokenSubject}`,
+  auth client and tests — boot validation/offline identity.
+- `apps/mobile/src/lib/http.ts` and tests — timeout and rejection handling.
+- `apps/mobile/src/app/_layout.tsx`, translations — offline notice/retry.
+- SDD backlog/tasks/glossary/constitution and auth roadmap.
 
 ## Testing strategy
 
-| Spec AC | Verified by |
+| Criteria | Evidence |
 |---|---|
-| AC-1, AC-2 | Route tests: absent, malformed and expired credentials all rejected identically |
-| AC-3 | Route tests with two distinct authenticated subjects |
-| AC-4, AC-5, AC-6, AC-8 | Manual on device, unless the boot logic is extracted (see below) |
-| AC-7 | Route test: liveness check answers without credentials |
-| AC-9 | Script `--dry-run` counts, then manual verification against the dev database after `--apply` |
-| AC-10 | Route tests: login and register answer without credentials after the boundary closes |
+| AC-1, AC-2 | Anonymous reads/writes across every feature; absent/malformed/expired/non-expiring/unknown tokens rejected identically; future route protected. |
+| AC-3 | Signed two-user route calls and existing ownership/isolation suites, including foreign exercise/routine references. |
+| AC-4, AC-5, AC-8 | Pure startup decisions, HTTP network/server/timeout tests; final device startup/retry remains pending. |
+| AC-6 | Protected 401 callback and old-token response race tests; device navigation remains pending. |
+| AC-7 | Public health with bad bearer token and query string, no user fields. |
+| AC-9 | Script dry-run/write/idempotency/conflict/measurement/favorite tests; live dry-run/apply still pending. |
+| AC-10 | Public register/login and Google suites; all three issue 90-day tokens. |
+| EF-4 | Existing 0010 persister/account isolation tests; device expiry/re-auth/save remains pending. |
 
-Two things to watch:
+Run `pnpm -r typecheck` and `pnpm -r test`. Source changes are not a
+substitute for server reassignment and device acceptance.
 
-- **The existing route tests mock `resolveUserPublicId`** — the very function
-  this spec changes. Mocking it would hide the regression the spec exists to
-  prevent. Those tests need to authenticate properly instead.
-- **Extract the boot decision into a pure function** (given: stored token,
-  server response or network error → signed-in / signed-out / offline-retry) so
-  AC-5 and AC-8 stop being manual-only. Consistent with how progress
-  aggregation and the weight helpers were made testable.
+## Rollout and rollback
 
-## Files to touch
+1. Back up the server database. Confirm the deployed JWT secret is configured
+   without printing it. Keep the secret unchanged.
+2. Select the owner's existing public ID and run the reassignment dry run.
+   Review counts/collisions, then apply; verify history, routines, measurements
+   and favorites under that account before deploying the strict boundary.
+3. Deploy the API, check health anonymously and data routes without/with a
+   new token. Confirm public Google remains callable when configured.
+4. Deliver the updated JS bundle (or Release build for the standalone phone)
+   and sign in again once. Verify cold start, offline start, Retry and an
+   active workout surviving rejection and same-user reauthentication.
 
-- `packages/domain/src/auth.ts` — identity DTO for FR-3
-- `apps/api/src/app.ts` — strict auth hook + allowlist; fatal missing secret
-- `apps/api/src/infrastructure/userContext.ts` — fail instead of falling back
-- `apps/api/src/infrastructure/developmentUser.ts` — **delete**
-- `apps/api/src/features/auth/routes.ts` — `expiresIn`; validation route
-- `apps/api/src/scripts/reassign-dev-user.ts` (new) + npm script in `apps/api/package.json` — reassignment
-- API route tests that currently mock `resolveUserPublicId`
-- `apps/mobile/src/features/auth/AuthContext.tsx` — boot validation, EF-2/EF-3
-- `apps/mobile/src/app/_layout.tsx` — offline notice (EF-3)
-- `docs/roadmap/03-auth-and-users.md`, `docs/sdd/backlog.md`,
-  `docs/sdd/glossary.md` (retire "dev user")
+No native API change requires prebuild; a standalone Release installation
+still needs a build to include the JS changes. Do not push automatically.
 
-## Risks and open questions
+Rollback code by deploying the previous API/bundle; do not automatically
+undo data ownership. A database backup and moved-ID report are the recovery
+path if reassignment itself must be reversed. Revocation remains deferred
+and a stolen new token can last up to 90 days.
 
-- **Locking the owner out of their own history.** The mitigation *is* the
-  reassignment migration; the risk is running the boundary change (task 4)
-  before the reassignment script has run, which would make that data
-  unreachable in between.
-  Ordering is load-bearing, not cosmetic.
-- **A stale bundle on a device.** An installed app built before this change
-  starts failing outright. Accepted by the spec, but it means rebuilding and
-  reloading the app is part of rollout, not an afterthought.
-- **Mocked tests giving false confidence.** See above.
-- **EF-3 regressing quietly.** If a network error is ever routed into the
-  rejection path, every launch outside the tailnet logs the user out. Worth a
-  test, given the connectivity history of this project.
-- **No revocation until spec 0003.** Accepted knowingly; a leaked credential is
-  valid for up to 90 days.
+## Progress — 2026-11-03
 
-## Rollout
-
-API first, then the app — the reverse order leaves the app calling an operation
-that does not exist. Within the API, the reassignment script runs (against the
-dev database, over the SSH tunnel) before the boundary change deploys.
-
-Deployment is the existing path: container on `joaquinserver`,
-`prisma migrate deploy` on startup, reachable over Tailscale. Confirm
-`JWT_SECRET` is set in `apps/api/.env` before deploying the fatal-check, or the
-API will refuse to start — that is the intended behaviour, but it should not be
-a surprise at deploy time.
-
-**Rollback.** Code tasks roll back by redeploying the previous image. The
-reassignment does not roll back automatically: it is reversible in principle
-(the rows are still there, under a different owner) because the script prints
-which rows it moved — keep that output. Deleted duplicate favorites are not
-worth restoring.
+Local implementation and automated checks complete. A read-only attempt to
+inspect the configured database could not connect; no live rows were read
+or modified. No reassignment, server deploy or device validation was run.

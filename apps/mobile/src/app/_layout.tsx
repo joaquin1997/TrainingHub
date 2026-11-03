@@ -3,7 +3,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
 import { useHomeWidgetSync } from '@/features/homeWidget/useHomeWidgetSync';
@@ -15,7 +15,7 @@ import { useRestTimerRunner } from '@/features/workouts/restTimer/useRestTimerRu
 import { getActiveWorkout } from '@/features/workouts/state/workoutDraftStore';
 import { I18nProvider } from '@/i18n/I18nProvider';
 import { ThemeProvider } from '@/ui/ThemeProvider';
-import { colors, fontAssets, screenHeader, useTheme } from '@/ui/theme';
+import { colors, fontAssets, screenHeader, spacing, useTheme } from '@/ui/theme';
 
 // The branded splash stays up until the first real screen is ready, so there
 // is no blank or spinner frame in between (spec 0034 FR-2). A no-op on web and
@@ -42,7 +42,7 @@ function SplashHandOver() {
 
 function RootNavigator() {
   useTheme();
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading, isOffline, isCheckingSession, retrySession } = useAuth();
   // The stored workout is restored before any screen can read it (spec 0010).
   const isRestoringWorkout = useActiveWorkoutPersistence(user?.id ?? null);
   // The lock-screen status follows the active workout once it is restored.
@@ -60,7 +60,7 @@ function RootNavigator() {
   // The first run, decided once per sign-in or app start (spec 0037 FR-1, FR-4).
   const firstRun = useFirstRunGate({
     userId: user?.id ?? null,
-    ready: isAuthenticated && !isRestoringWorkout,
+    ready: isAuthenticated && !isRestoringWorkout && !isOffline,
   });
 
   const inAuthGroup = segments[0] === 'auth';
@@ -110,6 +110,30 @@ function RootNavigator() {
   return (
     <FirstRunContext.Provider value={firstRun}>
     <SplashHandOver />
+    {isOffline ? (
+      <View style={{
+        backgroundColor: colors.surfaceRaised,
+        padding: spacing.sm,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+      }}>
+        <Text accessibilityRole="alert" style={{ color: colors.text, flex: 1 }}>
+          {t('auth.offlineNotice')}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ disabled: isCheckingSession, busy: isCheckingSession }}
+          disabled={isCheckingSession}
+          onPress={() => void retrySession()}
+          style={{ padding: spacing.sm }}
+        >
+          <Text style={{ color: colors.primaryInk }}>
+            {t(isCheckingSession ? 'common.loading' : 'common.retry')}
+          </Text>
+        </Pressable>
+      </View>
+    ) : null}
     <Stack
       screenOptions={{
         contentStyle: { backgroundColor: colors.background },

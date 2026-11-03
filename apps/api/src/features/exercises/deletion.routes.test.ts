@@ -10,7 +10,7 @@
  * name. A real Postgres pass is logged in the spec's tasks.md.
  */
 import { Prisma } from '@prisma/client';
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 type Row = Record<string, any>;
 
@@ -245,16 +245,16 @@ const db = vi.hoisted(() => {
 
 vi.mock('../../infrastructure/prisma.js', () => ({ prisma: db.prisma }));
 
-vi.mock('../../infrastructure/userContext.js', () => ({
-  resolveUserPublicId: vi.fn(async (request: { user?: { sub?: string } }) =>
-    request.user?.sub ?? 'user-dev',
-  ),
+// Mock persistence only: requests pass through real JWT verification and user resolution.
+vi.mock('../../infrastructure/sessionUser.js', () => ({
+  findSessionUser: vi.fn(async (publicId: string) => ({ publicId })),
 }));
 
 import { createApp } from '../../app.js';
 import { findUsableExercises } from './repository.js';
 
 const app = createApp({ logger: false });
+beforeAll(async () => { await app.ready(); });
 const { state } = db;
 
 const ANA = 'user-ana';

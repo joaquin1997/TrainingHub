@@ -33,6 +33,7 @@ export const en = {
     pleaseWait: 'Please wait…',
   },
   auth: {
+    offlineNotice: 'Could not reach the server. You can continue your workout.',
     googleUnavailable: 'Google sign-in is not available yet.',
     googleEmailTaken: 'This email already has an account — sign in with its password.',
     or: 'or',

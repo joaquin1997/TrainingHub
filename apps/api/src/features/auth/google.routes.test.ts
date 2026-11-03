@@ -68,6 +68,8 @@ describe('POST /auth/google (spec 0039)', () => {
       subject: 'g-1',
     });
     expect(response.json().token).toEqual(expect.any(String));
+    const claims = app.jwt.decode<{ exp: number; iat: number }>(response.json().token)!;
+    expect(claims.exp - claims.iat).toBe(90 * 24 * 60 * 60);
   });
 
   it('links a verified email to the existing account (FR-5, AC-3)', async () => {

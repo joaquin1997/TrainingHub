@@ -1,165 +1,113 @@
 # TrainingHub
 
-A workout tracking app (Hevy-style): manage exercises, build routines, log
-workouts and track progress. iOS-first, Android considered at the architecture
-level.
+A personal workout tracker for planning routines, logging training and seeing
+progress over time. Built for daily use on iPhone, with an optional Apple Watch
+companion, Live Activities and home-screen widgets.
 
-## Stack
+The project combines a React Native application, a Fastify API and a shared
+TypeScript domain package. It is actively developed; implementation status,
+deployment and device verification are tracked separately.
 
-- **Mobile** (`apps/mobile`): React Native + Expo + TypeScript, Expo Router.
-  Targets iOS (first), Android and web (via `react-native-web`). Shared visual
-  language in `src/ui/theme.ts` (dark, gym-oriented design system).
-- **API** (`apps/api`): Fastify + TypeScript, Prisma, PostgreSQL. Containerized
-  and deployed to the home server over Tailscale (see [Deployment](#deployment-docker--tailscale)).
-- **Domain** (`packages/domain`): shared types and DTO contracts (source of truth)
-- Monorepo managed with **pnpm** workspaces
+## What it does
 
-Architecture rules live in [docs/codex-project-context.md](docs/codex-project-context.md).
+- Build routines with exercises, rep targets, rest periods, supersets and warm-ups.
+- Log working sets, unilateral reps, timed sets and distance; pause and resume
+  a workout, including after an app restart.
+- Save workouts, browse history and inspect personal records and progress charts.
+- Browse a reviewed ES/EN exercise catalog and manage private custom exercises.
+- Use kg or lb, Spanish or English, and light or dark appearance.
+- On supported Apple devices: follow the active workout and rest timer on the
+  lock screen, use the Watch companion, and view training widgets.
 
-Work is spec-driven: [docs/sdd/README.md](docs/sdd/README.md) describes the
-loop (specify → plan → tasks → implement) and
-[docs/sdd/constitution.md](docs/sdd/constitution.md) the rules every plan is
-checked against. Per-area backlog lives in [docs/roadmap/](docs/roadmap/).
+The saved active workout works without a connection. Saving to the server and
+loading uncached data still require connectivity; a full offline sync engine
+is not implemented.
 
-## Prerequisites
+## Native widget preview
 
-- Node 22.13+ (Expo SDK 58 / React Native 0.88) and pnpm 9
-- Access to the dev PostgreSQL database (see below)
+Rendered from the widget views with sample values. This is a design render,
+not a screenshot of a live account.
 
-## Setup
+<img src="docs/sdd/specs/0041-widget-redesign-and-watch-reps/renders/widget-dark.png" alt="Dark home-screen widgets showing a planned routine, workout progress and rest countdown" width="600" />
 
-```bash
-pnpm install
+## Architecture
 
-# API env: copy the example and fill in DATABASE_URL
-cp apps/api/.env.example apps/api/.env
-```
+| Package | Responsibility | Main technologies |
+|---|---|---|
+| [Mobile](apps/mobile/README.md) | UI, active-workout draft, device persistence and native bridges | React Native, Expo, Expo Router, TypeScript |
+| [API](apps/api/README.md) | Authentication, validation, user-scoped persistence and derived progress | Fastify, Prisma, PostgreSQL |
+| [Domain](packages/domain/README.md) | Shared entities, request/response contracts and record rules | Framework-independent TypeScript |
 
-The dev database runs in Docker on the home server, published on its loopback
-only (`127.0.0.1:5434`, db `app_db`). `apps/api/.env` is gitignored. To reach it
-from the Mac (migrations, Prisma Studio), open an SSH tunnel first:
-`ssh -N -L 5434:127.0.0.1:5434 joaquin@joaquinserver.tail644a1a.ts.net`.
+Routine templates and performed workouts are distinct models. Weights are
+stored in kg and converted at the display boundary. Progress and records are
+derived from saved performed work. See the [architecture guide](docs/codex-project-context.md)
+for the boundaries and trade-offs.
 
-## Database
+## Development environment
 
-Prisma migrations are the single source of truth.
+The app is used against the existing API and PostgreSQL deployment on a private
+server. The mobile development build loads its JS from Metro; standalone
+Release builds include their own bundle. Deployment and device details are in
+the [deployment guide](docs/deployment.md) and [mobile guide](apps/mobile/README.md).
 
-```bash
-cd apps/api
-pnpm db:migrate      # create + apply a migration in dev
-pnpm db:deploy       # apply existing migrations
-pnpm db:studio       # browse data
-
-# seed the exercise catalog from wger (writes to the DB)
-pnpm import:wger:db
-```
-
-## Run
+For working with the repository, use Node **22.13 or newer within the 22.x
+release line** and pnpm **9.10.0**. `.nvmrc`, CI and the API image use Node 22.
 
 ```bash
-pnpm api             # start the API (http://localhost:3000)
-pnpm mobile          # start Expo for the mobile app (iOS simulator / web / Expo Go)
+nvm use
+corepack enable
+pnpm install --frozen-lockfile
 ```
 
-### Run the mobile app on a physical iPhone
+The existing environment supplies the API URL and database/signing credentials.
+Private env files and operational addresses are kept outside shared setup
+instructions. See [development](docs/development.md) for configuration and
+verification; reviewing the source and running tests does not require a new
+database deployment.
 
-The mobile app resolves the API base URL from `EXPO_PUBLIC_API_URL` (falling back
-to the Metro dev host, see `src/config/api.ts`). To point a real device at the
-dockerized backend over Tailscale:
+Use an iOS development build for the full mobile experience. The app uses local
+Expo modules, so Expo Go does not provide the full native runtime. Watch,
+Health, widgets and notifications need their platforms and permissions.
+
+## Verification
 
 ```bash
-cd apps/mobile
-
-# 1. Generate the native project (when ios/ is missing, or app.json, targets/,
-#    modules/ or a native dependency changed — see apps/mobile/README.md).
-EXPO_NO_GIT_STATUS=1 npx expo prebuild -p ios --clean
-
-# 2. Build and sign. -allowProvisioningUpdates lets Xcode create/renew the
-#    development profile; `expo run:ios --device` does not pass it, so it fails
-#    once the free-team profile has expired.
-xcodebuild -workspace ios/TrainingHub.xcworkspace -scheme TrainingHub \
-  -configuration Debug -destination id=<device-udid> \
-  -allowProvisioningUpdates build
-
-# 3. Install the built app on the phone.
-xcrun devicectl device install app --device <coredevice-id> \
-  <DerivedData>/Build/Products/Debug-iphoneos/TrainingHub.app
-
-# 4. Serve the JS bundle (EXPO_PUBLIC_* is baked in by Metro: after changing it,
-#    restart with --clear and reload the app).
-EXPO_PUBLIC_API_URL=https://joaquinserver.tail644a1a.ts.net:8443 npx expo start --clear
+pnpm --filter @workout/api prisma:generate
+pnpm -r typecheck
+pnpm -r test
+pnpm --filter @workout/api build
 ```
 
-Notes:
-- The native iOS project is generated by `expo prebuild` (`ios/` and `android/`
-  are gitignored build artifacts; the `expo` config in `app.json` is the source
-  of truth — bundle id, ATS, etc.).
-- The Apple team is a free one: development profiles expire after 7 days and the
-  app then refuses to open. Rebuild with step 2 and trust the developer
-  certificate again in Settings → General → VPN & Device Management.
-  `DEVICE=1 ./scripts/run.sh frontend` still calls `expo run:ios --device` and
-  hits the same limitation.
-- The API is reached over HTTPS (Tailscale Serve on `:8443`). `app.json` still
-  sets `NSAllowsArbitraryLoads` from when it was plain HTTP; removing it is a
-  production-readiness item (needs a native rebuild and a check that Metro still
-  loads over the tailnet).
-- A dev build needs Metro running on the Mac. For a build that runs without the
-  Mac, produce a Release build instead.
+Unit and route tests use local fixtures and persistence doubles; they do not
+need the deployed API or a live database. They verify domain rules, routing,
+ownership checks and native-source contracts. Passing them does not replace
+real database, signed native-build or device acceptance checks.
 
-## Deployment (Docker + Tailscale)
+## Current scope and next work
 
-The API ships as a container. Build context is the repo root (monorepo + Prisma).
+- Strict authentication, 90-day credentials and startup validation/offline
+  retry are implemented in this checkout. The existing server still needs the
+  ordered legacy-data reassignment and rollout described in [0001](docs/sdd/specs/0001-auth-session-hardening/tasks.md).
+- [0043](docs/sdd/specs/0043-smarter-warm-ups/plan.md) is planned: warm-up ramps
+  based on loading kind and prior work, plus explicit set-type selection.
+- [0042](docs/sdd/specs/0042-readable-exercise-progress/spec.md) is ready to
+  plan: easier exercise search and clearer progress metrics.
+- Apple sign-in, session revocation, production distribution and full offline
+  synchronization remain outside the completed scope. Google sign-in requires
+  the owner's OAuth configuration.
 
-- `Dockerfile` — multi-stage build: installs only `@workout/api` and its
-  `@workout/domain` dependency, generates the Prisma client, compiles, and on
-  startup runs `prisma migrate deploy` before starting the server.
-- `.dockerignore` — keeps the build context small (matters over SSH contexts).
-- `docker-compose.yml` — runs the service with `network_mode: host` so it both
-  reaches PostgreSQL and is reachable over Tailscale. `DATABASE_URL` is read from
-  `apps/api/.env` and never baked into the image.
+The [spec backlog](docs/sdd/backlog.md) is the detailed status reference.
 
-Topology:
+## Documentation
 
-- Docker host `joaquinserver`: LAN `192.168.1.98`, Tailscale `100.124.208.26`
-  (SSH docker contexts `docker-lan` and `docker-ts`).
-- PostgreSQL: same host, loopback only `127.0.0.1:5434` (compose in
-  `/home/joaquin/docker_composes/postgresql`).
-- API reachable at `https://joaquinserver.tail644a1a.ts.net:8443` for any device on the tailnet.
+- [Documentation index](docs/README.md)
+- [Development and verification](docs/development.md)
+- [Deployment](docs/deployment.md)
+- [Architecture](docs/codex-project-context.md) and [constitution](docs/sdd/constitution.md)
+- [Specification workflow](docs/sdd/README.md) and [roadmap](docs/roadmap/README.md)
+- [Security and repository sharing](SECURITY.md)
+- [Third-party data and assets](docs/data-sources.md)
 
-```bash
-# Target the server's Docker daemon over SSH
-docker context use docker-ts          # or docker-lan
-
-# With the compose plugin installed:
-docker compose up -d --build
-
-# Without the compose plugin (the local CLI here lacks buildx/compose):
-DOCKER_BUILDKIT=0 docker build -t traininghub-api:latest .
-docker rm -f traininghub-api
-docker run -d --name traininghub-api --restart unless-stopped --network host \
-  -e NODE_ENV=production -e HOST=0.0.0.0 -e PORT=3000 \
-  -e DATABASE_URL="postgresql://USER:PASSWORD@127.0.0.1:5434/app_db?schema=public" \
-  -e JWT_SECRET="..." \
-  traininghub-api:latest
-
-# Verify
-curl https://joaquinserver.tail644a1a.ts.net:8443/health     # {"status":"ok","db":"up"}
-docker logs -f traininghub-api
-```
-
-## Checks
-
-```bash
-pnpm typecheck       # type-check every package
-pnpm test            # run unit/route tests (api + mobile)
-```
-
-## Layout
-
-```txt
-apps/
-  mobile/   # Expo app (features/, app/ routes, lib/)
-  api/      # Fastify API (features/, routes/, infrastructure/, prisma/)
-packages/
-  domain/   # shared entities + DTO contracts
-```
+This repository does not currently grant an open-source license for the
+application code. Third-party packages, data and assets retain their own
+licenses; see the source notes before redistribution.

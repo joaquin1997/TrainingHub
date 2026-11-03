@@ -1,17 +1,19 @@
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('./trackingTypeRepository.js', () => ({
   setExerciseTrackingType: vi.fn(),
 }));
 
-vi.mock('../../infrastructure/userContext.js', () => ({
-  resolveUserPublicId: vi.fn(async () => 'user-test'),
+// Mock persistence only: requests pass through real JWT verification and user resolution.
+vi.mock('../../infrastructure/sessionUser.js', () => ({
+  findSessionUser: vi.fn(async (publicId: string) => ({ publicId })),
 }));
 
 import { createApp } from '../../app.js';
 import { setExerciseTrackingType } from './trackingTypeRepository.js';
 
 const app = createApp({ logger: false });
+beforeAll(async () => { await app.ready(); });
 
 beforeEach(() => {
   vi.clearAllMocks();

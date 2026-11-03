@@ -60,6 +60,14 @@ Two other markers, which do *not* block:
 - `[ASSUMPTION: ...]` — a call made without confirmation, recorded so it can
   be reversed cheaply.
 
+## Review delegation
+
+Since 2026-10-16 the owner has delegated ordinary spec/plan/task gates.
+Record reversible assumptions and self-review against the constitution;
+leave major product decisions explicit. A historical artifact asking for
+human approval does not cancel later authorization. Implementation, deployment
+and actual device acceptance remain distinct states.
+
 ## Artifact status
 
 Each `spec.md` carries a status in its front matter. Keep `backlog.md` in sync.

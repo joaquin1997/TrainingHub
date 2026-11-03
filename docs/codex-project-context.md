@@ -12,8 +12,8 @@ Secondary goal:
 Product strategy:
 - Mobile app first
 - Backend as a thin API
-- Generate only skeletons and minimal implementations first
-- Manually complete deeper business logic later to preserve control, reduce token usage and avoid overgeneration
+- Build small, specified slices with tests and clear boundaries
+- Preserve working behaviour; deepen an implementation only when the current spec needs it
 
 ---
 
@@ -23,43 +23,31 @@ Development advances by vertical slices. Status so far:
 - **Routines** — done end-to-end (Prisma persistence, mobile create/edit/list/detail)
 - **Workouts** — done: start from a routine, log sets (mark each set done), live timer, optional notes, save the completed session, history + detail with durations. One workout can be active (in-progress) at a time; it is resumable, and editing its routine is locked until it is finished or discarded
 - **Progress** — done: per-exercise summaries and per-session points aggregated from saved workouts
-- **Exercises** — catalog browsing + search + detail (seeded from wger), used by the routine builder
-- **Auth** — email/password + JWT end-to-end, per-user scoping of every repository, mobile login gating with the token behind `TokenStorage`. The boundary is not enforced yet (anonymous requests fall back to a dev user); that is spec 0001. Apple sign-in is spec 0002.
+- **Exercises** — reviewed bilingual catalog (0044), browsing/search/detail, private custom exercises, photos and use throughout the routine/workout flows
+- **Auth** — email/password + JWT end-to-end, per-user scoping of every repository, mobile login gating with the token behind `TokenStorage`. Spec 0001 now enforces a strict local boundary with expiring credentials and startup validation/offline retry; legacy-data reassignment and server/app rollout are pending. Apple sign-in is spec 0002.
 - **Settings and i18n** — kg/lb display unit, default rest and ES/EN language, persisted per user
 
-Work is now spec-driven: pick the next item from `docs/sdd/backlog.md`, not from this list. `health` stays interface-only except where a spec explicitly asks for a real implementation (spec 0012 reads active energy from Apple Health).
+Work is now spec-driven: pick the next item from `docs/sdd/backlog.md`, not from this list. Health and Watch implementations stay behind their interfaces: 0012 supplies active energy/live status, and 0025 supplies the Watch workout app. Android Health Connect remains a placeholder.
 
 ---
 
-## Current MVP scope
-The current implementation scope is intentionally limited to the following:
+## Implemented scope and limits
 
-- Authentication architecture prepared for federated login, with Apple as the first provider
-- Exercise catalog
-- Routine creation, editing and listing
-- Workout session start and tracking
-- Workout session completion and persistence
-- Basic progress tracking
-- Health integration abstractions prepared but not fully implemented
-- Future-ready architecture for Apple Watch integration, without implementing advanced native behavior yet
+- Email/password and configured Google authentication, with strict session
+  validation implemented locally; 0001's ordered server rollout is pending.
+- Reviewed exercises, private custom exercises, routine editing and performed
+  workout tracking/history.
+- Persistent active-workout drafts, rest timers, warm-ups, supersets and
+  unilateral/time/distance sets.
+- Derived progress and records, profiles/measurements, units/languages/themes.
+- iOS Live Activities, native rest alerts, active-energy access and opt-in
+  Watch/home-widget capabilities, each with platform acceptance tracked in specs.
 
----
-
-## Explicitly out of scope for now
-The following items must not be fully implemented unless explicitly requested:
-
-- Full Apple Watch native integration
-- Full Apple Health sync implementation
-- Advanced progression analytics
-- Automatic training recommendations
-- Full offline sync engine
-- Complex conflict resolution
-- Deep native platform modules
-- Full production-grade auth flows for multiple providers
-- Premature performance optimizations
-- Broad feature expansion beyond the current prompt
-
-When in doubt, prefer architecture readiness over full implementation.
+Do not infer full offline sync, public production readiness, Apple sign-in or
+Android Health Connect from those implemented capabilities. These remain open.
+Do not broaden native integrations, analytics or providers beyond the current
+accepted spec. Historical plans can describe an earlier state; verify against
+code and the current backlog before changing behaviour.
 
 ---
 
@@ -71,21 +59,37 @@ When in doubt, prefer architecture readiness over full implementation.
 - Database: PostgreSQL
 - Shared domain/contracts package
 
-### Database & environment
-- Prisma migrations are the single source of truth for the schema. Do not hand-write raw SQL DDL that competes with the schema (the old `sql/` init script was removed for this reason).
-- Schema changes flow: edit `apps/api/prisma/schema.prisma` → `npm run db:migrate` (creates + applies a migration) → commit the generated `prisma/migrations/` folder.
-- The dev database is a Postgres container on the home server, published on its loopback only (`127.0.0.1:5434`, db `app_db`). From the Mac it is reached through an SSH tunnel (`ssh -N -L 5434:127.0.0.1:5434 joaquin@joaquinserver.tail644a1a.ts.net`).
-- `apps/api/.env` holds `DATABASE_URL` and is gitignored. `apps/api/.env.example` documents the shape. Never commit secrets.
+### Database and environment
 
-### Deployment (Docker + Tailscale)
-- The API is containerized. `Dockerfile`, `.dockerignore` and `docker-compose.yml` live at the repo root; the build context is the repo root (monorepo + Prisma client generation). The Dockerfile installs only `@workout/api` (+ `@workout/domain`), runs `prisma migrate deploy` on startup, then serves.
-- It runs on the home server `joaquinserver` (LAN `192.168.1.98`, Tailscale `100.124.208.26`; managed through the SSH Docker contexts `docker-lan` / `docker-ts`) with `network_mode: host`, so it reaches Postgres and is itself reachable over Tailscale at `https://joaquinserver.tail644a1a.ts.net:8443`.
-- The API and Postgres run on the same host; the API reaches Postgres on loopback, so the database is not exposed on any network. (It used to sit behind its own Tailscale sidecar node; that was removed on 2026-09-23 after the sidecar's node key expired and took the database offline.) `DATABASE_URL` and `JWT_SECRET` are injected from `apps/api/.env`, never baked into the image.
+Prisma schema and committed migrations are the schema authority. Schema changes
+flow through `db:migrate`; apply existing migrations with `db:deploy`. One-off
+row changes use explicit scripts, not schema migrations.
 
-### Mobile distribution
-- Native projects are generated by `expo prebuild`; `ios/` and `android/` are gitignored build artifacts and `app.json` is the source of truth for native config (bundle id, ATS, etc.).
-- The mobile app targets iOS first but the same code runs on Android and web (`react-native-web`). API base URL comes from `EXPO_PUBLIC_API_URL` (`src/config/api.ts`); on-device builds point at the Tailscale backend.
-- iOS ATS allows cleartext HTTP (`NSAllowsArbitraryLoads`) because the backend is plain `http://` over Tailscale (already encrypted by WireGuard).
+The working environment uses PostgreSQL on the existing private server. The
+API container reaches it on that host; development database operations use the
+configured connection or an SSH tunnel. Keep operational addresses and access
+instructions in ignored `docs/local/`. See [development.md](development.md)
+for configuration and checks against this environment.
+
+`apps/api/.env` holds local credentials and is ignored. `.env.example` describes
+the shape only. Keep secrets out of source, images and transcripts.
+
+### Deployment and mobile distribution
+
+The API image builds from the monorepo root, runs migrations before startup
+and receives credentials at runtime. `docker-compose.yml` describes a Linux
+host-network deployment against the existing PostgreSQL service.
+See [deployment.md](deployment.md) for ordering and recovery, especially 0001's
+legacy-user reassignment before strict authentication is deployed.
+
+The native projects are generated by Expo prebuild; `app.json`,
+`app.config.js`, native modules and targets are maintained sources. Generated
+`ios/` and `android/` projects are ignored. The iOS app permits local HTTP for
+development; a deployed HTTPS API is selected through `EXPO_PUBLIC_API_URL`.
+The ATS exception is not evidence that the current server uses plain HTTP.
+See the [mobile guide](../apps/mobile/README.md) for signing, build flags and
+platform limits. Machine-specific addresses and operating notes belong in
+ignored `docs/local/`.
 
 ---
 
@@ -184,7 +188,7 @@ packages/
 ### Structure rules
 - Keep screens simple and functional
 - Use reusable UI components only when justified
-- Avoid premature design systems and abstraction layers. A single lightweight, shared theme exists in `apps/mobile/src/ui/theme.ts` (color/spacing/radii tokens + `commonStyles`); reuse it instead of hardcoding styles, but do not grow it into a heavy component framework
+- Avoid premature design systems and abstraction layers. A lightweight shared theme exists in `apps/mobile/src/ui/theme.ts` (color/spacing/radii tokens + `commonStyles`); reuse it instead of hardcoding styles, but do not grow it into a heavy component framework
 - Use placeholders and mocks where real integration is not ready
 - Keep architecture ready for offline-friendly evolution, even if full offline support is deferred
 
@@ -221,7 +225,7 @@ packages/
 Authentication must be provider-based.
 
 ### Current direction
-- Email/password shipped first (simpler to build and verify); Apple is the next provider (spec 0002)
+- Email/password is implemented; Google is implemented and requires OAuth configuration (0039). Apple remains deferred (0002).
 
 ### Future providers may include
 - Apple
@@ -247,7 +251,7 @@ Health integrations must be abstracted behind interfaces.
 - Keep provider implementations isolated
 
 ### Rules
-- Do not fully implement native health integrations unless a spec explicitly asks for it. The one exception so far: spec 0012 reads active energy from Apple Health, requested by the owner (2026-09-24)
+- Do not fully implement native health integrations unless a spec explicitly asks for it. Existing approved implementations include 0012 active energy/live status and 0025 Watch workouts; do not expand them beyond their specs
 - Keep sync responsibilities explicit
 - Treat health sync as an integration boundary, not core domain logic
 - Store sync metadata separately from workout data
@@ -256,22 +260,17 @@ Health integrations must be abstracted behind interfaces.
 ---
 
 ## Apple Watch integration boundaries
-Apple Watch support is future-ready only at this stage.
 
-### Current rule
-- Do not implement advanced native Apple Watch behavior unless explicitly requested
+Spec 0025 implements the opt-in Watch companion behind `WatchWorkoutBridge`
+and isolated WatchConnectivity/HealthKit modules. It mirrors the active
+workout, coordinates done/rest/pause requests and records a completed Watch
+workout to Health. Spec 0041 adds editing reps on the Watch. Their individual
+device acceptance and rollout status remain in the task lists.
 
-### Allowed now
-- Interface definitions
-- Placeholder integration points
-- Comments and TODOs for future live workout mirroring
-- Architectural preparation for heart rate and workout sync
-
-### Not allowed now unless explicitly requested
-- Full live mirroring
-- Native workout session orchestration
-- Background sync complexity
-- Production-ready watch-to-phone state management
+Shared payload definitions and replay/ownership rules protect the boundary
+between the phone draft and native state. Do not duplicate training ownership
+or business rules in a new native model, or add background synchronization
+beyond what an approved spec requires.
 
 ---
 
@@ -331,8 +330,8 @@ These rules must be applied by default for future code generation tasks.
 ### Scope control rules
 - Do not implement the whole product at once
 - Build only what is needed for the current prompt
-- Do not fully implement Apple Watch integration unless explicitly requested
-- Do not fully implement Apple Health sync unless explicitly requested
+- Do not expand Apple Watch integration beyond an accepted spec
+- Do not expand Apple Health sync beyond an accepted spec
 - Do not add analytics, recommendations or advanced progression logic yet
 
 ### Output rules

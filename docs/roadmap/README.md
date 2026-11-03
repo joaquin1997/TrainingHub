@@ -9,10 +9,10 @@ Legend: ✅ done · 🔁 in progress · ⬜ todo
 |---|------|------|--------|
 | 1 | Live workout logging | [01-live-workout-logging.md](01-live-workout-logging.md) | ✅ done |
 | 2 | Rest timer | [02-rest-timer.md](02-rest-timer.md) | ✅ done (background alert + lock-screen countdown: spec 0018, device check pending) |
-| 3 | Auth & users | [03-auth-and-users.md](03-auth-and-users.md) | 🔁 email/password + JWT + scoping + profile (0027) done; enforcement (spec 0001), revocation, Apple todo |
+| 3 | Auth & users | [03-auth-and-users.md](03-auth-and-users.md) | 🔁 email/password + JWT + scoping + profile (0027) done; enforcement (0001) code complete locally, rollout pending; revocation, Apple todo |
 | 4 | Progress, PRs & charts | [04-progress-and-prs.md](04-progress-and-prs.md) | 🔁 PRs+1RM+charts+PR-history+records by type (0023)+volume by category+frequency tiles; real muscle data/calendar todo |
 | 5 | Routines (advanced) | [05-routines-advanced.md](05-routines-advanced.md) | ✅ done (drag&drop reorder deferred) |
-| 6 | Exercises (advanced) | [06-exercises-advanced.md](06-exercises-advanced.md) | 🔁 filters+favorites+images (+0026)+pagination+create/replace anywhere (0020) done; per-exercise history todo |
+| 6 | Exercises (advanced) | [06-exercises-advanced.md](06-exercises-advanced.md) | 🔁 filters+favorites+images (+0026)+pagination+create/replace anywhere (0020) done; recent exercise history exists, full set inspection/readability follow-ups remain |
 | 7 | Social | [07-social.md](07-social.md) | ⬜ post-MVP (out of scope); share a workout as text done (0028) |
 | 8 | Integrations & platform | [08-integrations-and-platform.md](08-integrations-and-platform.md) | 🔁 i18n ES/EN + kg/lb + default rest + Live Activity (0012) + Apple Watch (0025) + rest alert (0018) done; rest todo |
 | 9 | Production readiness | [09-production-readiness.md](09-production-readiness.md) | 🔁 homelab deploy + CI done; backups, alerting, distribution todo |

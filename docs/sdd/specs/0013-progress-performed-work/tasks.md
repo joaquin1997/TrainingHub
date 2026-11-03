@@ -81,10 +81,10 @@ tasks need only a Metro reload, not a native rebuild.
 
 ## Definition of done
 
-- [ ] Every functional requirement and acceptance criterion in `spec.md` is met
+- [x] Every functional requirement and acceptance criterion in `spec.md` is met
       or explicitly deferred with a TODO
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [x] `docs/roadmap/04-progress-and-prs.md` checklist and progress log updated
-- [ ] `spec.md` status set to `done`; `../backlog.md` updated
+- [x] `spec.md` status set to `done`; `../backlog.md` updated
 - [x] Retro 0006 records the invariant: progress reads only performed sets;
       warmups count for volume, never for records

@@ -1,12 +1,14 @@
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('./repository.js', () => ({
   getProfile: vi.fn(),
   updateProfile: vi.fn(),
   setProfilePhoto: vi.fn(),
 }));
-vi.mock('../../infrastructure/userContext.js', () => ({
-  resolveUserPublicId: vi.fn(async () => 'user-test'),
+
+// Mock persistence only: requests pass through real JWT verification and user resolution.
+vi.mock('../../infrastructure/sessionUser.js', () => ({
+  findSessionUser: vi.fn(async (publicId: string) => ({ publicId })),
 }));
 
 import { createApp } from '../../app.js';
@@ -14,6 +16,8 @@ import { getProfile, setProfilePhoto, updateProfile } from './repository.js';
 import { decodeJpegBase64, parseProfileUpdate, PHOTO_MAX_BYTES } from './validation.js';
 
 const app = createApp({ logger: false });
+const sessionHeaders = () => ({ authorization: `Bearer ${app.jwt.sign({ sub: 'user-test' })}` });
+beforeAll(async () => { await app.ready(); });
 
 const profile = {
   displayName: 'Joaquin',
@@ -79,7 +83,7 @@ describe('profile routes', () => {
   it('GET /profile returns the caller profile', async () => {
     vi.mocked(getProfile).mockResolvedValue(profile);
 
-    const response = await app.inject({ method: 'GET', url: '/profile' });
+    const response = await app.inject({ headers: sessionHeaders(), method: 'GET', url: '/profile' });
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual(profile);
@@ -88,6 +92,7 @@ describe('profile routes', () => {
 
   it('PUT /profile answers 400 with the range on a bad height', async () => {
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'PUT',
       url: '/profile',
       payload: { heightCm: 0 },
@@ -102,6 +107,7 @@ describe('profile routes', () => {
     vi.mocked(setProfilePhoto).mockResolvedValue({ ...profile, photoDataUrl: 'data:image/jpeg;base64,x' });
 
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'PUT',
       url: '/profile/photo',
       payload: { imageBase64: jpegBase64 },
@@ -116,7 +122,7 @@ describe('profile routes', () => {
   it('DELETE /profile/photo removes it', async () => {
     vi.mocked(setProfilePhoto).mockResolvedValue(profile);
 
-    const response = await app.inject({ method: 'DELETE', url: '/profile/photo' });
+    const response = await app.inject({ headers: sessionHeaders(), method: 'DELETE', url: '/profile/photo' });
 
     expect(response.statusCode).toBe(200);
     expect(setProfilePhoto).toHaveBeenCalledWith('user-test', null);

@@ -11,6 +11,12 @@ created: 2026-09-23
 > **Retro-spec.** Records what exists so a future change has something to build
 > on.
 
+## Later changes
+
+This retro records the 2026-09-23 baseline. Line charts were added by 0034,
+records by 0023, and reviewed muscle data by 0044. Read those amendments and
+0042 before treating the gaps below as current implementation limits.
+
 ## What progress is
 
 Everything in this area is **derived** from saved workouts. Nothing here is

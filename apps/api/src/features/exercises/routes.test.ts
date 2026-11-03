@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('./repository.js', () => {
   class InvalidMuscleGroupSelectionError extends Error {}
@@ -19,13 +19,13 @@ vi.mock('./repository.js', () => {
   };
 });
 
-vi.mock('../../infrastructure/userContext.js', () => ({
-  resolveUserPublicId: vi.fn(async () => 'user-test'),
+// Mock persistence only: requests pass through real JWT verification and user resolution.
+vi.mock('../../infrastructure/sessionUser.js', () => ({
+  findSessionUser: vi.fn(async (publicId: string) => ({ publicId })),
 }));
 
 import { createApp } from '../../app.js';
 import { currentCatalogLanguage } from '../../infrastructure/requestLanguage.js';
-import { resolveUserPublicId } from '../../infrastructure/userContext.js';
 import { classifyExerciseAccess } from './visibility.js';
 import {
   addFavoriteExercise,
@@ -42,6 +42,8 @@ import {
 } from './repository.js';
 
 const app = createApp({ logger: false });
+const sessionHeaders = () => ({ authorization: `Bearer ${app.jwt.sign({ sub: 'user-test' })}` });
+beforeAll(async () => { await app.ready(); });
 
 const validPayload = {
   name: 'Bench Press',
@@ -65,8 +67,8 @@ describe('GET /exercises', () => {
       return [];
     });
 
-    await app.inject({ method: 'GET', url: '/exercises', headers: { 'accept-language': 'en-GB' } });
-    await app.inject({ method: 'GET', url: '/exercises' });
+    await app.inject({ method: 'GET', url: '/exercises', headers: { authorization: `Bearer ${app.jwt.sign({ sub: 'user-test' })}`, 'accept-language': 'en-GB' } });
+    await app.inject({ headers: sessionHeaders(), method: 'GET', url: '/exercises' });
 
     expect(seen).toEqual(['en', 'es']);
   });
@@ -74,11 +76,11 @@ describe('GET /exercises', () => {
   it('returns the list from the repository', async () => {
     vi.mocked(listExercises).mockResolvedValue([{ id: 'e1' }] as never);
 
-    const response = await app.inject({ method: 'GET', url: '/exercises' });
+    const response = await app.inject({ headers: sessionHeaders(), method: 'GET', url: '/exercises' });
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual([{ id: 'e1' }]);
-    // Scoped to the acting person (spec 0015 FR-1, AC-9 via the dev fallback).
+    // Scoped to the authenticated person (spec 0015 FR-1, spec 0001).
     expect(listExercises).toHaveBeenCalledWith('user-test');
   });
 });
@@ -87,7 +89,7 @@ describe('GET /muscle-groups', () => {
   it('returns the muscle groups from the repository', async () => {
     vi.mocked(listMuscleGroups).mockResolvedValue([{ id: '1', name: 'chest' }] as never);
 
-    const response = await app.inject({ method: 'GET', url: '/muscle-groups' });
+    const response = await app.inject({ headers: sessionHeaders(), method: 'GET', url: '/muscle-groups' });
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual([{ id: '1', name: 'chest' }]);
@@ -98,7 +100,7 @@ describe('GET /exercises/:id', () => {
   it('returns 404 when the exercise does not exist', async () => {
     vi.mocked(findExerciseById).mockResolvedValue(null as never);
 
-    const response = await app.inject({ method: 'GET', url: '/exercises/missing' });
+    const response = await app.inject({ headers: sessionHeaders(), method: 'GET', url: '/exercises/missing' });
 
     expect(response.statusCode).toBe(404);
     expect(response.json()).toEqual({ message: 'Exercise not found' });
@@ -107,7 +109,7 @@ describe('GET /exercises/:id', () => {
   it('returns the exercise when it exists', async () => {
     vi.mocked(findExerciseById).mockResolvedValue({ id: 'e1' } as never);
 
-    const response = await app.inject({ method: 'GET', url: '/exercises/e1' });
+    const response = await app.inject({ headers: sessionHeaders(), method: 'GET', url: '/exercises/e1' });
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ id: 'e1' });
@@ -118,6 +120,7 @@ describe('GET /exercises/:id', () => {
 describe('POST /exercises', () => {
   it('returns 400 when the payload is invalid', async () => {
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/exercises',
       payload: { name: '', primaryMuscleGroupIds: [], secondaryMuscleGroupIds: [] },
@@ -132,6 +135,7 @@ describe('POST /exercises', () => {
     vi.mocked(createExercise).mockResolvedValue({ id: 'e1', name: 'Bench Press' } as never);
 
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/exercises',
       payload: validPayload,
@@ -149,6 +153,7 @@ describe('POST /exercises', () => {
     vi.mocked(createExercise).mockResolvedValue({ id: 'e2', name: 'Plank' } as never);
 
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/exercises',
       payload: { ...validPayload, name: 'Plank', trackingType: 'duration' },
@@ -163,6 +168,7 @@ describe('POST /exercises', () => {
 
   it('returns 400 on an unknown tracking type', async () => {
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/exercises',
       payload: { ...validPayload, trackingType: 'pace' },
@@ -176,6 +182,7 @@ describe('POST /exercises', () => {
     vi.mocked(createExercise).mockResolvedValue({ id: 'e3', name: 'Split squat' } as never);
 
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/exercises',
       payload: { ...validPayload, name: 'Split squat', isUnilateral: true },
@@ -190,6 +197,7 @@ describe('POST /exercises', () => {
 
   it('returns 400 when the unilateral flag is not a boolean', async () => {
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/exercises',
       payload: { ...validPayload, isUnilateral: 'yes' },
@@ -205,6 +213,7 @@ describe('POST /exercises', () => {
     );
 
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/exercises',
       payload: validPayload,
@@ -356,9 +365,6 @@ describe('no existence leak for custom exercises (spec 0015)', () => {
   };
 
   beforeEach(() => {
-    vi.mocked(resolveUserPublicId).mockImplementation(
-      async (request) => request.user?.sub ?? 'user-dev',
-    );
     vi.mocked(findExerciseById).mockImplementation(
       async (user, id) => (visible(user, id) ? asExercise(id) : null) as never,
     );
@@ -376,9 +382,6 @@ describe('no existence leak for custom exercises (spec 0015)', () => {
     vi.mocked(deleteExercisePhoto).mockImplementation(async (user, id) => photoWrite(user, id));
   });
 
-  afterAll(() => {
-    vi.mocked(resolveUserPublicId).mockImplementation(async () => 'user-test');
-  });
 
   const as = (user: string) => ({
     authorization: `Bearer ${app.jwt.sign({ sub: user })}`,
@@ -473,13 +476,13 @@ describe('no existence leak for custom exercises (spec 0015)', () => {
     expect(listFavoriteExerciseIds).toHaveBeenLastCalledWith('user-ben');
   });
 
-  it('a request without a token acts as the fallback account (AC-9)', async () => {
-    vi.mocked(listExercises).mockResolvedValue([] as never);
-    await app.inject({ method: 'GET', url: '/exercises' });
-    expect(listExercises).toHaveBeenLastCalledWith('user-dev');
-
+  it('rejects anonymous requests instead of resolving a fallback account (0001)', async () => {
+    const list = await app.inject({ method: 'GET', url: '/exercises' });
     const detail = await app.inject({ method: 'GET', url: '/exercises/ex-ana' });
-    expect(detail.statusCode).toBe(404);
+    expect(list.statusCode).toBe(401);
+    expect(detail.statusCode).toBe(401);
+    expect(listExercises).not.toHaveBeenCalled();
+    expect(findExerciseById).not.toHaveBeenCalled();
   });
 
   it('catalog exercises stay visible to everyone', async () => {

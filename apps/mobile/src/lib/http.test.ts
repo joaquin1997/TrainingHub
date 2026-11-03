@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 // Avoid loading expo-constants (pulled in by @/config/api) in the node test env.
 vi.mock('@/config/api', () => ({ API_BASE_URL: 'http://test.local' }));
 
-import { ApiError, apiRequest, isPermanentRejection } from './http';
+import { ApiError, apiRequest, isPermanentRejection, setAuthToken, setOnUnauthorized } from './http';
 
 type FakeResponse = {
   status?: number;
@@ -24,6 +24,8 @@ function stubFetch(response: FakeResponse) {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  setAuthToken(null);
+  setOnUnauthorized(null);
 });
 
 describe('apiRequest', () => {
@@ -92,5 +94,65 @@ describe('isPermanentRejection', () => {
 
   it('is false for network failures', () => {
     expect(isPermanentRejection(new TypeError('Network request failed'))).toBe(false);
+  });
+});
+
+
+describe('session rejection handling (0001)', () => {
+  it('signs out on a protected request rejection', async () => {
+    const logout = vi.fn();
+    setOnUnauthorized(logout);
+    setAuthToken('current-token');
+    stubFetch({ status: 401, ok: false });
+    await expect(apiRequest('/routines')).rejects.toMatchObject({ status: 401 });
+    expect(logout).toHaveBeenCalledOnce();
+  });
+
+  it('leaves the session in place on network and server failures', async () => {
+    const logout = vi.fn();
+    setOnUnauthorized(logout);
+    setAuthToken('current-token');
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('offline')));
+    await expect(apiRequest('/routines')).rejects.toThrow('offline');
+    stubFetch({ status: 503, ok: false });
+    await expect(apiRequest('/routines')).rejects.toMatchObject({ status: 503 });
+    expect(logout).not.toHaveBeenCalled();
+  });
+
+  it('lets boot validation handle its own 401 without a second sign-out', async () => {
+    const logout = vi.fn();
+    setOnUnauthorized(logout);
+    setAuthToken('stored-token');
+    stubFetch({ status: 401, ok: false });
+    await expect(apiRequest('/auth/me', undefined, { notifyUnauthorized: false }))
+      .rejects.toMatchObject({ status: 401 });
+    expect(logout).not.toHaveBeenCalled();
+  });
+
+  it('ignores an old request rejection after another session has started', async () => {
+    const logout = vi.fn();
+    setOnUnauthorized(logout);
+    setAuthToken('old-token');
+    let respond!: (value: unknown) => void;
+    vi.stubGlobal('fetch', vi.fn(() => new Promise((resolve) => { respond = resolve; })));
+    const request = apiRequest('/routines');
+    setAuthToken('new-token');
+    respond({ status: 401, ok: false, json: async () => ({ message: 'Unauthorized' }) });
+    await expect(request).rejects.toMatchObject({ status: 401 });
+    expect(logout).not.toHaveBeenCalled();
+  });
+
+  it('times out even when response headers arrive but the body stalls', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      status: 200, ok: true, json: () => new Promise(() => {}),
+    }));
+    await expect(apiRequest('/auth/me', undefined, { timeoutMs: 10 })).rejects.toThrow('timed out');
+  });
+
+  it('aborts a stalled startup check so the app can open offline', async () => {
+    vi.stubGlobal('fetch', vi.fn((_url, options: RequestInit) => new Promise((_resolve, reject) => {
+      options.signal?.addEventListener('abort', () => reject(new Error('timeout')));
+    })));
+    await expect(apiRequest('/auth/me', undefined, { timeoutMs: 10 })).rejects.toThrow(/timeout|timed out/);
   });
 });

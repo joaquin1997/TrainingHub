@@ -2,9 +2,10 @@
 
 ## Checklist
 - [x] Filter by category / equipment (chips)
-- [ ] Per-exercise history (past sets)
+- [x] Recent per-session figures and a full-progress link in exercise detail
+- [ ] Full past-set inspection and clearer exercise progress — follow-up scope, with readability in 0042
 - [x] Favorite exercises (API-backed, star toggle + favorites filter)
-- [x] Exercise images / GIFs (wger image URL, shown on detail)
+- [x] Exercise images on detail (reviewed catalog image URLs; older wger tooling retained)
   - [x] More catalog images matched from free-exercise-db; own photo for a
     custom exercise; thumbnails in lists and the workout (spec 0026 —
     server script and device check pending)
@@ -78,6 +79,13 @@
   `GET /exercises/:id/deletion-impact` and `DELETE /exercises/:id`. Needs
   the `add_exercise_deleted_at` migration and redeploy before the app
   update; device check pending.
+
+## Current catalog source
+
+Spec 0044 supersedes the original wger catalog and the unrun tracking sweep:
+reviewed bilingual names, aliases, equipment, loading kinds and muscles are
+bundled under `src/scripts/data/catalog/`. Older progress-log entries below
+record the state when their feature landed, not the fresh-setup workflow.
 
 ## Notes
 - Catalog screen `apps/mobile/src/features/exercises`.

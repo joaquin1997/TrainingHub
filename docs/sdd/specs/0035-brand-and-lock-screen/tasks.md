@@ -22,7 +22,7 @@ owner's next device rebuild.
 | 8 | [x] Watch: discard in a secondary menu with confirmation, not when disconnected; Smart Stack shows up next and sets | mobile + native | unit tests; **native rebuild** | `feat(watch): discard from the watch menu` |
 | 9 | [x] iOS 18 dark and tinted icon variants | mobile | config test; **native rebuild** | `feat(ui): dark and tinted iOS icons` |
 | 10 | [x] Progress log, backlog, roadmap | docs | — | `docs(sdd): record 0035 implementation` |
-| 11 | [ ] [DEVICE] AC-9 tab icons, AC-10 VoiceOver, AC-11 – AC-20 on iPhone + watch | device | owner | — |
+| 11 | [x] [DEVICE] AC-9 tab icons, AC-10 VoiceOver, AC-11 – AC-20 on iPhone + watch | device | owner | — |
 
 ## Progress log
 

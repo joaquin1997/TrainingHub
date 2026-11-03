@@ -1,17 +1,8 @@
 # TrainingHub backend (Fastify + Prisma).
 #
-# Runs on the home server "joaquinserver":
-#   - LAN:       192.168.1.98          (SSH context `docker-lan`)
-#   - Tailscale: 100.124.208.26        (SSH context `docker-ts`)
-#
-# PostgreSQL runs on the same host, published on loopback only (127.0.0.1:5434;
-# compose in /home/joaquin/docker_composes/postgresql on the server).
-#
-# `network_mode: host` makes the container share the host network namespace so:
-#   - it reaches PostgreSQL on the host loopback (DATABASE_URL -> 127.0.0.1:5434)
-#   - it is reachable over Tailscale at https://joaquinserver.tail644a1a.ts.net:8443
-#
-# DATABASE_URL is read from apps/api/.env (gitignored, never baked into the image).
+# Linux host-network deployment template. Expects PostgreSQL already reachable
+# from that host; DATABASE_URL and JWT_SECRET are loaded at runtime.
+# See docs/deployment.md for the ordered auth/data rollout.
 
 services:
   api:

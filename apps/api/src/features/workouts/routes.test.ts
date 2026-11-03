@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('./repository.js', () => ({
   listWorkoutSessions: vi.fn(),
@@ -8,8 +8,9 @@ vi.mock('./repository.js', () => ({
   getExerciseLastPerformance: vi.fn(),
 }));
 
-vi.mock('../../infrastructure/userContext.js', () => ({
-  resolveUserPublicId: vi.fn(async () => 'user-test'),
+// Mock persistence only: requests pass through real JWT verification and user resolution.
+vi.mock('../../infrastructure/sessionUser.js', () => ({
+  findSessionUser: vi.fn(async (publicId: string) => ({ publicId })),
 }));
 
 import { createApp } from '../../app.js';
@@ -22,6 +23,8 @@ import {
 } from './repository.js';
 
 const app = createApp({ logger: false });
+const sessionHeaders = () => ({ authorization: `Bearer ${app.jwt.sign({ sub: 'user-test' })}` });
+beforeAll(async () => { await app.ready(); });
 
 const validPayload = {
   routineId: 'r1',
@@ -55,7 +58,7 @@ describe('GET /workouts', () => {
   it('returns the list from the repository', async () => {
     vi.mocked(listWorkoutSessions).mockResolvedValue([{ id: 'w1' }] as never);
 
-    const response = await app.inject({ method: 'GET', url: '/workouts' });
+    const response = await app.inject({ headers: sessionHeaders(), method: 'GET', url: '/workouts' });
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual([{ id: 'w1' }]);
@@ -66,7 +69,7 @@ describe('GET /workouts/:id', () => {
   it('returns 404 when the session does not exist', async () => {
     vi.mocked(findWorkoutSessionById).mockResolvedValue(null as never);
 
-    const response = await app.inject({ method: 'GET', url: '/workouts/missing' });
+    const response = await app.inject({ headers: sessionHeaders(), method: 'GET', url: '/workouts/missing' });
 
     expect(response.statusCode).toBe(404);
     expect(response.json()).toEqual({ message: 'Workout session not found' });
@@ -75,7 +78,7 @@ describe('GET /workouts/:id', () => {
   it('returns the session when it exists', async () => {
     vi.mocked(findWorkoutSessionById).mockResolvedValue({ id: 'w1' } as never);
 
-    const response = await app.inject({ method: 'GET', url: '/workouts/w1' });
+    const response = await app.inject({ headers: sessionHeaders(), method: 'GET', url: '/workouts/w1' });
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ id: 'w1' });
@@ -85,6 +88,7 @@ describe('GET /workouts/:id', () => {
 describe('POST /workouts', () => {
   it('returns 400 when startedAt is missing', async () => {
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/workouts',
       payload: { exercises: validPayload.exercises },
@@ -97,6 +101,7 @@ describe('POST /workouts', () => {
 
   it('returns 400 when there are no exercises', async () => {
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/workouts',
       payload: { startedAt: validPayload.startedAt, exercises: [] },
@@ -108,6 +113,7 @@ describe('POST /workouts', () => {
 
   it('returns 400 when no set is completed', async () => {
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/workouts',
       payload: {
@@ -131,6 +137,7 @@ describe('POST /workouts', () => {
 
   it('returns 400 when startedAt is not a readable date', async () => {
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/workouts',
       payload: { ...validPayload, startedAt: 'yesterday-ish' },
@@ -143,6 +150,7 @@ describe('POST /workouts', () => {
 
   it('returns 400 when a set completion time is not a readable date', async () => {
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/workouts',
       payload: {
@@ -164,6 +172,7 @@ describe('POST /workouts', () => {
 
   it('returns 400 when the workout ends before it starts', async () => {
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/workouts',
       payload: { ...validPayload, completedAt: '2026-05-30T08:00:00.000Z' },
@@ -181,6 +190,7 @@ describe('POST /workouts', () => {
     } as never);
 
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/workouts',
       payload: { ...validPayload, pausedSeconds: 600 },
@@ -199,7 +209,7 @@ describe('POST /workouts', () => {
       created: true,
     } as never);
 
-    const response = await app.inject({ method: 'POST', url: '/workouts', payload: validPayload });
+    const response = await app.inject({ headers: sessionHeaders(), method: 'POST', url: '/workouts', payload: validPayload });
 
     expect(response.statusCode).toBe(201);
     expect(createWorkoutSession).toHaveBeenCalledWith(
@@ -210,6 +220,7 @@ describe('POST /workouts', () => {
 
   it.each([-1, 1.5, '60'])('returns 400 when pausedSeconds is %s', async (pausedSeconds) => {
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/workouts',
       payload: { ...validPayload, pausedSeconds },
@@ -221,6 +232,7 @@ describe('POST /workouts', () => {
 
   it('returns 400 when the workout was paused longer than it lasted', async () => {
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/workouts',
       // validPayload lasts 30 minutes.
@@ -236,6 +248,7 @@ describe('POST /workouts', () => {
 
   it('returns 400 when clientId is too long', async () => {
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/workouts',
       payload: { ...validPayload, clientId: 'x'.repeat(65) },
@@ -252,6 +265,7 @@ describe('POST /workouts', () => {
     } as never);
 
     await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/workouts',
       payload: { ...validPayload, clientId: ' lzx1-abc ' },
@@ -270,6 +284,7 @@ describe('POST /workouts', () => {
     } as never);
 
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/workouts',
       payload: validPayload,
@@ -297,6 +312,7 @@ describe('POST /workouts', () => {
     const completedAt = '2026-05-30T09:10:00.000Z';
 
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/workouts',
       payload: {
@@ -333,6 +349,7 @@ describe('POST /workouts', () => {
     } as never);
 
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/workouts',
       payload: { ...validPayload, clientId: 'c1' },
@@ -348,6 +365,7 @@ describe('POST /workouts', () => {
     );
 
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/workouts',
       payload: validPayload,
@@ -368,6 +386,7 @@ describe('POST /workouts', () => {
     );
 
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/workouts',
       payload: validPayload,
@@ -388,6 +407,7 @@ describe('GET /workouts/exercises/:exerciseId/last', () => {
     } as never);
 
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'GET',
       url: '/workouts/exercises/ex1/last',
     });
@@ -401,6 +421,7 @@ describe('GET /workouts/exercises/:exerciseId/last', () => {
     vi.mocked(getExerciseLastPerformance).mockResolvedValue(null as never);
 
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'GET',
       url: '/workouts/exercises/ex1/last',
     });
@@ -423,6 +444,7 @@ describe('POST /workouts warm-up block (spec 0024)', () => {
     } as never);
 
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/workouts',
       payload: { ...validPayload, warmUpItems },
@@ -437,6 +459,7 @@ describe('POST /workouts warm-up block (spec 0024)', () => {
 
   it('does not count ticked items as completed sets (FR-6)', async () => {
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/workouts',
       payload: {
@@ -452,6 +475,7 @@ describe('POST /workouts warm-up block (spec 0024)', () => {
 
   it('refuses a malformed block (400)', async () => {
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/workouts',
       payload: { ...validPayload, warmUpItems: [{ done: true }] },

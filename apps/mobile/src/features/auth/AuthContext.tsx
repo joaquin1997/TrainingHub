@@ -4,20 +4,24 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from 'react';
 
+import { sessionBootDecision, type SessionBootOutcome } from '@/features/auth/sessionBoot';
 import { authClient } from '@/features/auth/api/authClient';
 import { tokenStorage } from '@/features/auth/tokenStorage';
-import { tokenSubject } from '@/features/auth/tokenSubject';
 import { discardActiveWorkoutIfForeign } from '@/features/workouts/state/workoutDraftStore';
-import { setAuthToken, setOnUnauthorized } from '@/lib/http';
+import { ApiError, getAuthToken, setAuthToken, setOnUnauthorized } from '@/lib/http';
 import type { User } from '@workout/domain';
 
 interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isOffline: boolean;
+  isCheckingSession: boolean;
+  retrySession: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   register: (
     email: string,
@@ -34,36 +38,67 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isOffline, setIsOffline] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(false);
+  const generation = useRef(0);
 
   const signOut = useCallback(async () => {
+    generation.current += 1;
+    setIsOffline(false);
+    setIsCheckingSession(false);
+    setIsLoading(false);
     setAuthToken(null);
     setUser(null);
     await tokenStorage.clear();
   }, []);
 
-  // Restore a stored token on launch.
+  const validateSession = useCallback(async (token: string, version: number) => {
+    setIsCheckingSession(true);
+    let outcome: SessionBootOutcome;
+    try {
+      const identity = await authClient.me();
+      outcome = { kind: 'validated', user: identity.user };
+    } catch (error) {
+      outcome = error instanceof ApiError && error.status === 401
+        ? { kind: 'rejected' }
+        : { kind: 'unreachable' };
+    }
+    if (version !== generation.current) return;
+    const decision = sessionBootDecision(token, outcome);
+    setIsCheckingSession(false);
+    if (decision.clearToken) {
+      await signOut();
+    } else {
+      setUser(decision.user);
+      setIsOffline(decision.status === 'offline');
+    }
+  }, [signOut]);
+
   useEffect(() => {
-    let active = true;
-    tokenStorage
-      .get()
-      .then((token) => {
-        if (active && token) {
+    const version = ++generation.current;
+    void (async () => {
+      try {
+        const token = await tokenStorage.get();
+        if (version !== generation.current) return;
+        if (token) {
           setAuthToken(token);
-          // No /me endpoint yet (spec 0001): a stored token means signed in,
-          // and its subject is who. 'me' only for an unreadable token.
-          const id = tokenSubject(token) ?? 'me';
-          setUser((current) => current ?? { id, displayName: '', createdAt: '', updatedAt: '' });
+          await validateSession(token, version);
         }
-      })
-      .finally(() => {
-        if (active) {
-          setIsLoading(false);
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
+      } catch {
+        // A storage failure must release the startup screen too.
+      } finally {
+        if (version === generation.current) setIsLoading(false);
+      }
+    })();
+    return () => { generation.current += 1; };
+  }, [validateSession]);
+
+  const retrySession = useCallback(async () => {
+    const token = getAuthToken();
+    if (token && !isCheckingSession) {
+      await validateSession(token, ++generation.current);
+    }
+  }, [isCheckingSession, validateSession]);
 
   // Sign out automatically if the API rejects the token.
   useEffect(() => {
@@ -75,6 +110,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const persist = useCallback(async (token: string, nextUser: User) => {
     // A workout left in memory by someone else must not carry over (FR-8).
+    generation.current += 1;
+    setIsOffline(false);
+    setIsCheckingSession(false);
     discardActiveWorkoutIfForeign(nextUser.id);
     setAuthToken(token);
     await tokenStorage.set(token);
@@ -115,6 +153,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isLoading,
         isAuthenticated: user !== null,
+        isOffline,
+        isCheckingSession,
+        retrySession,
         signIn,
         register,
         signInWithGoogle,

@@ -7,7 +7,7 @@ checklist and progress log per area; this table tracks **which work has a spec**
 
 | Id | Title | Status | Roadmap area |
 |---|---|---|---|
-| [0001](specs/0001-auth-session-hardening/spec.md) | Auth session hardening | `ready` — plan and tasks approved (2026-09-24), not implemented: the API still answers anonymous requests through the development user | 3 — Auth & users |
+| [0001](specs/0001-auth-session-hardening/spec.md) | Auth session hardening | `in-progress` — code complete locally (2026-11-03): strict auth, 90-day credentials, startup validation/offline retry and reassignment script; live data reassignment, API/app rollout and device acceptance pending | 3 — Auth & users |
 | [0002](specs/0002-apple-sign-in/spec.md) | Sign in with Apple | `draft` — deferred (2026-10-18): the free Apple team cannot sign the capability (checked by building with it); waits for a paid developer account (owner's call). Decided meanwhile: link by verified email (as 0039) | 3 — Auth & users |
 | [0003](specs/0003-session-revocation/spec.md) | Session revocation | `draft` — deferred from 0001, before distribution | 3 — Auth & users |
 | [0010](specs/0010-persist-active-workout/spec.md) | Persist the active workout | `done` — in daily use on the iPhone since the 2026-10-18 build, deployed | 1 — Live workout logging |
@@ -42,8 +42,8 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0039](specs/0039-google-sign-in/spec.md) | Sign in with Google | `in-progress` — code complete and deployed (migration `add_user_identities` applied), inactive until the owner creates the Google OAuth clients and sets `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` / `GOOGLE_CLIENT_IDS` (plan, *Owner steps*), then a native rebuild | 3 — Auth & users |
 | [0040](specs/0040-device-test-fixes/spec.md) | Fixes from the device test of 2026-10-21 | `in-progress` — code complete (2026-10-21) on `feat/sdd-0040-device-fixes`, API deployed from that branch; awaiting the native rebuild (rest alert with the app in front, lock-screen view) and the device checks (task 10) | 1 + 2 + 8 |
 | [0041](specs/0041-widget-redesign-and-watch-reps/spec.md) | Widget redesign and reps on the watch | `in-progress` — code complete (2026-10-21); widget rendered in light and dark (`renders/`); awaiting the native rebuild (with 0040's) and the device checks (AC-1–AC-6) | 8 — Integrations & platform |
-| 0042 | Progress per exercise that is easy to read and to find | `draft` — not written yet (owner, 2026-10-21: hard to understand, hard to find the exercise) | 4 — Progress |
-| [0043](specs/0043-smarter-warm-ups/spec.md) | Smarter warm-ups and warm-ups marked by hand | `ready` — gate 1 self-approved (2026-10-21); next to plan. Ramps by loading kind and muscle (now in the reviewed catalog, 0044) and a visible set-type list in the workout and the routine editor | 1 — Live workout logging |
+| [0042](specs/0042-readable-exercise-progress/spec.md) | Progress per exercise that is easy to read and to find | `ready` — spec written 2026-11-03: trained-exercise search, explicit metrics/periods and session evidence; next to plan | 4 — Progress |
+| [0043](specs/0043-smarter-warm-ups/spec.md) | Smarter warm-ups and warm-ups marked by hand | `planned` — plan self-approved 2026-11-03 against the reviewed catalog; provenance protects manual loading-kind choices, separate workout/routine context, explicit set-type picker; task breakdown and implementation next | 1 — Live workout logging |
 | [0044](specs/0044-curated-exercise-catalog/spec.md) | A curated exercise catalog | `done` — applied on the server 2026-10-21: 763 reviewed exercises (195 by hand + 568 from free-exercise-db), 847 imported ones retired, 14 own duplicates merged with their history; API deployed, names in the app's language, search by other names | 6 — Exercises |
 
 Execution order agreed 2026-09-24: 0013 → 0014 → 0010 → 0011 → 0012 →
@@ -69,6 +69,10 @@ catalog (0044), the image matching (0026) by its pictures.
 
 ### Owner's steps (pending)
 
+0. 0001 rollout: backup and reassignment dry-run/apply to the explicit owner
+   account **before** deploying the strict API, then deliver the mobile bundle
+   and check startup/offline retry and workout reauthentication. Not deployed.
+
 1. Native rebuild for 0040 and 0041 (rest alert with the app in front,
    lock-screen view, widget, watch app), then their device checks.
 2. Device checks left in 0015 (needs a second account), 0020, 0022, 0026,
@@ -76,7 +80,9 @@ catalog (0044), the image matching (0026) by its pictures.
 3. Google OAuth clients for 0039, when wanted.
 4. Merge `feat/sdd-0040-device-fixes` into `master` and push.
 
-Next specs, in order: 0043 → 0042 (0041 done first at the owner's request).
+Current work (2026-11-03): 0001 code complete locally, rollout pending;
+0043 planned (tasks/implementation next); 0042 ready to plan. Feature order
+remains 0043 → 0042 (0041 done first at the owner's request).
 
 Since 2026-10-16 the owner has delegated the gates: specs, plans and tasks are
 self-approved and decisions recorded as assumptions; only decisions with a
@@ -140,10 +146,10 @@ next `specify` pass.
 | # | Area | Remaining | Notes |
 |---|---|---|---|
 | 2 | Rest timer | — | The background alert is now spec 0018 (a local module, not `expo-notifications`) |
-| 4 | Progress | Muscle-group distribution from real muscle data, workout calendar, line charts | A category-based proxy ships today; real muscle data is sparse; line charts need `react-native-svg` |
+| 4 | Progress | Muscle-group distribution from reviewed data, workout calendar | Category-based distribution ships; 0044 now supplies muscle metadata. Line charts already ship through 0034; metric/period/readability work is 0042 |
 | 6 | Exercises | Per-exercise history | Data already exists via "last time" — mostly presentation |
 | 7 | Social | Everything | Decided out of scope for the MVP (2026-05-31); post-MVP |
-| 8 | Integrations & platform | Offline sync, health, Apple Watch, push, theme, onboarding, export | Interfaces exist; implementations deliberately deferred |
+| 8 | Integrations & platform | Full offline sync, remaining health providers, reminders, export | Watch, Live Activities, rest alerts and themes are implemented; remaining onboarding/device checks are tracked in specs |
 | 9 | Production readiness | TLS, production DB, TestFlight, rate limiting, crash reporting | Largest unspecified block |
 
 `TODO(sdd): area 9 (production readiness) is cross-cutting and its roadmap`
