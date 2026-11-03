@@ -36,6 +36,12 @@ AC-4 (2, 3, 6), AC-5 (4, 6), AC-6 (3, 4, 6), AC-7 (4, 6).
   The JS needed no change for FR-2: with the app running, the existing
   controllers start the rest alert, update the live status and send the next
   context.
+- 2026-11-03 — Owner's first device check (build `d4c793b`): AC-1 passes
+  (next set on the watch with the phone locked); AC-3 passes (every set on the
+  phone after unlocking); the app swiped away mid-workout stays running in
+  the background and the watch keeps working. AC-2 fails: the rest started
+  from the watch does not show on the lock screen — under investigation.
+  AC-4 not testable by the owner.
 
 ## Definition of done
 
