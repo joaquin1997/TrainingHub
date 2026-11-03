@@ -22,6 +22,20 @@ struct StartActivityPayload: Record {
   @Field var allDoneLabel: String? = nil
 }
 
+/// Every field an update changes (spec 0045): sent at once, because a setter
+/// reads the activity back first and that reading can still be the previous
+/// state right after an update.
+struct UpdateActivityPayload: Record {
+  @Field var pausedAtMs: Double? = nil
+  @Field var pausedSeconds: Double = 0
+  @Field var activeKcal: Int? = nil
+  @Field var restEndsAtMs: Double? = nil
+  @Field var upNext: String? = nil
+  @Field var setsDone: Int? = nil
+  @Field var setsTotal: Int? = nil
+  @Field var setsLabel: String? = nil
+}
+
 public class WorkoutLiveActivityModule: Module {
   private var observer: NSObjectProtocol?
 
@@ -95,6 +109,20 @@ public class WorkoutLiveActivityModule: Module {
         state.setsDone = setsDone
         state.setsTotal = setsTotal
         state.setsLabel = setsLabel
+      }
+    }
+
+    AsyncFunction("update") { (workoutId: String, payload: UpdateActivityPayload) async in
+      guard #available(iOS 16.2, *) else { return }
+      await ActivityStore.update(workoutId: workoutId) { state in
+        state.pausedAt = payload.pausedAtMs.map { Date(timeIntervalSince1970: $0 / 1000) }
+        state.pausedSeconds = payload.pausedSeconds
+        state.activeKcal = payload.activeKcal
+        state.restEndsAt = payload.restEndsAtMs.map { Date(timeIntervalSince1970: $0 / 1000) }
+        state.upNext = payload.upNext
+        state.setsDone = payload.setsDone
+        state.setsTotal = payload.setsTotal
+        state.setsLabel = payload.setsLabel
       }
     }
 

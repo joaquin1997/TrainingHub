@@ -31,6 +31,17 @@ export type ActivityState = {
   activeKcal: number | null;
 };
 
+export type ActivityUpdate = {
+  pausedAtMs: number | null;
+  pausedSeconds: number;
+  activeKcal: number | null;
+  restEndsAtMs: number | null;
+  upNext: string | null;
+  setsDone: number;
+  setsTotal: number;
+  setsLabel: string;
+};
+
 export type ActivityStateChange = {
   workoutId: string;
   paused: boolean;
@@ -56,6 +67,13 @@ type WorkoutLiveActivityNative = {
     setsTotal: number,
     setsLabel: string,
   ): Promise<void>;
+  /**
+   * Every field of the activity in one update (spec 0045). The separate
+   * setters above each read the activity back first, and right after an
+   * update that reading can still be the previous one, so a later setter
+   * dropped the rest. Absent in builds before it.
+   */
+  update?(workoutId: string, state: ActivityUpdate): Promise<void>;
   end(): Promise<void>;
   getState(): Promise<ActivityState | null>;
   addListener(

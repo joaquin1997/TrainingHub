@@ -138,6 +138,23 @@ export const appleHealthLiveWorkoutBridge: LiveWorkoutBridge = {
       return;
     }
 
+    const progress = progressOf(payload);
+    if (module.update) {
+      // One update with every field, so none is lost (spec 0045).
+      await module.update(payload.workoutSessionId, {
+        pausedAtMs: toMs(payload.pausedAt),
+        pausedSeconds: payload.pausedSeconds ?? 0,
+        activeKcal: toKcal(payload.activeEnergyKcal),
+        restEndsAtMs: runningRestEndMs(payload.restEndsAt),
+        upNext: progress.upNext,
+        setsDone: progress.setsDone,
+        setsTotal: progress.setsTotal,
+        setsLabel: progress.setsLabel,
+      });
+      return;
+    }
+
+    // Builds before spec 0045: one setter per field.
     await module.setPause(
       payload.workoutSessionId,
       toMs(payload.pausedAt),
@@ -147,7 +164,6 @@ export const appleHealthLiveWorkoutBridge: LiveWorkoutBridge = {
     // Optional: a build from before spec 0018 has no rest on the activity.
     await module.setRest?.(payload.workoutSessionId, runningRestEndMs(payload.restEndsAt));
     // Optional: a build from before spec 0035 shows no progress.
-    const progress = progressOf(payload);
     await module.setProgress?.(
       payload.workoutSessionId,
       progress.upNext,

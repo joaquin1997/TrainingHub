@@ -47,6 +47,13 @@ AC-4 (2, 3, 6), AC-5 (4, 6), AC-6 (3, 4, 6), AC-7 (4, 6).
   whenever the activity was stale, and on the device it stayed stale after
   the first rest's end. The gate is dropped; the clock check (0040 FR-3)
   already hides an ended rest. Rebuilt for the owner's re-check.
+- 2026-11-03 — Re-check: still no rest on the lock screen (the double buzz is
+  fine, the owner wants both). Second cause, from the code: each change
+  updated the activity with four setters (pause, kcal, rest, progress), each
+  reading the activity back first; right after an update that reading can
+  still be the previous state, so the last setter (progress, which did show)
+  wrote the rest back as none. Now one `update` call carries every field;
+  the setters stay for older builds. The `isStale` gate stays dropped.
 
 ## Definition of done
 
