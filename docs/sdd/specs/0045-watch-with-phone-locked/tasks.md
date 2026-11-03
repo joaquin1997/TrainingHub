@@ -54,6 +54,11 @@ AC-4 (2, 3, 6), AC-5 (4, 6), AC-6 (3, 4, 6), AC-7 (4, 6).
   still be the previous state, so the last setter (progress, which did show)
   wrote the rest back as none. Now one `update` call carries every field;
   the setters stay for older builds. The `isStale` gate stays dropped.
+- 2026-11-03 — Owner's re-check on build `deda27f`: works — the rest started
+  from the watch (and from the phone, every time) shows on the lock screen.
+  AC-1, AC-2, AC-3 and the swipe-away case pass. Left: AC-4 (phone off; the
+  owner cannot test it now), AC-5 (no background activity after the
+  workout), AC-6 (pause from the watch), AC-7 (no watch).
 
 ## Definition of done
 
