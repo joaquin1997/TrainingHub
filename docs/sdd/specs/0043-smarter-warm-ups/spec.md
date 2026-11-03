@@ -1,7 +1,7 @@
 ---
 id: 0043
 title: Smarter warm-ups and warm-ups marked by hand
-status: planned      # plan revised 2026-11-03 after owner review
+status: in-progress
 amends: 0024, 0031
 roadmap: docs/roadmap/01-live-workout-logging.md
 created: 2026-10-21

@@ -64,6 +64,27 @@ export type ExerciseTrackingType =
  */
 export type ExerciseLoadingKind = 'barbell' | 'dumbbell' | 'machine';
 
+/** Catalog context captured for offline warm-up generation. */
+export interface WarmUpExerciseMetadata {
+  name?: string;
+  aliases?: string[];
+  loadingKind?: ExerciseLoadingKind;
+  equipment?: string[];
+  category?: string;
+  primaryMuscleGroups?: string[];
+}
+
+export type ApproachSetCount = 1 | 2 | 3 | 4 | 5;
+
+/** Personal overrides; null restores the catalog/context default. */
+export interface ExerciseWarmUpPreferences {
+  loadingKind: ExerciseLoadingKind | null;
+  approachSetCount: ApproachSetCount | null;
+  incrementKg: number | null;
+}
+
+export type UpdateExerciseWarmUpPreferencesInput = ExerciseWarmUpPreferences;
+
 export interface Exercise {
   id: EntityId;
   /** In the app's language for a reviewed catalog exercise (spec 0044). */
@@ -187,6 +208,7 @@ export interface RoutineWarmUpItemInput {
  * Represents one exercise definition inside a routine template.
  */
 export interface RoutineExercise {
+  warmUpMetadata?: WarmUpExerciseMetadata;
   id: EntityId;
   routineId: EntityId;
   exerciseId: EntityId;

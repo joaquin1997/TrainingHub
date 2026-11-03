@@ -1,6 +1,6 @@
 ---
 spec: 0043
-status: approved
+status: in-progress
 created: 2026-11-03
 revised: 2026-11-03
 ---
@@ -10,7 +10,7 @@ revised: 2026-11-03
 Revised after the owner's spec review: configurable count up to five,
 adjustable increments and personal preferences replace the former shared
 catalog correction/provenance proposal. Self-reviewed under the delegated
-gates. Planning only; tasks and implementation have not started.
+gates. Implementation started; production rollout and device acceptance remain pending.
 
 ## Current state verified 2026-11-03
 

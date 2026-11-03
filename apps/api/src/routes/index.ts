@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 
+import { registerWarmUpPreferencesRoutes } from '../features/exercises/warmUpPreferencesRoutes.js';
 import { registerAuthRoutes } from '../features/auth/routes.js';
 import { registerExerciseRoutes } from '../features/exercises/routes.js';
 import { registerExerciseTrackingTypeRoutes } from '../features/exercises/trackingTypeRoutes.js';
@@ -16,6 +17,7 @@ export async function registerRoutes(app: FastifyInstance) {
   await registerAuthRoutes(app);
   await registerExerciseRoutes(app);
   await registerExerciseTrackingTypeRoutes(app);
+  await registerWarmUpPreferencesRoutes(app);
   await registerMeasurementRoutes(app);
   await registerProfileRoutes(app);
   await registerProgressRoutes(app);
