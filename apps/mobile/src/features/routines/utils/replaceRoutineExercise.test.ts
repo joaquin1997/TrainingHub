@@ -35,6 +35,7 @@ describe('replaceRoutineRowExercise', () => {
     expect(next[0]).toEqual({
       ...rows[0],
       exerciseId: 'hack',
+      warmUpMetadata: { name: 'Hack squat' },
       exerciseQuery: 'Hack squat',
     });
     expect(next[1]).toBe(rows[1]);

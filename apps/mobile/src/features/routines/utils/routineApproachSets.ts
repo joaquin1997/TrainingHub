@@ -1,7 +1,7 @@
 import type { WeightUnit } from '@workout/domain';
 
 import type { EditableRoutineSet } from '@/features/routines/components/RoutineSetTable';
-import { approachSets, type ApproachSet } from '@/lib/approachSets';
+import { approachSets, type ApproachSet, type WarmUpRampOptions } from '@/lib/approachSets';
 
 import { effectiveRoutineSetValue, type NumericSetField } from './routineSetInheritance';
 
@@ -18,6 +18,7 @@ export type RoutineApproachSetsPreview = {
   unit: WeightUnit;
   /** Warm-up rows already ahead of the first working row; they stay (FR-4). */
   keptWarmUps: number;
+  context?: WarmUpRampOptions;
 };
 
 export type RoutineApproachSetsPreviewResult =
@@ -43,6 +44,7 @@ export function previewRoutineApproachSets(
   sets: EditableRoutineSet[],
   exerciseId: string,
   unit: WeightUnit,
+  context?: WarmUpRampOptions,
 ): RoutineApproachSetsPreviewResult {
   const firstWorking = sets.findIndex((set) => !set.isWarmup);
   if (firstWorking === -1) {
@@ -52,11 +54,11 @@ export function previewRoutineApproachSets(
   const workingWeight = Number.parseFloat(
     effectiveRoutineSetValue(sets, firstWorking, 'targetWeight').replace(',', '.'),
   );
-  if (!(workingWeight > 0)) {
+  if (!Number.isFinite(workingWeight) || !(workingWeight > 0)) {
     return { outcome: 'noWeight' };
   }
 
-  const generated = approachSets(workingWeight, unit);
+  const generated = approachSets(workingWeight, unit, context);
   if (generated.length === 0) {
     return { outcome: 'tooLight' };
   }
@@ -68,6 +70,7 @@ export function previewRoutineApproachSets(
     workingWeight,
     unit,
     keptWarmUps: firstWorking,
+    ...(context ? { context } : {}),
   };
 }
 

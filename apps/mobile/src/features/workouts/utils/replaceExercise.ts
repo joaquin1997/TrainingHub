@@ -1,3 +1,4 @@
+import { warmUpMetadataOf } from '@/lib/warmUpContext';
 import type { ExerciseTrackingType } from '@workout/domain';
 
 import { formatDuration } from '@/lib/format';
@@ -77,6 +78,11 @@ export function replaceExerciseInWorkout(
     name: string;
     trackingType?: ExerciseTrackingType;
     isUnilateral?: boolean;
+    loadingKind?: import('@workout/domain').ExerciseLoadingKind;
+    equipment?: string[];
+    category?: string;
+    aliases?: string[];
+    primaryMuscleGroups?: string[];
   },
   doneSets: DoneSetsChoice,
 ): WorkoutSessionDraft {
@@ -100,6 +106,7 @@ export function replaceExerciseInWorkout(
     id: replacementId,
     exerciseId: exercise.id,
     exerciseName: exercise.name,
+    warmUpMetadata: warmUpMetadataOf(exercise),
     // The replacement records what the new exercise tracks (spec 0021).
     trackingType: exercise.trackingType,
     isUnilateral: exercise.isUnilateral,

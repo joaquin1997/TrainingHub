@@ -1,7 +1,10 @@
+import { warmUpMetadataOf } from '@/lib/warmUpContext';
 import type {
   CreateWorkoutSessionInput,
   ExerciseLastPerformance,
   ExerciseTrackingType,
+  ExerciseWarmUpPreferences,
+  WarmUpExerciseMetadata,
   Routine,
   WeightUnit,
   WorkoutSession,
@@ -111,6 +114,7 @@ export function effectiveSetValue(value: string, placeholder?: string): string {
 }
 
 export type WorkoutExerciseDraft = {
+  warmUpMetadata?: WarmUpExerciseMetadata;
   id: string;
   exerciseId: string;
   exerciseName: string;
@@ -161,6 +165,7 @@ export type WorkoutSessionDraft = {
    * `features/workouts/liveRecords`.
    */
   startingRecords?: Record<string, import('@workout/domain').StartingRecords>;
+  warmUpPreferences?: Record<string, { value: ExerciseWarmUpPreferences; pending: boolean }>;
   exercises: WorkoutExerciseDraft[];
 };
 
@@ -231,6 +236,7 @@ function buildExerciseDrafts(
       routineExerciseId: routineExercise.id,
       restSeconds: routineExercise.restSeconds,
       supersetGroup: routineExercise.supersetGroup,
+      warmUpMetadata: routineExercise.warmUpMetadata,
       trackingType: routineExercise.trackingType,
       isUnilateral: routineExercise.isUnilateral,
       order: routineExercise.orderIndex,
@@ -334,12 +340,18 @@ export function addExerciseToWorkout(
     name: string;
     trackingType?: ExerciseTrackingType;
     isUnilateral?: boolean;
+    loadingKind?: import('@workout/domain').ExerciseLoadingKind;
+    equipment?: string[];
+    category?: string;
+    aliases?: string[];
+    primaryMuscleGroups?: string[];
   },
 ): WorkoutSessionDraft {
   const newExercise: WorkoutExerciseDraft = {
     id: nextDraftId('we'),
     exerciseId: exercise.id,
     exerciseName: exercise.name,
+    warmUpMetadata: warmUpMetadataOf(exercise),
     trackingType: exercise.trackingType,
     isUnilateral: exercise.isUnilateral,
     order: workoutDraft.exercises.length + 1,
@@ -599,33 +611,24 @@ export function moveWorkoutSet(
   };
 }
 
-export function cycleWorkoutSetType(
-  workoutDraft: WorkoutSessionDraft,
-  workoutExerciseId: string,
-  workoutSetId: string,
+export function setWorkoutSetType(
+  draft: WorkoutSessionDraft,
+  exerciseId: string,
+  setId: string,
+  type: WorkoutSetType,
 ): WorkoutSessionDraft {
-  return {
-    ...workoutDraft,
-    exercises: workoutDraft.exercises.map((exercise) => {
-      if (exercise.id !== workoutExerciseId) {
-        return exercise;
-      }
+  const exercise = draft.exercises.find((item) => item.id === exerciseId);
+  const set = exercise?.entries.find((item) => item.id === setId);
+  if (!set || set.type === type || !WORKOUT_SET_TYPES.includes(type)) return draft;
+  return { ...draft, exercises: draft.exercises.map((item) => item.id === exerciseId
+    ? { ...item, entries: item.entries.map((entry) => entry.id === setId
+      ? { ...entry, type, generatedWarmup: undefined } : entry) }
+    : item) };
+}
 
-      return {
-        ...exercise,
-        entries: exercise.entries.map((set) => {
-          if (set.id !== workoutSetId) {
-            return set;
-          }
-
-          const nextIndex =
-            (WORKOUT_SET_TYPES.indexOf(set.type) + 1) % WORKOUT_SET_TYPES.length;
-          // A re-typed generated warm-up is the person's own (spec 0031 FR-7).
-          return { ...set, type: WORKOUT_SET_TYPES[nextIndex]!, generatedWarmup: undefined };
-        }),
-      };
-    }),
-  };
+export function cycleWorkoutSetType(draft: WorkoutSessionDraft, exerciseId: string, setId: string): WorkoutSessionDraft {
+  const set = draft.exercises.find((item) => item.id === exerciseId)?.entries.find((item) => item.id === setId);
+  return set ? setWorkoutSetType(draft, exerciseId, setId, WORKOUT_SET_TYPES[(WORKOUT_SET_TYPES.indexOf(set.type) + 1) % WORKOUT_SET_TYPES.length]!) : draft;
 }
 
 export function toggleWorkoutSetDone(

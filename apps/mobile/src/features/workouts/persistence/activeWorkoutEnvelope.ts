@@ -1,3 +1,4 @@
+import { isWarmUpPreferences } from '@/lib/warmUpContext';
 import type { WorkoutSessionDraft } from '@/features/workouts/state/workoutDraftStore';
 
 /**
@@ -101,7 +102,26 @@ export function parsePersistedActiveWorkout(
     return { kind: 'foreign' };
   }
 
-  const draft = parsed.draft;
+  let draft = parsed.draft;
+  if (draft.warmUpPreferences) {
+    const entries = typeof draft.warmUpPreferences === 'object'
+      ? Object.entries(draft.warmUpPreferences).filter(([, entry]) => entry && isWarmUpPreferences(entry.value) && typeof entry.pending === 'boolean')
+      : [];
+    draft = { ...draft, warmUpPreferences: Object.fromEntries(entries) };
+  }
+  // Optional metadata is untrusted in an older/tampered envelope. Retain the
+  // workout but discard invalid context before the pure normalizer reads it.
+  draft = { ...draft, exercises: draft.exercises.map((exercise) => {
+    const m = exercise.warmUpMetadata;
+    if (!m) return exercise;
+    const strings = (v: unknown) => v === undefined || (Array.isArray(v) && v.every((x) => typeof x === 'string'));
+    const valid = typeof m === 'object' && !Array.isArray(m) &&
+      (m.name === undefined || typeof m.name === 'string') &&
+      (m.category === undefined || typeof m.category === 'string') &&
+      (m.loadingKind === undefined || ['barbell', 'dumbbell', 'machine'].includes(m.loadingKind)) &&
+      strings(m.aliases) && strings(m.equipment) && strings(m.primaryMuscleGroups);
+    return valid ? exercise : { ...exercise, warmUpMetadata: undefined };
+  }) };
 
   // A malformed rest is dropped; the workout itself is kept.
   if (draft.rest !== undefined && !looksLikeRest(draft.rest)) {

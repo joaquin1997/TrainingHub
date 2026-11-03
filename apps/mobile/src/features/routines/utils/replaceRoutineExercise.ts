@@ -1,4 +1,4 @@
-import type { ExerciseTrackingType } from '@workout/domain';
+import type { ExerciseTrackingType, WarmUpExerciseMetadata } from '@workout/domain';
 
 /** The part of a routine editor row that names its exercise. */
 type RoutineRowExercise = {
@@ -18,7 +18,7 @@ type RoutineRowExercise = {
 export function replaceRoutineRowExercise<Row extends RoutineRowExercise>(
   rows: Row[],
   rowId: string,
-  exercise: { id: string; name: string; trackingType?: ExerciseTrackingType },
+  exercise: { id: string; name: string; trackingType?: ExerciseTrackingType } & WarmUpExerciseMetadata,
 ): Row[] {
   return rows.map((row) =>
     row.id === rowId
@@ -26,6 +26,7 @@ export function replaceRoutineRowExercise<Row extends RoutineRowExercise>(
           ...row,
           exerciseId: exercise.id,
           exerciseQuery: exercise.name,
+          warmUpMetadata: { name: exercise.name, aliases: exercise.aliases, loadingKind: exercise.loadingKind, equipment: exercise.equipment, category: exercise.category, primaryMuscleGroups: exercise.primaryMuscleGroups },
           trackingType: exercise.trackingType,
         }
       : row,

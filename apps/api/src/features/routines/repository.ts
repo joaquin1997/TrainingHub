@@ -22,6 +22,8 @@ const routineInclude = {
           name: true,
           nameEs: true,
           nameEn: true,
+          isSystemDefined: true,
+          createdByUser: { select: { publicId: true } },
           loadingKind: true,
           equipment: true,
           aliases: true,
@@ -75,7 +77,7 @@ function mapRoutine(userPublicId: string, record: RoutineRecord): Routine {
         orderIndex: exercise.orderIndex,
         restSeconds: exercise.restSeconds ?? undefined,
         supersetGroup: exercise.supersetGroup ?? undefined,
-        warmUpMetadata: {
+        warmUpMetadata: exercise.exercise.isSystemDefined || exercise.exercise.createdByUser?.publicId === userPublicId ? {
           name: exercise.exercise.name,
           aliases: [exercise.exercise.nameEs, exercise.exercise.nameEn, ...(exercise.exercise.aliases ?? [])]
             .filter((name): name is string => Boolean(name)),
@@ -85,7 +87,7 @@ function mapRoutine(userPublicId: string, record: RoutineRecord): Routine {
           equipment: exercise.exercise.equipment,
           category: exercise.exercise.category ?? undefined,
           primaryMuscleGroups: (exercise.exercise.primaryMuscleGroupLinks ?? []).map((link) => link.muscleGroup.name),
-        },
+        } : undefined,
         trackingType: toExerciseTrackingType(exercise.exercise.trackingType),
         isUnilateral: exercise.exercise.isUnilateral,
         // Spec 0033 FR-7: the slot keeps a deleted exercise, marked as such.
