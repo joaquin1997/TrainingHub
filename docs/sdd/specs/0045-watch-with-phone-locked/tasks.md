@@ -40,8 +40,13 @@ AC-4 (2, 3, 6), AC-5 (4, 6), AC-6 (3, 4, 6), AC-7 (4, 6).
   (next set on the watch with the phone locked); AC-3 passes (every set on the
   phone after unlocking); the app swiped away mid-workout stays running in
   the background and the watch keeps working. AC-2 fails: the rest started
-  from the watch does not show on the lock screen — under investigation.
-  AC-4 not testable by the owner.
+  from the watch does not show on the lock screen. AC-4 not testable by the
+  owner.
+- 2026-11-03 — AC-2 traced to the lock-screen view, not to 0045: ticking on
+  the phone, only the first rest of a workout showed. The view hid the rest
+  whenever the activity was stale, and on the device it stayed stale after
+  the first rest's end. The gate is dropped; the clock check (0040 FR-3)
+  already hides an ended rest. Rebuilt for the owner's re-check.
 
 ## Definition of done
 

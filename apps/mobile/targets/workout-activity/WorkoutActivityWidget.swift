@@ -475,15 +475,16 @@ private struct LockScreenView: View {
 
 /// The running rest's end, or nil once it has passed (spec 0018 FR-8). Every
 /// update sets the rest's end as the stale date, so the system re-renders the
-/// activity as stale at that instant even with the app suspended.
+/// activity at that instant even with the app suspended, and the clock check
+/// below hides the countdown.
 ///
-/// TODO(sdd): Live Activity after the rest ends with the app suspended relies
-/// on staleDate re-rendering the widget with isStale; unverified on the device
-/// — worst case the row shows 0:00 until the app next updates the activity.
+/// Not gated on `context.isStale`: on the device the activity stayed stale
+/// after the first rest ended, so every later rest was hidden — on the lock
+/// screen only the first rest of a workout showed (owner, 2026-11-03).
 private func runningRest(_ context: ActivityViewContext<WorkoutActivityAttributes>) -> Date? {
-  // Also checked against the clock: an update after the end must not bring
-  // back a countdown at 0:00 (spec 0040 FR-3).
-  guard let restEndsAt = context.state.restEndsAt, !context.isStale, restEndsAt > Date() else {
+  // Checked against the clock: an update after the end must not bring back a
+  // countdown at 0:00 (spec 0040 FR-3).
+  guard let restEndsAt = context.state.restEndsAt, restEndsAt > Date() else {
     return nil
   }
   return restEndsAt
