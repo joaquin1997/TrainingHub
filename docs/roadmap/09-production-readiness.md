@@ -45,3 +45,10 @@
 - (2026-09-24) Device build renewed: installed the iOS 26.5 platform in Xcode and
   re-signed with `xcodebuild -allowProvisioningUpdates` (the old profile had
   expired on 2026-06-06).
+
+## Spec review — 2026-11-03
+
+- [0052](../sdd/specs/0052-app-errors-and-service-monitoring/spec.md) is ready
+  for operational app errors and service/data availability monitoring, as
+  clarified by the owner. Includes incident/recovery rules and data redaction;
+  monitoring is not installed or activated by this documentation pass.

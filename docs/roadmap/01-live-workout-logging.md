@@ -130,3 +130,16 @@ implemented. Reuse reviewed loading kinds/muscles from 0044; add provenance
 so curation cannot overwrite a person's correction. The plan separates
 completed-workout muscle context from planned-routine context and replaces
 hidden set-type cycling with visible choices. Task breakdown is next.
+
+## Spec review — 2026-11-03
+
+- 0043 remains planned and now includes explanations for every offered set type.
+- Ready specs: [0046](../sdd/specs/0046-set-rows-and-finish/spec.md) for completed
+  figures, undo selection and top Finish; [0049](../sdd/specs/0049-weight-per-side/spec.md)
+  for optional side weights; [0050](../sdd/specs/0050-correct-saved-workout/spec.md)
+  for correcting existing saved set values and notes. No implementation in this pass.
+
+- Owner review of 0043 (2026-11-03): confirmed configurable approach count
+  up to five, adjustable increments (including cable 2.5/5 kg), and personal
+  preferences. Spec/plan revised; shared catalog provenance proposal replaced
+  with an isolated per-user/exercise preference. Still planning, no code change.

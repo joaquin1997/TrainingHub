@@ -80,3 +80,9 @@
   5 s after a tick with no answer. A token read that fails in a background
   launch (keychain locked) is retried when the app comes to the front instead
   of opening signed out. Needs prebuild + native rebuild.
+
+## Spec review — 2026-11-03
+
+- [0047](../sdd/specs/0047-watch-skip-rest/spec.md) is ready for watch Skip rest.
+  Locked-phone progression stays covered by the accepted 0045; the earlier
+  independent watch-progression proposal is not carried forward.

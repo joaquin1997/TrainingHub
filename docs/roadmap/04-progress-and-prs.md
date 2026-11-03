@@ -90,3 +90,16 @@ charts from 0034 are reused rather than reintroduced.
   derive from the same per-session points.
 - Smooth lines now use `react-native-svg` (0034); bars remain the fallback
   for older native binaries. Metric/period controls are the separate 0042 slice.
+
+## Spec review — 2026-11-03
+
+- Ready specs: [0048](../sdd/specs/0048-trustworthy-live-records/spec.md) for
+  explicit record availability and unambiguous figures; [0053](../sdd/specs/0053-records-grouped-by-exercise/spec.md)
+  for grouped summary records. The reported migration/record discrepancy is
+  unconfirmed and requires a concrete case before closure; no data rewrite.
+  0042 retains its existing scope and status.
+
+- Owner review of 0048 (2026-11-03): accepted readable extra-record counts,
+  load/error states, recalculation and no first-session beaten PR. Added
+  distinct historical-record versus last-session-improvement feedback;
+  last-session improvement does not increase PR counts. Specification only.

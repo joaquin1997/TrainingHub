@@ -44,3 +44,13 @@ A configurable countdown timer between sets, like Hevy.
   dep for notifications.
 - Surface the rest timer on the active workout screen; auto-start on set "done".
 
+
+## Spec review — 2026-11-03
+
+- [0047](../sdd/specs/0047-watch-skip-rest/spec.md) is ready for watch Skip rest,
+  including delayed delivery and alert cancellation; no implementation in this pass.
+
+- Owner review of [0046](../sdd/specs/0046-set-rows-and-finish/spec.md)
+  (2026-11-03): undo cancels only the active rest started by that particular
+  completion, including its pending alert; unrelated rests remain intact.
+  Spec updated, implementation pending.

@@ -101,3 +101,16 @@ production.
 `"program" or "training plan" (a multi-week structure above Routine), "cycle",`
 `"deload", and whatever social concepts arrive with roadmap area 7 (follow,`
 `feed, shared routine). Define them when the first spec needs them, not before.`
+
+## Specified follow-ups (not yet implemented)
+
+| Term | Intended meaning | Spec |
+|---|---|---|
+| **Undo selection** | The latest explicitly unticked set selected as up next, subject to superset round order; ordinary next-set behaviour resumes when it is completed or removed. | 0046 |
+| **Records unavailable** | An exercise's starting records could not be obtained; distinct from a confirmed empty history or a set that did not beat a record. | 0048 |
+| **Weight per side** | Optional left/right weights paired with their own reps on unilateral weight-and-reps targets or performed sets. | 0049 |
+| **Workout correction** | An owner's explicitly saved correction of existing performed measurements, completion, type or notes, without editing routine targets. | 0050 |
+| **Routine update after training** | Selected changes retained as future intended training after the performed workout has already been saved. | 0051 |
+
+The implemented **Up next** definition above describes today's baseline.
+0046 amends it with explicit undo selection when that feature ships.

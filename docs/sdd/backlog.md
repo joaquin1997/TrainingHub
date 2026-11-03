@@ -43,9 +43,18 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0040](specs/0040-device-test-fixes/spec.md) | Fixes from the device test of 2026-10-21 | `in-progress` — code complete (2026-10-21) on `feat/sdd-0040-device-fixes`, API deployed from that branch; awaiting the native rebuild (rest alert with the app in front, lock-screen view) and the device checks (task 10) | 1 + 2 + 8 |
 | [0041](specs/0041-widget-redesign-and-watch-reps/spec.md) | Widget redesign and reps on the watch | `in-progress` — code complete (2026-10-21); widget rendered in light and dark (`renders/`); awaiting the native rebuild (with 0040's) and the device checks (AC-1–AC-6) | 8 — Integrations & platform |
 | [0042](specs/0042-readable-exercise-progress/spec.md) | Progress per exercise that is easy to read and to find | `ready` — spec written 2026-11-03: trained-exercise search, explicit metrics/periods and session evidence; next to plan | 4 — Progress |
-| [0043](specs/0043-smarter-warm-ups/spec.md) | Smarter warm-ups and warm-ups marked by hand | `planned` — plan self-approved 2026-11-03 against the reviewed catalog; provenance protects manual loading-kind choices, separate workout/routine context, explicit set-type picker; task breakdown and implementation next | 1 — Live workout logging |
+| [0043](specs/0043-smarter-warm-ups/spec.md) | Smarter warm-ups and warm-ups marked by hand | `planned` — plan revised after owner review 2026-11-03: personal per-exercise loading kind, configurable Automatic/1–5 count and increments, separate workout/routine context and explained types; tasks and implementation next | 1 — Live workout logging |
 | [0044](specs/0044-curated-exercise-catalog/spec.md) | A curated exercise catalog | `done` — applied on the server 2026-10-21: 763 reviewed exercises (195 by hand + 568 from free-exercise-db), 847 imported ones retired, 14 own duplicates merged with their history; API deployed, names in the app's language, search by other names | 6 — Exercises |
 | [0045](specs/0045-watch-with-phone-locked/spec.md) | The watch keeps going with the phone locked | `done` — installed and checked on the iPhone and the Apple Watch 2026-11-03 (AC-1–AC-7, the app swiped away mid-workout); both buzzes at rest end kept by the owner; the lock-screen rest (only the first showed) fixed on the way | 8 — Integrations & platform |
+
+| [0046](specs/0046-set-rows-and-finish/spec.md) | Readable completed sets, undo selection and Finish at the top | `ready` — revised 2026-11-03 from earlier draft; theme-aware figures, persistent undo selection, cancel only the undone completion's rest (owner confirmed) and existing save semantics | 1 — Live workout logging |
+| [0047](specs/0047-watch-skip-rest/spec.md) | Skip a rest from the watch | `ready` — owner reviewed 2026-11-03; extends accepted 0045, targets a particular rest and handles delayed delivery; implementation/device checks pending | 2 + 8 |
+| [0048](specs/0048-trustworthy-live-records/spec.md) | Trustworthy live records and last-session feedback | `ready` — revised 2026-11-03; owner-reviewed wording/loading/recalculation; distinct historical PR and last-session improvement feedback confirmed; original data discrepancy remains unconfirmed | 4 — Progress |
+| [0049](specs/0049-weight-per-side/spec.md) | Configurable weight per side | `ready` — owner reviewed 2026-11-03; per-workout/routine choice, explicit shared-load selection, lower-load warm-up reference and same-side record calculations | 1 — Live workout logging |
+| [0050](specs/0050-correct-saved-workout/spec.md) | Correct mistakes in a saved workout | `ready` — owner accepted initial scope 2026-11-03; existing set values/type/completion and notes, explicit save, conflict handling and derived-view refresh; structural edits/deletion deferred | 1 — Live workout logging |
+| [0051](specs/0051-offer-routine-update/spec.md) | Offer to update the routine after training | `ready` — owner reviewed 2026-11-03; select all compatible changes initially, allow deselection, update routine after workout save independently of history | 5 — Routines |
+| [0052](specs/0052-app-errors-and-service-monitoring/spec.md) | App errors and service availability monitoring | `ready` — owner reviewed behaviour/thresholds 2026-11-03; grouped app errors, availability/recovery alerts, redaction and 30-day retention; provider/destination remain planning work | 9 — Production readiness |
+| [0053](specs/0053-records-grouped-by-exercise/spec.md) | Group records by exercise | `ready` — owner reviewed 2026-11-03; summary groups by identity in workout order, all figures visible, last-session improvements excluded from PR counts; no new Progress screen | 4 — Progress |
 
 Execution order agreed 2026-09-24: 0013 → 0014 → 0010 → 0011 → 0012 →
 visual redesign (to be specified; "functional first, then pretty") → 0001 →
@@ -59,6 +68,21 @@ Proposed order for the specs from the owner's device test (2026-10-16),
 by impact during a session: 0019 → 0018 → 0020 → 0023 → 0021 → 0024 →
 0025 → 0028 → 0026 → 0027 → 0022. 0001 and 0015 keep their place before
 distribution.
+
+### Workout improvement checklist (2026-11-03)
+
+Every requested item is mapped in [the review](reviews/2026-11-03-workout-improvements.md),
+including the earlier draft-to-current-ID mapping and checked code references.
+0043 covers warm-ups and explained types; 0045 already covers locked-phone
+watch progression. Owner review is complete for 0043 and 0046–0053;
+confirmed decisions are recorded in each spec and the review. 0046–0053 are new ready specs, not implementations or
+closed device defects. The ambiguous migration/record report remains an
+investigation acceptance condition in 0048.
+
+Suggested next planning order: 0046 → 0048 → 0047 → 0053 → 0050 → 0051 →
+0049, preserving the existing 0043 → 0042 work. 0052 can be planned separately
+to support diagnosis. This is a proposal, not a change to the agreed feature
+order or authorization to implement/deploy.
 
 ### Server state (checked 2026-10-21)
 

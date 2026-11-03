@@ -2,226 +2,201 @@
 spec: 0043
 status: approved
 created: 2026-11-03
+revised: 2026-11-03
 ---
 
 # Plan — Smarter warm-ups and warm-ups marked by hand
 
-Self-approved under the delegated gates of 2026-10-16. Planning only:
-implementation and the task breakdown have not started.
+Revised after the owner's spec review: configurable count up to five,
+adjustable increments and personal preferences replace the former shared
+catalog correction/provenance proposal. Self-reviewed under the delegated
+gates. Planning only; tasks and implementation have not started.
 
 ## Current state verified 2026-11-03
 
-- `loadingKind` already exists in Prisma and in the shared `Exercise` contract
-  (`barbell | dumbbell | machine`). Spec 0044 filled the reviewed catalog and
-  supplied muscles and equipment. Do not add this column again or repeat the
-  retired catalog sweep.
-- `apps/mobile/src/lib/approachSets.ts` still builds one barbell ramp, with a
-  20 kg / 45 lb floor. Both workout and routine preview helpers use it.
-- Workout drafts and editable routine rows retain tracking type but not all
-  metadata needed for muscle-aware ramps. Persist optional metadata alongside
-  each exercise so an already loaded workout works offline.
-- `ApproachSetsPreviewSheet` is shared by the workout and routine editor. Its
-  result currently disappears for no-weight and too-light cases; those cases
-  must retain the loading-kind selector under FR-8 / EF-1.
-- Workout set labels call `cycleWorkoutSetType`; routine labels do not offer a
-  type picker. Existing setters already preserve warm-up numbering, records
-  exclusion and the generated-versus-personal warm-up distinction.
+- Prisma and shared Exercise already expose `loadingKind` from the reviewed
+  0044 catalog. Keep it as catalog metadata, not a person's mutable preference.
+- `approachSets.ts` still uses a single five-row barbell scheme, fixed
+  `LOADABLE_STEP` and a 20 kg / 45 lb floor. Workout and routine adapters share it.
+- `ApproachSetsPreviewSheet` is shared by workout and routine editors. Its
+  no-weight/too-light states must retain configuration and disable insertion.
+- Drafts need optional metadata/preferences to compute locally after hydration.
+- Set-type cycling still needs the named, explained picker in FR-10–FR-13.
+- Prisma's `ExerciseFavorite` demonstrates the existing unique user/exercise
+  relationship pattern. A warm-up preference needs its own record and purpose.
 
 ## Constitution check
 
-| Article | Engaged? | Compliance |
-|---|---|---|
-| 1 — Scope | yes | Loading-aware ramps and explicit set types only; no plate calculator, editable percentages or new general settings. |
-| 2 — Templates vs performed | yes | Workout muscle warmth reads earlier completed working sets; routine warmth reads earlier planned exercises. Separate adapters, one pure ramp rule. |
-| 3 — Shared contracts | yes | Reuse `ExerciseLoadingKind`; new write DTO and provenance live in domain. |
-| 4 — kg | yes | Round ramps in the captured display unit; existing save conversion remains canonical kg. |
-| 5 — Prisma | yes | One additive provenance migration, no new loading-kind column. No row reassignment or catalog rewrite in the migration. |
-| 6 — Integrations | no | No provider or native integration change. |
-| 7 — Secrets | yes | No credentials added or logged. |
-| 8 — Verification | yes | Independently committable slices: persistence/API, pure rules, workout integration, routine integration; typecheck/tests before each commit. |
-| 9 — Dependencies | yes | No new dependencies or native rebuild. |
-| 10 — Unknowns | yes | Ambiguous muscle/metadata cases have explicit deterministic rules below. Device checks remain open until run. |
+| Article | Compliance |
+|---|---|
+| 1 — Scope | Preview count, increment, personal loading kind and explained types; no gym profiles, editable percentages or plate calculator. |
+| 2 — Templates vs performed | Separate workout/routine muscle-context adapters; preferences do not rewrite intended or performed sets. |
+| 3 — Shared contracts | Reuse ExerciseLoadingKind; add one shared personal-preference contract, with no account-specific values on shared Exercise. |
+| 4 — kg | Custom increment stored in kg, converted at the edge; resolve generation in captured display unit with numerical tolerance. |
+| 5 — Prisma | Generated additive preference-table migration; no loading-kind provenance column or catalog data rewrite. |
+| 6 — Integrations | No provider/native integration changes. |
+| 7 — Secrets | No credentials or personal workout values added to logs. |
+| 8 — Verification | Independent persistence/API, ramp rules, workout and routine slices; required checks before commits. |
+| 9 — Dependencies | No new dependency or native rebuild. |
+| 10 — Unknowns | Fallbacks, rounding/count reductions and pending saves are explicit; device acceptance remains separate. |
+| 11 — Identity | Preferences resolved only for validated owner; account isolation tested and cache/draft ownership preserved. |
 
 ## Approach
 
-Resolve a small warm-up context, then pass it to the existing pure ramp
-helper: loading kind, whether it is an EZ bar, muscle size and whether that
-muscle has already been worked. The preview and confirmation use the same
-resolved context and first working weight. Changing the preview's kind
-recomputes its rows immediately. Confirmation rechecks exercise identity and
-working weight so a stale preview never inserts rows into a replaced exercise.
+Build a pure context for the preview: resolved loading kind, EZ-bar flag,
+muscle size/already-worked state, selected count mode and effective increment.
+A personal loading-kind override outranks reviewed catalog metadata, then
+names/aliases (EN/ES), equipment and machine fallback. Infer normalized whole
+words; cable/machine/pulley outranks bar/dumbbell in compound names.
 
-Loading-kind precedence: an explicit person choice, the reviewed catalog
-value from 0044, then names/aliases (EN/ES), then equipment, then machine.
-For name inference, machine/cable/pulley outranks bar/dumbbell words in a
-compound name. Match normalized whole words, including EZ-bar variants;
-never infer from a translated display name alone when both catalog names
-are available. Kettlebells use dumbbell rounding. The empty EZ bar is
-10 kg / 25 lb only when the selected kind is barbell.
+Automatic count follows the spec's muscle/context table. An explicit integer
+1–5 overrides its count and selects the documented scheme. Both modes keep
+positive, strictly increasing weights separated by at least the increment,
+and below working weight. Rounding/target limits may reduce the actual count;
+show requested versus generated count and why. Never invent duplicate rows.
+Barbell uses the empty-bar floor; other loading kinds do not. Empty EZ bar is
+10 kg / 25 lb only for barbell. Defaults remain unchanged until overridden.
 
-Use primary muscles, normalized into the groups in the spec, with category
-fallback when primary data is absent. If multiple primary muscles exist,
-a muscle shared with an earlier eligible exercise is enough for "already
-worked"; use large when any primary muscle is large. Unknown muscle names
-fall back to category; unknown category and muscle mean large and not yet
-worked. Category fallback matches the same category, not every exercise of
-the same size. Secondary muscles do not pre-warm unrelated primary muscles.
+Use primary muscles normalized to the spec's groups, category as fallback.
+Any shared primary muscle with an eligible earlier exercise means already
+worked; any large primary means large. Secondary muscles alone do not count.
+Unknown category and muscle mean large/not yet worked. Workout context reads
+completed working sets; routine context reads preceding planned exercises.
 
-The spec's table is authoritative: a previously worked large muscle gets
-two approach sets, a small one gets one. AC-4's former single chest set was
-inconsistent with this table and has been aligned with it in the spec.
+Preview changes recalculate immediately without editing existing sets.
+Insertion rechecks exercise identity, first working target, unit and current
+configuration; a stale preview cannot insert rows into a replaced exercise.
+Generated sets retain the existing manual-edit/undo and shorter-rest rules.
 
-Keep current percentage schemes but select full/two/one from the context.
-Always require positive weights, a step between distinct approach rows and
-weights below the working target. A very light target can produce fewer
-rows than the selected scheme, including none. Do not impose a bar floor
-on dumbbells or machine/cable.
+## Shared contracts and persistence
 
-### Alternatives considered
+In `packages/domain`, define `ExerciseWarmUpPreferences` and a matching update
+DTO: optional loading-kind override, `approachSetCount: null | 1 | 2 | 3 | 4 | 5`
+(null = Automatic) and optional `incrementKg` (null/absent = loading default).
+Writes carry explicit nulls for reset; numeric values must be finite/positive
+and counts integral. Responses distinguish a successfully loaded default
+preference from one not fetched yet. Do not add account-specific fields to
+shared Exercise or a provenance field to the catalog.
 
-- **Guess from names on every preview** — rejected: reviewed metadata already
-  exists, names can change language and a person's correction must survive.
-- **Store only on the device** — rejected: FR-9 requires the other devices to
-  see the correction.
-- **Fetch metadata when pressing Warm-up** — rejected: breaks the offline
-  workout and makes an existing local calculation depend on connectivity.
-- **One routine/workout warmth adapter** — rejected: would treat planned work
-  as completed work. Only the numeric ramp is shared.
+Add a Prisma `ExerciseWarmUpPreference` with user/exercise relations and a
+unique pair. Store count and override as nullable fields, custom increment in
+canonical kg with enough precision for existing unit conversion. Use the
+repo's established user/exercise relation and ownership patterns. Generate an
+additive migration; existing users have no row and therefore retain defaults.
+No backfill or catalog-curation change is required. Catalog updates affect
+defaults but never overwrite a preference record.
 
-## Shared contracts (`packages/domain`)
+Routine read metadata and workout drafts retain catalog names/equipment,
+loading kind and muscle information. Keep a separate preference cache scoped
+to the signed-in user and exercise. Capture optional resolved preferences in
+workout drafts for offline computation and pending writes. Old drafts use
+known metadata/defaults and hydrate best-effort without changing existing sets.
+Sign-out/account switch must not expose another account's preference cache.
 
-Reuse `ExerciseLoadingKind`. Add `ExerciseLoadingKindSetBy = 'system' |
-'person'` and `UpdateExerciseLoadingKindInput`. Add optional provenance to
-`Exercise`; older responses default to system. Return the updated `Exercise`
-from the write operation, using its existing metadata fields.
+## API surface
 
-Extend routine exercise read contracts with optional warm-up metadata where
-not already exposed (loading kind/provenance, equipment, catalog names,
-primary muscles/category). This is read metadata, not a new planned or
-performed set type. Workout drafts capture the same optional fields at start,
-add and replace. Old drafts remain readable and infer from available names;
-refresh metadata best-effort after connectivity returns without modifying
-sets already present.
+Add authenticated `GET` and `PUT /exercises/:id/warm-up-preferences`, registered
+under 0001's global hook. GET returns the current user's values/defaults; PUT
+atomically replaces their warm-up preference fields, returning saved values.
+Do not accept a user identity from the body or update shared Exercise.
 
-## Data model and migrations
+- 200: defaults/saved preference; repeated writes are idempotent.
+- 400: invalid count, loading kind, zero/negative/non-finite increment.
+- 401: missing or invalid session.
+- 404: missing/deleted or another person's private custom exercise, identical.
+- 5xx: failed save; client retains a local pending candidate and offers retry.
 
-Add `Exercise.loadingKindSetBy String @default("system")` with a generated
-Prisma migration, suggested name `add_exercise_loading_kind_provenance`.
-Existing loading kinds, including the 0044 catalog, stay intact. No backfill
-script is required; system is the correct provenance of existing values.
+Recheck accessibility during write as well as read. A person may set their
+own preference for a shared catalog exercise or their own custom exercise.
+No foreign preference reads/writes, even when an exercise ID is guessed.
+Include batching in the existing workout/routine metadata load where useful;
+do not add a required network request per preview or per edited field.
 
-Catalog curation must read provenance and exclude person-selected loading
-kind from both its proposed changes and apply/undo operations. Otherwise the
-next catalog apply would undo FR-9 or report a perpetual pending correction.
-Add coverage of this interaction to the catalog planner and apply tests.
+## Mobile surface
 
-## API surface (`apps/api`)
+1. Extend the pure `approachSets` helper with optional context. Keep the old
+   signature compatible until both callers are migrated. Extract metadata
+   inference and warmth matching into pure helpers.
+2. Pass separate workout/routine context to the shared preview. Preserve the
+   session's captured unit; convert saved custom increment at the weight edge.
+   Use tolerant rounding so a converted increment does not drift on reload.
+3. Show named loading choices, Automatic/1–5 count choices and a positive
+   increment input in the preview, alongside current context and actual rows.
+   Offer 2.5/5 kg quick choices for kg cable/machine previews plus editable
+   input. Keep configuration visible without a valid working weight.
+4. Apply valid edits locally immediately; persist a complete valid preference
+   on field commit/selection, coalescing overlapping writes. Invalid partial
+   input stays editable without replacing the last valid preview. Latest
+   local choice wins over an earlier in-flight reply. Show saving/failure/retry.
+5. Dismissing cancels insertion, not a successful preference save. Pending
+   choices remain in the current draft/editor for retry; reopening the workout
+   preserves them. No general background sync queue is promised. Other devices
+   see only successful saves; ignore late replies after exercise/account changes.
+6. Offer reset to Automatic count and default loading kind/increment. Changing
+   loading kind retains an explicit custom increment until reset; absent a
+   custom increment, use the newly selected kind's default. Changes never
+   regenerate already inserted sets or overwrite routine targets.
+7. For inaccessible historical exercises, show metadata-based local preview
+   without private fetches or persistent preference writes, as EF-3 states.
+8. Replace cycling with shared `SetTypeSheet`: workout normal/warmup/drop/failure,
+   routine normal/warmup. Show full names and meanings, selected state and
+   record effect. Dismiss/current selection are no-ops. A type change preserves
+   values/done/rest, clears generated origin when appropriate, renumbers and
+   recalculates live badges. Explain failure as a label, not a prescription.
 
-`PUT /exercises/:id/loading-kind`, authenticated through 0001's global hook.
-Body: `{ loadingKind: 'barbell' | 'dumbbell' | 'machine' }`.
+Use existing theme tokens, ES/EN translations, accessible selected states and
+large-text wrapping. No native change is required.
 
-- 200: updated exercise, provenance person; repeated choices are idempotent.
-- 400: malformed body or an unsupported kind.
-- 401: absent/invalid session.
-- 404: missing, deleted or another person's custom exercise, identically.
-- 5xx: saving failed; client keeps the local candidate and shows retry.
+## Verification
 
-Mirror `trackingTypeRepository` ownership checks: any signed-in person can
-change a catalog exercise; only its owner can change a custom one. A loading
-kind change never edits existing routine targets or logged sets. Use an
-ownership/deletion condition at the update as well as on the initial read.
-
-## Mobile surface (`apps/mobile`)
-
-1. Extend `approachSets` with optional context, retaining the old barbell
-   default until callers are migrated. Extract metadata normalization,
-   loading inference and muscle matching into pure helpers.
-2. Workout preview receives all preceding exercise metadata and done working
-   sets. Routine preview receives preceding planned exercise metadata. Do not
-   count warm-up-only or unfinished workout exercises as already worked.
-3. Extend the preview sheet with three named loading choices, selected state,
-   the already-worked explanation, permission to edit, saving status and a
-   save-failed/retry message. Keep the selector available with no weight or
-   a too-light target, and disable adding when there are no generated rows.
-4. A choice applies locally immediately and is saved immediately. Dismissing
-   the sheet cancels set insertion, not an already saved exercise preference.
-   On failure, keep a pending choice in that exercise's current draft/editor
-   state; retry explicitly or on the next preview attempt. Do not promise a
-   general background sync queue. Close/reopen the workout preserves the
-   pending choice with its optional draft metadata. Another device only sees
-   it after a successful save. Ignore late saves for a replaced exercise.
-5. For foreign/deleted exercises, show the inferred context read-only. Existing
-   historical exercise names remain usable without fetching private details.
-6. Replace label cycling with one small shared set-type sheet, current value
-   selected. Workout offers normal/warm-up/drop/failure; routine only
-   normal/warm-up. Cancel and selecting the current type are no-ops. Changing
-   an actual type removes the generated marker but preserves done, values and
-   rest state; existing live-record derivation recomputes the badges.
-
-Use existing theme tokens, translated labels and accessible button/selected
-states. No new native capability, permission or build step.
-
-## Testing strategy
-
-| Spec AC / error | Verification |
+| Criteria | Verification |
 |---|---|
-| AC-1, AC-2 | Pure kg ramp examples for 32.5 kg dumbbells and 60 kg machine, no bar floor. |
-| AC-3 | Existing 140 kg barbell regression, unchanged exact five rows. |
-| AC-4, AC-5 | Large/small muscle fixtures; skipped, warm-up-only and unfinished workout rows; separate routine adapter tests. |
-| AC-6 | Authenticated write/ownership tests; preview recomputation, local failure/retry, draft round trip, catalog apply preserving person provenance; device reopen and second-device read. |
-| AC-7, EF-4 | Type change keeps done/values, clears generated mark, renumbers and removes live-record contribution; device checks visible list and dismiss. |
-| AC-8 | Routine normal/warm-up round trip and workout start from that routine. |
-| AC-9 | lb ramps, EZ empty bar, machine step, rounding and very light target cases. |
-| EF-1–EF-3, EF-5 | No-weight selector, server failure, foreign/deleted exercise and unknown metadata fixtures; offline device preview. |
+| AC-1–AC-3, AC-9 | Default kg/lb ramps, 140 kg barbell regression, EZ bar, no non-bar floor, light-target deduplication. |
+| AC-4–AC-5 | Automatic context counts, shared/unknown muscles; skipped/warm-up-only/unfinished workout sets do not pre-warm; routine context independent. |
+| AC-6, AC-12–AC-13 | User A/B isolation, cross-device read, null resets, increment conversion round trip, cache ownership, old draft hydration and retained pending save. |
+| AC-7–AC-8, AC-10 | Both explained type pickers, dismiss/current no-op, values/completion preserved, generated marker/numbering and live-record effects. |
+| AC-11 | Each explicit count 1–5 at a sufficiently heavy target; Automatic reset; rounding reduces count with visible explanation and no duplicated/working-weight rows. |
+| AC-12, EF-6 | Machine 2.5/5 kg increments, valid decimal steps, invalid input does not replace preview; positive finite validation and kg/lb unit capture. |
+| EF-1–EF-5 | No weight, offline load/save, authorization failures, inaccessible exercise, stale replies, replaced exercise, unknown metadata and already-done type changes. |
 
-Run `pnpm -r typecheck` and `pnpm -r test`. Device checklist: both sheets in
-ES/EN, light/dark, large text, normal/warm-up labels, live badges, retry and
-reopen, plus unit capture during an active workout.
+Run `pnpm -r typecheck` and `pnpm -r test` before implementation commits.
+Device acceptance covers both previews/pickers in ES/EN, themes and large text,
+count/increment changes, cable 2.5/5 kg, two accounts, second-device read,
+reset, offline retry and reopen. Passing unit tests is not device acceptance.
 
 ## Files to touch
 
-- `packages/domain/src/entities.ts` — loading-kind provenance/write DTO and
-  routine metadata contract.
-- `apps/api/prisma/schema.prisma`, generated migration — provenance only.
-- `apps/api/src/features/exercises/repository.ts` — expose provenance.
-- `apps/api/src/features/exercises/loadingKindRepository.ts`,
-  `loadingKindRoutes.ts` and their tests (new) — permissioned persistence.
-- `apps/api/src/routes/index.ts` — register loading-kind operation.
-- `apps/api/src/features/routines/repository.ts` — routine read metadata.
-- `apps/api/src/scripts/catalog/curate.ts`, `catalog-curate.ts` and catalog
-  tests — preserve person choices in report, apply and undo.
-- `apps/mobile/src/lib/approachSets.ts`, its tests and a new
-  `warmUpContext.ts` / tests — pure calculation and metadata rules.
-- `apps/mobile/src/features/exercises/api/exercisesClient.ts` — save choice.
+- `packages/domain/src/entities.ts` — preference/read-write contracts and
+  optional routine metadata; no catalog provenance contract.
+- `apps/api/prisma/schema.prisma`, generated migration — personal preference
+  table and relations only.
+- `apps/api/src/features/exercises/warmUpPreferencesRepository.ts`,
+  `warmUpPreferencesRoutes.ts` and tests (new) — authenticated isolated reads/writes.
+- `apps/api/src/routes/index.ts` — register new operations.
+- `apps/api/src/features/routines/repository.ts` — missing routine metadata.
+- `apps/mobile/src/lib/approachSets.ts`, tests and new `warmUpContext.ts` / tests
+  — schemes, explicit count, increments and context rules.
+- `apps/mobile/src/features/exercises/api/exercisesClient.ts` and a user-scoped
+  warm-up preference cache/helper — read/write and local pending state.
 - `apps/mobile/src/features/workouts/state/workoutDraftStore.ts`,
-  `approachSetsDraft.ts` and tests — metadata, explicit type setter, context.
-- `apps/mobile/src/features/workouts/persistence/activeWorkoutEnvelope.ts`
-  and envelope tests — backward-compatible optional metadata validation.
-- `apps/mobile/src/features/workouts/screens/ActiveWorkoutScreen.tsx`,
-  `components/WorkoutSetRow.tsx`, `ApproachSetsPreviewSheet.tsx`, new
-  `SetTypeSheet.tsx` — visible choices, preview and retry.
-- `apps/mobile/src/features/routines/screens/RoutineFormScreen.tsx`,
-  `utils/routineApproachSets.ts` and tests — planned context and type selection.
-- `apps/mobile/src/i18n/locales/{en,es}.ts` — labels and errors.
-- Relevant SDD statuses, tasks once written, and roadmap area 1.
+  `approachSetsDraft.ts`, persistence envelope and tests — optional metadata,
+  configuration, backward compatibility and explicit type setter.
+- Workout screen, set row, shared preview and new `SetTypeSheet.tsx` — controls
+  and explained type selection.
+- Routine form and `routineApproachSets.ts` / tests — separate intended context.
+- `apps/mobile/src/i18n/locales/{en,es}.ts` — descriptions, controls and errors.
+- SDD status, eventual tasks and roadmap area 1.
 
-## Risks and open questions
+## Risks and rollout
 
-No blocking product decision. Recorded assumptions: reviewed loading kinds
-outrank inference; a shared primary muscle is enough for the shortened ramp;
-unknown metadata gets the conservative ramp; saving the preference is separate
-from confirming sets. These calls are explicit so device feedback can amend
-small rules without changing the data model.
+No blocking product decision. Explicit-count numeric schemes, preview placement
+and defaults are reversible assumptions in the spec. Count is a target rather
+than a promise when the increment/working load cannot fit enough unique weights.
+Prefer no rows and an explanation to invented weights. Custom increments
+converted from kg require numerical tolerance and round-trip coverage.
 
-Old workout drafts contain less metadata: retain the generic fallback and
-hydrate best-effort, never block a workout on the catalog. The shared catalog
-choice affects other users, as already decided in the spec; per-person
-catalog preferences remain outside this work.
-
-## Rollout
-
-Deploy the additive provenance migration, API and curation protection before
-the mobile bundle. Old clients keep working; old APIs fail the new save and
-the app must show retry while preserving this preview locally. Existing
-workouts and routines are not regenerated. Roll back code by restoring the
-previous bundle/API; retain the additive column and person choices.
+Deploy the additive preference migration and authenticated API before the app
+bundle. Old clients continue using catalog loading kind unchanged. Old servers
+cause a visible preference-save failure while the local preview stays usable.
+Existing sets and routine targets are not regenerated. Rollback retains the
+additive preference data and restores prior code; do not rewrite the catalog.

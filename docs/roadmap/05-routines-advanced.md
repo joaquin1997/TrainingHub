@@ -34,3 +34,9 @@
 ## Notes
 - Builder is `RoutineFormScreen`. Supersets need a grouping concept on
   RoutineExercise (schema addition).
+
+## Spec review — 2026-11-03
+
+- [0051](../sdd/specs/0051-offer-routine-update/spec.md) is ready: after saving
+  training, optionally review and retain selected routine target/structure
+  changes. Owner confirmed this meaning on 2026-11-03; no implementation.
