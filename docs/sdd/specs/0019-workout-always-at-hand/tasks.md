@@ -77,5 +77,5 @@ must add it to `WorkoutBar`.
       or explicitly deferred with a TODO (FR-1 rest → 0018; Android keyboard)
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [x] `docs/roadmap/01-live-workout-logging.md` updated
-- [ ] `spec.md` status set to `done`; `../backlog.md` updated
-- [ ] AC-4 checked on the owner's iOS device
+- [x] `spec.md` status set to `done`; `../backlog.md` updated
+- [x] AC-4 checked on the owner's iOS device

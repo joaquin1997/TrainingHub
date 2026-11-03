@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // The route module talks to the database through these repositories. We mock
 // them so the tests exercise routing, validation and status codes only — no DB.
@@ -12,8 +12,10 @@ vi.mock('./repository.js', () => ({
 vi.mock('../exercises/repository.js', () => ({
   findUsableExercises: vi.fn(),
 }));
-vi.mock('../../infrastructure/userContext.js', () => ({
-  resolveUserPublicId: vi.fn(async () => 'user-test'),
+
+// Mock persistence only: requests pass through real JWT verification and user resolution.
+vi.mock('../../infrastructure/sessionUser.js', () => ({
+  findSessionUser: vi.fn(async (publicId: string) => ({ publicId })),
 }));
 
 import { createApp } from '../../app.js';
@@ -27,6 +29,8 @@ import {
 } from './repository.js';
 
 const app = createApp({ logger: false });
+const sessionHeaders = () => ({ authorization: `Bearer ${app.jwt.sign({ sub: 'user-test' })}` });
+beforeAll(async () => { await app.ready(); });
 
 /** What `findUsableExercises` answers: the usable exercises by public id. */
 const usable = (...exercises: Array<{ id: string; name: string }>) =>
@@ -44,7 +48,7 @@ describe('GET /routines', () => {
   it('returns the list from the repository', async () => {
     vi.mocked(listRoutines).mockResolvedValue([{ id: 'r1', name: 'Push Day' }] as never);
 
-    const response = await app.inject({ method: 'GET', url: '/routines' });
+    const response = await app.inject({ headers: sessionHeaders(), method: 'GET', url: '/routines' });
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual([{ id: 'r1', name: 'Push Day' }]);
@@ -56,7 +60,7 @@ describe('GET /routines/:id', () => {
   it('returns 404 when the routine does not exist', async () => {
     vi.mocked(findRoutineById).mockResolvedValue(null as never);
 
-    const response = await app.inject({ method: 'GET', url: '/routines/missing' });
+    const response = await app.inject({ headers: sessionHeaders(), method: 'GET', url: '/routines/missing' });
 
     expect(response.statusCode).toBe(404);
     expect(response.json()).toEqual({ message: 'Routine not found' });
@@ -65,7 +69,7 @@ describe('GET /routines/:id', () => {
   it('returns the routine when it exists', async () => {
     vi.mocked(findRoutineById).mockResolvedValue({ id: 'r1', name: 'Push Day' } as never);
 
-    const response = await app.inject({ method: 'GET', url: '/routines/r1' });
+    const response = await app.inject({ headers: sessionHeaders(), method: 'GET', url: '/routines/r1' });
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ id: 'r1' });
@@ -76,6 +80,7 @@ describe('GET /routines/:id', () => {
 describe('POST /routines', () => {
   it('returns 400 when the payload is invalid (missing name)', async () => {
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/routines',
       payload: { description: 'no name' },
@@ -90,6 +95,7 @@ describe('POST /routines', () => {
     vi.mocked(findUsableExercises).mockResolvedValue(new Map());
 
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/routines',
       payload: {
@@ -108,6 +114,7 @@ describe('POST /routines', () => {
     vi.mocked(createRoutine).mockResolvedValue({ id: 'r1', name: 'Push Day' } as never);
 
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/routines',
       payload: {
@@ -137,6 +144,7 @@ describe('POST /routines time and distance targets (spec 0021)', () => {
     vi.mocked(createRoutine).mockResolvedValue({ id: 'r2', name: 'Core' } as never);
 
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/routines',
       payload: {
@@ -174,6 +182,7 @@ describe('POST /routines warm-up sets (spec 0024)', () => {
     vi.mocked(createRoutine).mockResolvedValue({ id: 'r3', name: 'Legs' } as never);
 
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/routines',
       payload: {
@@ -204,6 +213,7 @@ describe('routine generated warm-up sets (spec 0031)', () => {
     vi.mocked(updateRoutine).mockResolvedValue({ id: 'r3', name: 'Legs' } as never);
 
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'PUT',
       url: '/routines/r3',
       payload: {
@@ -245,6 +255,7 @@ describe('routine warm-up block (spec 0024)', () => {
 
   it('passes the block, in order, trimmed, to the repository', async () => {
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/routines',
       payload: {
@@ -266,6 +277,7 @@ describe('routine warm-up block (spec 0024)', () => {
 
   it('leaves the block out of an update that does not send it (older apps)', async () => {
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'PUT',
       url: '/routines/r4',
       payload: { name: 'Legs', exercises },
@@ -277,6 +289,7 @@ describe('routine warm-up block (spec 0024)', () => {
 
   it('passes an empty block, which clears it', async () => {
     await app.inject({
+      headers: sessionHeaders(),
       method: 'PUT',
       url: '/routines/r4',
       payload: { name: 'Legs', warmUpItems: [], exercises },
@@ -294,6 +307,7 @@ describe('routine warm-up block (spec 0024)', () => {
     ['too many items', Array.from({ length: 21 }, (_, index) => ({ name: `Item ${index}` }))],
   ])('refuses %s (400)', async (_label, warmUpItems) => {
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/routines',
       payload: { name: 'Legs', warmUpItems, exercises },
@@ -308,7 +322,7 @@ describe('DELETE /routines/:id', () => {
   it('returns 204 when the routine was deleted', async () => {
     vi.mocked(deleteRoutine).mockResolvedValue(true as never);
 
-    const response = await app.inject({ method: 'DELETE', url: '/routines/r1' });
+    const response = await app.inject({ headers: sessionHeaders(), method: 'DELETE', url: '/routines/r1' });
 
     expect(response.statusCode).toBe(204);
     expect(deleteRoutine).toHaveBeenCalledWith('user-test', 'r1');
@@ -317,7 +331,7 @@ describe('DELETE /routines/:id', () => {
   it('returns 404 when the routine did not exist', async () => {
     vi.mocked(deleteRoutine).mockResolvedValue(false as never);
 
-    const response = await app.inject({ method: 'DELETE', url: '/routines/missing' });
+    const response = await app.inject({ headers: sessionHeaders(), method: 'DELETE', url: '/routines/missing' });
 
     expect(response.statusCode).toBe(404);
     expect(response.json()).toEqual({ message: 'Routine not found' });
@@ -338,7 +352,7 @@ describe('routine exercises the person may use (spec 0015)', () => {
     vi.mocked(findUsableExercises).mockResolvedValue(usable({ id: 'ex1', name: 'Squat' }));
     vi.mocked(createRoutine).mockResolvedValue({ id: 'r5', name: 'Glutes' } as never);
 
-    await app.inject({ method: 'POST', url: '/routines', payload: payload(['ex1']) });
+    await app.inject({ headers: sessionHeaders(), method: 'POST', url: '/routines', payload: payload(['ex1']) });
 
     expect(findUsableExercises).toHaveBeenCalledTimes(1);
     expect(findUsableExercises).toHaveBeenCalledWith('user-test', ['ex1']);
@@ -350,6 +364,7 @@ describe('routine exercises the person may use (spec 0015)', () => {
 
     for (const method of ['POST', 'PUT'] as const) {
       const response = await app.inject({
+      headers: sessionHeaders(),
         method,
         url: method === 'POST' ? '/routines' : '/routines/r1',
         payload: payload(['ex1', 'ex-ana']),
@@ -369,6 +384,7 @@ describe('routine exercises the person may use (spec 0015)', () => {
     vi.mocked(updateRoutine).mockResolvedValue({ id: 'r1', name: 'Glutes' } as never);
 
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'PUT',
       url: '/routines/r1',
       payload: payload(['ex-ana', 'ex1']),

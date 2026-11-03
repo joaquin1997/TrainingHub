@@ -23,6 +23,8 @@ const labels: WatchLabels = {
   discardTitle: '¿Descartar?',
   cancel: 'Cancelar',
   connectToDiscard: 'Conecta con tu iPhone para descartar',
+  waitingPhone: 'Esperando al iPhone…',
+  reps: 'reps',
   discardLost: (count) => `Se perderán ${count}`,
 };
 
@@ -84,6 +86,8 @@ describe('watch wire format (spec 0025)', () => {
         discardTitle: '¿Descartar?',
         cancel: 'Cancelar',
         connectToDiscard: 'Conecta con tu iPhone para descartar',
+        waitingPhone: 'Esperando al iPhone…',
+        reps: 'reps',
       },
     });
   });
@@ -111,6 +115,13 @@ describe('watch wire format (spec 0025)', () => {
       workoutSetId: 'a1',
       at: '2026-10-17T09:05:00.000Z',
     });
+    // Spec 0041: reps chosen on the watch; out-of-range values are dropped.
+    expect(
+      event({ id: 'e1', kind: 'setDone', workoutId: 'c1', exerciseId: 'a', setId: 'a1', atMs, reps: 8 }),
+    ).toMatchObject({ kind: 'setDone', reps: 8 });
+    expect(
+      event({ id: 'e1', kind: 'setDone', workoutId: 'c1', exerciseId: 'a', setId: 'a1', atMs, reps: 500 }),
+    ).not.toHaveProperty('reps');
     expect(event({ id: 'e2', kind: 'pause', workoutId: 'c1', atMs })).toEqual({
       kind: 'pause',
       id: 'e2',

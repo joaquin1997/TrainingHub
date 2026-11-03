@@ -2,7 +2,7 @@
 # pnpm monorepo. The build context must be the repository root.
 # Works with both BuildKit and the classic builder (no BuildKit-only features).
 
-FROM node:20-slim AS base
+FROM node:22-slim AS base
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
 # OpenSSL + CA certs are required by Prisma at build (generate) and runtime.

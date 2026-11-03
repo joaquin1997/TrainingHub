@@ -21,7 +21,13 @@
     "catalog:tracking-types": "npm run build && node --env-file-if-exists=.env dist/apps/api/src/scripts/set-catalog-tracking-types.js",
     "catalog:tracking-sweep": "npm run build && node --env-file-if-exists=.env dist/apps/api/src/scripts/sweep-tracking-types.js",
     "catalog:tracking-sweep:apply": "SWEEP_APPLY=true npm run catalog:tracking-sweep",
-    "catalog:tracking-sweep:undo": "SWEEP_MODE=undo npm run catalog:tracking-sweep"
+    "catalog:tracking-sweep:undo": "SWEEP_MODE=undo npm run catalog:tracking-sweep",
+    "catalog:review": "npm run build && node dist/apps/api/src/scripts/catalog-review.js",
+    "catalog:carry-over": "npm run build && node --env-file-if-exists=.env dist/apps/api/src/scripts/catalog-carry-over.js",
+    "catalog:curate": "npm run build && node --env-file-if-exists=.env dist/apps/api/src/scripts/catalog-curate.js",
+    "catalog:curate:apply": "CURATE_APPLY=true npm run catalog:curate",
+    "catalog:curate:undo": "CURATE_MODE=undo npm run catalog:curate",
+    "auth:reassign-dev-user": "npm run build && node --env-file-if-exists=.env dist/apps/api/src/scripts/reassign-dev-user.js"
   },
   "dependencies": {
     "@fastify/jwt": "^10.1.0",

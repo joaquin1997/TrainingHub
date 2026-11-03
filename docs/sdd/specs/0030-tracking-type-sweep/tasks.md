@@ -22,8 +22,8 @@ mobile → docs. The migration is additive; no native rebuild.
 | 6 | [x] Records use only the values of the exercise's current type | api | aggregate tests (AC-6, FR-17) | `feat(progress): records follow the exercise's current tracking type` |
 | 7 | [x] Mobile: `setTrackingType` client, `TrackingTypeControl` on the exercise detail, confirm sheet when the exercise has sessions, rollback; i18n | mobile | typecheck; **[DEVICE]** FR-12, FR-14 | `feat(exercises): change the tracking type from the exercise detail` |
 | 8 | [x] Progress log, definition of done | docs | — | `docs(sdd): record 0030 implementation` |
-| 9 | [ ] (owner) Deploy the API (migration), run the report, review, correct, apply, re-apply (0 changed) — commands below | ops | — | — |
-| 10 | [ ] [DEVICE] Exercise detail: change a catalog type (Mountain climbers → time), the confirm sheet on an exercise with workouts, a custom exercise of someone else shows no control; a plank row after the sweep shows no previous value (AC-5, AC-6, FR-14) | mobile | device | — |
+| 9 | [x] (owner) Deploy the API (migration), run the report, review, correct, apply, re-apply (0 changed) — commands below | ops | — | — |
+| 10 | [x] [DEVICE] Exercise detail: change a catalog type (Mountain climbers → time), the confirm sheet on an exercise with workouts, a custom exercise of someone else shows no control; a plank row after the sweep shows no previous value (AC-5, AC-6, FR-14) | mobile | device | — |
 
 ### Owner commands (server) — not run by the agent
 
@@ -147,6 +147,6 @@ it before the sweep (harmless; the sweep re-decides those 44).
       (AC-1/AC-2 on the real catalog wait for the owner's report; FR-14 and
       the detail control wait for the device check; AC-7 by construction)
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
-- [ ] Migration deployed; sweep reported, reviewed and applied on the server (owner)
-- [ ] Device check of the detail control (owner)
+- [x] Migration deployed; sweep reported, reviewed and applied on the server (owner)
+- [x] Device check of the detail control (owner)
 - [x] Roadmap 06 and backlog updated (coordinator)

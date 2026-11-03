@@ -94,9 +94,9 @@ Tasks 2, 4–7 need a device rebuild; they are not verifiable in CI.
 
 ## Definition of done
 
-- [ ] Every functional requirement and acceptance criterion in `spec.md` is met
+- [x] Every functional requirement and acceptance criterion in `spec.md` is met
       or explicitly deferred with a TODO
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [x] `docs/roadmap/08-integrations-and-platform.md` updated
-- [ ] `spec.md` status set to `done`; `../backlog.md` updated
-- [ ] Spike branch deleted once everything is carried over
+- [x] `spec.md` status set to `done`; `../backlog.md` updated
+- [x] Spike branch deleted once everything is carried over

@@ -27,6 +27,9 @@ final class WorkoutModel: NSObject, ObservableObject {
   @Published private(set) var finishAsked = false
   /// Discard could not reach the phone: it is never queued (spec 0035 EF-8).
   @Published var discardUnreachable = false
+  /// A set was ticked here and the phone has not sent the next one in time
+  /// (spec 0045 FR-4): shown in place of the set.
+  @Published private(set) var waitingForPhone = false
 
   private let healthStore = HKHealthStore()
   private var session: HKWorkoutSession?
@@ -39,6 +42,12 @@ final class WorkoutModel: NSObject, ObservableObject {
   private var buzzedRestEnd: Date?
   private var lastMetricsSentAt: Date?
   private var lastMetricsKcal: Int?
+  /// The context JSON applied last: the same context can arrive twice, over
+  /// the mirrored session and as application context (spec 0045).
+  private var lastContextJSON: String?
+  private var waitingTimer: Timer?
+  /// How long after a tick the watch says it is waiting (spec 0045 FR-4).
+  private static let waitingAfter: TimeInterval = 5
 
   var labels: WatchContext.Labels { context?.labels ?? .fallback }
 
@@ -79,15 +88,18 @@ final class WorkoutModel: NSObject, ObservableObject {
   // MARK: Phone → watch
 
   private func apply(contextJSON json: String) {
-    guard let next = WatchWire.decodeContext(json) else { return }
+    // A copy arriving late must not undo a tick made since (spec 0045).
+    guard json != lastContextJSON, let next = WatchWire.decodeContext(json) else { return }
     // Application context is latest-wins, but keep the newest if two cross.
     let previous = context
     if let previous, previous.workoutId == next.workoutId, previous.sentAtMs > next.sentAtMs {
       return
     }
     context = next
+    lastContextJSON = json
     localRestEndsAt = nil
     tickedSetId = nil
+    stopWaiting()
     if next.status != .active || next.workoutId != previous?.workoutId {
       finishAsked = false
     }
@@ -106,7 +118,9 @@ final class WorkoutModel: NSObject, ObservableObject {
 
   // MARK: Requests from the wrist
 
-  func tickCurrentSet() {
+  /// Ticks the set to do; `reps` are the ones chosen here (spec 0041), nil
+  /// for a set without a reps control.
+  func tickCurrentSet(reps: Int? = nil) {
     guard let workout = activeWorkout, let set = currentSet else { return }
     let now = Date()
     send(WatchEvent(
@@ -115,12 +129,14 @@ final class WorkoutModel: NSObject, ObservableObject {
       workoutId: workout.workoutId,
       exerciseId: set.exerciseId,
       setId: set.setId,
-      atMs: now.epochMs
+      atMs: now.epochMs,
+      reps: set.reps != nil ? reps : nil
     ))
     tickedSetId = set.setId
     // The rest starts here at once; the phone counts it from the same instant.
     localRestEndsAt = set.restSeconds > 0 ? now.addingTimeInterval(set.restSeconds) : nil
     scheduleRestHaptic()
+    startWaiting(for: set.setId)
   }
 
   func togglePause() {
@@ -167,8 +183,34 @@ final class WorkoutModel: NSObject, ObservableObject {
 
   private func send(_ event: WatchEvent) {
     guard let json = WatchWire.encode(event) else { return }
+    // At once over the mirrored workout session, which keeps the iPhone app
+    // running with the phone locked (spec 0045); fails quietly when it is not
+    // mirrored. The phone drops the second copy by the event's id.
+    if let session, let data = try? JSONSerialization.data(withJSONObject: ["event": json]) {
+      Task { try? await session.sendToRemoteWorkoutSession(data: data) }
+    }
     // Queued by the system and delivered in order, also after lost contact (EF-1).
     WCSession.default.transferUserInfo(["event": json])
+  }
+
+  // MARK: Waiting for the phone (spec 0045 FR-4)
+
+  private func startWaiting(for setId: String) {
+    stopWaiting()
+    let timer = Timer(timeInterval: Self.waitingAfter, repeats: false) { [weak self] _ in
+      Task { @MainActor in
+        guard let self, self.tickedSetId == setId else { return }
+        self.waitingForPhone = true
+      }
+    }
+    RunLoop.main.add(timer, forMode: .common)
+    waitingTimer = timer
+  }
+
+  private func stopWaiting() {
+    waitingTimer?.invalidate()
+    waitingTimer = nil
+    waitingForPhone = false
   }
 
   // MARK: Rest
@@ -226,6 +268,10 @@ final class WorkoutModel: NSObject, ObservableObject {
       self.builder = builder
       session.startActivity(with: start)
       try await builder.beginCollection(at: start)
+      // The iPhone app runs in the background while the session is mirrored,
+      // so a tick here is applied with the phone locked (spec 0045). Without
+      // it everything works as before, over the queue.
+      Task { try? await session.startMirroringToCompanionDevice() }
       // The phone may have ended the workout while the session was starting.
       if let ended = context, ended.workoutId == workout.workoutId, ended.status != .active {
         await endSession(workoutId: workout.workoutId, save: ended.status == .finished)
@@ -264,6 +310,7 @@ final class WorkoutModel: NSObject, ObservableObject {
   private func endSession(workoutId: String, save: Bool) async {
     endedWorkoutIds.insert(workoutId)
     restTimer?.invalidate()
+    stopWaiting()
     // A session still starting is ended by `ensureSession` once it is up.
     guard let session, let builder, sessionWorkoutId == workoutId else { return }
     self.session = nil
@@ -367,4 +414,18 @@ extension WorkoutModel: HKWorkoutSessionDelegate, HKLiveWorkoutBuilderDelegate {
   }
 
   nonisolated func workoutBuilderDidCollectEvent(_ workoutBuilder: HKLiveWorkoutBuilder) {}
+
+  /// The phone's context over the mirrored session (spec 0045); the same JSON
+  /// as the application context, so a copy from either path is dropped.
+  nonisolated func workoutSession(
+    _ workoutSession: HKWorkoutSession,
+    didReceiveDataFromRemoteWorkoutSession data: [Data]
+  ) {
+    let contexts = data.compactMap {
+      (try? JSONSerialization.jsonObject(with: $0) as? [String: Any])?["context"] as? String
+    }
+    Task { @MainActor in
+      contexts.forEach { self.apply(contextJSON: $0) }
+    }
+  }
 }

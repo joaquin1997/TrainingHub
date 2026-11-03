@@ -1,7 +1,7 @@
 import type { TFunction } from 'i18next';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AppState } from 'react-native';
+import { AppState, Vibration } from 'react-native';
 
 import type { WorkoutSessionDraft } from '@/features/workouts/state/workoutDraftStore';
 
@@ -12,6 +12,8 @@ import { deviceKeys, deviceStore } from '@/lib/deviceStore';
 import { startRestTimerRunner } from './restTimerRunner';
 import { haptics } from '@/ui/haptics';
 
+/** The set timer's pattern (spec 0021): two long buzzes. */
+const REST_OVER_VIBRATION = [0, 400, 200, 400];
 
 /** "Rest over" — "Next: {exercise} · set {n}", the set to do now (spec 0029 FR-10). */
 function restOverContent(draft: WorkoutSessionDraft, t: TFunction): RestAlertContent {
@@ -45,15 +47,16 @@ export function useRestTimerRunner(enabled: boolean) {
         async () => (await deviceStore.get(deviceKeys.restAlertsNotNow)) === '1',
       ),
       alertContent: (draft) => restOverContent(draft, tRef.current),
-      // TODO(sdd): possible double alert in the foreground — iOS does not
-      // present a local notification while the app is in front unless a
-      // UNUserNotificationCenter delegate asks for it; no installed module is
-      // known to set one, but this is unverified; check on the device, and if
-      // it shows, have the runner skip the in-app vibration while the alert is
-      // scheduled.
-      // The haptic language's "rest over" (spec 0034 FR-4); the background
-      // notification of 0018 is unchanged.
-      vibrate: () => haptics.restOver(),
+      // With the app in front the system alert shows too (spec 0040 FR-4):
+      // the rest-alert module asks iOS to present it; the vibration stays so
+      // the end is felt with alerts turned off.
+      // The haptic language's "rest over" (spec 0034 FR-4) and a full
+      // vibration on top, the set timer's, so it is felt in a pocket or on a
+      // bench (spec 0040 FR-5).
+      vibrate: () => {
+        haptics.restOver();
+        Vibration.vibrate(REST_OVER_VIBRATION);
+      },
       isAppActive: () => AppState.currentState === 'active',
     });
     const subscription = AppState.addEventListener('change', (state) => {

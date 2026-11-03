@@ -1,7 +1,7 @@
 ---
 id: 0031
 title: Warm-up sets — preview, mark and undo
-status: in-progress  # gate 1 self-approved 2026-10-17; plan and tasks self-approved 2026-10-17
+status: done
 amends: 0024
 roadmap: docs/roadmap/01-live-workout-logging.md
 created: 2026-10-17

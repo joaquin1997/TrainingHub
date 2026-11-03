@@ -1,7 +1,7 @@
 ---
 id: 0011
 title: Pause the active workout
-status: in-progress
+status: done
 roadmap: docs/roadmap/01-live-workout-logging.md
 created: 2026-09-24
 decided: 2026-09-24

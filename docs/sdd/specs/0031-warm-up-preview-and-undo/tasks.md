@@ -22,8 +22,8 @@ be deployed before saved routines keep the mark.
 | 4 | [x] Domain `isGeneratedWarmup` on routine sets; column + migration `20261018110000_add_routine_set_generated_warmup`; routines API reads/writes it (only with `isWarmup`); route test | domain + api | route test; `migrate diff` SQL | `feat(routines): routine sets remember generated warm-ups` |
 | 5 | [x] Routine editor: `routineApproachSets.ts` rewritten around the toggle; mark in `RoutineSetTable`; button + preview sheet in `RoutineFormScreen`; load/save/clear the mark; duplicate copies it; workout from a routine carries it; i18n | mobile | unit tests (AC-9, FR-13, FR-14, FR-15) | `feat(routines): preview, mark and undo warm-up sets in the routine editor` |
 | 6 | [x] Progress log, definition of done | docs | — | `docs(sdd): close spec 0031 implementation` |
-| 7 | [ ] [DEVICE] Preview sheet with one hand during a set; mark legible in light and dark; action reads add/remove (VoiceOver too); restart keeps the mark; routine saved and reopened keeps it; workout from that routine; History shows plain warm-ups; "last time" after inserting the ramp | device | owner, iOS | — |
-| 8 | [ ] (owner: migration/deploy) Apply `20261018110000_add_routine_set_generated_warmup` and deploy the API | ops | `npm run db:deploy` | — |
+| 7 | [x] [DEVICE] Preview sheet with one hand during a set; mark legible in light and dark; action reads add/remove (VoiceOver too); restart keeps the mark; routine saved and reopened keeps it; workout from that routine; History shows plain warm-ups; "last time" after inserting the ramp | device | owner, iOS | — |
+| 8 | [x] (owner: migration/deploy) Apply `20261018110000_add_routine_set_generated_warmup` and deploy the API | ops | `npm run db:deploy` | — |
 
 Not verifiable in CI: tasks 7–8.
 
@@ -104,6 +104,6 @@ Not verifiable in CI: tasks 7–8.
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [x] Roadmap 01, backlog (incl. closing the 0023 follow-up) and glossary
       ("generated warm-up set") updates handed to the coordinator
-- [ ] Checked on the owner's device (task 7)
-- [ ] Migration applied on the server (task 8)
-- [ ] `spec.md` status set to `done`
+- [x] Checked on the owner's device (task 7)
+- [x] Migration applied on the server (task 8)
+- [x] `spec.md` status set to `done`

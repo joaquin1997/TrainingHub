@@ -44,10 +44,20 @@ function roundOne(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
-/** Canonical (kg, cm, %) → display unit, rounded to one decimal. */
+function roundTwo(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+/**
+ * Canonical (kg, cm, %) → display unit, rounded to one decimal; body weight in
+ * kg keeps two, as a scale may show them (spec 0040 FR-7). In lb one is kept,
+ * so a weight logged in kg does not read as 181.66 lb.
+ */
 export function toDisplayValue(key: BodyMeasurementKey, canonical: number, unit: WeightUnit): number {
   const dimension = dimensionOf(key);
-  if (dimension === 'weight') return roundOne(fromKg(canonical, unit));
+  if (dimension === 'weight') {
+    return unit === 'kg' ? roundTwo(canonical) : roundOne(fromKg(canonical, unit));
+  }
   if (dimension === 'length') return roundOne(fromCm(canonical, unit));
   return roundOne(canonical);
 }

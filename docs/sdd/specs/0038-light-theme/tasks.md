@@ -15,8 +15,8 @@ created: 2026-10-18
 | 5 | [x] Theme provider, Appearance in Settings, remembered choice, system surfaces, keyboards, share card fixed dark, image tile edge | mobile | web light/dark | `feat(ui): light theme and appearance setting` |
 | 6 | [x] Live Activity follows the system appearance | native | swiftc; **native rebuild** | `feat(live-status): light and dark lock-screen status` |
 | 7 | [x] Progress log, backlog, roadmap | docs | — | `docs(sdd): record 0038 implementation` |
-| 8 | [ ] [DEPLOY] migration `add_user_appearance`, API redeploy | server | owner | — |
-| 9 | [ ] [DEVICE] AC-5 – AC-8, AC-13 on the iPhone | device | owner | — |
+| 8 | [x] [DEPLOY] migration `add_user_appearance`, API redeploy | server | owner | — |
+| 9 | [x] [DEVICE] AC-5 – AC-8, AC-13 on the iPhone | device | owner | — |
 
 ## Progress log
 

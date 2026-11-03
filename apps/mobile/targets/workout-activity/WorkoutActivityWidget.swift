@@ -272,63 +272,118 @@ private struct FamilySwitch: View {
   }
 }
 
-/// Read-only status for the watch (spec 0025 Level 1): routine, clock, rest
-/// countdown while one runs, calories when known. Pause and Finish stay on the
-/// phone's surfaces.
+/// Read-only status for the watch (spec 0025 Level 1, redesigned by 0041):
+/// the sets done as a ring, the rest countdown while one runs — else the
+/// workout clock — and the set to do next. Pause and Finish stay on the
+/// phone's surfaces and in the watch app.
 private struct WatchSmallView: View {
   let context: ActivityViewContext<WorkoutActivityAttributes>
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 2) {
-      HStack(spacing: 4) {
-        if context.state.pausedAt == nil {
-          BrandMark(size: 12)
+    let state = context.state
+    WatchStatusContent(
+      routineName: context.attributes.routineName,
+      startedAt: context.attributes.startedAt,
+      pausedSeconds: state.pausedSeconds,
+      pausedAt: state.pausedAt,
+      restEndsAt: runningRest(context),
+      setsDone: state.setsDone,
+      setsTotal: state.setsTotal,
+      upNext: upNextText(context),
+      nextLabel: context.attributes.nextLabel ?? "Next",
+      pausedLabel: context.attributes.pausedLabel,
+      colors: WatchStatusColors(text: text, muted: textMuted, ring: primary, track: controlTint, accent: accent)
+    )
+  }
+}
+
+struct WatchStatusColors {
+  let text: Color
+  let muted: Color
+  let ring: Color
+  let track: Color
+  let accent: Color
+}
+
+/// The watch status from plain values, so it can be drawn outside ActivityKit
+/// for review.
+struct WatchStatusContent: View {
+  let routineName: String
+  let startedAt: Date
+  let pausedSeconds: Double
+  let pausedAt: Date?
+  let restEndsAt: Date?
+  let setsDone: Int?
+  let setsTotal: Int?
+  let upNext: String?
+  let nextLabel: String
+  let pausedLabel: String
+  let colors: WatchStatusColors
+
+  var body: some View {
+    HStack(spacing: 8) {
+      if let done = setsDone, let total = setsTotal {
+        ZStack {
+          Circle().stroke(colors.track, lineWidth: 5)
+          Circle()
+            .trim(from: 0, to: total > 0 ? Double(done) / Double(total) : 0)
+            .stroke(colors.ring, style: StrokeStyle(lineWidth: 5, lineCap: .round))
+            .rotationEffect(.degrees(-90))
+          VStack(spacing: -2) {
+            Text("\(done)")
+              .font(.system(size: 17, weight: .bold).monospacedDigit())
+              .foregroundStyle(colors.text)
+            Text("/\(total)")
+              .font(.system(size: 10, weight: .semibold).monospacedDigit())
+              .foregroundStyle(colors.muted)
+          }
+        }
+        .frame(width: 46, height: 46)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(done)/\(total)")
+      }
+
+      VStack(alignment: .leading, spacing: 1) {
+        if let restEndsAt {
+          HStack(spacing: 3) {
+            Image(systemName: "timer")
+              .font(.system(size: 13, weight: .bold))
+            Text(timerInterval: min(Date(), restEndsAt)...restEndsAt, countsDown: true)
+              .monospacedDigit()
+          }
+          .font(.system(size: 21, weight: .bold))
+          .foregroundStyle(colors.accent)
+          .lineLimit(1)
+          .minimumScaleFactor(0.7)
         } else {
-          Image(systemName: "pause.fill")
-            .foregroundStyle(primary)
+          let start = startedAt.addingTimeInterval(pausedSeconds)
+          Text(timerInterval: start...start.addingTimeInterval(12 * 3600), pauseTime: pausedAt, countsDown: false)
+            .monospacedDigit()
+            .font(.system(size: 21, weight: .bold))
+            .foregroundStyle(colors.text)
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
         }
-        Text(context.attributes.routineName)
-          .foregroundStyle(textMuted)
-          .lineLimit(1)
-        Spacer(minLength: 0)
-        if context.state.pausedAt != nil {
-          Text(context.attributes.pausedLabel)
-            .foregroundStyle(accent)
+
+        if pausedAt != nil {
+          Text(pausedLabel)
+            .font(.caption2.weight(.bold))
+            .foregroundStyle(colors.accent)
+        } else if let upNext {
+          // The set to do; no "Next:" — the countdown already says it is a rest.
+          Text(upNext)
+            .font(.system(size: 11, weight: .medium))
+            .foregroundStyle(colors.text)
+            .lineLimit(2)
+            .fixedSize(horizontal: false, vertical: true)
+        } else {
+          Text(routineName)
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(colors.muted)
             .lineLimit(1)
         }
       }
-      .font(.caption2.weight(.semibold))
-      ElapsedText(attributes: context.attributes, state: context.state)
-        .font(.title2.weight(.bold).monospacedDigit())
-        .foregroundStyle(text)
-        .lineLimit(1)
-        .minimumScaleFactor(0.7)
-      // The up-next set and the sets done, when they fit (spec 0035 FR-18).
-      if let upNext = upNextText(context) {
-        Text(upNext)
-          .font(.caption2)
-          .foregroundStyle(text)
-          .lineLimit(1)
-      }
-      HStack(spacing: 4) {
-        if let done = context.state.setsDone, let total = context.state.setsTotal, runningRest(context) == nil {
-          Text("\(done)/\(total)")
-            .foregroundStyle(success)
-        }
-        if let restEndsAt = runningRest(context) {
-          Image(systemName: "timer")
-          RestCountdown(endsAt: restEndsAt)
-            .lineLimit(1)
-        }
-        Spacer(minLength: 0)
-        // Unknown calories are left out here, not shown as "— kcal".
-        if let kcal = context.state.activeKcal {
-          Text("\(kcal) kcal")
-            .lineLimit(1)
-        }
-      }
-      .font(.caption.weight(.semibold).monospacedDigit())
-      .foregroundStyle(accent)
+      .frame(maxWidth: .infinity, alignment: .leading)
     }
     .padding(.horizontal, 4)
   }
@@ -420,13 +475,18 @@ private struct LockScreenView: View {
 
 /// The running rest's end, or nil once it has passed (spec 0018 FR-8). Every
 /// update sets the rest's end as the stale date, so the system re-renders the
-/// activity as stale at that instant even with the app suspended.
+/// activity at that instant even with the app suspended, and the clock check
+/// below hides the countdown.
 ///
-/// TODO(sdd): Live Activity after the rest ends with the app suspended relies
-/// on staleDate re-rendering the widget with isStale; unverified on the device
-/// — worst case the row shows 0:00 until the app next updates the activity.
+/// Not gated on `context.isStale`: on the device the activity stayed stale
+/// after the first rest ended, so every later rest was hidden — on the lock
+/// screen only the first rest of a workout showed (owner, 2026-11-03).
 private func runningRest(_ context: ActivityViewContext<WorkoutActivityAttributes>) -> Date? {
-  guard let restEndsAt = context.state.restEndsAt, !context.isStale else { return nil }
+  // Checked against the clock: an update after the end must not bring back a
+  // countdown at 0:00 (spec 0040 FR-3).
+  guard let restEndsAt = context.state.restEndsAt, restEndsAt > Date() else {
+    return nil
+  }
   return restEndsAt
 }
 

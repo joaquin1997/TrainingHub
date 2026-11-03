@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import type { CreateRoutineInput, RoutineExerciseInput, Routine } from '@workout/domain';
 
 import { prisma } from '../../infrastructure/prisma.js';
+import { exerciseDisplayName } from '../../infrastructure/requestLanguage.js';
 import { toExerciseTrackingType } from '../exercises/trackingTypes.js';
 
 /**
@@ -18,6 +19,9 @@ const routineInclude = {
       exercise: {
         select: {
           publicId: true,
+          name: true,
+          nameEs: true,
+          nameEn: true,
           trackingType: true,
           isUnilateral: true,
           deletedAt: true,
@@ -58,7 +62,11 @@ function mapRoutine(userPublicId: string, record: RoutineRecord): Routine {
         id: exercise.publicId,
         routineId: record.publicId,
         exerciseId: exercise.exercise.publicId,
-        exerciseName: exercise.exerciseName,
+        // A reviewed exercise reads in the app's language; others keep the
+        // name saved with the routine (spec 0044 FR-2).
+        exerciseName: exercise.exercise.nameEs
+          ? exerciseDisplayName(exercise.exercise)
+          : exercise.exerciseName,
         orderIndex: exercise.orderIndex,
         restSeconds: exercise.restSeconds ?? undefined,
         supersetGroup: exercise.supersetGroup ?? undefined,

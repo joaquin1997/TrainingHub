@@ -1,7 +1,7 @@
 ---
 id: 0019
 title: The workout in progress is always at hand
-status: in-progress
+status: done
 roadmap: docs/roadmap/01-live-workout-logging.md
 created: 2026-10-16
 ---

@@ -61,6 +61,15 @@ export function setLiveActivityLabels(labels: LiveActivityLabels) {
 }
 
 const toMs = (iso?: string) => (iso ? Date.parse(iso) : null);
+/**
+ * A rest's end only while it is ahead (spec 0040 FR-3): an update after the
+ * rest ended would otherwise clear the stale date and leave the countdown
+ * showing 0:00 on the lock screen.
+ */
+export const runningRestEndMs = (iso?: string, now: number = Date.now()) => {
+  const ms = toMs(iso);
+  return ms !== null && ms > now ? ms : null;
+};
 const toIso = (ms: number | null | undefined) =>
   ms == null ? undefined : new Date(ms).toISOString();
 const toKcal = (kcal: number | null | undefined) =>
@@ -112,7 +121,7 @@ export const appleHealthLiveWorkoutBridge: LiveWorkoutBridge = {
       pausedAtMs: toMs(payload.pausedAt),
       pausedSeconds: payload.pausedSeconds ?? 0,
       activeKcal: toKcal(payload.activeEnergyKcal),
-      restEndsAtMs: toMs(payload.restEndsAt),
+      restEndsAtMs: runningRestEndMs(payload.restEndsAt),
       ...progressOf(payload),
       pausedLabel: liveActivityLabels.paused,
       pauseLabel: liveActivityLabels.pause,
@@ -129,6 +138,23 @@ export const appleHealthLiveWorkoutBridge: LiveWorkoutBridge = {
       return;
     }
 
+    const progress = progressOf(payload);
+    if (module.update) {
+      // One update with every field, so none is lost (spec 0045).
+      await module.update(payload.workoutSessionId, {
+        pausedAtMs: toMs(payload.pausedAt),
+        pausedSeconds: payload.pausedSeconds ?? 0,
+        activeKcal: toKcal(payload.activeEnergyKcal),
+        restEndsAtMs: runningRestEndMs(payload.restEndsAt),
+        upNext: progress.upNext,
+        setsDone: progress.setsDone,
+        setsTotal: progress.setsTotal,
+        setsLabel: progress.setsLabel,
+      });
+      return;
+    }
+
+    // Builds before spec 0045: one setter per field.
     await module.setPause(
       payload.workoutSessionId,
       toMs(payload.pausedAt),
@@ -136,9 +162,8 @@ export const appleHealthLiveWorkoutBridge: LiveWorkoutBridge = {
     );
     await module.setKcal(payload.workoutSessionId, toKcal(payload.activeEnergyKcal));
     // Optional: a build from before spec 0018 has no rest on the activity.
-    await module.setRest?.(payload.workoutSessionId, toMs(payload.restEndsAt));
+    await module.setRest?.(payload.workoutSessionId, runningRestEndMs(payload.restEndsAt));
     // Optional: a build from before spec 0035 shows no progress.
-    const progress = progressOf(payload);
     await module.setProgress?.(
       payload.workoutSessionId,
       progress.upNext,

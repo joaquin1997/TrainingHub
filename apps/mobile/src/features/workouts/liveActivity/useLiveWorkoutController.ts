@@ -64,12 +64,15 @@ export function useLiveWorkoutController(enabled: boolean) {
       finishOnPhone: t('workouts.watchFinishOnPhone'),
       allDone: t('workouts.watchAllDone'),
       waiting: t('workouts.watchWaiting'),
-      setOf: (number, count) => t('workouts.watchSetOf', { number, count }),
+      setOf: (number, count, isWarmup) =>
+        t(isWarmup ? 'workouts.watchWarmUpOf' : 'workouts.watchSetOf', { number, count }),
       more: t('workouts.watchMore'),
+      reps: t('workouts.watchReps'),
       discard: t('workouts.liveDiscard'),
       discardTitle: t('workouts.discardTitle'),
       cancel: t('common.cancel'),
       connectToDiscard: t('workouts.watchConnectToDiscard'),
+      waitingPhone: t('workouts.watchWaitingPhone'),
       discardLost: (count) =>
         count > 0 ? t('workouts.discardLost', { count }) : t('workouts.discardNoneDone'),
     });

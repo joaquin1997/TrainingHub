@@ -39,7 +39,7 @@ export function weekDays(now: Date): Date[] {
 }
 
 /** Whole weeks from `earlier`'s week to `later`'s (both Monday-aligned). */
-function weeksBetween(earlier: Date, later: Date): number {
+export function weeksBetween(earlier: Date, later: Date): number {
   // Rounded: a daylight-saving change makes a week 1 h shorter or longer.
   return Math.round((startOfWeek(later).getTime() - startOfWeek(earlier).getTime()) / (7 * DAY_MS));
 }
@@ -73,4 +73,17 @@ export function countInWeek(starts: Date[], now: Date): number {
   const from = startOfWeek(now).getTime();
   const to = addDays(startOfWeek(now), 7).getTime();
   return starts.filter((start) => start.getTime() >= from && start.getTime() < to).length;
+}
+
+/** Whether `date` falls in the same week as `weekOf`. */
+export function sameWeek(date: Date, weekOf: Date): boolean {
+  return weeksBetween(date, weekOf) === 0;
+}
+
+/**
+ * How many weeks back from `now` the earliest of `starts` lies, so History
+ * can stop at the first week with a workout (spec 0040 FR-9); 0 with none.
+ */
+export function weeksBack(starts: Date[], now: Date): number {
+  return starts.reduce((most, start) => Math.max(most, weeksBetween(start, now)), 0);
 }

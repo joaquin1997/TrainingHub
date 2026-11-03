@@ -10,8 +10,8 @@ dist
 
 # Local env files (never commit secrets)
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
 # Local scratch / temp data (e.g. importer source CSVs)
 tmp/
@@ -21,3 +21,13 @@ tmp/
 /packages/domain/src/**/*.js
 /packages/domain/src/**/*.js.map
 /packages/domain/src/**/*.d.ts
+
+# Machine-specific operating notes and security scan output
+/docs/local/
+
+# Signing material and private keys
+*.pem
+*.key
+*.p12
+*.pfx
+*.mobileprovision

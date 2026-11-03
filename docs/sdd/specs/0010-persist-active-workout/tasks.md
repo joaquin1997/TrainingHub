@@ -82,10 +82,10 @@ rebuild.
 
 ## Definition of done
 
-- [ ] Every functional requirement and acceptance criterion in `spec.md` is met
+- [x] Every functional requirement and acceptance criterion in `spec.md` is met
       or explicitly deferred with a TODO
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [x] `docs/roadmap/01-live-workout-logging.md` checklist and progress log updated
-- [ ] `spec.md` status set to `done`; `../backlog.md` updated
+- [x] `spec.md` status set to `done`; `../backlog.md` updated
 - [x] 0005's known gap marked closed
 - [x] Glossary updated

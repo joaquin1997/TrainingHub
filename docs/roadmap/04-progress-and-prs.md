@@ -1,5 +1,13 @@
 # 4. Progress, PRs & charts
 
+## Specified next slice
+
+[0042 — Readable exercise progress](../sdd/specs/0042-readable-exercise-progress/spec.md)
+is ready (2026-11-03): search trained exercises before general summaries,
+explicit metric and period choices, coherent performed-set figures and links
+to the saved workout. Plan and implementation are pending; existing line
+charts from 0034 are reused rather than reintroduced.
+
 ## Checklist
 - [x] Personal record (PR) detection (per exercise; recent-record flag + badge)
 - [x] Estimated 1RM (Epley, per session point + best)
@@ -14,8 +22,8 @@
 - [~] Charts for weight/volume over time
   - [x] Per-session bar chart (est. 1RM with volume fallback) on the exercise
     detail screen — dependency-free, pure-view bars
-  - [ ] Smooth line charts / multi-metric toggle — deferred: needs the native
-    `react-native-svg` dep (full rebuild), and the dependency-free bars suffice for now
+  - [x] Smooth line charts and area/readout — spec 0034, using `react-native-svg`
+  - [ ] Explicit metric/period selection and readable exercise lookup — spec 0042 (ready)
 - [~] Weekly volume, muscle-group distribution
   - [x] Weekly training-volume chart on the progress overview
   - [x] Volume distribution by exercise **category** (a proxy, see notes)
@@ -80,5 +88,5 @@
 ## Notes
 - Progress aggregation already exists (`apps/api/src/features/progress`). PRs can
   derive from the same per-session points.
-- A smoother line chart would need a RN chart lib (e.g. react-native-svg); the
-  current bars are intentionally dependency-free.
+- Smooth lines now use `react-native-svg` (0034); bars remain the fallback
+  for older native binaries. Metric/period controls are the separate 0042 slice.

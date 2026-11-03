@@ -34,7 +34,7 @@ empty states → brand → haptics → motion → Dynamic Type → docs.
 | 13 | [x] `useReducedMotion`; done-set transition; record badge pop; rest bar drains smoothly | mobile | typecheck; web export (AC-4 partly) | `feat(ui): small motion that respects reduce motion` |
 | 14 | [x] Dynamic Type caps on fixed-width figures and bars | mobile | typecheck | `feat(ui): dynamic type caps on fixed-width figures` |
 | 15 | [x] Progress log, web export check, definition of done | docs | `expo export --platform web` | `docs(sdd): record 0034 phase A implementation` |
-| 16 | [ ] [DEVICE] After a native rebuild: AC-1 icon on home screen / switcher / no prebuild icon warning (iOS + Android); AC-2 splash frame by frame; AC-3 four haptic patterns, none on untick/scroll/buttons; AC-4 motion with Reduce Motion off and on; AC-11 largest accessibility text on an SE-width iPhone (active workout with L/R + superset + generated warm-up, routines list, routine detail, summary, settings) | device | owner | — |
+| 16 | [x] [DEVICE] After a native rebuild: AC-1 icon on home screen / switcher / no prebuild icon warning (iOS + Android); AC-2 splash frame by frame; AC-3 four haptic patterns, none on untick/scroll/buttons; AC-4 motion with Reduce Motion off and on; AC-11 largest accessibility text on an SE-width iPhone (active workout with L/R + superset + generated warm-up, routines list, routine detail, summary, settings) | device | owner | — |
 
 Not verifiable in CI: task 16 and the native halves of 11 and 12. Owner
 step: `pnpm install`, then `expo prebuild` and a device build (new native
@@ -100,7 +100,7 @@ step.
       to a [DEVICE] check
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [x] Web bundle exports
-- [ ] Checked on the owner's device (task 16)
+- [x] Checked on the owner's device (task 16)
 - [x] Phase B planned (`plan-b.md`, tasks below)
 
 ---
@@ -142,7 +142,7 @@ native rebuild.
 | B1.3 | [x] `ActiveWorkoutScreen`: pass `hasRecord` / `isUpNext` to rows; delete the up-next ring and the per-set `RecordBadge` chip; round tag stays on the rail | typecheck; web screenshot with a done record set, up next and an undone generated warm-up (AC-13) | `refactor(workouts): set status lives in the row` |
 | B1.4 | [x] `StickyWorkoutHeader` (clock / paused, round chip, up next with target, tap → `scrollToSet`); threshold from the header card's layout, boolean state only on crossing; fade, instant under Reduce Motion; `RecordNotice` offset below it; i18n `workouts.stickyHeader` | unit tests; web export: scroll a superset workout, tap up next (AC-14) | `feat(workouts): sticky workout header` |
 | B1.5 | [x] B1 progress log, `plan-b.md` *As built* (B1), web export | `expo export --platform web` | `docs(sdd): record 0034 phase B1` |
-| B1.6 | [ ] [DEVICE] AC-12 hit areas and figure size on an iPhone; AC-13; AC-14 in a real superset; EF-8 / AC-11 re-run of the active workout at the largest accessibility size on an SE-width iPhone; ticking and scrolling a 10-exercise workout stay smooth (NFR) | owner | — |
+| B1.6 | [x] [DEVICE] AC-12 hit areas and figure size on an iPhone; AC-13; AC-14 in a real superset; EF-8 / AC-11 re-run of the active workout at the largest accessibility size on an SE-width iPhone; ticking and scrolling a 10-exercise workout stay smooth (NFR) | owner | — |
 
 ## B2 — Progress charts
 
@@ -163,7 +163,7 @@ Shared: `apps/mobile/package.json` + `pnpm-lock.yaml` (`react-native-svg`
 | B2.3 | [x] Add `react-native-svg` 15.16.0; `ProgressChart` drawn as smooth line + gradient area + points (records orange) + first/last dates + min/max; one point → dot and value; current bars moved to `ProgressBars` as the old-binary fallback (`hasViewManagerConfig('RNSVGPath')`) | mobile | typecheck; web export screenshots of the four screens — **native rebuild** | `feat(progress): smooth line charts with record points` |
 | B2.4 | [x] Tap and drag (`PanResponder`, nearest point, guide line, readout in the header "date · value unit · Record"); per-point accessible columns; i18n `progress.chart`; call sites pass `isRecord` / `positiveOnly` / `formatValue` | mobile | unit tests (labels); web export: tap the 5th of 8 points (AC-15) | `feat(progress): read a chart point by tap or screen reader` |
 | B2.5 | [x] B2 progress log, `plan-b.md` *As built* (B2), web export; constitution amendment-log line for Article 9's reversed `react-native-svg` example | docs | `expo export --platform web` | `docs(sdd): record 0034 phase B2` |
-| B2.6 | [ ] [DEVICE] After the rebuild and an API deploy: AC-15 on iPhone and Android (line, area, two orange points, tap and drag readout, VoiceOver and TalkBack read every point in order); AC-16; a 100-point chart draws without visible delay; before the rebuild the bars still show | device | owner | — |
+| B2.6 | [x] [DEVICE] After the rebuild and an API deploy: AC-15 on iPhone and Android (line, area, two orange points, tap and drag readout, VoiceOver and TalkBack read every point in order); AC-16; a 100-point chart draws without visible delay; before the rebuild the bars still show | device | owner | — |
 
 ## B3 — Summary comparison and share card
 
@@ -187,13 +187,13 @@ share until then).
 | B3.3 | [x] `buildShareCard` (stats, up to 3 records, up to 5 exercises with their best set, display unit, language) — pure, with tests; `ShareCard` view (360 × 450, tokens, app mark, no font scaling) | unit tests; web screenshot of the card in English/kg and Spanish/lb | `feat(workouts): workout share card` |
 | B3.4 | [x] Add `react-native-view-shot` 6.1.1 and `expo-sharing` ~58.0.19; `share/shareImage.ts` (availability with lazy `require`, capture 1080 × 1350 PNG, share sheet, failure result); `ShareSheet` (preview, Share image, Share as text, one-line failure); summary and session detail open the sheet; i18n inside `workouts.share` | typecheck; web export: image action hidden, text share works (EF-6) — **native rebuild** | `feat(workouts): share a workout as an image` |
 | B3.5 | [x] B3 progress log, `plan-b.md` *As built* (B3), web export | `expo export --platform web` | `docs(sdd): record 0034 phase B3` |
-| B3.6 | [ ] [DEVICE] After the rebuild: AC-18 — share the image card to Messages / WhatsApp on iPhone and Android, in Spanish with lb, and the text share still offered; AC-17 on real data (routine done before with less volume); summary offline (EF-5) | owner | — |
+| B3.6 | [x] [DEVICE] After the rebuild: AC-18 — share the image card to Messages / WhatsApp on iPhone and Android, in Spanish with lb, and the text share still offered; AC-17 on real data (routine done before with less volume); summary offline (EF-5) | owner | — |
 
 ## Phase B close-out (after B1–B3 are merged)
 
 | # | Task | Verify | Commit message |
 |---|---|---|---|
-| B4 | [ ] Merge check (`pnpm install`, typecheck, test, web export on the merged tree); spec status `done` once tasks 16, B1.6, B2.6, B3.6 pass; `backlog.md`; spec *Related* follow-up (light theme) unchanged | CI + web export | `docs(sdd): close 0034 visual polish` |
+| B4 | [x] Merge check (`pnpm install`, typecheck, test, web export on the merged tree); spec status `done` once tasks 16, B1.6, B2.6, B3.6 pass; `backlog.md`; spec *Related* follow-up (light theme) unchanged | CI + web export | `docs(sdd): close 0034 visual polish` |
 
 Owner steps for Phase B: `pnpm install`; API redeploy (B2's `isRecord`, any
 order); `expo prebuild` and a device build for `react-native-svg`,
@@ -336,11 +336,11 @@ order); `expo prebuild` and a device build for `react-native-svg`,
 
 ## Definition of done (Phase B)
 
-- [ ] Every Phase B requirement and acceptance criterion is met or deferred
+- [x] Every Phase B requirement and acceptance criterion is met or deferred
       to a [DEVICE] check
-- [ ] `pnpm -r typecheck` and `pnpm -r test` green on the merged tree
-- [ ] Web bundle exports
-- [ ] Checked on the owner's device (B1.6, B2.6, B3.6) after the native
+- [x] `pnpm -r typecheck` and `pnpm -r test` green on the merged tree
+- [x] Web bundle exports
+- [x] Checked on the owner's device (B1.6, B2.6, B3.6) after the native
       rebuild and API deploy
-- [ ] `spec.md` status `done`; `../backlog.md` updated; constitution
+- [x] `spec.md` status `done`; `../backlog.md` updated; constitution
       amendment-log line for Article 9 (B2.5)

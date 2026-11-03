@@ -8,7 +8,7 @@ production.
 
 | Term | Meaning | Not to be confused with |
 |---|---|---|
-| **Exercise** | A movement in the catalog (e.g. "Back Squat"). System-defined (seeded from wger) and visible to everyone, or user-defined (custom) and visible only to its creator (spec 0015). | `RoutineExercise`, `WorkoutExercise` |
+| **Exercise** | A movement in the catalog (e.g. "Back Squat"). System-defined (the reviewed catalog, spec 0044; formerly seeded from wger) and visible to everyone, or user-defined (custom) and visible only to its creator (spec 0015). | `RoutineExercise`, `WorkoutExercise` |
 | **Generated warm-up set** | A warm-up set the warm-up action added and nobody changed since (ticking it done is fine); editing a value or its type makes it the person's own. Only generated sets are removed by the action's remove toggle (spec 0031). | Warm-up set typed by the person |
 | **Routine** | A reusable *template* describing intended training. | `WorkoutSession` — a routine is never a record of anything performed |
 | **RoutineExercise** | An exercise slot inside a routine template, with intended sets, target values and rest. May belong to a superset group. | `WorkoutExercise` |
@@ -33,7 +33,11 @@ production.
 | **Tracking type** | What an exercise's sets record: weight & reps, reps only, time, weight & time, or distance & time (spec 0021). | Set type (warm-up, drop, failure) |
 | **Tracking type sweep** | A reviewed, repeatable classification of the catalog into tracking types. Changes only catalog exercises whose type the system set; a type set by a person (at creation or by hand) is never overridden (spec 0030). | Changing one exercise's type by hand |
 | **Warm-up block** | A checklist of non-lifting warm-up items (mobility, cardio, activation) at the start of a routine; ticked in the workout, never counted as sets, volume or records (spec 0024). | Warm-up set |
+| **Loading kind** | How an exercise's weight is loaded: barbell (plates on a bar, EZ bar included), dumbbells (or kettlebells, weight per hand), or machine or cable. Worked out from the catalog until a person sets it; decides where the approach-set ramp starts and how it rounds (spec 0043). | Equipment, the catalog's raw list; tracking type |
+| **Muscle already worked** | In a workout, a primary muscle (or category) that an earlier exercise trained with at least one working set done; in a routine, one an earlier exercise trains. Shortens the approach-set ramp (spec 0043). | — |
 | **Deleted exercise** | A custom exercise its creator has deleted. Gone from the catalog and every picker, but kept, with its name, for the saved workouts and routines that already contain it (spec 0033). | An exercise removed outright, which history could no longer name |
+| **Retired exercise** | A catalog exercise from the old import that the reviewed catalog replaced. Gone from the catalog and pickers, kept by name for the workouts and routines that still contain it; when it matched a reviewed exercise, its history was carried over to that one (spec 0044). | Deleted exercise (custom, by its creator) |
+| **Reviewed catalog** | The catalog exercises written and checked by hand: names in Spanish and English, search names, category, muscles, equipment, loading kind, tracking type, unilateral, picture (spec 0044). | The old import from wger |
 | **Held exercise** | Another person's custom exercise that someone's routines or saved workouts already contained before custom exercises became private. Readable there, under its name, and still usable in that routine; never shown in the catalog or pickers, never addable anew (spec 0015). | A custom exercise of my own |
 | **Unilateral exercise** | An exercise done one side at a time, logged per side (spec 0022). | — |
 | **Today's routine** | The routine the home screen suggests starting next: the one after the most recently performed routine in the Routines list's order, within its folder, wrapping round; the first routine when none has been performed. Derived, never stored; a suggestion only (spec 0035). | Up next, which is a set inside the active workout |
@@ -74,7 +78,6 @@ production.
 | Term | Meaning |
 |---|---|
 | **User** | An account. Identified across API boundaries by `publicId`, which is what a token's subject carries. |
-| **Dev user** | The legacy `user-development` account that unauthenticated requests currently fall back to. Transitional; being removed (spec 0001). |
 | **Settings** | Per-user preferences: display unit (`kg`/`lb`), default rest, language (ES/EN). |
 | **Measurement entry** | A dated record of body measurements (weight, body-fat %, muscle %, circumferences) owned by a user. BMI and waist-to-height are derived from the latest entries and the height, never stored (spec 0027). |
 | **Display unit** | A *presentation* preference only. Storage is always kilograms — constitution Article 4. |
@@ -90,6 +93,7 @@ production.
 | **Active energy** | Calories burned as measured by the person's health data (e.g. a watch), read with permission — never estimated by formula. Unknown when there is no data or no permission, never shown as 0 (spec 0012). |
 | **HealthSyncRecord** | Sync *metadata* only. Never a place to duplicate workout data. |
 | **HealthIntegration / WorkoutSyncService / LiveWorkoutBridge** | Interfaces for Apple Health, Android Health Connect and live surfaces. Implemented on iOS for the live workout status and active energy (spec 0012); the rest are stubs. |
+| **Workout on the watch** | The active workout while the paired watch runs it (spec 0025): the watch measures heart rate and active energy, shows the set to do and sends ticks, pause and finish to the phone, which stays the source of the logged data. Only during one is the phone app kept working in the background, so ticks from the wrist are applied with the phone locked (spec 0045). | Live workout status on the watch's Smart Stack, which is read-only |
 | **Discard from outside the app** | Discarding the active workout starting from the live workout status or the watch. Always ends in an explicit confirmation — in the app (lock screen) or on the watch — never in a one-tap action. Same pattern as Finish from the status (spec 0012) (spec 0035). |
 | **Home-screen widget** | The app's glance outside the app when no screen of it is open: on the iPhone home screen (small: week streak and performed sets this week; medium: the week's days, sets and a Start button for today's routine) and as lock-screen accessories (no routine names). Shows the active workout's routine and clock while one is in progress; only opens the app, never acts on the workout. Updated by the app, never on its own. Not the live workout status, which exists only during a workout and has buttons (spec 0036). |
 

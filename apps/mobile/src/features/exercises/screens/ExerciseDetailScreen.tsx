@@ -20,6 +20,7 @@ import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
+import { equipmentLabel, muscleLabel } from '@/features/exercises/utils/catalogLabels';
 import type { Exercise, ExerciseProgressPoint, ExerciseTrackingType } from '@workout/domain';
 
 const MAX_HISTORY = 8;
@@ -210,9 +211,10 @@ export function ExerciseDetailScreen() {
     );
   }
 
-  const primary = exercise.primaryMuscleGroups ?? [];
-  const secondary = exercise.secondaryMuscleGroups ?? [];
-  const equipment = exercise.equipment ?? [];
+  // In the app's language (spec 0044 FR-9).
+  const primary = (exercise.primaryMuscleGroups ?? []).map((value) => muscleLabel(value, t));
+  const secondary = (exercise.secondaryMuscleGroups ?? []).map((value) => muscleLabel(value, t));
+  const equipment = (exercise.equipment ?? []).map((value) => equipmentLabel(value, t));
   const chipGroups: Array<{ label: string; values: string[]; tone: 'primary' | 'neutral' }> = [
     { label: t('exercises.primaryLabel'), values: primary, tone: 'primary' },
     { label: t('exercises.secondaryLabel'), values: secondary, tone: 'neutral' },

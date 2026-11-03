@@ -79,4 +79,4 @@ deploy that makes them show data.
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [x] Roadmap 04, backlog and glossary updates handed to the coordinator
 - [x] Roadmap 04 and backlog updated (coordinator, 2026-10-17)
-- [ ] `spec.md` status set to `done` (after the owner's device check)
+- [x] `spec.md` status set to `done` (after the owner's device check)

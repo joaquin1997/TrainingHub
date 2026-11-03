@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { countInWeek, sameDay, startOfWeek, weekDays, weekStreak } from './week';
+import { countInWeek, sameDay, sameWeek, startOfWeek, weekDays, weeksBack, weekStreak } from './week';
 
 // Local dates, so the tests hold in any time zone. 2026-10-15 is a Thursday.
 const at = (month: number, day: number, hour = 12, minute = 0) =>
@@ -61,5 +61,21 @@ describe('weekStreak', () => {
 describe('countInWeek', () => {
   it('counts only this week’s workouts', () => {
     expect(countInWeek([at(10, 12, 7), at(10, 15, 8), at(10, 11, 20)], thursday)).toBe(2);
+  });
+});
+
+describe('sameWeek and weeksBack (spec 0040 FR-9)', () => {
+  // Wednesday 2026-10-21, local time.
+  const now = new Date(2026, 9, 21, 12, 0);
+
+  it('tells whether a day is in the same Monday-to-Sunday week', () => {
+    expect(sameWeek(new Date(2026, 9, 19, 7, 0), now)).toBe(true);
+    expect(sameWeek(new Date(2026, 9, 25, 23, 0), now)).toBe(true);
+    expect(sameWeek(new Date(2026, 9, 18, 23, 0), now)).toBe(false);
+  });
+
+  it('counts the weeks back to the earliest start, 0 with none', () => {
+    expect(weeksBack([new Date(2026, 9, 20), new Date(2026, 9, 5)], now)).toBe(2);
+    expect(weeksBack([], now)).toBe(0);
   });
 });

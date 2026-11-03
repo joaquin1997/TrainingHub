@@ -1,7 +1,7 @@
 ---
 id: 0013
 title: Progress counts only performed work
-status: in-progress
+status: done
 roadmap: docs/roadmap/04-progress-and-prs.md
 created: 2026-09-24
 decided: 2026-09-24

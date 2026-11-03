@@ -1,7 +1,7 @@
 ---
 id: 0018
 title: Rest timer that keeps running
-status: in-progress
+status: done
 roadmap: docs/roadmap/02-rest-timer.md
 created: 2026-10-16
 ---

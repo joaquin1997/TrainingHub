@@ -19,12 +19,15 @@ let watchLabels: WatchLabels = {
   finishOnPhone: 'Confirm on your iPhone',
   allDone: 'All sets done',
   waiting: 'Start a workout on your iPhone',
-  setOf: (number, count) => `Set ${number} of ${count}`,
+  setOf: (number, count, isWarmup) =>
+    isWarmup ? `Warm-up ${number} of ${count}` : `Set ${number} of ${count}`,
   more: 'More',
+  reps: 'reps',
   discard: 'Discard',
   discardTitle: 'Discard this workout?',
   cancel: 'Cancel',
   connectToDiscard: 'Connect to your iPhone to discard',
+  waitingPhone: 'Waiting for your iPhone…',
   discardLost: (count) =>
     count > 0 ? `${count} sets done will be lost.` : 'No sets done yet.',
 };

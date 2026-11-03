@@ -6,13 +6,15 @@ private let textMuted = Color(red: 0xA7 / 255, green: 0xB0 / 255, blue: 0xBE / 2
 private let accent = Color(red: 0xFF / 255, green: 0x8A / 255, blue: 0x3D / 255)
 
 /// One screen: clock, heart rate, calories, rest, the set to do and the
-/// controls (spec 0025 FR-3, FR-4). Weights and reps are confirmed as
-/// planned, never edited here (out of scope).
+/// controls (spec 0025 FR-3, FR-4). The reps of the set to do can be changed
+/// before Done (spec 0041); the weight is confirmed as planned.
 struct WorkoutView: View {
   @ObservedObject var model: WorkoutModel
   /// The secondary menu (spec 0035 FR-22): Discard is never a main control.
   @State private var showsMenu = false
   @State private var confirmsDiscard = false
+  /// The reps shown for the set to do (spec 0041 FR-10).
+  @State private var reps = 0
 
   var body: some View {
     if let workout = model.activeWorkout {
@@ -76,11 +78,19 @@ struct WorkoutView: View {
         Text(set.exerciseName)
           .font(.headline)
           .lineLimit(2)
-        Text([set.setTitle, set.target].filter { !$0.isEmpty }.joined(separator: " · "))
-          .font(.footnote)
-          .foregroundStyle(textMuted)
+        if let planned = set.reps {
+          Text([set.setTitle, set.load ?? ""].filter { !$0.isEmpty }.joined(separator: " · "))
+            .font(.footnote)
+            .foregroundStyle(textMuted)
+          RepsControl(setId: set.setId, planned: planned, unit: model.labels.reps ?? "reps", reps: $reps)
+            .disabled(model.isPaused)
+        } else {
+          Text([set.setTitle, set.target].filter { !$0.isEmpty }.joined(separator: " · "))
+            .font(.footnote)
+            .foregroundStyle(textMuted)
+        }
         Button {
-          model.tickCurrentSet()
+          model.tickCurrentSet(reps: reps)
         } label: {
           Label(model.labels.done, systemImage: "checkmark")
             .frame(maxWidth: .infinity)
@@ -89,9 +99,17 @@ struct WorkoutView: View {
         .tint(primary)
         .buttonStyle(.borderedProminent)
         .disabled(model.isPaused)
+        // watchOS caps a button's width, so in this leading stack it would
+        // hug the left edge; centred it lines up with Pause below.
+        .frame(maxWidth: .infinity)
       }
     } else if model.tickedSetId == nil {
       Text(model.labels.allDone)
+        .font(.footnote)
+        .foregroundStyle(textMuted)
+    } else if model.waitingForPhone {
+      // Spec 0045 FR-4: the next set has not come from the phone.
+      Text(model.labels.waitingPhone ?? WatchContext.Labels.fallback.waitingPhone ?? "")
         .font(.footnote)
         .foregroundStyle(textMuted)
     }
@@ -183,6 +201,77 @@ private struct ElapsedText: View {
       pauseTime: workout.pausedAtMs.map(Date.init(epochMs:)),
       countsDown: false
     )
+  }
+}
+
+/// The reps of the set to do (spec 0041 FR-10, FR-11): − and + and the
+/// crown, one rep at a time between 0 and 100. Each new set starts from its
+/// own planned reps (FR-14).
+private struct RepsControl: View {
+  let setId: String
+  let planned: Int
+  let unit: String
+  @Binding var reps: Int
+  @State private var crown = 0.0
+  @State private var shownSetId: String?
+
+  var body: some View {
+    HStack(spacing: 6) {
+      step(-1, systemImage: "minus")
+      VStack(spacing: 0) {
+        Text("\(reps)")
+          .font(.title2.weight(.bold).monospacedDigit())
+          .foregroundStyle(.white)
+        Text(unit)
+          .font(.caption2)
+          .foregroundStyle(textMuted)
+      }
+      .frame(maxWidth: .infinity)
+      .focusable(true)
+      .digitalCrownRotation(
+        $crown, from: 0, through: 100, by: 1, sensitivity: .low,
+        isContinuous: false, isHapticFeedbackEnabled: true
+      )
+      .onChange(of: crown) { _, value in
+        reps = Int(value.rounded())
+      }
+      step(1, systemImage: "plus")
+    }
+    .onAppear(perform: seed)
+    .onChange(of: setId) { _, _ in seed() }
+    .accessibilityElement(children: .combine)
+    .accessibilityValue("\(reps)")
+    .accessibilityAdjustableAction { direction in
+      switch direction {
+      case .increment: change(by: 1)
+      case .decrement: change(by: -1)
+      @unknown default: break
+      }
+    }
+  }
+
+  private func step(_ delta: Int, systemImage: String) -> some View {
+    Button {
+      change(by: delta)
+    } label: {
+      Image(systemName: systemImage)
+        .font(.body.weight(.bold))
+        .frame(width: 34, height: 34)
+    }
+    .buttonStyle(.bordered)
+    .clipShape(Circle())
+  }
+
+  private func change(by delta: Int) {
+    reps = min(max(reps + delta, 0), 100)
+    crown = Double(reps)
+  }
+
+  private func seed() {
+    guard shownSetId != setId else { return }
+    shownSetId = setId
+    reps = min(max(planned, 0), 100)
+    crown = Double(reps)
   }
 }
 

@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('./repository.js', async (importOriginal) => {
   const original = await importOriginal<typeof import('./repository.js')>();
@@ -14,14 +14,18 @@ vi.mock('./repository.js', async (importOriginal) => {
     })),
   };
 });
-vi.mock('../../infrastructure/userContext.js', () => ({
-  resolveUserPublicId: vi.fn(async () => 'user-test'),
+
+// Mock persistence only: requests pass through real JWT verification and user resolution.
+vi.mock('../../infrastructure/sessionUser.js', () => ({
+  findSessionUser: vi.fn(async (publicId: string) => ({ publicId })),
 }));
 
 import { createApp } from '../../app.js';
 import { fromAppearance, toAppearance, updateUserSettings } from './repository.js';
 
 const app = createApp({ logger: false });
+const sessionHeaders = () => ({ authorization: `Bearer ${app.jwt.sign({ sub: 'user-test' })}` });
+beforeAll(async () => { await app.ready(); });
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -45,13 +49,13 @@ describe('appearance setting (spec 0038)', () => {
   });
 
   it('saves a valid appearance and ignores an invalid one', async () => {
-    await app.inject({ method: 'PUT', url: '/settings', payload: { appearance: 'light' } });
+    await app.inject({ headers: sessionHeaders(), method: 'PUT', url: '/settings', payload: { appearance: 'light' } });
     expect(updateUserSettings).toHaveBeenLastCalledWith(
       'user-test',
       expect.objectContaining({ appearance: 'light' }),
     );
 
-    await app.inject({ method: 'PUT', url: '/settings', payload: { appearance: 'sepia' } });
+    await app.inject({ headers: sessionHeaders(), method: 'PUT', url: '/settings', payload: { appearance: 'sepia' } });
     expect(updateUserSettings).toHaveBeenLastCalledWith(
       'user-test',
       expect.objectContaining({ appearance: undefined }),

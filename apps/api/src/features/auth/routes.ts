@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
-import type { AuthSignInRequest } from '@workout/domain';
+import type { AuthIdentityResponse, AuthSignInRequest } from '@workout/domain';
 
+import { findSessionUser } from '../../infrastructure/sessionUser.js';
 import { configuredGoogleClientIds, createGoogleIdTokenVerifier } from './googleIdToken.js';
 import { googleDisplayName, resolveGoogleSignIn } from './googleSignIn.js';
 import { hashPassword, verifyPassword } from './password.js';
@@ -46,6 +47,12 @@ function parseCredentials(body: unknown) {
 }
 
 export async function registerAuthRoutes(app: FastifyInstance) {
+  app.get('/auth/me', async (request, reply) => {
+    const user = await findSessionUser(request.user.sub);
+    if (!user) return reply.code(401).send({ message: 'Unauthorized' });
+    return { user: mapUser(user) } satisfies AuthIdentityResponse;
+  });
+
   app.post<{ Body: unknown }>('/auth/register', async (request, reply) => {
     const input = parseCredentials(request.body);
 

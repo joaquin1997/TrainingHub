@@ -122,3 +122,6 @@ export interface AuthTokenResponse {
   user: User;
 }
 
+
+/** Identity of the validated app session; uses the same user as sign-in. */
+export type AuthIdentityResponse = Pick<AuthTokenResponse, 'user'>;

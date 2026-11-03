@@ -6,7 +6,10 @@ import { prisma } from '../../infrastructure/prisma.js';
 
 type UserRecord = Awaited<ReturnType<typeof prisma.user.findUnique>>;
 
-export function mapUser(record: NonNullable<UserRecord>): User {
+type PublicIdentityRecord = Pick<NonNullable<UserRecord>,
+  'publicId' | 'displayName' | 'email' | 'avatarUrl' | 'createdAt' | 'updatedAt'>;
+
+export function mapUser(record: PublicIdentityRecord): User {
   return {
     id: record.publicId,
     displayName: record.displayName,

@@ -1,3 +1,5 @@
+import i18n from 'i18next';
+
 import { API_BASE_URL } from '@/config/api';
 
 type ErrorResponse = {
@@ -56,6 +58,30 @@ export function setOnUnauthorized(handler: (() => void) | null) {
 export async function apiRequest<T>(
   path: string,
   init?: RequestInit,
+  options: { notifyUnauthorized?: boolean; timeoutMs?: number } = {},
+): Promise<T> {
+  if (!options.timeoutMs) return performApiRequest<T>(path, init, options);
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      performApiRequest<T>(path, { ...init, signal: controller.signal }, options),
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => {
+          controller.abort();
+          reject(new Error('Request timed out'));
+        }, options.timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+async function performApiRequest<T>(
+  path: string,
+  init: RequestInit | undefined,
+  options: { notifyUnauthorized?: boolean },
 ): Promise<T> {
   const headers = new Headers(init?.headers);
 
@@ -63,8 +89,14 @@ export async function apiRequest<T>(
     headers.set('Content-Type', 'application/json');
   }
 
-  if (authToken) {
-    headers.set('Authorization', `Bearer ${authToken}`);
+  const requestToken = authToken;
+  if (requestToken) {
+    headers.set('Authorization', `Bearer ${requestToken}`);
+  }
+
+  // Catalog names come back in the app's language (spec 0044 FR-2).
+  if (!headers.has('Accept-Language') && i18n.language) {
+    headers.set('Accept-Language', i18n.language);
   }
 
   const url = `${API_BASE_URL}${path}`;
@@ -93,7 +125,8 @@ export async function apiRequest<T>(
     console.log(`[api] ${response.status} ${init?.method ?? 'GET'} ${url}`);
   }
 
-  if (response.status === 401) {
+  if (response.status === 401 && options.notifyUnauthorized !== false &&
+      requestToken !== null && requestToken === authToken) {
     onUnauthorized?.();
   }
 

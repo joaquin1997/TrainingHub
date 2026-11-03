@@ -26,6 +26,7 @@ import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, createStyles, fonts, keyboardAppearance, spacing, typeScale, useTheme } from '@/ui/theme';
 import { SkeletonRowList } from '@/ui/Skeleton';
 import { ListRow } from '@/ui/ListRow';
+import { categoryLabel, equipmentLabel, muscleLabel } from '@/features/exercises/utils/catalogLabels';
 import type { Exercise } from '@workout/domain';
 
 const PAGE_SIZE = 50;
@@ -214,7 +215,7 @@ export function ExercisesListScreen() {
           {facets.categories.map((value) => (
             <Chip
               key={value}
-              label={value}
+              label={categoryLabel(value, t)}
               selected={category === value}
               onPress={() => toggle(category, value, setCategory)}
             />
@@ -234,7 +235,7 @@ export function ExercisesListScreen() {
             {facets.equipment.map((value) => (
               <Chip
                 key={value}
-                label={value}
+                label={equipmentLabel(value, t)}
                 size="sm"
                 selected={equipment === value}
                 onPress={() => toggle(equipment, value, setEquipment)}
@@ -277,8 +278,8 @@ export function ExercisesListScreen() {
           {visible.map((exercise) => {
             const isFavorite = favorites.has(exercise.id);
             const details = [
-              exercise.primaryMuscleGroups?.join(', '),
-              exercise.equipment?.join(', '),
+              exercise.primaryMuscleGroups?.map((value) => muscleLabel(value, t)).join(', '),
+              exercise.equipment?.map((value) => equipmentLabel(value, t)).join(', '),
             ].filter(Boolean);
 
             return (

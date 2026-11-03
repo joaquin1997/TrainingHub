@@ -59,6 +59,14 @@ describe('nextSetLabel (spec 0029 FR-10)', () => {
     expect(nextSetLabel(draft, t)).toBe('workouts.nextWarmUp {"exercise":"Exercise A"}');
   });
 
+  it('counts working sets only, after the warm-ups (spec 0040 FR-1)', () => {
+    const draft = workout(
+      {},
+      exercise('A', [{ done: true, warmup: true }, { done: true, warmup: true }, { done: false }]),
+    );
+    expect(nextSetLabel(draft, t)).toBe('workouts.nextSet {"exercise":"Exercise A","number":1}');
+  });
+
   it('is null when every set is done', () => {
     expect(nextSetLabel(workout({}, exercise('A', [{ done: true }])), t)).toBeNull();
   });

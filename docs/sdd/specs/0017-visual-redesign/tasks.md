@@ -102,5 +102,5 @@ the workout flow of task 8.
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [x] Relevant `docs/roadmap/NN-*.md` checklist and progress log updated
       (cross-cutting: no area file; recorded in the backlog)
-- [ ] `spec.md` status set to `done`; `../backlog.md` updated
+- [x] `spec.md` status set to `done`; `../backlog.md` updated
 - [x] Constitution amended if this work settled a new invariant (none)

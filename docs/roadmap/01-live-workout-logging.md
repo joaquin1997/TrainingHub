@@ -122,3 +122,11 @@ previous performance, set types, and persist completion.
   warm-ups and working sets with working sets (closes the 0023 follow-up).
   Needs the `add_routine_set_generated_warmup` migration (redeploy); device
   check pending.
+
+## Planning update — 2026-11-03
+
+Spec [0043](../sdd/specs/0043-smarter-warm-ups/plan.md) is planned, not
+implemented. Reuse reviewed loading kinds/muscles from 0044; add provenance
+so curation cannot overwrite a person's correction. The plan separates
+completed-workout muscle context from planned-routine context and replaces
+hidden set-type cycling with visible choices. Task breakdown is next.

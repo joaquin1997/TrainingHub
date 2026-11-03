@@ -1,6 +1,7 @@
 {
   "platforms": ["apple"],
   "apple": {
-    "modules": ["WatchWorkoutModule"]
+    "modules": ["WatchWorkoutModule"],
+    "appDelegateSubscribers": ["WatchWorkoutAppDelegate"]
   }
 }

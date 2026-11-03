@@ -23,8 +23,8 @@ describe('parseDecimalInput', () => {
 });
 
 describe('toInputString', () => {
-  it('keeps one decimal at most and blanks missing values', () => {
-    expect(toInputString(82.4166)).toBe('82.4');
+  it('keeps two decimals at most and blanks missing values (spec 0040 FR-7)', () => {
+    expect(toInputString(82.4166)).toBe('82.42');
     expect(toInputString(80)).toBe('80');
     expect(toInputString(null)).toBe('');
   });

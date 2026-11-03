@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 
+import { categoryLabel } from '@/features/exercises/utils/catalogLabels';
 import { formatWeightValue } from '@/lib/weight';
 import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import { CardHeader } from '@/ui/CardHeader';
@@ -29,7 +30,7 @@ export function MuscleDistribution({ points, unit }: MuscleDistributionProps) {
       {points.map((point) => (
         <View key={point.group} style={styles.row}>
           <Text numberOfLines={1} style={styles.label}>
-            {point.group}
+            {categoryLabel(point.group, t)}
           </Text>
           <View style={styles.track}>
             <View

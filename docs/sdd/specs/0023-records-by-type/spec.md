@@ -1,7 +1,7 @@
 ---
 id: 0023
 title: Personal records by type
-status: in-progress
+status: done
 roadmap: docs/roadmap/04-progress-and-prs.md
 created: 2026-10-16
 ---

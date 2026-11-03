@@ -23,6 +23,8 @@ import { Button } from '@/ui/Button';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, createStyles, fonts, keyboardAppearance, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import { ListRow } from '@/ui/ListRow';
+import { searchExercises } from '@/features/exercises/utils/exerciseFilters';
+import { equipmentLabel, muscleLabel } from '@/features/exercises/utils/catalogLabels';
 import type { Exercise } from '@workout/domain';
 
 const MAX_VISIBLE = 50;
@@ -163,15 +165,8 @@ export function ExercisePickerModal({
 
   const trimmedQuery = query.trim();
 
-  const filtered = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) {
-      return exercises;
-    }
-    return exercises.filter((exercise) =>
-      exercise.name.toLowerCase().includes(normalized),
-    );
-  }, [exercises, query]);
+  // Either language, other names, no accents; best match first (spec 0044).
+  const filtered = useMemo(() => searchExercises(exercises, query), [exercises, query]);
 
   return (
     <Modal
@@ -272,8 +267,8 @@ export function ExercisePickerModal({
             <ScrollView contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled">
               {filtered.slice(0, MAX_VISIBLE).map((exercise) => {
                 const details = [
-                  exercise.primaryMuscleGroups?.join(', '),
-                  exercise.equipment?.join(', '),
+                  exercise.primaryMuscleGroups?.map((value) => muscleLabel(value, t)).join(', '),
+                  exercise.equipment?.map((value) => equipmentLabel(value, t)).join(', '),
                 ].filter(Boolean);
 
                 return (

@@ -1,4 +1,5 @@
 import { prisma } from '../../infrastructure/prisma.js';
+import { exerciseDisplayName } from '../../infrastructure/requestLanguage.js';
 import { toExerciseTrackingType } from '../exercises/trackingTypes.js';
 import {
   buildExerciseProgressDetail,
@@ -21,7 +22,14 @@ async function loadSessionInputs(
       exercises: {
         include: {
           exercise: {
-            select: { publicId: true, name: true, category: true, trackingType: true },
+            select: {
+              publicId: true,
+              name: true,
+              nameEs: true,
+              nameEn: true,
+              category: true,
+              trackingType: true,
+            },
           },
           sets: true,
         },
@@ -35,7 +43,7 @@ async function loadSessionInputs(
     clientId: session.clientId,
     exercises: session.exercises.map((exercise) => ({
       exerciseId: exercise.exercise.publicId,
-      exerciseName: exercise.exercise.name,
+      exerciseName: exerciseDisplayName(exercise.exercise),
       category: exercise.exercise.category,
       trackingType: toExerciseTrackingType(exercise.exercise.trackingType),
       sets: exercise.sets.map((set) => ({

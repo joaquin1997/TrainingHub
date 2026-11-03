@@ -21,8 +21,8 @@ API ships before the app (the app's delete action needs the endpoints).
 | 5 | [x] Mobile: client methods; `exerciseDeletion.ts` (`describeDeletionImpact`, `isInActiveWorkout`) + tests; `DeleteExerciseButton` on the custom exercise detail (impact → confirm → delete; EF-1, EF-2, EF-6); i18n en/es | mobile | unit tests; typecheck | `feat(exercises): delete a custom exercise from its detail` |
 | 6 | [x] Mobile: "Deleted exercise" chip in routine detail and routine form | mobile | typecheck | `feat(exercises): show deleted exercises in routines` |
 | 7 | [x] Local end-to-end check on PGlite (two users; AC-1…AC-8, EF-5); progress log; definition of done | docs | log | `docs(sdd): record 0033 implementation` |
-| 8 | [ ] [DEVICE] Delete flow on a phone: confirmation texts (unused / counts / active workout), offline error, routine chip, active workout keeps sets and saves, neutral tile, no delete on catalog | mobile | device | — |
-| 9 | [ ] (owner: migration/deploy) Apply the migration and redeploy the API, before the app update | ops | `/health`; impact call on the server | — |
+| 8 | [x] [DEVICE] Delete flow on a phone: confirmation texts (unused / counts / active workout), offline error, routine chip, active workout keeps sets and saves, neutral tile, no delete on catalog | mobile | device | — |
+| 9 | [x] (owner: migration/deploy) Apply the migration and redeploy the API, before the app update | ops | `/health`; impact call on the server | — |
 
 Not verifiable in CI: the end-to-end check (local PGlite, task 7), the
 device pass (task 8), the deploy (task 9).
@@ -137,6 +137,6 @@ device pass (task 8), the deploy (task 9).
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [x] Relevant `docs/roadmap/NN-*.md` checklist and progress log updated
       (roadmap 06, coordinator 2026-10-18)
-- [ ] `spec.md` status set to `done`; `../backlog.md` updated (after the
+- [x] `spec.md` status set to `done`; `../backlog.md` updated (after the
       device pass and deploy; backlog left to the merge)
-- [ ] Constitution amended if this work settled a new invariant
+- [x] Constitution amended if this work settled a new invariant

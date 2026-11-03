@@ -12,12 +12,13 @@
 #   2. migrate    — pg_dump of the database on the server, then
 #                   `prisma migrate deploy` through an SSH tunnel. The new
 #                   columns are additive, so the running API keeps working.
-#   3. scripts    — tracking type sweep report (0030); asks before applying it
-#                   (or APPLY_SWEEP=1), image matching (0026, only with IMAGES=1)
+#   3. scripts    — reviewed catalog report (0044); asks before applying it
+#                   (or APPLY_CATALOG=1), image matching (0026, only with IMAGES=1)
 #   4. ios        — expo prebuild
 #   5. backend    — rebuild the image on the server and replace the container
-#   6. iphone     — build, sign and install on the connected iPhone (after the
-#                   API: the new app needs its endpoints), then Metro + launch
+#   6. iphone     — build, sign and install on every iPhone (and watch) within
+#                   reach (after the API: the new app needs its endpoints), then
+#                   Metro + launch
 #
 # Steps that finished are recorded in tmp/deploy-pending.done (per commit), so a
 # re-run after a failure skips them. FORCE=1 runs everything again.
@@ -25,9 +26,8 @@
 # Overrides (env vars):
 #   BRANCH=<name>                 branch to deploy (default: the current one)
 #   DOCKER_CONTEXT=docker-ts      passed to run.sh (default there: docker-lan)
-#   APPLY_SWEEP=1|0               apply the tracking type sweep after its report, or
-#                                 not (default: ask on a terminal, report only otherwise;
-#                                 corrections go in src/scripts/data/tracking-type-corrections.json)
+#   APPLY_CATALOG=1|0             apply the reviewed catalog (0044) after its report, or
+#                                 not (default: ask on a terminal, report only otherwise)
 #   IMAGES=1                      run the image matching dry run again (0026)
 #   APPLY_IMAGES=1                with IMAGES=1, also write the matched images
 #   IOS_DEVICE=0                  skip the iPhone build, install and Metro
@@ -36,7 +36,10 @@
 #                                 still expires after 7 days
 #   FORCE_IPHONE=1                build and install on the devices again (same commit),
 #                                 e.g. to renew the 7-day profile
-#   IOS_DEVICE_ID=<udid>          iPhone to build for (default: the paired iPhone)
+#   IOS_DEVICE_ID="<udid> …"      iPhones to install on (default: every paired iPhone
+#                                 within reach)
+#   WATCH_DEVICE_ID="<udid> …"    with WATCH_APP=1, watches to install on (default:
+#                                 every paired watch within reach)
 #   WATCH_APP=1                   prebuild with TRAININGHUB_WATCH_APP=1 (0025 Level 2)
 #   HOME_WIDGET=0                 prebuild without the widget's App Group (0036; on by
 #                                 default since the free team signs it)
@@ -188,37 +191,34 @@ fi
 # --- 3. scripts --------------------------------------------------------------
 cd "$ROOT/apps/api"
 
-# The report is not recorded as done: after editing the corrections file (not
-# committed yet, same commit) a re-run must report again.
-if is_done sweep-apply; then
-  step "0030: tracking type sweep already applied for $COMMIT"
-else
-  step "0030: tracking type sweep report (no write → tmp/tracking-type-sweep.csv)"
-  pnpm run catalog:tracking-sweep
+# Reviewed exercise catalog (spec 0044; replaces 0030's sweep, whose wger
+# exercises are all retired). The report never writes; the apply is
+# repeatable — a second run changes nothing — and keeps a run file for undo.
+# Not recorded as done: a re-run after editing the catalog must report again.
+step "0044: reviewed catalog report (no write)"
+pnpm run catalog:curate | tee "$LOG_DIR/catalog-report.txt"
 
-  if [ -z "${APPLY_SWEEP:-}" ]; then
-    APPLY_SWEEP=0
+if grep -q "0 to create, 0 to update, 0 to bring back" "$LOG_DIR/catalog-report.txt" \
+  && grep -q "To retire: 0 old catalog exercises, 0 merged custom ones; 0 reviewed" "$LOG_DIR/catalog-report.txt" \
+  && ! grep -q "Carry over" "$LOG_DIR/catalog-report.txt"; then
+  echo "    catalog already up to date"
+else
+  if [ -z "${APPLY_CATALOG:-}" ]; then
+    APPLY_CATALOG=0
     if [ -t 0 ]; then
       echo
-      echo "    Review apps/api/tmp/tracking-type-sweep.csv (start with certainty = uncertain)."
-      echo "    To correct a call: edit src/scripts/data/tracking-type-corrections.json, answer n"
-      echo "    and re-run. The apply can be undone (catalog:tracking-sweep:undo)."
-      read -r -p "    Apply the tracking type sweep now? [y/N] " answer || answer=""
-      case "$answer" in [yYsS]*) APPLY_SWEEP=1 ;; esac
+      echo "    Read the report above. The apply keeps a run file in apps/api/tmp/catalog-curate-runs"
+      echo "    (undo: CURATE_UNDO=<file> pnpm run catalog:curate:undo)."
+      read -r -p "    Apply the reviewed catalog now? [y/N] " answer || answer=""
+      case "$answer" in [yYsS]*) APPLY_CATALOG=1 ;; esac
     fi
   fi
 
-  if [ "$APPLY_SWEEP" = "1" ]; then
-    step "0030: apply the tracking type sweep"
-    pnpm run catalog:tracking-sweep:apply
-    # A second run must change nothing (idempotent, spec 0030).
-    step "0030: apply again — must report 0 changed"
-    pnpm run catalog:tracking-sweep:apply | tee "$LOG_DIR/sweep-second-run.txt"
-    grep -Eq "(^|[^0-9])0 changed" "$LOG_DIR/sweep-second-run.txt" \
-      || fail "second sweep run changed exercises; check $LOG_DIR/sweep-second-run.txt"
-    mark_done sweep-apply
+  if [ "$APPLY_CATALOG" = "1" ]; then
+    step "0044: apply the reviewed catalog"
+    pnpm run catalog:curate:apply
   else
-    echo "    sweep not applied — review tmp/tracking-type-sweep.csv, then re-run (or APPLY_SWEEP=1)"
+    echo "    catalog not applied — re-run with APPLY_CATALOG=1 after reading the report"
   fi
 fi
 
@@ -285,21 +285,12 @@ fi
 
 cd "$ROOT/apps/mobile"
 
-DEVICE_ID="${IOS_DEVICE_ID:-}"
-if [ -z "$DEVICE_ID" ]; then
-  devices_json="$(mktemp)"
-  xcrun devicectl list devices --json-output "$devices_json" >/dev/null
-  DEVICE_ID="$(node -e '
-    const devices = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).result.devices;
-    // Simulators are listed as paired iPhones too.
-    const phone = devices.find((d) => d.hardwareProperties?.deviceType === "iPhone"
-      && d.hardwareProperties?.reality === "physical"
-      && d.connectionProperties?.pairingState === "paired");
-    process.stdout.write(phone?.hardwareProperties?.udid ?? "");
-  ' "$devices_json")"
-  rm -f "$devices_json"
-fi
-[ -n "$DEVICE_ID" ] || fail "no paired iPhone found (connect it, or set IOS_DEVICE_ID)"
+# shellcheck source=lib/devices.sh
+. "$ROOT/scripts/lib/devices.sh"
+# One "udid<TAB>name" line per device: every reachable iPhone (and watch), so the
+# app lands on each person's phone that is around.
+IPHONES="$(target_devices iPhone "${IOS_DEVICE_ID:-}")"
+[ -n "$IPHONES" ] || fail "no paired iPhone within reach (connect it, or set IOS_DEVICE_ID)"
 
 CONFIGURATION=Debug
 [ "${RELEASE:-0}" = "1" ] && CONFIGURATION=Release
@@ -310,50 +301,58 @@ IPHONE_STEP="iphone-$PREBUILD_STEP"
 # A Release build bakes the API URL into its JS bundle.
 export EXPO_PUBLIC_API_URL="$API_URL"
 
-WATCH_ID=""
-if [ "${WATCH_APP:-0}" = "1" ]; then
-  devices_json="$(mktemp)"
-  xcrun devicectl list devices --json-output "$devices_json" >/dev/null
-  WATCH_ID="$(node -e '
-    const devices = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).result.devices;
-    const watch = devices.find((d) => d.hardwareProperties?.deviceType === "appleWatch"
-      && d.hardwareProperties?.reality === "physical"
-      && d.connectionProperties?.pairingState === "paired");
-    process.stdout.write(watch?.hardwareProperties?.udid ?? "");
-  ' "$devices_json")"
-  rm -f "$devices_json"
-fi
+WATCHES=""
+[ "${WATCH_APP:-0}" = "1" ] && WATCHES="$(target_devices appleWatch "${WATCH_DEVICE_ID:-}")"
+
+# Runs the app on every iPhone.
+launch_on_iphones() {
+  local udid name
+  while IFS=$'\t' read -r udid name <&3; do
+    xcrun devicectl device process launch --device "$udid" --terminate-existing "$BUNDLE_ID" >/dev/null \
+      && echo "    [$name] app launched" \
+      || echo "    [$name] could not launch the app; open it by hand"
+  done 3<<< "$IPHONES"
+}
 
 if [ "${FORCE_IPHONE:-0}" != "1" ] && is_done "$IPHONE_STEP"; then
   step "iPhone: $CONFIGURATION already built and installed for $COMMIT"
 else
-  # Building the watch scheme for the watch first registers the watch on the
-  # team, so the watch app's profile includes it (built only for the iPhone,
-  # the watch refuses it: "This provisioning profile cannot be installed").
-  if [ -n "$WATCH_ID" ]; then
-    step "Apple Watch: xcodebuild for $WATCH_ID"
+  # Building the watch scheme for a watch first registers it on the team, so
+  # the watch app's profile includes it (built only for the iPhone, the watch
+  # refuses it: "This provisioning profile cannot be installed").
+  while IFS=$'\t' read -r udid name <&3; do
+    [ -n "$udid" ] || continue
+    step "Apple Watch: xcodebuild for $name ($udid)"
     xcodebuild -quiet -workspace ios/TrainingHub.xcworkspace -scheme TrainingHubWatch \
-      -configuration "$CONFIGURATION" -destination "id=$WATCH_ID" -derivedDataPath ios/DerivedData \
+      -configuration "$CONFIGURATION" -destination "id=$udid" -derivedDataPath ios/DerivedData \
       -allowProvisioningUpdates build
-  fi
+  done 3<<< "$WATCHES"
 
+  # One build per iPhone, so each one is registered on the team; the later
+  # builds are incremental and the last one's profile includes them all.
   # Not `expo run:ios --device`: it does not pass -allowProvisioningUpdates, so
   # it fails once the free team's 7-day profile has expired.
-  step "iPhone: xcodebuild $CONFIGURATION for $DEVICE_ID (slow)"
-  xcodebuild -quiet -workspace ios/TrainingHub.xcworkspace -scheme TrainingHub \
-    -configuration "$CONFIGURATION" -destination "id=$DEVICE_ID" -derivedDataPath ios/DerivedData \
-    -allowProvisioningUpdates build
+  while IFS=$'\t' read -r udid name <&3; do
+    step "iPhone: xcodebuild $CONFIGURATION for $name ($udid) (slow)"
+    xcodebuild -quiet -workspace ios/TrainingHub.xcworkspace -scheme TrainingHub \
+      -configuration "$CONFIGURATION" -destination "id=$udid" -derivedDataPath ios/DerivedData \
+      -allowProvisioningUpdates build
+  done 3<<< "$IPHONES"
 
-  step "iPhone: install"
-  xcrun devicectl device install app --device "$DEVICE_ID" "$APP_PATH"
+  while IFS=$'\t' read -r udid name <&3; do
+    step "iPhone: install on $name"
+    xcrun devicectl device install app --device "$udid" "$APP_PATH"
+  done 3<<< "$IPHONES"
 
   # The watch app is embedded in the iPhone app; installing it straight onto a
   # connected watch saves going through the iPhone's Watch app.
-  if [ -n "$WATCH_ID" ]; then
-    step "Apple Watch: install"
-    xcrun devicectl device install app --device "$WATCH_ID" \
-      "$PRODUCTS/$CONFIGURATION-watchos/TrainingHubWatch.app" \
-      || echo "    could not install on the watch; use the iPhone's Watch app (My Watch → TrainingHub → Install)"
+  if [ -n "$WATCHES" ]; then
+    while IFS=$'\t' read -r udid name <&3; do
+      step "Apple Watch: install on $name"
+      xcrun devicectl device install app --device "$udid" \
+        "$PRODUCTS/$CONFIGURATION-watchos/TrainingHubWatch.app" \
+        || echo "    could not install on $name; use the iPhone's Watch app (My Watch → TrainingHub → Install)"
+    done 3<<< "$WATCHES"
   elif [ "${WATCH_APP:-0}" = "1" ]; then
     echo "    no watch connected to the Mac; install it from the iPhone's Watch app (My Watch → TrainingHub → Install)"
   fi
@@ -362,9 +361,7 @@ fi
 
 if [ "$CONFIGURATION" = "Release" ]; then
   step "iPhone: launch the Release build (no Metro needed)"
-  xcrun devicectl device process launch --device "$DEVICE_ID" --terminate-existing "$BUNDLE_ID" >/dev/null \
-    && echo "    [iphone] app launched" \
-    || echo "    [iphone] could not launch the app; open it by hand"
+  launch_on_iphones
   echo "    the signing profile expires in 7 days: re-run with RELEASE=1 FORCE_IPHONE=1 then"
   step "done — log: $LOG"
   exit 0
@@ -372,17 +369,15 @@ fi
 
 # Metro can stay up for hours; another run may start meanwhile.
 release_lock
-step "Metro (API=$API_URL) — the app opens on the iPhone once Metro is up; Ctrl-C to stop"
-echo "    new signing profile? trust it on the iPhone: Settings → General → VPN & Device Management"
+step "Metro (API=$API_URL) — the app opens on the iPhones once Metro is up; Ctrl-C to stop"
+echo "    new signing profile? trust it on each iPhone: Settings → General → VPN & Device Management"
 echo "    then: device checks in each spec's tasks.md (see docs/sdd/backlog.md) — log: $LOG"
 (
   for _ in $(seq 1 120); do
     curl -fsS http://localhost:8081/status 2>/dev/null | grep -q running && break
     sleep 1
   done
-  xcrun devicectl device process launch --device "$DEVICE_ID" --terminate-existing "$BUNDLE_ID" >/dev/null \
-    && echo "    [iphone] app launched" \
-    || echo "    [iphone] could not launch the app; open it by hand"
+  launch_on_iphones
 ) &
 # EXPO_PUBLIC_* is baked into the bundle: --clear so the URL is not a stale one.
 npx expo start --clear

@@ -126,28 +126,28 @@ Ultra 2.
 ### Pending on the owner's devices
 
 Level 1 (normal prebuild + rebuild, no flag):
-- [ ] [DEVICE] Workout in progress, phone locked → the watch's Smart Stack
+- [x] [DEVICE] Workout in progress, phone locked → the watch's Smart Stack
       shows routine, clock, calories (once known) and, during a rest, the
       countdown; it disappears at the rest end (AC-1, FR-1)
-- [ ] [DEVICE] The iPhone lock screen and Dynamic Island look as before
+- [x] [DEVICE] The iPhone lock screen and Dynamic Island look as before
 
 Level 2 (`TRAININGHUB_WATCH_APP=1` prebuild, watchOS platform installed):
-- [ ] [DEVICE] The watch app signs with HealthKit on the free team and installs
+- [x] [DEVICE] The watch app signs with HealthKit on the free team and installs
       (TODO in the plan; if not, Level 2 needs a paid team — owner decision)
-- [ ] [DEVICE] Start a workout on the phone → the watch app opens into it
+- [x] [DEVICE] Start a workout on the phone → the watch app opens into it
       (FR-2); Health permission asked on the watch once
-- [ ] [DEVICE] Heart rate and kcal on the watch; the phone shows the watch's
+- [x] [DEVICE] Heart rate and kcal on the watch; the phone shows the watch's
       kcal; 45-minute workout → app vs the watch's figure within ±5 % (AC-2, FR-3)
-- [ ] [DEVICE] Done on the watch → done on the phone, rest on both, haptic at
+- [x] [DEVICE] Done on the watch → done on the phone, rest on both, haptic at
       its end (AC-3, FR-4); count the buzzes with the phone locked (TODO)
-- [ ] [DEVICE] Phone in airplane mode / out of range, tick twice, reconnect →
+- [x] [DEVICE] Phone in airplane mode / out of range, tick twice, reconnect →
       both applied in order (EF-1); how long it takes with the phone app in the
       background (plan risk: mirroring as the fallback)
-- [ ] [DEVICE] Pause/Resume from either side; Finish on the watch opens the
+- [x] [DEVICE] Pause/Resume from either side; Finish on the watch opens the
       confirmation on the phone
-- [ ] [DEVICE] Finish → one workout in Health/Fitness with the app's span
+- [x] [DEVICE] Finish → one workout in Health/Fitness with the app's span
       (FR-5); Discard → none
-- [ ] [DEVICE] Deny heart rate → the rest works, no heart rate shown (EF-2)
+- [x] [DEVICE] Deny heart rate → the rest works, no heart rate shown (EF-2)
 
 ## Definition of done
 
@@ -155,6 +155,6 @@ Level 2 (`TRAININGHUB_WATCH_APP=1` prebuild, watchOS platform installed):
       or explicitly deferred with a TODO (device checks pending above)
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [x] Relevant `docs/roadmap/NN-*.md` checklist and progress log updated (coordinator)
-- [ ] `spec.md` status set to `done`; `../backlog.md` updated (backlog row
+- [x] `spec.md` status set to `done`; `../backlog.md` updated (backlog row
       updated 2026-10-17; `done` waits for the device checks)
 - [x] Constitution amended if this work settled a new invariant (none settled)

@@ -29,10 +29,10 @@ describe('setStatus (spec 0034 FR-19, AC-13)', () => {
     ).toBe('done');
   });
 
-  it('keeps the warm-up mark when that warm-up is also up next (priority)', () => {
+  it('outlines a generated warm-up that is up next (spec 0040 FR-2)', () => {
     expect(
       setStatus({ done: false, generatedWarmup: true }, { hasRecord: false, isUpNext: true }),
-    ).toBe('generatedWarmup');
+    ).toBe('upNext');
   });
 
   it('shows nothing for any other set', () => {

@@ -48,9 +48,9 @@ Task 6 includes a redeploy; not verifiable in CI.
 
 ## Definition of done
 
-- [ ] Every functional requirement and acceptance criterion in `spec.md` is met
+- [x] Every functional requirement and acceptance criterion in `spec.md` is met
       or explicitly deferred with a TODO
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [x] `docs/roadmap/01-live-workout-logging.md` updated
-- [ ] `spec.md` status set to `done`; `../backlog.md` updated
-- [ ] API redeployed with the migration applied
+- [x] `spec.md` status set to `done`; `../backlog.md` updated
+- [x] API redeployed with the migration applied

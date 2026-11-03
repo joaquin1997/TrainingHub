@@ -13,7 +13,7 @@ created: 2026-10-18
 | 3 | [x] Native module, widget views, opt-in App Group (`TRAININGHUB_HOME_WIDGET=1`) | native | swiftc; **native rebuild** | `feat(widget): home-screen and lock-screen widgets` |
 | 4 | [x] Spike in the device build: does the free team sign the App Group? | device | build log | — |
 | 5 | [x] Progress log, backlog, roadmap | docs | — | `docs(sdd): record 0036 implementation` |
-| 6 | [ ] [DEVICE] AC-1 – AC-14 | device | owner | — |
+| 6 | [x] [DEVICE] AC-1 – AC-14 | device | owner | — |
 
 ## Progress log
 

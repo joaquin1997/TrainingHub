@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('./repository.js', () => ({
   listMeasurements: vi.fn(),
@@ -6,8 +6,10 @@ vi.mock('./repository.js', () => ({
   updateMeasurement: vi.fn(),
   deleteMeasurement: vi.fn(),
 }));
-vi.mock('../../infrastructure/userContext.js', () => ({
-  resolveUserPublicId: vi.fn(async () => 'user-test'),
+
+// Mock persistence only: requests pass through real JWT verification and user resolution.
+vi.mock('../../infrastructure/sessionUser.js', () => ({
+  findSessionUser: vi.fn(async (publicId: string) => ({ publicId })),
 }));
 
 import { createApp } from '../../app.js';
@@ -20,6 +22,8 @@ import {
 import { parseMeasurementInput } from './validation.js';
 
 const app = createApp({ logger: false });
+const sessionHeaders = () => ({ authorization: `Bearer ${app.jwt.sign({ sub: 'user-test' })}` });
+beforeAll(async () => { await app.ready(); });
 
 const entry = {
   id: 'm1',
@@ -76,7 +80,7 @@ describe('measurement routes', () => {
   it('GET /measurements lists the caller entries', async () => {
     vi.mocked(listMeasurements).mockResolvedValue([entry]);
 
-    const response = await app.inject({ method: 'GET', url: '/measurements' });
+    const response = await app.inject({ headers: sessionHeaders(), method: 'GET', url: '/measurements' });
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual([entry]);
@@ -87,6 +91,7 @@ describe('measurement routes', () => {
     vi.mocked(createMeasurement).mockResolvedValue(entry);
 
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/measurements',
       payload: { measuredAt: entry.measuredAt, weightKg: 82.4 },
@@ -101,6 +106,7 @@ describe('measurement routes', () => {
 
   it('POST /measurements answers 400 with the range when out of range', async () => {
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'POST',
       url: '/measurements',
       payload: { measuredAt: entry.measuredAt, waistCm: 300 },
@@ -115,6 +121,7 @@ describe('measurement routes', () => {
     vi.mocked(updateMeasurement).mockResolvedValue(null);
 
     const response = await app.inject({
+      headers: sessionHeaders(),
       method: 'PUT',
       url: '/measurements/other',
       payload: { measuredAt: entry.measuredAt, weightKg: 80 },
@@ -127,8 +134,8 @@ describe('measurement routes', () => {
   it('DELETE /measurements/:id answers 204, or 404 when not the caller', async () => {
     vi.mocked(deleteMeasurement).mockResolvedValueOnce(true).mockResolvedValueOnce(false);
 
-    const deleted = await app.inject({ method: 'DELETE', url: '/measurements/m1' });
-    const missing = await app.inject({ method: 'DELETE', url: '/measurements/other' });
+    const deleted = await app.inject({ headers: sessionHeaders(), method: 'DELETE', url: '/measurements/m1' });
+    const missing = await app.inject({ headers: sessionHeaders(), method: 'DELETE', url: '/measurements/other' });
 
     expect(deleted.statusCode).toBe(204);
     expect(missing.statusCode).toBe(404);

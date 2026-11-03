@@ -183,6 +183,25 @@ expensive to find.
 
 ---
 
+## Article 11 — User data requires a validated identity
+
+**Rule.** User-data operations require signed, expiring credentials whose
+subject is an existing account. No request creates, selects or falls back to
+a default user. Only explicitly listed credential-acquisition operations and
+the liveness check are public. Server unavailability must not be mistaken
+for credential rejection on the device.
+
+**Why.** Per-user scoping has no effect when anonymous callers can select a
+shared account. New routes must inherit the protection automatically.
+
+**Check.** Can a new route return data without authentication? Can a resolver
+invent an owner? Does a network failure clear stored credentials?
+
+Applies to local code after spec 0001; live enforcement begins with its
+ordered reassignment/deployment rollout.
+
+---
+
 ## Amending this document
 
 The constitution changes when a decision proves itself, not when a decision is
@@ -190,6 +209,11 @@ proposed. To amend: state the article, the reason, and the spec that forced the
 change. Record it below.
 
 ### Amendment log
+
+- **2026-11-03 — Article 11.** Spec 0001 removes the default account and
+  makes the API boundary strict by default; implemented and tested locally,
+  server rollout pending. Offline startup retains credentials separately
+  from an actual authentication rejection.
 
 - **2026-09-23 — Founding.** Extracted from `docs/codex-project-context.md`,
   the per-area roadmap notes, and decisions taken during the routines /

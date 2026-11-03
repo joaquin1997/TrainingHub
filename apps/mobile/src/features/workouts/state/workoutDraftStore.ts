@@ -709,6 +709,22 @@ export function resolveRestSeconds(
   return exercise.restSeconds ?? defaultRestSeconds;
 }
 
+/** Longest rest after a warm-up (spec 0040 FR-8): a ramp-up set needs less. */
+export const WARM_UP_REST_SECONDS = 60;
+
+/**
+ * The rest that ticking `set` starts: the exercise's, capped for a warm-up
+ * (spec 0040 FR-8). A rest turned off stays off.
+ */
+export function resolveSetRestSeconds(
+  exercise: Pick<WorkoutExerciseDraft, 'restSeconds'>,
+  set: Pick<WorkoutSetDraft, 'type'>,
+  defaultRestSeconds: number,
+): number {
+  const rest = resolveRestSeconds(exercise, defaultRestSeconds);
+  return set.type === 'warmup' ? Math.min(rest, WARM_UP_REST_SECONDS) : rest;
+}
+
 /**
  * Changes one exercise's rest for the rest of this workout (FR-2). The routine
  * is never written, and a rest already running is left as it is.
@@ -768,7 +784,7 @@ export function completeSet(
     return workoutDraft;
   }
 
-  const rest = resolveRestSeconds(exercise, defaultRestSeconds);
+  const rest = resolveSetRestSeconds(exercise, set, defaultRestSeconds);
   return startRest(
     toggleWorkoutSetDone(workoutDraft, workoutExerciseId, workoutSetId, rest),
     workoutExerciseId,

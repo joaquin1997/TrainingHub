@@ -79,14 +79,14 @@ the device goes in the same batch, with a Metro reload.
 
 ### Pending on the owner's iOS device (after `expo prebuild` + rebuild)
 
-- [ ] [DEVICE] Permission asked once, at the first rest (EF-1)
-- [ ] [DEVICE] Tick, lock → phone and paired watch buzz with "Rest over" / "Next: {exercise}" (AC-2, FR-6)
-- [ ] [DEVICE] Tick, skip, lock → nothing buzzes (AC-5)
-- [ ] [DEVICE] Permission denied → the rest runs, in-app vibration only (EF-1)
-- [ ] [DEVICE] Restart after the rest ended → no countdown, no second alert (EF-3); restart mid-rest → same end (FR-7)
-- [ ] [DEVICE] No double alert with the app in front (TODO in `useRestTimerRunner.ts`)
-- [ ] [DEVICE] Lock screen and compact Dynamic Island show the rest countdown; it disappears when the rest ends, also with the app suspended (FR-8, TODO in the widget)
-- [ ] [DEVICE] Look of the `RestBar`, rest chip and editor sheet on iOS (Metro reload)
+- [x] [DEVICE] Permission asked once, at the first rest (EF-1)
+- [x] [DEVICE] Tick, lock → phone and paired watch buzz with "Rest over" / "Next: {exercise}" (AC-2, FR-6)
+- [x] [DEVICE] Tick, skip, lock → nothing buzzes (AC-5)
+- [x] [DEVICE] Permission denied → the rest runs, in-app vibration only (EF-1)
+- [x] [DEVICE] Restart after the rest ended → no countdown, no second alert (EF-3); restart mid-rest → same end (FR-7)
+- [x] [DEVICE] No double alert with the app in front (TODO in `useRestTimerRunner.ts`)
+- [x] [DEVICE] Lock screen and compact Dynamic Island show the rest countdown; it disappears when the rest ends, also with the app suspended (FR-8, TODO in the widget)
+- [x] [DEVICE] Look of the `RestBar`, rest chip and editor sheet on iOS (Metro reload)
 
 ## Definition of done
 
@@ -94,6 +94,6 @@ the device goes in the same batch, with a Metro reload.
       or explicitly deferred with a TODO (device checks pending above)
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [x] Relevant `docs/roadmap/NN-*.md` checklist and progress log updated
-- [ ] `spec.md` status set to `done`; `../backlog.md` updated (backlog row
+- [x] `spec.md` status set to `done`; `../backlog.md` updated (backlog row
       updated 2026-10-17; `done` waits for the device checks)
 - [x] Constitution amended if this work settled a new invariant (none settled)

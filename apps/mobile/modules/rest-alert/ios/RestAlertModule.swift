@@ -7,10 +7,15 @@ import UserNotifications
 /// is locked or asleep. There is only one, under a fixed identifier, so
 /// scheduling again replaces it and it can never fire twice.
 public class RestAlertModule: Module {
-  private let identifier = "rest-timer"
+  static let identifier = "rest-timer"
+  private var identifier: String { Self.identifier }
 
   public func definition() -> ModuleDefinition {
     Name("RestAlert")
+
+    OnCreate {
+      RestAlertPresenter.install()
+    }
 
     // iOS asks the person only the first time; later calls return the answer.
     AsyncFunction("requestPermission") { (promise: Promise) in
@@ -77,6 +82,58 @@ public class RestAlertModule: Module {
       center.removePendingNotificationRequests(withIdentifiers: [self.identifier])
       center.removeDeliveredNotifications(withIdentifiers: [self.identifier])
       promise.resolve(nil)
+    }
+  }
+}
+
+/// Shows the rest alert also while the app is in front (spec 0040 FR-4): iOS
+/// hides a local notification from the open app unless the notification
+/// center's delegate asks for it. Any other notification goes to the delegate
+/// that was there before, unchanged.
+final class RestAlertPresenter: NSObject, UNUserNotificationCenterDelegate {
+  private static let shared = RestAlertPresenter()
+  private weak var previous: UNUserNotificationCenterDelegate?
+
+  static func install() {
+    let center = UNUserNotificationCenter.current()
+    guard !(center.delegate is RestAlertPresenter) else { return }
+    shared.previous = center.delegate
+    center.delegate = shared
+  }
+
+  func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    willPresent notification: UNNotification,
+    withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+  ) {
+    if notification.request.identifier == RestAlertModule.identifier {
+      completionHandler([.banner, .list, .sound])
+    } else if let previous,
+      previous.responds(
+        to: #selector(
+          UNUserNotificationCenterDelegate.userNotificationCenter(_:willPresent:withCompletionHandler:)))
+    {
+      previous.userNotificationCenter?(
+        center, willPresent: notification, withCompletionHandler: completionHandler)
+    } else {
+      completionHandler([])
+    }
+  }
+
+  func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    didReceive response: UNNotificationResponse,
+    withCompletionHandler completionHandler: @escaping () -> Void
+  ) {
+    if let previous,
+      previous.responds(
+        to: #selector(
+          UNUserNotificationCenterDelegate.userNotificationCenter(_:didReceive:withCompletionHandler:)))
+    {
+      previous.userNotificationCenter?(
+        center, didReceive: response, withCompletionHandler: completionHandler)
+    } else {
+      completionHandler()
     }
   }
 }

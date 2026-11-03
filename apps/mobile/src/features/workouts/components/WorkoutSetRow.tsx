@@ -208,6 +208,8 @@ export function WorkoutSetHeader({ trackingType, unilateral, unit }: HeaderProps
 
 type RowProps = {
   set: WorkoutSetDraft;
+  /** The set's number among its exercise's working sets (spec 0040 FR-1). */
+  setNumber: number;
   trackingType?: ExerciseTrackingType;
   /** Reps logged as left and right side by side (spec 0022 FR-2). */
   unilateral?: boolean;
@@ -236,6 +238,7 @@ type RowProps = {
  */
 export function WorkoutSetRow({
   set,
+  setNumber,
   trackingType,
   unilateral,
   unit,
@@ -412,7 +415,7 @@ export function WorkoutSetRow({
               set.type === 'failure' ? styles.markerTextFailure : null,
             ]}
           >
-            {set.type === 'normal' ? set.order : setTypeLabel(set.type, t)[0]}
+            {set.type === 'normal' ? setNumber : setTypeLabel(set.type, t)[0]}
           </Text>
         </Pressable>
       </View>

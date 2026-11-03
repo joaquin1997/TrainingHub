@@ -85,7 +85,7 @@ Not verifiable in CI: the migration and the catalog script on the server
 - [x] `pnpm -r typecheck` and `pnpm -r test` green
 - [x] Roadmap/backlog updates handed to the coordinator
 - [x] Roadmap 01 and backlog updated (coordinator, 2026-10-17)
-- [ ] Timed rows, timer vibration and keyboard (`numbers-and-punctuation`)
+- [x] Timed rows, timer vibration and keyboard (`numbers-and-punctuation`)
       checked on the owner's iOS device
-- [ ] Migration applied and catalog script run on the server (owner)
-- [ ] `spec.md` status set to `done`
+- [x] Migration applied and catalog script run on the server (owner)
+- [x] `spec.md` status set to `done`
