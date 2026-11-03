@@ -1,3 +1,5 @@
+import { SetTypeSheet } from '@/features/workouts/components/SetTypeSheet';
+import type { ExerciseWarmUpPreferences, WarmUpExerciseMetadata } from '@workout/domain';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -34,7 +36,6 @@ import {
   previewRoutineApproachSets,
   removeRoutineGeneratedWarmUps,
   routineWarmUpActionFor,
-  type RoutineApproachSetsNotice,
   type RoutineApproachSetsPreview,
 } from '@/features/routines/utils/routineApproachSets';
 import { replaceRoutineRowExercise } from '@/features/routines/utils/replaceRoutineExercise';
@@ -80,6 +81,7 @@ type RoutineFormScreenProps = {
 };
 
 type EditableRoutineExercise = {
+  warmUpMetadata?: WarmUpExerciseMetadata;
   id: string;
   exerciseId?: string;
   exerciseQuery: string;
@@ -154,6 +156,7 @@ function toEditableExercise(
     id: routineExercise.id,
     exerciseId: routineExercise.exerciseId,
     exerciseQuery: routineExercise.exerciseName,
+    warmUpMetadata: routineExercise.warmUpMetadata,
     trackingType: routineExercise.trackingType,
     restSeconds:
       routineExercise.restSeconds !== undefined
@@ -243,17 +246,14 @@ export function RoutineFormScreen({
     useState<ActiveCustomExerciseDraft | null>(null);
   // The row whose exercise is being replaced through the picker (spec 0020).
   const [replaceRowId, setReplaceRowId] = useState<string | null>(null);
-  // Why approach sets could not be added to a row (spec 0024 EF-1).
-  const [approachNotice, setApproachNotice] = useState<{
-    exerciseRowId: string;
-    outcome: RoutineApproachSetsNotice;
-  } | null>(null);
   // The approach rows about to be added (spec 0031 FR-13); nothing changes
   // until confirmed.
   const [approachPreview, setApproachPreview] = useState<{
     exerciseRowId: string;
-    preview: RoutineApproachSetsPreview;
+    exerciseId: string;
   } | null>(null);
+  const [warmUpPreferences, setWarmUpPreferences] = useState<Record<string, { value: ExerciseWarmUpPreferences; pending: boolean }>>({});
+  const [typePicker, setTypePicker] = useState<{ exerciseId: string; setId: string } | null>(null);
   const activeWorkout = useActiveWorkout();
   // Exercises of this routine their creator deleted (spec 0033 FR-7).
   const deletedExerciseIds = new Set(
@@ -361,6 +361,7 @@ export function RoutineFormScreen({
               ...exercise,
               exerciseId: undefined,
               trackingType: undefined,
+              warmUpMetadata: undefined,
               exerciseQuery: value,
             }
           : exercise,
@@ -501,41 +502,29 @@ export function RoutineFormScreen({
     }
 
     if (routineWarmUpActionFor(exercise.sets) === 'remove') {
-      setApproachNotice(null);
+
       replaceRowSets(exerciseRowId, (sets) => removeRoutineGeneratedWarmUps(sets));
       return;
     }
 
-    const result = previewRoutineApproachSets(exercise.sets, exercise.exerciseId, unit);
-    if (result.outcome === 'preview') {
-      setApproachNotice(null);
-      setApproachPreview({ exerciseRowId, preview: result });
-    } else {
-      setApproachNotice({ exerciseRowId, outcome: result.outcome });
-    }
+    setApproachPreview({ exerciseRowId, exerciseId: exercise.exerciseId });
   }
 
-  function confirmApproachPreview() {
+  const previewedRoutineExercise = approachPreview
+    ? exercises.find((item) => item.id === approachPreview.exerciseRowId && item.exerciseId === approachPreview.exerciseId)
+    : undefined;
+  const typePickerSet = typePicker ? exercises.find((item) => item.id === typePicker.exerciseId)?.sets.find((set) => set.id === typePicker.setId) : undefined;
+
+  function confirmApproachPreview(preview: RoutineApproachSetsPreview) {
     const pending = approachPreview;
     setApproachPreview(null);
-    if (!pending) {
-      return;
-    }
-
-    // Exactly the rows shown (EF-2); nothing if the row went away or its
-    // exercise was replaced (EF-1).
-    setExercises((currentExercises) =>
-      currentExercises.map((item) =>
-        item.id === pending.exerciseRowId && item.exerciseId === pending.preview.exerciseId
-          ? {
-              ...item,
-              sets: confirmRoutineApproachSets(item.sets, pending.preview, () =>
-                createRowId('routine-set-row'),
-              ),
-            }
-          : item,
-      ),
-    );
+    if (!pending) return;
+    setExercises((current) => current.map((item) => {
+      if (item.id !== pending.exerciseRowId || item.exerciseId !== preview.exerciseId) return item;
+      const latest = previewRoutineApproachSets(item.sets, preview.exerciseId, unit, preview.context);
+      if (latest.outcome !== 'preview' || latest.workingWeight !== preview.workingWeight || latest.unit !== preview.unit) return item;
+      return { ...item, sets: confirmRoutineApproachSets(item.sets, preview, () => createRowId('routine-set-row')) };
+    }));
   }
 
   function replaceRowSets(
@@ -965,6 +954,7 @@ export function RoutineFormScreen({
                     updateSetField(exercise.id, setId, field, value)
                   }
                   onRemove={(setId) => removeSetRow(exercise.id, setId)}
+                  onSelectType={(setId) => setTypePicker({ exerciseId: exercise.id, setId })}
                 />
                 <View style={styles.cardActions}>
                   <Button
@@ -1024,13 +1014,6 @@ export function RoutineFormScreen({
                     style={styles.compactButton}
                   />
                 </View>
-                {approachNotice?.exerciseRowId === exercise.id ? (
-                  <Text style={styles.meta}>
-                    {approachNotice.outcome === 'noWeight'
-                      ? t('workouts.approachNoWeight')
-                      : t('workouts.approachTooLight')}
-                  </Text>
-                ) : null}
               </View>
             );
           });
@@ -1092,22 +1075,39 @@ export function RoutineFormScreen({
         </View>
       </ScrollView>
       <ApproachSetsPreviewSheet
-        preview={(() => {
-          // Hidden once its row is gone or its exercise replaced (EF-1).
-          const row = approachPreview
-            ? exercises.find(
-                (item) =>
-                  item.id === approachPreview.exerciseRowId &&
-                  item.exerciseId === approachPreview.preview.exerciseId,
-              )
-            : undefined;
-          return approachPreview && row
-            ? { ...approachPreview.preview, exerciseName: row.exerciseQuery }
-            : null;
-        })()}
+        target={previewedRoutineExercise?.exerciseId ? {
+          key: previewedRoutineExercise.id,
+          exerciseId: previewedRoutineExercise.exerciseId, exerciseName: previewedRoutineExercise.exerciseQuery,
+          metadata: availableExercises.find((item) => item.id === previewedRoutineExercise.exerciseId) ?? previewedRoutineExercise.warmUpMetadata,
+          preceding: exercises.slice(0, exercises.findIndex((item) => item.id === previewedRoutineExercise.id))
+            .filter((item) => item.exerciseId)
+            .map((item) => availableExercises.find((catalog) => catalog.id === item.exerciseId) ?? item.warmUpMetadata ?? { name: item.exerciseQuery }),
+          unit, planned: true, seed: warmUpPreferences[previewedRoutineExercise.exerciseId],
+        } : null}
+        buildPreview={(context) => previewedRoutineExercise?.exerciseId
+          ? previewRoutineApproachSets(previewedRoutineExercise.sets, previewedRoutineExercise.exerciseId, unit, context)
+          : { outcome: 'noWeight' }}
+        onSnapshot={(snapshot) => {
+          if (!previewedRoutineExercise?.exerciseId) return;
+          const id = previewedRoutineExercise.exerciseId;
+          setWarmUpPreferences((current) => JSON.stringify(current[id]) === JSON.stringify(snapshot) ? current : { ...current, [id]: snapshot });
+        }}
+        onMetadata={(metadata) => {
+          if (!previewedRoutineExercise) return;
+          setExercises((current) => current.map((item) => item.id === previewedRoutineExercise.id && item.exerciseId === previewedRoutineExercise.exerciseId
+            ? { ...item, warmUpMetadata: metadata } : item));
+        }}
         onConfirm={confirmApproachPreview}
         onCancel={() => setApproachPreview(null)}
       />
+      <SetTypeSheet selection={typePickerSet ? { type: typePickerSet.isWarmup ? 'warmup' : 'normal', routine: true } : null}
+        onClose={() => setTypePicker(null)} onSelect={(type) => {
+          if (!typePicker || (type !== 'normal' && type !== 'warmup')) return;
+          replaceRowSets(typePicker.exerciseId, (sets) => sets.map((set) => {
+            if (set.id !== typePicker.setId || Boolean(set.isWarmup) === (type === 'warmup')) return set;
+            return { ...set, isWarmup: type === 'warmup', generatedWarmup: undefined };
+          }));
+        }} />
       <ExercisePickerModal
         visible={replaceRowId !== null}
         title={t('workouts.replaceTitle', {

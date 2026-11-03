@@ -200,3 +200,17 @@ bundle. Old clients continue using catalog loading kind unchanged. Old servers
 cause a visible preference-save failure while the local preview stays usable.
 Existing sets and routine targets are not regenerated. Rollback retains the
 additive preference data and restores prior code; do not rewrite the catalog.
+
+## Implementation evidence — 2026-11-03
+
+Tasks 1–7 implemented. Optional routine metadata uses `warmUpMetadata`; private
+held exercises omit catalog details. Existing image metadata loads also hydrate
+older workout context without changing logged sets. Preview controls remain
+available for no-weight/too-light cases. Preference delivery uses an injected,
+user-scoped store with serial writes and stale-generation guards.
+
+The migration was generated using Prisma schema-to-schema diff against the
+pre-change schema, without pointing migration development at a real database;
+all migrations were applied successfully in an isolated disposable PostgreSQL
+container. No production schema or data was changed. See verification.md for
+checks and remaining rollout/device acceptance; status stays in-progress.

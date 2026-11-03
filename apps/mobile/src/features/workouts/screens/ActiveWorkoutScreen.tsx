@@ -1,3 +1,5 @@
+import { warmUpMetadataOf } from '@/lib/warmUpContext';
+import { SetTypeSheet } from '@/features/workouts/components/SetTypeSheet';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import type { TFunction } from 'i18next';
@@ -31,9 +33,9 @@ import {
   canAddApproachSets,
   confirmApproachSets,
   previewApproachSets,
+  precedingWorkoutWarmUpMetadata,
   removeGeneratedWarmUps,
   warmUpActionFor,
-  type ApproachSetsNotice,
   type ApproachSetsPreview,
 } from '@/features/workouts/state/approachSetsDraft';
 import { pairedPerformance } from '@/features/workouts/state/lastTimeByKind';
@@ -90,7 +92,7 @@ import {
   applyLastPerformance,
   clearActiveWorkout,
   countWorkoutSets,
-  cycleWorkoutSetType,
+  setWorkoutSetType,
   getActiveWorkout,
   pauseWorkout,
   removeSetFromWorkoutExercise,
@@ -154,17 +156,13 @@ export function ActiveWorkoutScreen() {
   const replacement = useExerciseReplacement(workoutDraft);
   // The exercise whose rest is being changed (spec 0018 FR-2).
   const [restEditorFor, setRestEditorFor] = useState<string | null>(null);
-  // Why approach sets could not be added to an exercise (spec 0024 EF-1).
-  const [approachNotice, setApproachNotice] = useState<{
-    workoutExerciseId: string;
-    outcome: ApproachSetsNotice;
-  } | null>(null);
   // The approach sets about to be added, shown before anything changes (spec
   // 0031 FR-1). Screen state only, so a restart reopens without it (EF-5).
   const [approachPreview, setApproachPreview] = useState<{
     workoutExerciseId: string;
-    preview: ApproachSetsPreview;
+    exerciseId: string;
   } | null>(null);
+  const [typePicker, setTypePicker] = useState<{ exerciseId: string; setId: string } | null>(null);
   const [lastByExercise, setLastByExercise] = useState<
     Record<string, ExerciseLastPerformance | null>
   >({});
@@ -334,6 +332,12 @@ export function ActiveWorkoutScreen() {
           if (active && exercise.imageUrl) {
             setImageByExercise((current) => ({ ...current, [id]: exercise.imageUrl as string }));
           }
+          const current = getActiveWorkout();
+          if (active && current?.clientId === workoutDraft?.clientId &&
+              current?.exercises.some((item) => item.exerciseId === id && !item.warmUpMetadata)) {
+            setActiveWorkout({ ...current, exercises: current.exercises.map((item) => item.exerciseId === id && !item.warmUpMetadata
+              ? { ...item, warmUpMetadata: warmUpMetadataOf(exercise) } : item) });
+          }
         })
         .catch(() => undefined);
     }
@@ -341,7 +345,7 @@ export function ActiveWorkoutScreen() {
     return () => {
       active = false;
     };
-  }, [exerciseIdsKey]);
+  }, [exerciseIdsKey, workoutDraft?.clientId]);
 
   useEffect(() => {
     if (!exerciseIdsKey) {
@@ -630,38 +634,29 @@ export function ActiveWorkoutScreen() {
   const handleWarmUpAction = (workoutExerciseId: string) => {
     const exercise = workoutDraft.exercises.find((item) => item.id === workoutExerciseId);
     if (exercise && warmUpActionFor(exercise) === 'remove') {
-      setApproachNotice(null);
+
       applyDraft(removeGeneratedWarmUps(workoutDraft, workoutExerciseId));
       return;
     }
 
-    const result = previewApproachSets(workoutDraft, workoutExerciseId);
-    if (result.outcome === 'preview') {
-      setApproachNotice(null);
-      setApproachPreview({ workoutExerciseId, preview: result });
-    } else {
-      setApproachNotice({ workoutExerciseId, outcome: result.outcome });
+    if (exercise) {
+
+      setApproachPreview({ workoutExerciseId, exerciseId: exercise.exerciseId });
     }
   };
 
-  const confirmApproachPreview = () => {
+  const confirmApproachPreview = (preview: ApproachSetsPreview) => {
     const current = getActiveWorkout();
-    if (current && approachPreview) {
-      setActiveWorkout(
-        confirmApproachSets(current, approachPreview.workoutExerciseId, approachPreview.preview),
-      );
+    if (current && current.clientId === workoutDraft.clientId && approachPreview) {
+      setActiveWorkout(confirmApproachSets(current, approachPreview.workoutExerciseId, preview));
     }
     setApproachPreview(null);
   };
 
-  // Hidden once its exercise is removed or replaced (EF-1).
   const previewedExercise = approachPreview
-    ? workoutDraft.exercises.find(
-        (item) =>
-          item.id === approachPreview.workoutExerciseId &&
-          item.exerciseId === approachPreview.preview.exerciseId,
-      )
+    ? workoutDraft.exercises.find((item) => item.id === approachPreview.workoutExerciseId && item.exerciseId === approachPreview.exerciseId)
     : undefined;
+  const typePickerSet = typePicker ? workoutDraft.exercises.find((item) => item.id === typePicker.exerciseId)?.entries.find((set) => set.id === typePicker.setId) : undefined;
 
   const handleAddExercise = (exercise: Exercise) => {
     if (!workoutDraft) {
@@ -670,10 +665,7 @@ export function ActiveWorkoutScreen() {
 
     applyDraft(
       addExerciseToWorkout(workoutDraft, {
-        id: exercise.id,
-        name: exercise.name,
-        trackingType: exercise.trackingType,
-        isUnilateral: exercise.isUnilateral,
+        ...exercise,
       }),
     );
   };
@@ -699,17 +691,8 @@ export function ActiveWorkoutScreen() {
     );
   };
 
-  const handleCycleSetType = (
-    workoutExerciseId: string,
-    workoutSetId: string,
-  ) => {
-    if (!workoutDraft) {
-      return;
-    }
-
-    applyDraft(
-      cycleWorkoutSetType(workoutDraft, workoutExerciseId, workoutSetId),
-    );
+  const handleSelectSetType = (workoutExerciseId: string, workoutSetId: string) => {
+    setTypePicker({ exerciseId: workoutExerciseId, setId: workoutSetId });
   };
 
   const handleRemoveSet = (
@@ -882,7 +865,7 @@ export function ActiveWorkoutScreen() {
                 recordHits={liveRecords.badges.bySet[set.id]}
                 recordPop={recordPopSetId === set.id}
                 onChange={(field, value) => handleSetChange(exercise.id, set.id, field, value)}
-                onCycleType={() => handleCycleSetType(exercise.id, set.id)}
+                onSelectType={() => handleSelectSetType(exercise.id, set.id)}
                 onToggleDone={() => handleToggleDone(exercise.id, set.id)}
                 onRemove={() => handleRemoveSet(exercise.id, set.id)}
               />
@@ -921,13 +904,6 @@ export function ActiveWorkoutScreen() {
               style={styles.compactButton}
             />
           </View>
-          {approachNotice?.workoutExerciseId === exercise.id ? (
-            <Text style={styles.meta}>
-              {approachNotice.outcome === 'noWeight'
-                ? t('workouts.approachNoWeight')
-                : t('workouts.approachTooLight')}
-            </Text>
-          ) : null}
         </View>
       </View>
     );
@@ -1114,14 +1090,37 @@ export function ActiveWorkoutScreen() {
         />
       ) : null}
       <ApproachSetsPreviewSheet
-        preview={
-          approachPreview && previewedExercise
-            ? { ...approachPreview.preview, exerciseName: previewedExercise.exerciseName }
-            : null
-        }
+        target={approachPreview && previewedExercise ? {
+          key: `${workoutDraft.clientId}:${previewedExercise.id}`,
+          exerciseId: previewedExercise.exerciseId, exerciseName: previewedExercise.exerciseName,
+          metadata: previewedExercise.warmUpMetadata, unit,
+          preceding: precedingWorkoutWarmUpMetadata(workoutDraft, previewedExercise.id),
+          seed: workoutDraft.warmUpPreferences?.[previewedExercise.exerciseId],
+        } : null}
+        buildPreview={(context) => previewApproachSets(workoutDraft, previewedExercise?.id ?? '', context)}
+        onSnapshot={(snapshot) => {
+          const current = getActiveWorkout();
+          if (!current || current.clientId !== workoutDraft.clientId || !previewedExercise ||
+              !current.exercises.some((item) => item.id === previewedExercise.id && item.exerciseId === previewedExercise.exerciseId)) return;
+          if (JSON.stringify(current.warmUpPreferences?.[previewedExercise.exerciseId]) === JSON.stringify(snapshot)) return;
+          setActiveWorkout({ ...current, warmUpPreferences: { ...current.warmUpPreferences, [previewedExercise.exerciseId]: snapshot } });
+        }}
+        onMetadata={(metadata) => {
+          const current = getActiveWorkout();
+          if (!current || current.clientId !== workoutDraft.clientId || !previewedExercise) return;
+          setActiveWorkout({ ...current, exercises: current.exercises.map((item) => item.id === previewedExercise.id && item.exerciseId === previewedExercise.exerciseId
+            ? { ...item, warmUpMetadata: metadata } : item) });
+        }}
         onConfirm={confirmApproachPreview}
         onCancel={() => setApproachPreview(null)}
       />
+      <SetTypeSheet selection={typePickerSet ? { type: typePickerSet.type } : null}
+        onClose={() => setTypePicker(null)} onSelect={(type) => {
+          const current = getActiveWorkout();
+          if (current && current.clientId === workoutDraft.clientId && typePicker) {
+            setActiveWorkout(setWorkoutSetType(current, typePicker.exerciseId, typePicker.setId, type));
+          }
+        }} />
       <RecordNotice
         notice={liveRecords.notice}
         unit={unit}

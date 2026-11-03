@@ -14,6 +14,7 @@ import {
   type SessionBootOutcome,
   tokenReadFailureAction,
 } from '@/features/auth/sessionBoot';
+import { warmUpPreferenceStore } from '@/features/exercises/warmUpPreferences';
 import { authClient } from '@/features/auth/api/authClient';
 import { tokenStorage } from '@/features/auth/tokenStorage';
 import { discardActiveWorkoutIfForeign } from '@/features/workouts/state/workoutDraftStore';
@@ -52,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsOffline(false);
     setIsCheckingSession(false);
     setIsLoading(false);
+    warmUpPreferenceStore.activate(null);
     setAuthToken(null);
     setUser(null);
     await tokenStorage.clear();

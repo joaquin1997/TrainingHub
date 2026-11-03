@@ -43,7 +43,7 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0040](specs/0040-device-test-fixes/spec.md) | Fixes from the device test of 2026-10-21 | `in-progress` — code complete (2026-10-21) on `feat/sdd-0040-device-fixes`, API deployed from that branch; awaiting the native rebuild (rest alert with the app in front, lock-screen view) and the device checks (task 10) | 1 + 2 + 8 |
 | [0041](specs/0041-widget-redesign-and-watch-reps/spec.md) | Widget redesign and reps on the watch | `in-progress` — code complete (2026-10-21); widget rendered in light and dark (`renders/`); awaiting the native rebuild (with 0040's) and the device checks (AC-1–AC-6) | 8 — Integrations & platform |
 | [0042](specs/0042-readable-exercise-progress/spec.md) | Progress per exercise that is easy to read and to find | `ready` — spec written 2026-11-03: trained-exercise search, explicit metrics/periods and session evidence; next to plan | 4 — Progress |
-| [0043](specs/0043-smarter-warm-ups/spec.md) | Smarter warm-ups and warm-ups marked by hand | `in-progress` — plan revised after owner review 2026-11-03: personal per-exercise loading kind, configurable Automatic/1–5 count and increments, separate workout/routine context and explained types; API preference slice implemented and migration verified in isolated DB; mobile/rules next; production rollout pending | 1 — Live workout logging |
+| [0043](specs/0043-smarter-warm-ups/spec.md) | Smarter warm-ups and warm-ups marked by hand | `in-progress` — code complete 2026-11-03 (tasks 1–7): personal preferences, configurable ramps and explained pickers; isolated-DB migration/tests and web smoke checks passed; production migration/API/bundle rollout and physical-device acceptance pending | 1 — Live workout logging |
 | [0044](specs/0044-curated-exercise-catalog/spec.md) | A curated exercise catalog | `done` — applied on the server 2026-10-21: 763 reviewed exercises (195 by hand + 568 from free-exercise-db), 847 imported ones retired, 14 own duplicates merged with their history; API deployed, names in the app's language, search by other names | 6 — Exercises |
 | [0045](specs/0045-watch-with-phone-locked/spec.md) | The watch keeps going with the phone locked | `done` — installed and checked on the iPhone and the Apple Watch 2026-11-03 (AC-1–AC-7, the app swiped away mid-workout); both buzzes at rest end kept by the owner; the lock-screen rest (only the first showed) fixed on the way | 8 — Integrations & platform |
 
@@ -106,7 +106,7 @@ catalog (0044), the image matching (0026) by its pictures.
 4. Merge `feat/sdd-0040-device-fixes` into `master` and push.
 
 Current work (2026-11-03): 0001 code complete locally, rollout pending;
-0043 planned with tasks ready; 0042 ready to plan; 0046–0053 planned with
+0043 code complete with rollout/device checks pending; 0042 ready to plan; 0046–0053 planned with
 ordered tasks in the current documentation branch. Implementation has not started. Feature order
 remains 0043 → 0042 (0041 done first at the owner's request).
 

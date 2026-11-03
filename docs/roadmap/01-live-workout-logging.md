@@ -149,3 +149,10 @@ hidden set-type cycling with visible choices. Task breakdown is next.
   [the execution sequence](../sdd/reviews/2026-11-03-workout-implementation-sequence.md)
   for dependencies and acceptance gates. Earlier ready-state entries above
   record the spec-review stage, not the current planning state.
+
+- Implementation update (2026-11-03): 0043 tasks 1–7 complete. Personal
+  preferences are isolated by user/exercise; preview supports Automatic/1–5
+  and editable increments; workout/routine type pickers show names/meanings.
+  Migration verified on isolated PostgreSQL and web flows checked in EN/dark
+  and ES/light at 320 pt. Production migration/API/app delivery and physical
+  device checks remain pending; see the spec's verification.md.

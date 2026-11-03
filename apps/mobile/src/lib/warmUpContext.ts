@@ -20,6 +20,7 @@ const names = (m: WarmUpExerciseMetadata) => [m.name ?? '', ...(m.aliases ?? [])
 export function inferLoadingKind(metadata: WarmUpExerciseMetadata): ExerciseLoadingKind {
   if (metadata.loadingKind) return metadata.loadingKind;
   const infer = (s: string): ExerciseLoadingKind | undefined => {
+    if (/\b(pull up|chin up|dominadas?|fondos|dip station)\b/.test(s)) return 'machine';
     if (/\b(machine|maquina|cable|polea|pulley|smith)\b/.test(s)) return 'machine';
     if (/\b(dumbbells?|mancuernas?|kettlebells?|pesa rusa)\b/.test(s)) return 'dumbbell';
     if (/\b(barbell|barra|bar)\b/.test(s)) return 'barbell';
@@ -37,7 +38,9 @@ const GROUPS: ReadonlyArray<readonly [string, RegExp, boolean]> = [
   ['lowerBack', /^(lower back|erector spinae|lumbares)$/, true],
   ['back', /^(back|espalda|middle back|upper back)$/, true],
   ['chest', /^(chest|pectorals|pecho|pectorales)$/, true],
-  ['legs', /^(legs|piernas|adductors|abductors|aductores|abductores)$/, true],
+  ['legs', /^(legs|piernas)$/, true],
+  ['adductors', /^(adductors|aductores)$/, true],
+  ['abductors', /^(abductors|abductores)$/, true],
   ['arms', /^(arms|brazos)$/, false],
   ['biceps', /^(biceps|biceps brachii)$/, false],
   ['brachialis', /^brachialis$/, false],

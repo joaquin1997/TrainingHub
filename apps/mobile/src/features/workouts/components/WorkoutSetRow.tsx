@@ -222,7 +222,7 @@ type RowProps = {
   /** The tick that just happened earned the record: it pops (FR-7). */
   recordPop?: boolean;
   onChange: (field: SetDraftField, value: string) => void;
-  onCycleType: () => void;
+  onSelectType: () => void;
   onToggleDone: () => void;
   onRemove: () => void;
 };
@@ -247,7 +247,7 @@ export function WorkoutSetRow({
   recordHits,
   recordPop = false,
   onChange,
-  onCycleType,
+  onSelectType,
   onToggleDone,
   onRemove,
 }: RowProps) {
@@ -401,7 +401,7 @@ export function WorkoutSetRow({
               ? t('workouts.generatedWarmupLabel', { type: setTypeLabel(set.type, t) })
               : setTypeLabel(set.type, t)
           }
-          onPress={onCycleType}
+          onPress={onSelectType}
           hitSlop={MARKER_HIT}
           style={[
             styles.marker,

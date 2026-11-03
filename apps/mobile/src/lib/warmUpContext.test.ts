@@ -11,6 +11,7 @@ describe('personal warm-up contexts and ramps', () => {
     expect(inferLoadingKind({ name: 'Unknown', equipment: ['dumbbell'] })).toBe('dumbbell');
     expect(inferLoadingKind({ name: 'Barbarian curl' })).toBe('machine');
     expect(inferLoadingKind({})).toBe('machine');
+    expect(inferLoadingKind({ name: 'Weighted pull-up', equipment: ['Pull-up bar'] })).toBe('machine');
   });
   it('does not introduce a bar floor for dumbbells or machines and respects their steps', () => {
     const db = resolveWarmUpContext({ name: 'Dumbbell press', category: 'chest' }, [], 'kg');

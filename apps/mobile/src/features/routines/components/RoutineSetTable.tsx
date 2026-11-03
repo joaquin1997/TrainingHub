@@ -48,10 +48,11 @@ type Props = {
   unit: WeightUnit;
   onChange: (setId: string, field: NumericSetField, value: string) => void;
   onRemove: (setId: string) => void;
+  onSelectType: (setId: string) => void;
 };
 
 /** The target sets of one routine exercise, with the columns of its type. */
-export function RoutineSetTable({ sets, trackingType, unit, onChange, onRemove }: Props) {
+export function RoutineSetTable({ sets, trackingType, unit, onChange, onRemove, onSelectType }: Props) {
   useTheme();
   const { t } = useTranslation();
   const columns = routineSetColumns(trackingType);
@@ -99,6 +100,8 @@ export function RoutineSetTable({ sets, trackingType, unit, onChange, onRemove }
       </View>
       {sets.map((set, setIndex) => (
         <View key={set.id} style={styles.row}>
+          <Pressable accessibilityRole="button" accessibilityLabel={`${t('workouts.setTypePicker.title')}: ${t(set.isWarmup ? 'workouts.setType.warmup' : 'workouts.setType.normal')}`}
+            onPress={() => onSelectType(set.id)} style={{ minHeight: 44, justifyContent: 'center' }}>
           {set.isWarmup && set.generatedWarmup ? (
             // A generated warm-up row: the letter plus a badge (spec 0031 FR-6).
             <View
@@ -118,6 +121,7 @@ export function RoutineSetTable({ sets, trackingType, unit, onChange, onRemove }
               {routineSetLabel(sets, setIndex, t('workouts.setType.warmup'))}
             </Text>
           )}
+          </Pressable>
           {columns.map((field) => (
             <TextInput
               keyboardAppearance={keyboardAppearance()}

@@ -1,6 +1,7 @@
 import type {
   CreateExerciseInput,
   Exercise,
+  ExerciseWarmUpPreferences,
   ExerciseDeletionImpact,
   MuscleGroup,
   SetExerciseTrackingTypeInput,
@@ -16,6 +17,14 @@ export const exercisesClient = {
   },
   getById(exerciseId: string) {
     return apiRequest<Exercise>(`/exercises/${exerciseId}`);
+  },
+  getWarmUpPreferences(exerciseId: string) {
+    return apiRequest<ExerciseWarmUpPreferences>(`/exercises/${exerciseId}/warm-up-preferences`);
+  },
+  setWarmUpPreferences(exerciseId: string, input: ExerciseWarmUpPreferences) {
+    return apiRequest<ExerciseWarmUpPreferences>(`/exercises/${exerciseId}/warm-up-preferences`, {
+      method: 'PUT', body: JSON.stringify(input),
+    });
   },
   listMuscleGroups() {
     return apiRequest<MuscleGroup[]>('/muscle-groups');
