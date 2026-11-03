@@ -1,7 +1,7 @@
 ---
 id: 0047
 title: Skip a rest from the watch
-status: ready
+status: planned
 roadmap: docs/roadmap/08-integrations-and-platform.md
 created: 2026-11-03
 ---
@@ -75,8 +75,10 @@ and recovery behaviour.
   undone; no additional buzz may be scheduled for that rest.
 - **EF-3.** A build that cannot process skips MUST leave the workout usable,
   show that skipping requires the phone, and MUST NOT silently report success.
-- **EF-4.** When paused, the rest stays paused and Skip is unavailable;
-  resuming restores the usual rest actions.
+- **EF-4.** While the workout is paused, Skip is unavailable. Its independent
+  rest countdown retains the existing behaviour of 0011; pausing workout
+  time does not introduce a rest-timer pause. Resuming restores Skip only
+  if a rest is still active.
 
 ## Domain impact
 
@@ -114,7 +116,7 @@ the active workout. Performed sets and workout order retain their meaning.
 
 None blocking. Owner reviewed and accepted this behaviour on 2026-11-03,
 including one-tap skip, specific-rest synchronization and the disconnected
-phone alert limitation in EF-1. Ready to plan; implementation and physical
+phone alert limitation in EF-1. Plan and tasks prepared; implementation and physical
 device acceptance remain pending.
 
 ## Related

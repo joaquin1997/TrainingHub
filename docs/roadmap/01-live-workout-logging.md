@@ -143,3 +143,9 @@ hidden set-type cycling with visible choices. Task breakdown is next.
   up to five, adjustable increments (including cable 2.5/5 kg), and personal
   preferences. Spec/plan revised; shared catalog provenance proposal replaced
   with an isolated per-user/exercise preference. Still planning, no code change.
+
+- Planning update (2026-11-03): 0043, 0046, 0049 and 0050 now have approved plans and
+  ordered unchecked tasks. No implementation/rollout in this pass; consult
+  [the execution sequence](../sdd/reviews/2026-11-03-workout-implementation-sequence.md)
+  for dependencies and acceptance gates. Earlier ready-state entries above
+  record the spec-review stage, not the current planning state.

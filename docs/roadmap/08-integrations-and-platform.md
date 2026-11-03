@@ -86,3 +86,9 @@
 - [0047](../sdd/specs/0047-watch-skip-rest/spec.md) is ready for watch Skip rest.
   Locked-phone progression stays covered by the accepted 0045; the earlier
   independent watch-progression proposal is not carried forward.
+
+- Planning update (2026-11-03): 0047 now have approved plans and
+  ordered unchecked tasks. No implementation/rollout in this pass; consult
+  [the execution sequence](../sdd/reviews/2026-11-03-workout-implementation-sequence.md)
+  for dependencies and acceptance gates. Earlier ready-state entries above
+  record the spec-review stage, not the current planning state.

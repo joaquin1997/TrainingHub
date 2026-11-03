@@ -1,7 +1,7 @@
 ---
 id: 0049
 title: Configurable weight per side
-status: ready
+status: planned
 roadmap: docs/roadmap/01-live-workout-logging.md
 created: 2026-11-03
 ---
@@ -148,7 +148,7 @@ measurements from different sides.
 
 Owner reviewed on 2026-11-03 and confirmed both explicit shared-load
 selection when side values differ and the lower-load reference for common
-warm-ups. No blocking decisions; ready to plan. Implementation and device
+warm-ups. No blocking decisions; plan and tasks prepared. Implementation and device
 acceptance remain pending.
 
 ## Related

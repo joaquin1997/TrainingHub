@@ -1,7 +1,7 @@
 ---
 id: 0048
 title: Trustworthy records and feedback against last training
-status: ready
+status: planned
 amends: 0032
 roadmap: docs/roadmap/04-progress-and-prs.md
 created: 2026-11-03

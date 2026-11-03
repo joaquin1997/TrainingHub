@@ -52,3 +52,9 @@
   for operational app errors and service/data availability monitoring, as
   clarified by the owner. Includes incident/recovery rules and data redaction;
   monitoring is not installed or activated by this documentation pass.
+
+- Planning update (2026-11-03): 0052 now have approved plans and
+  ordered unchecked tasks. No implementation/rollout in this pass; consult
+  [the execution sequence](../sdd/reviews/2026-11-03-workout-implementation-sequence.md)
+  for dependencies and acceptance gates. Earlier ready-state entries above
+  record the spec-review stage, not the current planning state.

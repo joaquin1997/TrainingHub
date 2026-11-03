@@ -1,7 +1,7 @@
 ---
 id: 0051
 title: Offer to update the routine after training
-status: ready
+status: planned
 roadmap: docs/roadmap/05-routines-advanced.md
 created: 2026-11-03
 ---
@@ -141,7 +141,7 @@ routine targets; performed history remains separate and authoritative.
 Owner reviewed and accepted the proposed flow on 2026-11-03, including all
 compatible changes selected initially with the ability to deselect one-off
 changes. Workout saving precedes the optional routine update; generated
-approach sets remain excluded. No blocking decision; ready to plan, with
+approach sets remain excluded. No blocking decision; plan and tasks prepared, with
 implementation and acceptance checks pending.
 
 ## Related

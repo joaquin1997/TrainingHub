@@ -103,3 +103,9 @@ charts from 0034 are reused rather than reintroduced.
   load/error states, recalculation and no first-session beaten PR. Added
   distinct historical-record versus last-session-improvement feedback;
   last-session improvement does not increase PR counts. Specification only.
+
+- Planning update (2026-11-03): 0048 and 0053 now have approved plans and
+  ordered unchecked tasks. No implementation/rollout in this pass; consult
+  [the execution sequence](../sdd/reviews/2026-11-03-workout-implementation-sequence.md)
+  for dependencies and acceptance gates. Earlier ready-state entries above
+  record the spec-review stage, not the current planning state.

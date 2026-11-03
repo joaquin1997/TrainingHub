@@ -216,3 +216,20 @@ revised personal-preference plan; 0046–0053 remain ready for planning. 0045's
 prior device acceptance remains distinct from these spec reviews. The original
 missing/wrong-record case still needs reproduction or owner verification as
 required by 0048. No application code, production data or deployment was changed.
+
+## Planning follow-through — 2026-11-03
+
+After the owner requested commits, plans and tasks, 0043 received its task
+breakdown and 0046–0053 received approved plans plus ordered unchecked tasks.
+Their current spec status is planned; this supersedes the earlier ready-to-plan
+state recorded above. See [the execution sequence](2026-11-03-workout-implementation-sequence.md).
+
+Code inspection clarified one drafting ambiguity: 0011 explicitly excludes
+pausing the independent rest timer, and current pauseWorkout freezes only the
+workout clock. 0046 now says “while the workout is paused”, and 0047 disables
+Skip during workout pause without claiming that rest itself is frozen. This
+preserves current pause scope rather than adding rest-pause functionality.
+
+The reviewed user decisions remain intact. No application code or personal
+training data was changed. Technical monitoring choices are documented behind
+an initial native SDK privacy/expiry gate; no provider was activated.

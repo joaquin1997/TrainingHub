@@ -54,3 +54,9 @@ A configurable countdown timer between sets, like Hevy.
   (2026-11-03): undo cancels only the active rest started by that particular
   completion, including its pending alert; unrelated rests remain intact.
   Spec updated, implementation pending.
+
+- Planning update (2026-11-03): 0046 and 0047 now have approved plans and
+  ordered unchecked tasks. No implementation/rollout in this pass; consult
+  [the execution sequence](../sdd/reviews/2026-11-03-workout-implementation-sequence.md)
+  for dependencies and acceptance gates. Earlier ready-state entries above
+  record the spec-review stage, not the current planning state.

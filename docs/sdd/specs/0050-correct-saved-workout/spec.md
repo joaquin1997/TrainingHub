@@ -1,7 +1,7 @@
 ---
 id: 0050
 title: Correct mistakes in a saved workout
-status: ready
+status: planned
 roadmap: docs/roadmap/01-live-workout-logging.md
 created: 2026-11-03
 ---
@@ -123,7 +123,7 @@ continue to derive from saved work; a correction is not a second session.
 Owner accepted this initial scope on 2026-11-03, including explicit save/exit
 choices, derived-view refresh, preserved routine targets and unchanged health
 exports. Adding/removing sets or exercises, date/duration edits and workout
-deletion remain future follow-ups. No blocking decision; ready to plan,
+deletion remain future follow-ups. No blocking decision; plan and tasks prepared,
 with implementation and acceptance checks still pending.
 
 ## Related

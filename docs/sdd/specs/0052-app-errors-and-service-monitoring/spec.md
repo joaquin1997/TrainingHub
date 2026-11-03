@@ -1,7 +1,7 @@
 ---
 id: 0052
 title: App errors and service availability monitoring
-status: ready
+status: planned
 roadmap: docs/roadmap/09-production-readiness.md
 created: 2026-11-03
 ---

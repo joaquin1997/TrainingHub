@@ -40,3 +40,9 @@
 - [0051](../sdd/specs/0051-offer-routine-update/spec.md) is ready: after saving
   training, optionally review and retain selected routine target/structure
   changes. Owner confirmed this meaning on 2026-11-03; no implementation.
+
+- Planning update (2026-11-03): 0051 now have approved plans and
+  ordered unchecked tasks. No implementation/rollout in this pass; consult
+  [the execution sequence](../sdd/reviews/2026-11-03-workout-implementation-sequence.md)
+  for dependencies and acceptance gates. Earlier ready-state entries above
+  record the spec-review stage, not the current planning state.

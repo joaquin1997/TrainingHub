@@ -1,7 +1,7 @@
 ---
 id: 0046
 title: Set rows that read right, undo that selects, Finish within reach
-status: ready
+status: planned
 roadmap: docs/roadmap/01-live-workout-logging.md
 created: 2026-11-03
 revises-draft: 2026-10-27
@@ -95,7 +95,7 @@ direct feedback from using the app.
   by that set until it qualifies again after completion.
 
 - **FR-9.** Unticking a set MUST cancel the active rest only if it was started
-  by that set's completion being undone, including a rest currently paused.
+  by that set's completion being undone, including while the workout is paused.
   Cancellation MUST remove that rest's countdown and pending rest-end alert
   and update the phone, live workout status and connected watch. The watch
   MUST cancel its pending local buzz for that rest when it receives the change.
@@ -160,7 +160,7 @@ lengths and historical performed training keep their meaning.
 - **AC-9.** Given set A just completed and its rest running, when A is
   unticked, then its countdown disappears on the phone, live workout status
   and connected watch, and no alert/buzz occurs at its former end time.
-  A paused rest from A is also cancelled; entered values remain intact.
+  A rest from A while the workout is paused is also cancelled; entered values remain intact.
 - **AC-10.** Given an earlier set A completed and a rest now running from
   set B, when A is unticked, then B's remaining time and alert stay unchanged,
   even when A and B belong to the same exercise.
