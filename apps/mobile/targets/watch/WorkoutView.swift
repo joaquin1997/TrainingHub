@@ -107,6 +107,11 @@ struct WorkoutView: View {
       Text(model.labels.allDone)
         .font(.footnote)
         .foregroundStyle(textMuted)
+    } else if model.waitingForPhone {
+      // Spec 0045 FR-4: the next set has not come from the phone.
+      Text(model.labels.waitingPhone ?? WatchContext.Labels.fallback.waitingPhone ?? "")
+        .font(.footnote)
+        .foregroundStyle(textMuted)
     }
   }
 
