@@ -6,8 +6,7 @@ created: 2026-11-03
 
 # Plan — Group records by exercise
 
-Self-reviewed against the constitution and the owner's spec review. Design
-only: no implementation, migration, external activation or device acceptance.
+Self-reviewed against the constitution and the owner's spec review. Tasks 1–3 are implemented locally; no deployment or device acceptance.
 
 ## Constitution check
 
@@ -52,8 +51,7 @@ retain their separate label and never enter this array or count.
 The summary currently catches a record fetch error without presenting it.
 Add explicit load/error state with Retry and generation guards, retain loaded
 groups on failure, and only treat a successful empty response as no records.
-Use the saved workout response/order when available (0051 captures it); before
-that slice use the existing completed draft's stable exercise IDs/order.
+Use the authoritative saved workout response/order already supplied by 0050.
 No additional whole-history request just for grouping.
 
 ### Alternatives considered
@@ -87,7 +85,8 @@ reader reading order; Progress/share visual regression check remains manual.
 - New `apps/mobile/src/features/progress/utils/groupSessionRecords.ts`, tests.
 - `apps/mobile/src/features/progress/components/RecordsCard.tsx` row extraction
   if required; new `GroupedRecordsCard.tsx` composition.
-- `apps/mobile/src/features/workouts/screens/WorkoutSummaryScreen.tsx`.
+- `apps/mobile/src/features/workouts/screens/WorkoutSummaryScreen.tsx` and
+  `WorkoutSessionDetailScreen.tsx` (existing multi-exercise section, FR-3).
 - ES/EN group-count/retry labels; docs/roadmap/backlog.
 
 ## Risks and rollout
@@ -97,3 +96,18 @@ Keep current caller interface until grouped summary is wired. Bundle-only
 rollout; rollback restores flat presentation without any data transformation.
 Prefer 0048 first so wording is final, but grouping itself uses existing saved
 PRs and can land independently. Device acceptance remains required for layout.
+
+## Implementation notes — 2026-11-05
+
+The summary and saved detail now use the shared grouped card. Each group has
+one exercise heading, a labelled record count and every existing record row;
+the summary evidence button targets the authoritative saved-session ID.
+The per-exercise RecordsCard interface and share builders remain unchanged.
+Both screens use the existing generation-guarded focus resource, retaining
+loaded results on ordinary refresh failure and clearing rejected identities.
+The summary retains its existing workout celebration identity.
+
+0053 introduces no schema/API/native changes. This checkout also contains
+0050, whose migration and API must precede combined app delivery; see its
+verification. Layout, screen-reader and actual navigation acceptance remain
+pending, not inferred from compilation or pure tests.

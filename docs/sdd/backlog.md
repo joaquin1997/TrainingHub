@@ -54,7 +54,7 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0050](specs/0050-correct-saved-workout/spec.md) | Correct mistakes in a saved workout | `in-progress` — tasks 1–5 implemented locally 2026-11-04: atomic revision/idempotency correction, isolated editor and owned derived-view refresh. Fresh/upgrade PostgreSQL checks pass; migration/API/app rollout and device acceptance pending. Structural edits/deletion deferred. | 1 — Live workout logging |
 | [0051](specs/0051-offer-routine-update/spec.md) | Offer to update the routine after training | `planned` — Owner-reviewed; plan/tasks prepared 2026-11-03: selected changes after workout save, versioned stable-ID routine updates and preserved history links. | 5 — Routines |
 | [0052](specs/0052-app-errors-and-service-monitoring/spec.md) | App errors and service availability monitoring | `planned` — Owner-reviewed; plan/tasks prepared 2026-11-03: diagnostic adapter and independent probe observer; native privacy/expiry proof and external configuration remain acceptance gates. | 9 — Production readiness |
-| [0053](specs/0053-records-grouped-by-exercise/spec.md) | Group records by exercise | `planned` — Owner-reviewed; plan/tasks prepared 2026-11-03: summary grouping by identity/order, all figures visible and improvement-only feedback excluded from PR counts. | 4 — Progress |
+| [0053](specs/0053-records-grouped-by-exercise/spec.md) | Group records by exercise | `in-progress` — tasks 1–3 implemented locally 2026-11-05: summary/saved-detail grouping by identity and saved order, retained records on refresh failure, PR-only counts. Bundle delivery and visual/device acceptance pending. | 4 — Progress |
 
 Execution order agreed 2026-09-24: 0013 → 0014 → 0010 → 0011 → 0012 →
 visual redesign (to be specified; "functional first, then pretty") → 0001 →
@@ -240,3 +240,14 @@ PostgreSQL concurrency/rollback/legacy/PR tests). Production migration and
 API/app delivery remain pending, followed by physical acceptance. No training
 rows were repaired in production. Next planned work remains 0053, then 0051
 and 0049; 0052 is separate. See 0050 verification for rollout order and limits.
+
+## 0053 implementation — 2026-11-05
+
+Tasks 1–3 implemented locally after 0050, as requested. Summary and existing
+saved-detail record sections group every historical PR by exercise identity
+and saved workout order; retry retains loaded groups. Typecheck, 893 mobile /
+514 API tests and web export pass (nine API database tests skipped this run).
+See [verification](specs/0053-records-grouped-by-exercise/verification.md).
+No deployment/device acceptance yet. Combined delivery must follow 0050's
+migration/API prerequisites. Next planned development: 0051, then 0049;
+0052 monitoring remains separate.

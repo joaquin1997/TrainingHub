@@ -129,3 +129,13 @@ Independent frozen historical/last-session references, explicit retry/loading/un
 Delivery follow-up (2026-11-04): 0048 API deployed first, then 0047/0048
 paired Release apps installed and launched on the owner's phone/Watch.
 Physical acceptance remains separate; no new migration or training-data change.
+
+## Local implementation — 2026-11-05 (0053)
+
+Summary and existing saved-detail record lists now group all historical PRs
+by stable exercise identity in saved workout order. Supporting values/dates,
+PR-only counts and saved evidence are retained; failed refresh offers retry
+without clearing loaded groups. Per-exercise Progress and sharing remain
+unchanged. Automated checks and web export pass; bundle delivery, 320 pt,
+large-text, themes and screen-reader acceptance remain open. See
+[0053 verification](../sdd/specs/0053-records-grouped-by-exercise/verification.md).

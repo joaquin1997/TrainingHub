@@ -1,7 +1,7 @@
 ---
 id: 0053
 title: Group records by exercise
-status: planned
+status: in-progress
 roadmap: docs/roadmap/04-progress-and-prs.md
 created: 2026-11-03
 ---
@@ -125,7 +125,7 @@ qualification, performed training and all-time bests retain their meaning.
 Owner reviewed and accepted the presentation on 2026-11-03, including one
 heading per exercise, all records visible in workout order, summary scope
 and last-session improvements excluded from PR counts. No blocking decisions;
-plan and tasks prepared, with implementation and device acceptance pending.
+tasks 1–3 implemented locally; deployment and device acceptance remain pending.
 
 ## Related
 
