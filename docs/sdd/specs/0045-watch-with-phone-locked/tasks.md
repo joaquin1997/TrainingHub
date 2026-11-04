@@ -92,8 +92,9 @@ alongside the mirrored and queued copies, using the same deduplication ID.
 
 - [x] Pure native regression harness: retries, cap, concurrent starts, stop/new
   generation, late completion. Triple-delivery controller regression passes.
-- [ ] Build/install the updated paired Release apps and recheck AC-1/AC-3
-  across several sets with the phone locked. The original incident was not
+- [x] Rebuild/install and launch the paired Release apps (2026-11-04);
+  signed bundle/background mode and included retry helper verified.
+- [ ] Recheck AC-1/AC-3 across several sets with the phone locked. The original incident was not
   captured in native logs, so this is a resilience fix, not a proven root cause.
 
 Apple reference: [mirrored-session disconnection/reconnection](https://developer.apple.com/documentation/healthkit/hkworkoutsessiondelegate/workoutsession(_:diddisconnectfromremotedevicewitherror:)).

@@ -105,3 +105,20 @@ Public health reports service/database available; anonymous workout requests
 are rejected with 401. All committed migrations were already applied; no
 training rows were rewritten. Paired Release app delivery is tracked in the
 current deployment follow-up. Physical-device acceptance remains open.
+
+## Paired Release delivery — 2026-11-04
+
+Native prebuild completed with Watch/widget enabled. Release builds succeeded
+for the paired Watch and iPhone, and the signed phone bundle passed
+`codesign --verify --deep --strict`. Both apps were installed successfully and
+launched on the owner's iPhone and Watch. The bundle includes local 0042,
+0043, 0046 and the 0045 mirroring follow-up; the phone's compiled Info.plist
+retains `workout-processing`. No Metro connection is required.
+
+API health and database availability pass; anonymous workout access remains
+401. All 27 migrations, including personal warm-up preferences, were already
+applied; deployment reports no pending migration. Runtime credentials were
+preserved, and no legacy-user reassignment or catalog rewrite was performed.
+Full types/tests pass (852 mobile + 479 API; two database tests skipped).
+Delivery is complete; this does not close the remaining feature-specific
+physical-device/accessibility/identity checks.

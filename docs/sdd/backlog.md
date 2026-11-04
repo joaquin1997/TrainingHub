@@ -42,12 +42,12 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0039](specs/0039-google-sign-in/spec.md) | Sign in with Google | `in-progress` — code complete and deployed (migration `add_user_identities` applied), inactive until the owner creates the Google OAuth clients and sets `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` / `GOOGLE_CLIENT_IDS` (plan, *Owner steps*), then a native rebuild | 3 — Auth & users |
 | [0040](specs/0040-device-test-fixes/spec.md) | Fixes from the device test of 2026-10-21 | `in-progress` — code complete (2026-10-21) on `feat/sdd-0040-device-fixes`, API deployed from that branch; awaiting the native rebuild (rest alert with the app in front, lock-screen view) and the device checks (task 10) | 1 + 2 + 8 |
 | [0041](specs/0041-widget-redesign-and-watch-reps/spec.md) | Widget redesign and reps on the watch | `in-progress` — code complete (2026-10-21); widget rendered in light and dark (`renders/`); awaiting the native rebuild (with 0040's) and the device checks (AC-1–AC-6) | 8 — Integrations & platform |
-| [0042](specs/0042-readable-exercise-progress/spec.md) | Progress per exercise that is easy to read and to find | `ready` — spec written 2026-11-03: trained-exercise search, explicit metrics/periods and session evidence; next to plan | 4 — Progress |
-| [0043](specs/0043-smarter-warm-ups/spec.md) | Smarter warm-ups and warm-ups marked by hand | `in-progress` — code complete 2026-11-03 (tasks 1–7): personal preferences, configurable ramps and explained pickers; isolated-DB migration/tests and web smoke checks passed; production migration/API/bundle rollout and physical-device acceptance pending | 1 — Live workout logging |
+| [0042](specs/0042-readable-exercise-progress/spec.md) | Progress per exercise that is easy to read and to find | `in-progress` — code complete locally 2026-11-03 (tasks 1–7): trained-exercise search, coherent per-workout evidence, explicit metrics/periods and preserved navigation; API and paired Release apps delivered 2026-11-04; physical-device acceptance pending | 4 — Progress |
+| [0043](specs/0043-smarter-warm-ups/spec.md) | Smarter warm-ups and warm-ups marked by hand | `in-progress` — code complete 2026-11-03 (tasks 1–7): personal preferences, configurable ramps and explained pickers; isolated-DB migration/tests and web smoke checks passed; migration observed applied; API/paired Release apps delivered 2026-11-04, physical-device acceptance pending | 1 — Live workout logging |
 | [0044](specs/0044-curated-exercise-catalog/spec.md) | A curated exercise catalog | `done` — applied on the server 2026-10-21: 763 reviewed exercises (195 by hand + 568 from free-exercise-db), 847 imported ones retired, 14 own duplicates merged with their history; API deployed, names in the app's language, search by other names | 6 — Exercises |
-| [0045](specs/0045-watch-with-phone-locked/spec.md) | The watch keeps going with the phone locked | `done` — installed and checked on the iPhone and the Apple Watch 2026-11-03 (AC-1–AC-7, the app swiped away mid-workout); both buzzes at rest end kept by the owner; the lock-screen rest (only the first showed) fixed on the way | 8 — Integrations & platform |
+| [0045](specs/0045-watch-with-phone-locked/spec.md) | The watch keeps going with the phone locked | `in-progress` — original device acceptance passed 2026-11-03; reopened 2026-11-04 after next-set updates stalled until opening the phone app. Initial-mirror retry/live-delivery resilience fix rebuilt, installed and launched on the paired Release apps; regression acceptance pending | 8 — Integrations & platform |
 
-| [0046](specs/0046-set-rows-and-finish/spec.md) | Readable completed sets, undo selection and Finish at the top | `planned` — Owner-reviewed; plan/tasks prepared 2026-11-03: completed figures, exact undo selection/rest origin and top Finish. | 1 — Live workout logging |
+| [0046](specs/0046-set-rows-and-finish/spec.md) | Readable completed sets, undo selection and Finish at the top | `in-progress` — tasks 1–4 implemented locally 2026-11-04: completed figures, exact undo selection/rest origin and guarded top Finish; paired Release delivered 2026-11-04; visual/device acceptance and connected-watch cancellation pending. | 1 — Live workout logging |
 | [0047](specs/0047-watch-skip-rest/spec.md) | Skip a rest from the watch | `planned` — Owner-reviewed; plan/tasks prepared 2026-11-03: specific-rest skip with acknowledgement; paired native rebuild and device checks pending. | 2 + 8 |
 | [0048](specs/0048-trustworthy-live-records/spec.md) | Trustworthy live records and last-session feedback | `planned` — Owner-reviewed; plan/tasks prepared 2026-11-03: historical PR and last-session feedback, explicit load states; original discrepancy still unconfirmed. | 4 — Progress |
 | [0049](specs/0049-weight-per-side/spec.md) | Configurable weight per side | `planned` — Owner-reviewed; plan/tasks prepared 2026-11-03: same-side quantities, explicit shared-load selection, lesser-load warm-ups and older-client capability guards. | 1 — Live workout logging |
@@ -75,28 +75,34 @@ Every requested item is mapped in [the review](reviews/2026-11-03-workout-improv
 including the earlier draft-to-current-ID mapping and checked code references.
 0043 covers warm-ups and explained types; 0045 already covers locked-phone
 watch progression. Owner review is complete for 0043 and 0046–0053;
-confirmed decisions are recorded in each spec and the review. 0046–0053 have approved plans and unchecked implementation task lists, not
-implementations or closed device defects. The ambiguous migration/record report remains an
+confirmed decisions are recorded in each spec and the review. 0046 implementation tasks 1–4 are complete locally; its delivery/device checks
+remain open. 0047–0053 have approved plans and unchecked implementation task
+lists, not implementations or closed device defects. The ambiguous migration/record report remains an
 investigation acceptance condition in 0048.
 
-Suggested next planning order: 0046 → 0048 → 0047 → 0053 → 0050 → 0051 →
-0049, preserving the existing 0043 → 0042 work. 0052 can be planned separately
+Next implementation order after local 0046: 0048 → 0047 → 0053 → 0050 →
+0051 → 0049, preserving the existing 0043 → 0042 work. 0052 can advance separately
 to support diagnosis. This is a proposal, not a change to the agreed feature
 order or authorization to implement/deploy.
 
-### Server state (checked 2026-10-21)
+### Server state (checked 2026-11-04)
 
-Every migration up to `20261021120000_add_exercise_catalog_names` is applied
-on the server, and the API runs from `feat/sdd-0040-device-fixes`. The steps
-gathered here on 2026-10-17/18 (migrations, redeploy, tracking type sweep,
-image matching) are done or superseded: the sweep (0030) by the reviewed
-catalog (0044), the image matching (0026) by its pictures.
+All committed migrations through `20261103130000_add_personal_warm_up_preferences`
+are applied. The strict API boundary was already live before this deployment
+(anonymous workout request: 401). Image `09464a92067b` was deployed from the
+current worktree on 2026-11-04 after a verified backup, preserving runtime
+credentials and the previous image/container for rollback.
+
+The legacy account still exists with training rows. No reassignment was
+performed or inferred from the existing API rollout; its explicit owner/data
+review remains open. The reviewed catalog was not reapplied.
 
 ### Owner's steps (pending)
 
-0. 0001 rollout: backup and reassignment dry-run/apply to the explicit owner
-   account **before** deploying the strict API, then deliver the mobile bundle
-   and check startup/offline retry and workout reauthentication. Not deployed.
+0. 0001 follow-up: strict API is already deployed (verified 2026-11-04).
+   Legacy reassignment still needs the explicit owner/data review; do not
+   guess ownership. Check startup/offline retry and same-user workout
+   reauthentication on the delivered app. A fresh verified backup exists.
 
 1. Native rebuild for 0040 and 0041 (rest alert with the app in front,
    lock-screen view, widget, watch app), then their device checks.
@@ -105,9 +111,10 @@ catalog (0044), the image matching (0026) by its pictures.
 3. Google OAuth clients for 0039, when wanted.
 4. Merge `feat/sdd-0040-device-fixes` into `master` and push.
 
-Current work (2026-11-03): 0001 code complete locally, rollout pending;
-0043 code complete with rollout/device checks pending; 0042 ready to plan; 0046–0053 planned with
-ordered tasks in the current documentation branch. Implementation has not started. Feature order
+Current work (2026-11-04): 0001 code complete locally, rollout pending;
+0043 and 0042 code complete locally with rollout/device checks pending;
+0046 tasks 1–4 implemented locally 2026-11-04 with delivery/device checks pending;
+0047–0053 planned with ordered implementation tasks. Feature order
 remains 0043 → 0042 (0041 done first at the owner's request).
 
 Since 2026-10-16 the owner has delegated the gates: specs, plans and tasks are
@@ -193,3 +200,12 @@ record dependencies, schema/API ordering, native rebuilds and operational
 prerequisites. No feature implementation or live rollout was performed.
 The 0048 original-case investigation and 0052 native privacy/expiry harness
 remain explicit implementation/acceptance gates, not inferred successes.
+
+## Delivery follow-up — 2026-11-04
+
+The API and paired iPhone/Watch Release apps are deployed; 0042/0043/0046
+delivery is complete, with their physical acceptance still open. 0045 is
+reopened for the reported locked-phone regression and includes an installed
+initial-mirror retry/live-event fallback fix (69d27ee). The original failure
+has not been captured in logs; owner recheck is pending. Remaining legacy
+account data was not moved. No push was performed.

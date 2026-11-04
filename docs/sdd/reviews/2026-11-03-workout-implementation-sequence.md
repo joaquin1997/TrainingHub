@@ -1,9 +1,13 @@
 # Workout implementation sequence — 2026-11-03
 
-All reviewed work is now planned; implementation has not begun. Plans are
-self-reviewed under delegated gates. Each task list is ordered, independently
-committable and unchecked. Task status `draft` means no implementation started;
-the task review gate has passed, as stated in each task document.
+The original planning pass prepared all reviewed work under delegated gates.
+Current update (2026-11-03): 0043 implementation tasks 1–7 are complete locally;
+rollout/acceptance remain pending. 0042 implementation tasks 1–7 are also
+complete locally; its rollout/device acceptance remains open. 0046 tasks 1–4
+were implemented locally 2026-11-04; bundle delivery and physical-device
+acceptance remain pending. Other task
+lists retain their own current implementation
+status; the planning validation at the end records the earlier baseline.
 
 The specs were committed in `c9f593b` on `docs/workout-improvements-planning`,
 created from the same master baseline as the preceding documentation branch.
@@ -12,13 +16,15 @@ part of this planning pass.
 
 ## Implementation order
 
-Preserve the previously agreed 0043 → 0042 priority; 0042 is outside this
-reviewed batch and retains its existing ready state. Within this batch the
-proposed sequence is:
+Preserve the previously agreed 0043 → 0042 priority. 0042 was outside the
+original batch and is now implemented locally; its agreed place is after
+0043 and before 0046.
+Within the original batch the proposed sequence is:
 
 | Order | Spec | Plan | Tasks | Dependency / purpose |
 |---|---|---|---|---|
 | 1 | 0043 warm-ups/types | [Plan](../specs/0043-smarter-warm-ups/plan.md) | [Tasks](../specs/0043-smarter-warm-ups/tasks.md) | Existing priority. Personal preferences, count/increment and explained types. |
+| After 0043 | 0042 readable progress | [Plan](../specs/0042-readable-exercise-progress/plan.md) | [Tasks](../specs/0042-readable-exercise-progress/tasks.md) | Agreed priority. Coherent per-workout evidence, trained-exercise lookup and explicit metrics/periods; no migration/native module changes. |
 | 2 | 0046 row/undo/Finish | [Plan](../specs/0046-set-rows-and-finish/plan.md) | [Tasks](../specs/0046-set-rows-and-finish/tasks.md) | Stable rest/completion identity supports 0047. |
 | 3 | 0048 record feedback | [Plan](../specs/0048-trustworthy-live-records/plan.md) | [Tasks](../specs/0048-trustworthy-live-records/tasks.md) | Freeze comparison references, preserve existing PR definitions; investigate original defect separately. |
 | 4 | 0047 watch skip | [Plan](../specs/0047-watch-skip-rest/plan.md) | [Tasks](../specs/0047-watch-skip-rest/tasks.md) | Requires 0046 rest identity; acknowledgement and native watch changes. |
@@ -85,3 +91,11 @@ AC mappings, 131 changed-document relative links and whitespace checks pass.
 `pnpm -r typecheck` passed; `pnpm -r test` passed 1,242 tests (795 mobile,
 447 API). These are baseline code checks; none of the new feature tests or
 operational/device acceptance tasks has been executed yet.
+
+## Delivery update — 2026-11-04
+
+0042/0043 API and paired Release app delivery, plus 0046 app delivery, are
+complete. Feature-specific physical acceptance remains open. The owner’s
+0045 locked-phone regression is reopened; its initial-mirror retry and
+immediate-event fallback are included in both installed apps. See each
+spec’s verification/tasks for the distinction between delivery and acceptance.

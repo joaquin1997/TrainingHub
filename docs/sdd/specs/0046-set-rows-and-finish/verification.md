@@ -54,3 +54,20 @@ workout identity before clearing or navigating.
 
 Next planned implementation is 0048; 0047 depends on the stable rest origin
 introduced here. Specs remain in-progress until their own acceptance is met.
+
+## Paired Release delivery — 2026-11-04
+
+Native prebuild completed with Watch/widget enabled. Release builds succeeded
+for the paired Watch and iPhone, and the signed phone bundle passed
+`codesign --verify --deep --strict`. Both apps were installed successfully and
+launched on the owner's iPhone and Watch. The bundle includes local 0042,
+0043, 0046 and the 0045 mirroring follow-up; the phone's compiled Info.plist
+retains `workout-processing`. No Metro connection is required.
+
+API health and database availability pass; anonymous workout access remains
+401. All 27 migrations, including personal warm-up preferences, were already
+applied; deployment reports no pending migration. Runtime credentials were
+preserved, and no legacy-user reassignment or catalog rewrite was performed.
+Full types/tests pass (852 mobile + 479 API; two database tests skipped).
+Delivery is complete; this does not close the remaining feature-specific
+physical-device/accessibility/identity checks.
