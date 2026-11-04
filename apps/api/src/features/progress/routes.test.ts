@@ -7,6 +7,7 @@ vi.mock('./repository.js', () => ({
   listMuscleGroupVolume: vi.fn(),
   listSessionRecords: vi.fn(),
   listStartingRecords: vi.fn(),
+  listComparisonReferences: vi.fn(),
 }));
 
 // Mock persistence only: requests pass through real JWT verification and user resolution.
@@ -17,6 +18,7 @@ vi.mock('../../infrastructure/sessionUser.js', () => ({
 import { createApp } from '../../app.js';
 import {
   getExerciseProgress,
+  listComparisonReferences,
   listExerciseProgress,
   listMuscleGroupVolume,
   listSessionRecords,
@@ -209,5 +211,26 @@ describe('readable progress transport (0042)', () => {
     vi.mocked(getExerciseProgress).mockRejectedValue(new Error('Unavailable'));
     const response = await app.inject({ method: 'GET', url: '/progress/exercises/e1', headers: sessionHeaders() });
     expect(response.statusCode).toBe(500);
+  });
+});
+
+describe('GET comparison references (0048)', () => {
+  const url = '/progress/comparison-references?exerciseIds=e,e&before=2026-11-04T10:00:00Z';
+  it('passes validated identity, distinct IDs and boundary to the repository', async () => {
+    vi.mocked(listComparisonReferences).mockResolvedValue([]);
+    const response = await app.inject({ method: 'GET', url, headers: sessionHeaders() });
+    expect(response.statusCode).toBe(200);
+    expect(listComparisonReferences).toHaveBeenCalledWith('user-test', ['e'], '2026-11-04T10:00:00.000Z');
+  });
+  it('rejects anonymous access', async () => {
+    expect((await app.inject({ method: 'GET', url })).statusCode).toBe(401);
+    expect(listComparisonReferences).not.toHaveBeenCalled();
+  });
+  it.each(['', '?exerciseIds=e', '?exerciseIds=e&before=bad', '?exerciseIds=e&before=2026-11-04'])('rejects invalid query %s', async (query) => {
+    expect((await app.inject({ method: 'GET', url: '/progress/comparison-references' + query, headers: sessionHeaders() })).statusCode).toBe(400);
+  });
+  it('preserves service failure as an error rather than empty history', async () => {
+    vi.mocked(listComparisonReferences).mockRejectedValue(new Error('unavailable'));
+    expect((await app.inject({ method: 'GET', url, headers: sessionHeaders() })).statusCode).toBe(500);
   });
 });

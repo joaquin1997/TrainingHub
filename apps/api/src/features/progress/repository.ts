@@ -10,6 +10,7 @@ import {
   selectPerformedWork,
   type ProgressSessionInput,
 } from './aggregate.js';
+import { buildComparisonReferences } from './comparisonReferences.js';
 import { buildStartingRecords } from './startingRecords.js';
 
 async function loadSessionInputs(
@@ -42,6 +43,7 @@ async function loadSessionInputs(
   });
 
   const inputs = sessions.map((session) => ({
+    startedAt: session.startedAt.toISOString(),
     date: (session.completedAt ?? session.startedAt).toISOString(),
     workoutId: session.publicId,
     clientId: session.clientId,
@@ -106,4 +108,16 @@ export async function listSessionRecords(userPublicId: string) {
 /** Starting records for the active workout's exercises (spec 0032). */
 export async function listStartingRecords(userPublicId: string, exerciseIds: string[]) {
   return buildStartingRecords(await loadSessionInputs(userPublicId), exerciseIds);
+}
+
+/** Owned history plus catalog visibility, never arbitrary user identifiers. */
+export async function listComparisonReferences(userPublicId: string, exerciseIds: string[], before: string) {
+  const [sessions, visible] = await Promise.all([
+    loadSessionInputs(userPublicId),
+    prisma.exercise.findMany({ where: { publicId: { in: exerciseIds }, OR: [
+      { isSystemDefined: true }, { createdByUser: { publicId: userPublicId } },
+    ] }, select: { publicId: true } }),
+  ]);
+  const historyIds = sessions.flatMap((session) => session.exercises.map((exercise) => exercise.exerciseId));
+  return buildComparisonReferences(sessions, exerciseIds, before, new Set([...visible.map((exercise) => exercise.publicId), ...historyIds]));
 }

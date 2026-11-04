@@ -169,6 +169,7 @@ export type WorkoutSessionDraft = {
    * `features/workouts/liveRecords`.
    */
   startingRecords?: Record<string, import('@workout/domain').StartingRecords>;
+  lastSessionReferences?: Record<string, import('@workout/domain').LastSessionReference | null>;
   warmUpPreferences?: Record<string, { value: ExerciseWarmUpPreferences; pending: boolean }>;
   exercises: WorkoutExerciseDraft[];
 };

@@ -1,3 +1,5 @@
+import { buildComparisonFeedback } from './comparisonFeedback';
+import type { ComparisonLoadStates } from './comparisonResource';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { WorkoutSessionDraft } from '@/features/workouts/state/workoutDraftStore';
@@ -21,8 +23,12 @@ export const RECORD_NOTICE_MS = 2500;
 export function useLiveRecords(draft: WorkoutSessionDraft | null): {
   badges: LiveRecordBadges;
   notice?: RecordNotice;
+  feedback: ReturnType<typeof buildComparisonFeedback>;
+  states: ComparisonLoadStates;
+  retry: () => void;
 } {
-  useStartingRecords(draft);
+  const loading = useStartingRecords(draft);
+  const feedback = useMemo(() => buildComparisonFeedback(draft), [draft]);
 
   const badges = useMemo(() => buildLiveRecordBadges(draft), [draft]);
   const previousRef = useRef(draft);
@@ -52,5 +58,5 @@ export function useLiveRecords(draft: WorkoutSessionDraft | null): {
     return () => clearTimeout(timer);
   }, [notice]);
 
-  return { badges, notice };
+  return { badges, notice, feedback, ...loading };
 }

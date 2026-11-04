@@ -6,8 +6,9 @@ created: 2026-11-03
 
 # Plan — Trustworthy records and last-session feedback
 
-Self-reviewed against the constitution and the owner's spec review. Design
-only: no implementation, migration, external activation or device acceptance.
+Self-reviewed against the constitution and the owner's spec review. Tasks 1–5
+implemented locally 2026-11-04. Investigation and delivery/device acceptance
+remain open; no migration or production data change.
 
 ## Constitution check
 

@@ -1,7 +1,7 @@
 ---
 id: 0048
 title: Trustworthy records and feedback against last training
-status: planned
+status: in-progress
 amends: 0032
 roadmap: docs/roadmap/04-progress-and-prs.md
 created: 2026-11-03
@@ -275,3 +275,9 @@ migration. No personal data repair is authorized by this spec.`
   workout).
 - Roadmap: docs/roadmap/04-progress-and-prs.md
 - Constitution articles engaged: 3, 4, 10
+
+## Investigation update — 2026-11-04
+
+Owner cannot recall a concrete affected case and explicitly deferred the
+investigation; a possible first mark was suggested but not established.
+No migration/data cause is inferred. Investigation acceptance remains open.

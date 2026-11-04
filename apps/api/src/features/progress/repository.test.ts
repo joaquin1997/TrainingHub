@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-vi.mock('../../infrastructure/prisma.js', () => ({ prisma: { workoutSession: { findMany: vi.fn() } } }));
+vi.mock('../../infrastructure/prisma.js', () => ({ prisma: { exercise: { findMany: vi.fn() }, workoutSession: { findMany: vi.fn() } } }));
 import { prisma } from '../../infrastructure/prisma.js';
-import { getExerciseProgress, listExerciseProgress } from './repository.js';
+import { getExerciseProgress, listExerciseProgress, listComparisonReferences } from './repository.js';
 import { runWithCatalogLanguage } from '../../infrastructure/requestLanguage.js';
 
 function fixture(system = true, owner = 'owner') {
@@ -50,4 +50,17 @@ describe('owned progress projection', () => {
     vi.mocked(prisma.workoutSession.findMany).mockRejectedValue(new Error('database unavailable'));
     await expect(listExerciseProgress('owner')).rejects.toThrow('database unavailable');
   });
+});
+
+it('comparison references query only owned history and visible catalog identities', async () => {
+  vi.mocked(prisma.workoutSession.findMany).mockResolvedValue(fixture() as never);
+  vi.mocked(prisma.exercise.findMany).mockResolvedValue([{ publicId: 'visible' }] as never);
+  const result = await listComparisonReferences('owner', ['e1', 'visible', 'foreign'], '2026-11-04T10:00:00Z');
+  expect(vi.mocked(prisma.workoutSession.findMany).mock.calls[0][0]?.where).toEqual({ user: { publicId: 'owner' } });
+  expect(vi.mocked(prisma.exercise.findMany).mock.calls[0][0]?.where).toMatchObject({
+    publicId: { in: ['e1', 'visible', 'foreign'] }, OR: [{ isSystemDefined: true }, { createdByUser: { publicId: 'owner' } }],
+  });
+  expect(result[0]?.lastSession).toMatchObject({ status: 'ready', value: { sessionId: 'w1' } });
+  expect(result[1]?.lastSession).toEqual({ status: 'ready', value: null });
+  expect(result[2]?.historical).toEqual({ status: 'unavailable' });
 });

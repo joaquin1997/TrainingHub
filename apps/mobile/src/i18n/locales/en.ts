@@ -331,6 +331,7 @@ export const en = {
     noLongerAvailable: 'This exercise is no longer available. The list has been refreshed.',
   },
   workouts: {
+    recordComparison: {"historical": "Personal record", "lastSession": "Better than last session", "previous": "previous best {{value}}", "lastValue": "last session {{value}}", "moreRecords": "and {{count}} more records", "moreImprovements": "and {{count}} more improvements", "sameOrHeavier": "At this weight or heavier", "exactWeight": "At exactly this weight", "sessionDate": "Previous session: {{date}}", "details": "Comparison details", "historicalSource": "All-time records", "lastSessionSource": "Last session", "loading": "Checking records…", "offline": "Unavailable: no connection", "unavailable": "Unavailable: service could not answer", "refused": "Unavailable: service refused the comparison"},
     recordsAnnounce_one: '{{count}} record today',
     recordsAnnounce_other: '{{count}} records today',
     discardLost_one: '{{count}} set done will be lost.',
@@ -675,7 +676,7 @@ export const en = {
       bestEstimatedOneRepMax: 'Best est. 1RM',
       // Record badges while logging (spec 0032).
       liveNotice: 'Record: {{title}}',
-      liveMore: '+{{count}}',
+      liveMore: 'and {{count}} more records',
       repsValue_one: '{{count}} rep',
       repsValue_other: '{{count}} reps',
     },

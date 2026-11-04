@@ -1,4 +1,5 @@
 import type { StartingRecords } from '@workout/domain';
+import { isStartingRecords } from '@workout/domain/records';
 
 import type { WorkoutSessionDraft } from '@/features/workouts/state/workoutDraftStore';
 
@@ -7,21 +8,13 @@ import type { WorkoutSessionDraft } from '@/features/workouts/state/workoutDraft
  * Pure helpers over the draft; the loading lives in `useStartingRecords`.
  */
 
-const isObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-
-/** Enough shape to judge against; a malformed stored entry counts as not loaded. */
-function isStartingRecords(value: unknown): value is StartingRecords {
-  return isObject(value) && isObject(value.bests) && Array.isArray(value.repsAtWeight);
-}
-
 /** The starting records kept for an exercise, or undefined when not loaded (EF-1). */
 export function startingRecordsFor(
   draft: WorkoutSessionDraft,
   exerciseId: string,
 ): StartingRecords | undefined {
   const records = draft.startingRecords?.[exerciseId];
-  return isStartingRecords(records) ? records : undefined;
+  return isStartingRecords(records, exerciseId) ? records : undefined;
 }
 
 /**
@@ -50,7 +43,7 @@ export function withStartingRecords(
   records: StartingRecords[],
 ): WorkoutSessionDraft {
   const added = records.filter(
-    (record) => isStartingRecords(record) && !startingRecordsFor(draft, record.exerciseId),
+    (record) => isStartingRecords(record) && draft.exercises.some((exercise) => exercise.exerciseId === record.exerciseId) && !startingRecordsFor(draft, record.exerciseId),
   );
 
   if (added.length === 0) {

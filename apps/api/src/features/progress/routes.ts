@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import { resolveUserPublicId } from '../../infrastructure/userContext.js';
 import {
   getExerciseProgress,
+  listComparisonReferences,
   listExerciseProgress,
   listMuscleGroupVolume,
   listSessionRecords,
@@ -39,6 +40,17 @@ export async function registerProgressRoutes(app: FastifyInstance) {
       }
 
       return listStartingRecords(await resolveUserPublicId(request), exerciseIds);
+    },
+  );
+
+  app.get<{ Querystring: { exerciseIds?: string; before?: string } }>(
+    '/progress/comparison-references', async (request, reply) => {
+      const ids = parseExerciseIds(request.query.exerciseIds);
+      const before = request.query.before;
+      if (!ids || typeof before !== 'string' || !/^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/.test(before) || !Number.isFinite(Date.parse(before))) {
+        return reply.code(400).send({ message: 'Invalid exerciseIds or before' });
+      }
+      return listComparisonReferences(await resolveUserPublicId(request), ids, new Date(before).toISOString());
     },
   );
 

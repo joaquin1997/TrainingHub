@@ -42,6 +42,7 @@ type ProgressSetInput = Pick<ProgressSetEvidence, 'workoutExerciseId' | 'setId' 
  */
 export type ProgressSessionInput = {
   date: string;
+  startedAt?: string;
   /** The workout's public id; needed only to list the records it beat. */
   workoutId?: string;
   clientId?: string | null;

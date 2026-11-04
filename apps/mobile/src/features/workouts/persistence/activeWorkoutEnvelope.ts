@@ -1,3 +1,4 @@
+import { isStartingRecords, isLastSessionReference } from '@workout/domain/records';
 import { isWarmUpPreferences } from '@/lib/warmUpContext';
 import type { WorkoutSessionDraft } from '@/features/workouts/state/workoutDraftStore';
 
@@ -122,6 +123,15 @@ export function parsePersistedActiveWorkout(
       strings(m.aliases) && strings(m.equipment) && strings(m.primaryMuscleGroups);
     return valid ? exercise : { ...exercise, warmUpMetadata: undefined };
   }) };
+
+  if (draft.startingRecords !== undefined) {
+    const entries = isRecord(draft.startingRecords) ? Object.entries(draft.startingRecords) : [];
+    draft = { ...draft, startingRecords: Object.fromEntries(entries.filter(([id, value]) => isStartingRecords(value, id))) };
+  }
+  if (draft.lastSessionReferences !== undefined) {
+    const entries = isRecord(draft.lastSessionReferences) ? Object.entries(draft.lastSessionReferences) : [];
+    draft = { ...draft, lastSessionReferences: Object.fromEntries(entries.filter(([id, value]) => isLastSessionReference(value, id, draft.startedAt))) };
+  }
 
   // Optional interaction metadata never makes an otherwise valid draft unreadable.
   const validId = (value: unknown): value is string => typeof value === 'string' && value.length > 0;

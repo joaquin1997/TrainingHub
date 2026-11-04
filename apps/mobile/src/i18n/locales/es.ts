@@ -334,6 +334,7 @@ export const es: TranslationCatalog = {
     noLongerAvailable: 'Este ejercicio ya no está disponible. La lista se ha actualizado.',
   },
   workouts: {
+    recordComparison: {"historical": "Récord personal", "lastSession": "Mejor que la última sesión", "previous": "mejor anterior {{value}}", "lastValue": "última sesión {{value}}", "moreRecords": "y {{count}} récords más", "moreImprovements": "y {{count}} mejoras más", "sameOrHeavier": "Con este peso o uno superior", "exactWeight": "Exactamente con este peso", "sessionDate": "Sesión anterior: {{date}}", "details": "Detalles de la comparación", "historicalSource": "Récords históricos", "lastSessionSource": "Última sesión", "loading": "Comprobando récords…", "offline": "No disponible: sin conexión", "unavailable": "No disponible: el servicio no pudo responder", "refused": "No disponible: el servicio rechazó la comparación"},
     recordsAnnounce_one: '{{count}} récord hoy',
     recordsAnnounce_other: '{{count}} récords hoy',
     discardLost_one: 'Se perderá {{count}} serie hecha.',
@@ -678,7 +679,7 @@ export const es: TranslationCatalog = {
       bestEstimatedOneRepMax: 'Mejor 1RM estimado',
       // Record badges while logging (spec 0032).
       liveNotice: 'Récord: {{title}}',
-      liveMore: '+{{count}}',
+      liveMore: 'y {{count}} récords más',
       repsValue_one: '{{count}} rep',
       repsValue_other: '{{count}} reps',
     },

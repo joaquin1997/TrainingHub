@@ -1,3 +1,5 @@
+import { ComparisonBadge } from '@/features/workouts/liveRecords/ComparisonBadge';
+import { ComparisonStatus } from '@/features/workouts/liveRecords/ComparisonStatus';
 import { createWorkoutFinishGuard } from '@/features/workouts/utils/workoutFinishGuard';
 import { warmUpMetadataOf } from '@/lib/warmUpContext';
 import { SetTypeSheet } from '@/features/workouts/components/SetTypeSheet';
@@ -27,7 +29,6 @@ import {
   WorkoutSetRow,
 } from '@/features/workouts/components/WorkoutSetRow';
 import { useExerciseReplacement } from '@/features/workouts/hooks/useExerciseReplacement';
-import { RecordBadge } from '@/features/workouts/liveRecords/RecordBadge';
 import { RecordNotice } from '@/features/workouts/liveRecords/RecordNotice';
 import { useLiveRecords } from '@/features/workouts/liveRecords/useLiveRecords';
 import {
@@ -831,12 +832,8 @@ export function ActiveWorkoutScreen() {
               onPress={() => setRestEditorFor(exercise.id)}
             />
           </View>
-          {liveRecords.badges.sessionVolumeByExercise[exercise.exerciseId] ? (
-            <RecordBadge
-              hits={[liveRecords.badges.sessionVolumeByExercise[exercise.exerciseId]!]}
-              unit={unit}
-            />
-          ) : null}
+          <ComparisonStatus draft={workoutDraft} exerciseId={exercise.exerciseId} states={liveRecords.states} retry={liveRecords.retry} />
+          <ComparisonBadge hits={liveRecords.feedback.byExercise[exercise.exerciseId]} unit={unit} />
         </CardHeader>
         <View style={[styles.setList, inSuperset ? styles.indented : null]}>
           <WorkoutSetHeader
@@ -884,6 +881,7 @@ export function ActiveWorkoutScreen() {
                 // One status per set, in the row (spec 0034 FR-19, FR-20).
                 isUpNext={upNext?.workoutSetId === set.id}
                 recordHits={liveRecords.badges.bySet[set.id]}
+                comparisonHits={liveRecords.feedback.bySet[set.id]}
                 recordPop={recordPopSetId === set.id}
                 onChange={(field, value) => handleSetChange(exercise.id, set.id, field, value)}
                 onSelectType={() => handleSelectSetType(exercise.id, set.id)}
