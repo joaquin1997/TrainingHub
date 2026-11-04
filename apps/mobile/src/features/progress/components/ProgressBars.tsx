@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { barHeightRatio, type ChartSeries } from '@/features/progress/utils/chartData';
 import { colors, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
@@ -7,6 +7,8 @@ const CHART_AREA_HEIGHT = 120;
 
 interface ProgressBarsProps {
   series: ChartSeries;
+  onSelect?: (index: number) => void;
+  unit?: string;
   /** Formats a bar's ISO date into a short axis label. */
   formatLabel: (date: string) => string;
   formatValue: (value: number) => string;
@@ -17,7 +19,7 @@ interface ProgressBarsProps {
  * draws when the installed binary has no native SVG view yet (spec 0034,
  * plan-b B2 "old binary guard"). Same look as before the line charts.
  */
-export function ProgressBars({ series, formatLabel, formatValue }: ProgressBarsProps) {
+export function ProgressBars({ series, formatLabel, formatValue, onSelect, unit }: ProgressBarsProps) {
   useTheme();
   return (
     <View style={styles.chart}>
@@ -25,7 +27,9 @@ export function ProgressBars({ series, formatLabel, formatValue }: ProgressBarsP
         // The latest bar is the one that matters; the rest give context.
         const isLatest = index === series.points.length - 1;
         return (
-          <View key={`${bar.date}-${index}`} style={styles.column}>
+          <Pressable key={`${bar.date}-${index}`} style={styles.column} onPress={() => onSelect?.(index)}
+            disabled={!onSelect} accessibilityRole={onSelect ? "button" : undefined} accessibilityLabel={`${formatLabel(bar.date)}, ${formatValue(bar.value)} ${unit ?? ''}`}>
+
             <Text numberOfLines={1} style={[styles.value, isLatest ? styles.valueLatest : null]}>
               {formatValue(bar.value)}
             </Text>
@@ -46,7 +50,7 @@ export function ProgressBars({ series, formatLabel, formatValue }: ProgressBarsP
             <Text numberOfLines={1} style={[styles.label, isLatest ? styles.labelLatest : null]}>
               {formatLabel(bar.date)}
             </Text>
-          </View>
+          </Pressable>
         );
       })}
     </View>

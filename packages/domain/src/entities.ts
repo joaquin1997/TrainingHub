@@ -446,9 +446,29 @@ export interface CreateWorkoutSessionInput {
 }
 
 /**
- * One progress data point for an exercise, aggregated from a single session.
+ * Original quantities from one performed working set.
  */
+export interface ProgressSetEvidence {
+  workoutExerciseId?: EntityId;
+  setId?: EntityId;
+  exerciseOrder?: number;
+  setOrder?: number;
+  weightKg?: number;
+  reps?: number;
+  repsLeft?: number;
+  repsRight?: number;
+  durationSeconds?: number;
+  distanceMeters?: number;
+}
+
+/** One point per saved workout, combining repeated exercise occurrences. */
 export interface ExerciseProgressPoint {
+  workoutId?: EntityId;
+  /** One actual working set, sorted by weight, reps and logged order. */
+  heaviestWorkingSet?: ProgressSetEvidence;
+  totalWorkingReps?: number;
+  /** Absent when no performed set records both weight and reps. Includes warm-ups. */
+  sessionVolumeKg?: number;
   date: ISODateString;
   bestWeightKg?: number;
   bestReps?: number;
@@ -470,6 +490,8 @@ export interface ExerciseProgressPoint {
  * Progress summary for one exercise, used by the progress overview list.
  */
 export interface ExerciseProgressSummary {
+  /** Allowed names/aliases of this trained exercise, for local search. */
+  searchNames?: string[];
   exerciseId: EntityId;
   exerciseName: string;
   sessionCount: number;
@@ -548,6 +570,7 @@ export interface SessionRecords {
  * Full progress detail for one exercise: the summary plus per-session points.
  */
 export interface ExerciseProgressDetail extends ExerciseProgressSummary {
+  readableProgressVersion?: 1;
   points: ExerciseProgressPoint[];
   /**
    * Current best of each record type, then most reps at the three heaviest

@@ -186,3 +186,28 @@ describe('GET /progress/session-records', () => {
     expect(listSessionRecords).toHaveBeenCalledWith('user-test');
   });
 });
+
+describe('readable progress transport (0042)', () => {
+  it.each(['/progress/exercises', '/progress/exercises/foreign'])('requires identity for %s', async (url) => {
+    const response = await app.inject({ method: 'GET', url });
+    expect(response.statusCode).toBe(401);
+    expect(listExerciseProgress).not.toHaveBeenCalled();
+    expect(getExerciseProgress).not.toHaveBeenCalled();
+  });
+  it('passes additive evidence and bilingual names through without inventing values', async () => {
+    const detail = { exerciseId: 'e1', exerciseName: 'Bench', searchNames: ['Bánca', 'Bench'],
+      sessionCount: 1, isRecordSession: false, readableProgressVersion: 1,
+      points: [{ date: '2026-11-02T10:00:00Z', workoutId: 'w1', totalVolume: 500,
+        sessionVolumeKg: 500, heaviestWorkingSet: { setId: 's1', weightKg: 100, reps: 5 } }],
+    };
+    vi.mocked(getExerciseProgress).mockResolvedValue(detail as never);
+    const response = await app.inject({ method: 'GET', url: '/progress/exercises/e1', headers: sessionHeaders() });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual(detail);
+  });
+  it('keeps service failure distinct from a successful empty/404 result', async () => {
+    vi.mocked(getExerciseProgress).mockRejectedValue(new Error('Unavailable'));
+    const response = await app.inject({ method: 'GET', url: '/progress/exercises/e1', headers: sessionHeaders() });
+    expect(response.statusCode).toBe(500);
+  });
+});

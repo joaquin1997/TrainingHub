@@ -20,6 +20,7 @@ async function loadSessionInputs(
     orderBy: { startedAt: 'asc' },
     include: {
       exercises: {
+        orderBy: { order: 'asc' },
         include: {
           exercise: {
             select: {
@@ -27,11 +28,14 @@ async function loadSessionInputs(
               name: true,
               nameEs: true,
               nameEn: true,
+              aliases: true,
+              isSystemDefined: true,
+              createdByUser: { select: { publicId: true } },
               category: true,
               trackingType: true,
             },
           },
-          sets: true,
+          sets: { orderBy: { order: 'asc' } },
         },
       },
     },
@@ -43,10 +47,19 @@ async function loadSessionInputs(
     clientId: session.clientId,
     exercises: session.exercises.map((exercise) => ({
       exerciseId: exercise.exercise.publicId,
-      exerciseName: exerciseDisplayName(exercise.exercise),
+      exerciseName: !exercise.exercise.isSystemDefined && exercise.exercise.createdByUser?.publicId !== userPublicId
+        ? exercise.exercise.name : exerciseDisplayName(exercise.exercise),
+      searchNames: exercise.exercise.isSystemDefined || exercise.exercise.createdByUser?.publicId === userPublicId
+        ? [...new Set([exercise.exercise.name, exercise.exercise.nameEs, exercise.exercise.nameEn,
+          ...(exercise.exercise.aliases ?? [])].filter((name): name is string => Boolean(name)))]
+        : [exercise.exercise.name],
       category: exercise.exercise.category,
       trackingType: toExerciseTrackingType(exercise.exercise.trackingType),
       sets: exercise.sets.map((set) => ({
+        workoutExerciseId: exercise.publicId,
+        setId: set.publicId,
+        exerciseOrder: exercise.order,
+        setOrder: set.order,
         reps: set.reps,
         repsLeft: set.repsLeft,
         repsRight: set.repsRight,

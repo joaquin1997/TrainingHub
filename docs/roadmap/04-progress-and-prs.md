@@ -3,10 +3,11 @@
 ## Specified next slice
 
 [0042 — Readable exercise progress](../sdd/specs/0042-readable-exercise-progress/spec.md)
-is ready (2026-11-03): search trained exercises before general summaries,
+is implemented locally (2026-11-03): search trained exercises before general summaries,
 explicit metric and period choices, coherent performed-set figures and links
-to the saved workout. Plan and implementation are pending; existing line
-charts from 0034 are reused rather than reintroduced.
+to the saved workout. Tasks 1–7 are complete; API/bundle rollout and physical
+device acceptance remain pending (task 8). Existing line charts from 0034
+are reused rather than reintroduced.
 
 ## Checklist
 - [x] Personal record (PR) detection (per exercise; recent-record flag + badge)
@@ -23,7 +24,7 @@ charts from 0034 are reused rather than reintroduced.
   - [x] Per-session bar chart (est. 1RM with volume fallback) on the exercise
     detail screen — dependency-free, pure-view bars
   - [x] Smooth line charts and area/readout — spec 0034, using `react-native-svg`
-  - [ ] Explicit metric/period selection and readable exercise lookup — spec 0042 (ready)
+  - [x] Explicit metric/period selection and readable exercise lookup — spec 0042 (code complete locally; rollout/device acceptance pending)
 - [~] Weekly volume, muscle-group distribution
   - [x] Weekly training-volume chart on the progress overview
   - [x] Volume distribution by exercise **category** (a proxy, see notes)
@@ -32,6 +33,17 @@ charts from 0034 are reused rather than reintroduced.
 - [ ] Workout calendar view
 
 ## Progress log
+- (2026-11-03) Spec 0042 — implementation tasks 1–7 complete locally: trained
+  lookup, bilingual aliases, paired saved-set evidence, one point per workout,
+  typed metrics/local-calendar periods, all-time records and saved-workout
+  navigation. Refresh failures preserve visible data and controls. Source/unit
+  verification and browser evidence are recorded in the spec's verification
+  document; deployment and physical-device checks remain pending.
+- (2026-11-03) Spec 0042 — plan and task gates self-reviewed against current
+  code: one point per owned workout, coherent saved-set evidence, allowed
+  bilingual search metadata, explicit metrics/local-calendar periods and
+  origin-preserving navigation. Eight unchecked tasks; no implementation or
+  deployment in this pass. Priority remains 0043 → 0042.
 - PR detection + estimated 1RM in the aggregation (pure, unit-tested) and
   surfaced in the progress overview (🏆 PR badge, est. 1RM) and detail
   (per-session 1RM).

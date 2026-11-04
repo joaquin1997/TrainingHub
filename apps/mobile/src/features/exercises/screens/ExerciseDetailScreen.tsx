@@ -10,11 +10,11 @@ import { TrackingTypeControl } from '@/features/exercises/components/TrackingTyp
 import { UnilateralSwitch } from '@/features/exercises/components/UnilateralSwitch';
 import { useAuth } from '@/features/auth/AuthContext';
 import { pickProfilePhoto } from '@/features/profile/photo/pickProfilePhoto';
+import { formatProgressDuration, heaviestSetText } from '@/features/progress/utils/progressMetrics';
 import { progressClient } from '@/features/progress/api/progressClient';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { formatDate } from '@/lib/format';
-import { formatSetValues, tracksField } from '@/lib/tracking';
-import { formatWeightValue } from '@/lib/weight';
+import { formatDistance, sideLabels, tracksField } from '@/lib/tracking';
 import { ActionSheet } from '@/ui/ActionSheet';
 import { Button } from '@/ui/Button';
 import { Chip } from '@/ui/Chip';
@@ -24,10 +24,6 @@ import { equipmentLabel, muscleLabel } from '@/features/exercises/utils/catalogL
 import type { Exercise, ExerciseProgressPoint, ExerciseTrackingType } from '@workout/domain';
 
 const MAX_HISTORY = 8;
-
-function formatHistoryValue(value?: number) {
-  return value === undefined ? '-' : String(value);
-}
 
 export function ExerciseDetailScreen() {
   useTheme();
@@ -318,28 +314,20 @@ export function ExerciseDetailScreen() {
               <View key={`${point.date}-${index}`} style={styles.historyRow}>
                 <Text style={styles.historyDate}>{formatDate(point.date, i18n.language)}</Text>
                 <Text style={styles.historyValue}>
-                  {point.bestDurationSeconds !== undefined || point.bestDistanceMeters !== undefined
-                    ? formatSetValues(
-                        {
-                          weightKg: point.bestWeightKg,
-                          durationSeconds: point.bestDurationSeconds,
-                          distanceMeters: point.bestDistanceMeters,
-                        },
-                        unit,
-                      )
-                    : `${formatWeightValue(point.bestWeightKg, unit)} ${unit} × ${formatHistoryValue(point.bestReps)}`}
+                  {(exercise.trackingType !== 'reps' ? heaviestSetText(point, unit, sideLabels(t)) : undefined) ??
+                    (point.bestDurationSeconds !== undefined || point.bestDistanceMeters !== undefined
+                      ? [
+                          point.bestDurationSeconds !== undefined ? `${t('progress.longestTime')}: ${formatProgressDuration(point.bestDurationSeconds)}` : undefined,
+                          point.bestDistanceMeters !== undefined ? `${t('progress.longestDistance')}: ${formatDistance(point.bestDistanceMeters)}` : undefined,
+                        ].filter(Boolean).join(' · ')
+                      : point.bestReps !== undefined ? `${point.bestReps} ${t('progress.readable.repsUnit')}` : '–')}
                 </Text>
               </View>
             ))}
-          <Button
-            label={t('exercises.viewFullProgress')}
-            icon="trending-up"
-            variant="secondary"
-            fullWidth
-            onPress={() => router.push(`/progress/exercises/${exercise.id}`)}
-          />
         </View>
       ) : null}
+      <Button label={t('exercises.viewFullProgress')} icon="trending-up" variant="secondary" fullWidth
+        onPress={() => router.push(`/exercises/${exercise.id}/progress`)} />
       {/* Spec 0033: only the creator's own custom exercise can be deleted (AC-7). */}
       {!exercise.isSystemDefined && exercise.createdByUserId === user?.id ? (
         <DeleteExerciseButton

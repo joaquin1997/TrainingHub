@@ -16,6 +16,8 @@ export interface RecordsCardItem {
 
 interface RecordsCardProps {
   title: string;
+  /** Keep long values below their label on narrow exercise detail screens. */
+  stacked?: boolean;
   items: RecordsCardItem[];
   unit: WeightUnit;
   /**
@@ -26,7 +28,7 @@ interface RecordsCardProps {
 }
 
 /** A card of personal records (spec 0023): trophy, what it is, its figure. */
-export function RecordsCard({ title, items, unit, variant = 'default' }: RecordsCardProps) {
+export function RecordsCard({ title, items, unit, variant = 'default', stacked = false }: RecordsCardProps) {
   useTheme();
   const { t } = useTranslation();
 
@@ -49,8 +51,9 @@ export function RecordsCard({ title, items, unit, variant = 'default' }: Records
             <View style={styles.text}>
               <Text style={styles.title}>{label.title}</Text>
               {caption ? <Text style={styles.caption}>{caption}</Text> : null}
+              {stacked ? <Text style={styles.value}>{label.value}</Text> : null}
             </View>
-            <Text style={styles.value}>{label.value}</Text>
+            {!stacked ? <Text style={styles.value}>{label.value}</Text> : null}
           </View>
         );
       })}

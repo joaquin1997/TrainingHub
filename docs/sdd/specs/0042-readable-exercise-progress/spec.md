@@ -1,7 +1,7 @@
 ---
 id: 0042
 title: Progress per exercise that is easy to read and to find
-status: ready
+status: in-progress
 roadmap: docs/roadmap/04-progress-and-prs.md
 created: 2026-11-03
 requested: 2026-10-21
@@ -241,7 +241,9 @@ to record rules is introduced.
 
 None blocking. This specifies the reported findability and readability
 problem; the defaults above are reversible assumptions under the delegated
-gates. Ready to plan; no implementation is authorized by this document alone.
+gates. Plan and tasks self-reviewed on 2026-11-03. Implementation is complete
+locally; API/bundle rollout and physical-device acceptance remain pending.
+See [plan](plan.md), [tasks](tasks.md) and [verification](verification.md).
 
 ## Related
 

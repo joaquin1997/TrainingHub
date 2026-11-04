@@ -9,6 +9,7 @@ export default function ExercisesStackLayout() {
   return (
     <Stack screenOptions={screenHeader}>
       <Stack.Screen name="index" options={{ title: t('nav.exercises'), headerShown: false }} />
+      <Stack.Screen name="[exerciseId]/progress" options={{ title: t('nav.exerciseProgress') }} />
       <Stack.Screen name="[exerciseId]" options={{ title: t('nav.exercise') }} />
     </Stack>
   );

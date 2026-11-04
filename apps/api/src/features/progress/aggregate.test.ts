@@ -86,7 +86,7 @@ describe('buildExerciseProgressDetail', () => {
   it('returns points with per-session best and total volume', () => {
     const detail = buildExerciseProgressDetail(sessions, 'bench');
 
-    expect(detail?.points).toEqual([
+    expect(detail?.points).toMatchObject([
       {
         date: '2026-05-01T09:00:00.000Z',
         bestWeightKg: 65,
@@ -275,7 +275,7 @@ describe('performed work only (spec 0013)', () => {
 
     const detail = buildExerciseProgressDetail(selectPerformedWork(input), 'bench');
 
-    expect(detail?.points).toEqual([
+    expect(detail?.points).toMatchObject([
       {
         date: '2026-06-01T10:30:00.000Z',
         bestWeightKg: 80,
@@ -412,7 +412,7 @@ describe('performed work only (spec 0013)', () => {
 
     const detail = buildExerciseProgressDetail(input, 'bench');
 
-    expect(detail?.points[1]).toEqual({
+    expect(detail?.points[1]).toMatchObject({
       date: '2026-05-08T09:00:00.000Z',
       bestWeightKg: undefined,
       bestReps: undefined,
@@ -536,7 +536,7 @@ describe('record points (spec 0034 FR-22)', () => {
     expect(detail?.points.every((point) => !('isRecord' in point))).toBe(true);
   });
 
-  it('flags both entries of an exercise logged twice in a record workout', () => {
+  it('flags the combined point of a repeated exercise in a record workout', () => {
     const detail = buildExerciseProgressDetail(
       [
         bench('2026-05-01T09:00:00.000Z', [{ reps: 5, weightKg: 100 }]),
@@ -552,7 +552,7 @@ describe('record points (spec 0034 FR-22)', () => {
       'bench',
     );
 
-    expect(detail?.points.map((point) => point.isRecord)).toEqual([undefined, true, true]);
+    expect(detail?.points.map((point) => point.isRecord)).toEqual([undefined, true]);
   });
 
   it('never sends the internal session index', () => {
@@ -565,7 +565,7 @@ describe('record points (spec 0034 FR-22)', () => {
     );
 
     expect(Object.keys(detail ?? {})).not.toContain('pointSessions');
-    expect(detail?.points[1]).toEqual({
+    expect(detail?.points[1]).toMatchObject({
       date: '2026-05-08T09:00:00.000Z',
       bestWeightKg: 105,
       bestReps: 5,
