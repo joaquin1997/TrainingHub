@@ -114,7 +114,7 @@ export async function listStartingRecords(userPublicId: string, exerciseIds: str
 export async function listComparisonReferences(userPublicId: string, exerciseIds: string[], before: string) {
   const [sessions, visible] = await Promise.all([
     loadSessionInputs(userPublicId),
-    prisma.exercise.findMany({ where: { publicId: { in: exerciseIds }, OR: [
+    prisma.exercise.findMany({ where: { publicId: { in: exerciseIds }, deletedAt: null, OR: [
       { isSystemDefined: true }, { createdByUser: { publicId: userPublicId } },
     ] }, select: { publicId: true } }),
   ]);

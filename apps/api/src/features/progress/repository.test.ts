@@ -58,7 +58,7 @@ it('comparison references query only owned history and visible catalog identitie
   const result = await listComparisonReferences('owner', ['e1', 'visible', 'foreign'], '2026-11-04T10:00:00Z');
   expect(vi.mocked(prisma.workoutSession.findMany).mock.calls[0][0]?.where).toEqual({ user: { publicId: 'owner' } });
   expect(vi.mocked(prisma.exercise.findMany).mock.calls[0][0]?.where).toMatchObject({
-    publicId: { in: ['e1', 'visible', 'foreign'] }, OR: [{ isSystemDefined: true }, { createdByUser: { publicId: 'owner' } }],
+    publicId: { in: ['e1', 'visible', 'foreign'] }, deletedAt: null, OR: [{ isSystemDefined: true }, { createdByUser: { publicId: 'owner' } }],
   });
   expect(result[0]?.lastSession).toMatchObject({ status: 'ready', value: { sessionId: 'w1' } });
   expect(result[1]?.lastSession).toEqual({ status: 'ready', value: null });

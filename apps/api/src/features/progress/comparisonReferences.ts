@@ -20,3 +20,12 @@ export function buildComparisonReferences(
       } : null } };
   });
 }
+
+/** Strict ISO instant; reject calendar overflow instead of silently shifting dates. */
+export function parseComparisonBefore(value: unknown): string | null {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(value)) return null;
+  const date = new Date(value);
+  const calendar = new Date(value.slice(0, 10) + 'T00:00:00Z');
+  if (!Number.isFinite(date.getTime()) || !Number.isFinite(calendar.getTime()) || calendar.toISOString().slice(0, 10) !== value.slice(0, 10) || Number(value.slice(11, 13)) > 23) return null;
+  return date.toISOString();
+}

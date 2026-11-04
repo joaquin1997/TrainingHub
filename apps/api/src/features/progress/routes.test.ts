@@ -226,7 +226,7 @@ describe('GET comparison references (0048)', () => {
     expect((await app.inject({ method: 'GET', url })).statusCode).toBe(401);
     expect(listComparisonReferences).not.toHaveBeenCalled();
   });
-  it.each(['', '?exerciseIds=e', '?exerciseIds=e&before=bad', '?exerciseIds=e&before=2026-11-04'])('rejects invalid query %s', async (query) => {
+  it.each(['', '?exerciseIds=e', '?exerciseIds=e&before=bad', '?exerciseIds=e&before=2026-11-04', '?exerciseIds=e&before=2026-02-30T10:00:00Z', '?exerciseIds=e&before=2026-11-04T24:00:00Z'])('rejects invalid query %s', async (query) => {
     expect((await app.inject({ method: 'GET', url: '/progress/comparison-references' + query, headers: sessionHeaders() })).statusCode).toBe(400);
   });
   it('preserves service failure as an error rather than empty history', async () => {
