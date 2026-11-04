@@ -1,7 +1,9 @@
+import { useAuth } from '@/features/auth/AuthContext';
+import { useWorkoutInvalidationVersion } from '../corrections/useWorkoutInvalidationVersion';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import type { TFunction } from 'i18next';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, Text, View } from 'react-native';
 
@@ -73,10 +75,13 @@ function setTypeLabel(type: WorkoutSet['type'], t: TFunction) {
 export function WorkoutSessionDetailScreen() {
   useTheme();
   const { t, i18n } = useTranslation();
+  const { user } = useAuth();
+  const correctionVersion = useWorkoutInvalidationVersion();
   const router = useRouter();
   const { workoutId } = useLocalSearchParams<{ workoutId?: string }>();
   const [session, setSession] = useState<WorkoutSession | null>(null);
   const [records, setRecords] = useState<SessionRecord[]>([]);
+  const [recordsUnavailable, setRecordsUnavailable] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
   const [isShareOpen, setIsShareOpen] = useState(false);
@@ -90,6 +95,7 @@ export function WorkoutSessionDetailScreen() {
         setErrorMessage(undefined);
         setSession(null);
         setRecords([]);
+        setRecordsUnavailable(false);
       }
 
       if (!workoutId) {
@@ -104,7 +110,7 @@ export function WorkoutSessionDetailScreen() {
         // The records it beat (spec 0023); failing to load them hides only the card.
         const [nextSession, sessionRecords] = await Promise.all([
           workoutsClient.getById(workoutId),
-          progressClient.sessionRecords().catch(() => []),
+          progressClient.sessionRecords().catch(() => { if (shouldUpdate()) setRecordsUnavailable(true); return []; }),
         ]);
 
         if (shouldUpdate()) {
@@ -130,10 +136,10 @@ export function WorkoutSessionDetailScreen() {
         }
       }
     },
-    [workoutId, t],
+    [workoutId, t, user?.id, correctionVersion],
   );
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     let isActive = true;
 
     void loadSession(() => isActive);
@@ -141,7 +147,7 @@ export function WorkoutSessionDetailScreen() {
     return () => {
       isActive = false;
     };
-  }, [loadSession]);
+  }, [loadSession]));
 
   if (isLoading) {
     return (
@@ -151,7 +157,7 @@ export function WorkoutSessionDetailScreen() {
     );
   }
 
-  if (!session) {
+  if (!session || session.userId !== user?.id) {
     return (
       <View style={styles.screen}>
         <StateView
@@ -247,6 +253,7 @@ export function WorkoutSessionDetailScreen() {
         </View>
       ) : null}
 
+      {recordsUnavailable ? <Text style={styles.meta}>{t('workouts.correction.recordsUnavailable')}</Text> : null}
       <RecordsCard
         title={t('progress.records.beaten')}
         unit={unit}
@@ -267,6 +274,10 @@ export function WorkoutSessionDetailScreen() {
         </View>
       ) : null}
 
+      {Number.isSafeInteger(session.revision) ? <Button
+        label={t('workouts.correction.edit')} icon="create-outline" variant="secondary" fullWidth
+        onPress={() => router.push({ pathname: '/workouts/correct', params: { workoutId: session.id } })}
+      /> : <Text style={styles.meta}>{t('workouts.correction.unsupported')}</Text>}
       <Button
         label={t('workouts.share.action')}
         icon="share-outline"
@@ -295,6 +306,7 @@ export function WorkoutSessionDetailScreen() {
             title={exercise.exerciseName}
             trailing={<Text style={styles.exerciseVolume}>{exerciseHeadline(exercise, unit)}</Text>}
           />
+          {exercise.notes ? <Text style={styles.notes}>{exercise.notes}</Text> : null}
           {exercise.sets.map((set) => {
             const type = setTypeLabel(set.type, t);
             const done = isPerformedSet(set);

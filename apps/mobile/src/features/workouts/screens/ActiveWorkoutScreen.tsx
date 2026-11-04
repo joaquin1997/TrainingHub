@@ -377,7 +377,7 @@ export function ActiveWorkoutScreen() {
       // Seed each set's ghosted placeholder from its last performance so an
       // unedited set still logs what you did last time.
       const current = getActiveWorkout();
-      if (!current) {
+      if (!current || current.clientId !== workoutDraft?.clientId) {
         return;
       }
 
@@ -396,7 +396,7 @@ export function ActiveWorkoutScreen() {
     return () => {
       active = false;
     };
-  }, [exerciseIdsKey]);
+  }, [exerciseIdsKey, workoutDraft?.clientId, user?.id]);
 
   // "Last time" pairs by kind and position within the kind (spec 0031), so a
   // set whose type changes, or sets added or removed ahead of it, re-pair.
@@ -513,13 +513,13 @@ export function ActiveWorkoutScreen() {
       setFinishError(null);
       setFinishRefused(false);
 
-      await workoutsClient.create(toCreateWorkoutSessionInput(workoutDraft));
+      const saved = await workoutsClient.create(toCreateWorkoutSessionInput(workoutDraft));
 
       // A delayed save must never clear or navigate away from a replacement workout.
       if (getActiveWorkout()?.clientId !== workoutDraft.clientId) return false;
       const workoutSession = toWorkoutSessionSkeleton(workoutDraft);
 
-      saveCompletedWorkout(workoutDraft);
+      saveCompletedWorkout({ ...workoutDraft, savedSessionId: saved.id });
       void syncWorkoutCompletionToAppleHealth(workoutSession);
 
       if (nextId) {

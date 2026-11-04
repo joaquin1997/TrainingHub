@@ -1,17 +1,21 @@
+import { useAuth } from '@/features/auth/AuthContext';
+import { isPerformedSet } from '../utils/performedSet';
+import { useWorkoutInvalidationVersion } from '../corrections/useWorkoutInvalidationVersion';
+import type { WorkoutSession } from '@workout/domain';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import type { TFunction } from 'i18next';
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, Text, View } from 'react-native';
 
+import { workoutsClient } from '../api/workoutsClient';
 import { progressClient } from '@/features/progress/api/progressClient';
 import { RecordsCard } from '@/features/progress/components/RecordsCard';
 import { RecordCelebration } from '@/features/workouts/components/RecordCelebration';
 import {
   clearLatestCompletedWorkout,
   getLatestCompletedWorkout,
-  toWorkoutSessionSkeleton,
 } from '@/features/workouts/state/workoutDraftStore';
 import { ShareSheet } from '@/features/workouts/components/ShareSheet';
 import { setNumberOf } from '@/features/workouts/utils/setNumber';
@@ -93,41 +97,38 @@ export function WorkoutSummaryScreen() {
   useTheme();
   const { t, i18n } = useTranslation();
   const router = useRouter();
+  const { user } = useAuth();
+  const correctionVersion = useWorkoutInvalidationVersion();
+  const [savedSession, setSavedSession] = useState<WorkoutSession | null>(null);
+  const [summaryError, setSummaryError] = useState(false);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const [retry, setRetry] = useState(0);
   const workoutDraft = getLatestCompletedWorkout();
   const clientId = workoutDraft?.clientId;
   const [records, setRecords] = useState<SessionRecord[]>([]);
   const [isShareOpen, setIsShareOpen] = useState(false);
 
-  // The records this workout beat (spec 0023). The workout is already saved
-  // when the summary shows; any failure just leaves the card out.
-  useEffect(() => {
-    if (!clientId) {
-      return;
-    }
-
-    let isActive = true;
-
-    progressClient
-      .sessionRecords()
-      .then((sessions) => {
-        const match = sessions.find((session) => session.clientId === clientId);
-        if (isActive && match) {
-          setRecords(match.records);
-        }
-      })
-      .catch(() => undefined);
-
-    return () => {
-      isActive = false;
-    };
-  }, [clientId]);
+  useFocusEffect(useCallback(() => {
+    if (!clientId || !user) return;
+    let active = true;
+    setSummaryLoading(true); setSummaryError(false);
+    const readSaved = workoutDraft?.savedSessionId ? workoutsClient.getById(workoutDraft.savedSessionId)
+      : workoutsClient.list().then((sessions) => sessions.find((session) => session.clientId === clientId));
+    void Promise.all([readSaved, progressClient.sessionRecords()]).then(([saved, allRecords]) => {
+      if (!active) return;
+      if (!saved || saved.userId !== user.id) { setSummaryError(true); return; }
+      setSavedSession(saved);
+      setRecords(allRecords.find((entry) => entry.workoutId === saved.id)?.records ?? []);
+    }).catch(() => { if (active) setSummaryError(true); }).finally(() => { if (active) setSummaryLoading(false); });
+    return () => { active = false; };
+  }, [clientId, workoutDraft?.savedSessionId, user?.id, correctionVersion, retry]));
 
   // Volume versus last time (FR-24): the workout as saved, compared with the
   // history once; nothing is shown until (and unless) it loads (EF-5).
   const unit = workoutDraft?.unit ?? 'kg';
-  const workoutSession = workoutDraft ? toWorkoutSessionSkeleton(workoutDraft) : null;
+  const workoutSession = savedSession?.userId === user?.id ? savedSession : null;
   const isDone = (exerciseIndex: number, setIndex: number) =>
-    workoutDraft?.exercises[exerciseIndex]?.entries[setIndex]?.done ?? false;
+    workoutSession?.exercises[exerciseIndex]?.sets[setIndex] ? isPerformedSet(workoutSession.exercises[exerciseIndex]!.sets[setIndex]!) : false;
   const compared: ComparedWorkout | null = workoutSession
     ? {
         routineId: workoutSession.routineId,
@@ -147,6 +148,10 @@ export function WorkoutSummaryScreen() {
     clearLatestCompletedWorkout();
     router.replace(path);
   };
+
+  if (summaryLoading || summaryError) return <View style={styles.screen}><StateView kind={summaryError ? 'error' : 'loading'}
+    message={t(summaryError ? 'workouts.correction.refreshFailed' : 'workouts.loadingWorkout')}
+    actionLabel={summaryError ? t('common.retry') : undefined} onAction={() => setRetry((value) => value + 1)} /></View>;
 
   if (!workoutDraft || !workoutSession || !compared) {
     return (

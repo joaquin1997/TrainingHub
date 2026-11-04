@@ -1,3 +1,5 @@
+import { useAuth } from '@/features/auth/AuthContext';
+import { useWorkoutInvalidationVersion } from '../corrections/useWorkoutInvalidationVersion';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -38,11 +40,15 @@ export function WorkoutHistoryScreen() {
   useTheme();
   const { t, i18n } = useTranslation();
   const router = useRouter();
+  const { user } = useAuth();
+  const correctionVersion = useWorkoutInvalidationVersion();
+  const [historyOwner, setHistoryOwner] = useState(user?.id);
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   /** How many records each workout beat (spec 0023), by workout id. */
   const [recordCounts, setRecordCounts] = useState<Map<string, number>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>();
+  const [recordsUnavailable, setRecordsUnavailable] = useState(false);
   // The day picked on the week strip (spec 0035 FR-9); null shows every workout.
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   // Weeks back from this one on the strip (spec 0040 FR-9); 0 is this week.
@@ -54,15 +60,17 @@ export function WorkoutHistoryScreen() {
     async (shouldUpdate: () => boolean = () => true) => {
       setIsLoading(true);
       setErrorMessage(undefined);
+      setRecordsUnavailable(false);
 
       try {
         // Records are a marker only: failing to load them never hides the list.
         const [nextSessions, sessionRecords] = await Promise.all([
           workoutsClient.list(),
-          progressClient.sessionRecords().catch(() => []),
+          progressClient.sessionRecords().catch(() => { if (shouldUpdate()) setRecordsUnavailable(true); return []; }),
         ]);
 
         if (shouldUpdate()) {
+          setHistoryOwner(user?.id);
           setSessions(nextSessions);
           setRecordCounts(
             new Map(sessionRecords.map((entry) => [entry.workoutId, entry.records.length])),
@@ -80,7 +88,7 @@ export function WorkoutHistoryScreen() {
         }
       }
     },
-    [t],
+    [t, user?.id, correctionVersion],
   );
 
   useFocusEffect(
@@ -132,6 +140,8 @@ export function WorkoutHistoryScreen() {
           });
   const isFiltered = selectedDay !== null || weeksAgo > 0;
 
+  if (historyOwner !== user?.id) return <StateView kind={errorMessage ? 'error' : 'loading'} message={errorMessage ?? t('workouts.loadingWorkout')} actionLabel={t('common.retry')} onAction={() => void loadSessions()} />;
+
   return (
     <ScrollView
       style={styles.screen}
@@ -156,6 +166,7 @@ export function WorkoutHistoryScreen() {
       ) : null}
       {/* First load only: the shape of the cards to come (spec 0034 FR-15). */}
       {showLoading && !errorMessage ? <SkeletonCardList /> : null}
+      {recordsUnavailable ? <Text style={styles.meta}>{t('workouts.correction.recordsUnavailable')}</Text> : null}
       {errorMessage ? (
         <StateView
           kind="error"

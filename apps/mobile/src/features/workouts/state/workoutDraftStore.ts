@@ -133,6 +133,8 @@ export type WorkoutExerciseDraft = {
 };
 
 export type WorkoutSessionDraft = {
+  /** Authoritative saved identity for post-save readers, absent while active. */
+  savedSessionId?: string;
   id: string;
   /**
    * Workout identity sent with the save, unique per workout (spec 0014). The
