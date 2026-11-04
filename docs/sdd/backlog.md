@@ -48,8 +48,8 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0045](specs/0045-watch-with-phone-locked/spec.md) | The watch keeps going with the phone locked | `done` — original device acceptance 2026-11-03; regression fix deployed 2026-11-04 (initial-mirror retry/live delivery), owner confirmed next-set advancement with the iPhone locked. Exact original failure cause not captured | 8 — Integrations & platform |
 
 | [0046](specs/0046-set-rows-and-finish/spec.md) | Readable completed sets, undo selection and Finish at the top | `in-progress` — tasks 1–4 implemented locally 2026-11-04: completed figures, exact undo selection/rest origin and guarded top Finish; paired Release delivered 2026-11-04; visual/device acceptance and connected-watch cancellation pending. | 1 — Live workout logging |
-| [0047](specs/0047-watch-skip-rest/spec.md) | Skip a rest from the watch | `planned` — Owner-reviewed; plan/tasks prepared 2026-11-03: specific-rest skip with acknowledgement; paired native rebuild and device checks pending. | 2 + 8 |
-| [0048](specs/0048-trustworthy-live-records/spec.md) | Trustworthy live records and last-session feedback | `planned` — Owner-reviewed; plan/tasks prepared 2026-11-03: historical PR and last-session feedback, explicit load states; original discrepancy still unconfirmed. | 4 — Progress |
+| [0047](specs/0047-watch-skip-rest/spec.md) | Skip a rest from the watch | `in-progress` — tasks 1–4 implemented locally 2026-11-04: specific-rest identity, acknowledgement, durable native pending/suppression and translated Skip; Release build passed, installation/device acceptance pending. | 2 + 8 |
+| [0048](specs/0048-trustworthy-live-records/spec.md) | Trustworthy live records and last-session feedback | `in-progress` — tasks 1–5 implemented locally 2026-11-04: independent frozen sources, clear PR/last-session comparisons and retry/error states. API/app delivery and device checks pending; owner explicitly deferred original-case investigation. | 4 — Progress |
 | [0049](specs/0049-weight-per-side/spec.md) | Configurable weight per side | `planned` — Owner-reviewed; plan/tasks prepared 2026-11-03: same-side quantities, explicit shared-load selection, lesser-load warm-ups and older-client capability guards. | 1 — Live workout logging |
 | [0050](specs/0050-correct-saved-workout/spec.md) | Correct mistakes in a saved workout | `planned` — Owner-reviewed; plan/tasks prepared 2026-11-03: atomic versioned correction, legacy completion normalization and derived-view refresh; structural edits/deletion deferred. | 1 — Live workout logging |
 | [0051](specs/0051-offer-routine-update/spec.md) | Offer to update the routine after training | `planned` — Owner-reviewed; plan/tasks prepared 2026-11-03: selected changes after workout save, versioned stable-ID routine updates and preserved history links. | 5 — Routines |
@@ -76,12 +76,13 @@ including the earlier draft-to-current-ID mapping and checked code references.
 0043 covers warm-ups and explained types; 0045 already covers locked-phone
 watch progression. Owner review is complete for 0043 and 0046–0053;
 confirmed decisions are recorded in each spec and the review. 0046 implementation tasks 1–4 are complete locally; its delivery/device checks
-remain open. 0047–0053 have approved plans and unchecked implementation task
-lists, not implementations or closed device defects. The ambiguous migration/record report remains an
+remain open. 0047 tasks 1–4 and 0048 tasks 1–5 are now implemented locally; their
+delivery/device checks remain open. 0049–0053 retain planned, unchecked
+implementation tasks. The ambiguous migration/record report remains an
 investigation acceptance condition in 0048.
 
-Next implementation order after local 0046: 0048 → 0047 → 0053 → 0050 →
-0051 → 0049, preserving the existing 0043 → 0042 work. 0052 can advance separately
+Next implementation order after local 0048/0047: 0053 → 0050 → 0051 →
+0049, preserving the completed local 0043 → 0042 → 0046 work. 0052 can advance separately
 to support diagnosis. This is a proposal, not a change to the agreed feature
 order or authorization to implement/deploy.
 
@@ -114,7 +115,8 @@ review remains open. The reviewed catalog was not reapplied.
 Current work (2026-11-04): 0001 code complete locally, rollout pending;
 0043 and 0042 code complete locally with rollout/device checks pending;
 0046 tasks 1–4 implemented locally 2026-11-04 with delivery/device checks pending;
-0047–0053 planned with ordered implementation tasks. Feature order
+0048 tasks 1–5 and 0047 tasks 1–4 implemented locally; 0049–0053 remain
+planned with ordered implementation tasks. Feature order
 remains 0043 → 0042 (0041 done first at the owner's request).
 
 Since 2026-10-16 the owner has delegated the gates: specs, plans and tasks are
@@ -210,3 +212,14 @@ initial-mirror retry/live-event fallback fix (69d27ee): the owner confirmed
 next-set advancement with the iPhone locked. The original failure was not
 captured in logs, so its exact cause remains unproven. Remaining legacy
 account data was not moved. No push was performed.
+
+## Development update — 2026-11-04 (0048 and 0047)
+
+0048 tasks 1–5 and 0047 tasks 1–4 are implemented locally with passing
+typechecks, 1,366 tests and web/API/native builds. No new deployment in this
+pass. 0048 requires API-first delivery; then deliver the paired phone/Watch
+apps for 0047 and verify its physical cases. Original-record investigation
+remains deferred at the owner's request; do not mark 0048 done from UI tests.
+Owner reports deployed 0042/0043/0046 testing has gone well; this general
+confirmation does not invent individual accessibility/account/offline results.
+Next implementation after these two is 0053 (group records by exercise).

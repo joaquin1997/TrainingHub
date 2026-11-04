@@ -114,3 +114,13 @@ production.
 
 The implemented **Up next** definition above describes today's baseline.
 0046 amends it with explicit undo selection when that feature ships.
+
+## Live comparison feedback (0048)
+
+- **Records unavailable**: an exercise has a missing comparison source;
+  loading, connection failure, refusal and confirmed empty history are distinct.
+- **Last-session improvement**: a strict improvement against a metric of the
+  latest saved exercise session before workout start. It is separate from a
+  personal record and never increases PR counts or celebrations.
+- **Pending rest skip**: a request targeting one rest, locally suppressed on
+  the Watch until the phone acknowledges and reconciles its authoritative state.

@@ -24,3 +24,12 @@ Remaining checks: ES/EN and both themes at 320 pt/large text, actual badge
 modal/Done separation and screen readers, offline/foreground retry, saved
 workout parity, older API unavailable state, actual affected record case,
 API-before-bundle rollout. Unit tests do not establish device acceptance.
+
+## Final local checks with 0047 — 2026-11-04
+
+`expo export --platform web` passes; domain/API production builds pass.
+Final combined checks: 871 mobile + 495 API tests and all typechecks pass.
+The API additionally excludes deleted/retired catalog rows without owned
+history from confirmed-empty visibility and rejects calendar-overflow start
+boundaries. Owned historical rows remain readable, including held identities;
+no name-based merges or training-row repair was performed.

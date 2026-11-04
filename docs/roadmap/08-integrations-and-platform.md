@@ -92,3 +92,7 @@
   [the execution sequence](../sdd/reviews/2026-11-03-workout-implementation-sequence.md)
   for dependencies and acceptance gates. Earlier ready-state entries above
   record the spec-review stage, not the current planning state.
+
+## Local implementation — 2026-11-04 (0047)
+
+Watch Skip is implemented behind the existing bridge, with optional capability, exact rest identity and durable pending/suppression state. Native Release build passes; installed-device and 0045 regression acceptance remain pending.

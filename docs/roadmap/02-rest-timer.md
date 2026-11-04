@@ -60,3 +60,7 @@ A configurable countdown timer between sets, like Hevy.
   [the execution sequence](../sdd/reviews/2026-11-03-workout-implementation-sequence.md)
   for dependencies and acceptance gates. Earlier ready-state entries above
   record the spec-review stage, not the current planning state.
+
+## Local implementation — 2026-11-04 (0047)
+
+Specific-rest Watch Skip, acknowledgement, pending/restart reconciliation and alert cancellation are implemented locally; compilation/tests pass. Paired app installation and physical locked/offline/expiry checks remain pending.

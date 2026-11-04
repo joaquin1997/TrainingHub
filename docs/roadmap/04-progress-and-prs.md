@@ -121,3 +121,7 @@ are reused rather than reintroduced.
   [the execution sequence](../sdd/reviews/2026-11-03-workout-implementation-sequence.md)
   for dependencies and acceptance gates. Earlier ready-state entries above
   record the spec-review stage, not the current planning state.
+
+## Local implementation — 2026-11-04 (0048)
+
+Independent frozen historical/last-session references, explicit retry/loading/unavailable states, actual/baseline values and accessible comparison detail are implemented locally. API/bundle rollout and device acceptance remain pending; original discrepancy investigation is deferred by the owner.
