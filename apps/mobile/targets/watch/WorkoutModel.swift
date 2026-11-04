@@ -47,6 +47,35 @@ final class WorkoutModel: NSObject, ObservableObject {
   /// the mirrored session and as application context (spec 0045).
   private var lastContextJSON: String?
   private var waitingTimer: Timer?
+  private var localRestId: String?
+  private static let skipStorageKey = "traininghub.rest-skip.v1"
+  @Published private var restSkip = (UserDefaults.standard.data(forKey: skipStorageKey)
+    .flatMap { try? JSONDecoder().decode(WatchRestSkipState.self, from: $0) }) ?? WatchRestSkipState()
+
+  var skipPending: Bool { restSkip.pending != nil && restSkip.workoutId == activeWorkout?.workoutId }
+  var canSkipRest: Bool {
+    activeWorkout?.restSkipVersion == 1 && !isPaused && restEndsAt != nil &&
+      (localRestId != nil || activeWorkout?.canSkipRest == true)
+  }
+  private func persistSkip() {
+    if let data = try? JSONEncoder().encode(restSkip) { UserDefaults.standard.set(data, forKey: Self.skipStorageKey) }
+  }
+  func skipRest() {
+    guard canSkipRest, let workout = activeWorkout, let restId = localRestId ?? workout.restId else { return }
+    let requestId = UUID().uuidString
+    let now = Date().epochMs
+    restSkip.skip(workoutId: workout.workoutId, restId: restId, requestId: requestId, atMs: now)
+    persistSkip()
+    localRestEndsAt = nil
+    restTimer?.invalidate()
+    restTimer = nil
+    send(WatchEvent(id: requestId, kind: .skipRest, workoutId: workout.workoutId, restId: restId, atMs: now))
+  }
+  private func resendPendingSkip() {
+    guard activeWorkout?.restSkipVersion == 1, restSkip.workoutId == activeWorkout?.workoutId,
+          let pending = restSkip.pending, let workoutId = restSkip.workoutId else { return }
+    send(WatchEvent(id: pending.requestId, kind: .skipRest, workoutId: workoutId, restId: pending.restId, atMs: pending.atMs))
+  }
   /// How long after a tick the watch says it is waiting (spec 0045 FR-4).
   private static let waitingAfter: TimeInterval = 5
 
@@ -61,8 +90,9 @@ final class WorkoutModel: NSObject, ObservableObject {
 
   /// The rest to count down: the local one until the phone confirms it.
   var restEndsAt: Date? {
+    if restSkip.suppresses(localRestId ?? activeWorkout?.restId) { return nil }
     let fromPhone = activeWorkout?.restEndsAtMs.map(Date.init(epochMs:))
-    let end = localRestEndsAt ?? fromPhone
+    let end = localRestId != nil ? localRestEndsAt : fromPhone
     guard let end, end > Date() else { return nil }
     return end
   }
@@ -91,6 +121,8 @@ final class WorkoutModel: NSObject, ObservableObject {
   private func apply(contextJSON json: String) {
     // A copy arriving late must not undo a tick made since (spec 0045).
     guard json != lastContextJSON, let next = WatchWire.decodeContext(json) else { return }
+    guard restSkip.acceptContext(workoutId: next.workoutId, sentAtMs: next.sentAtMs,
+      acknowledgement: next.lastProcessedSkipId, restId: next.restId) else { return }
     // Application context is latest-wins, but keep the newest if two cross.
     let previous = context
     if let previous, previous.workoutId == next.workoutId, previous.sentAtMs > next.sentAtMs {
@@ -98,9 +130,15 @@ final class WorkoutModel: NSObject, ObservableObject {
     }
     context = next
     lastContextJSON = json
-    localRestEndsAt = nil
-    tickedSetId = nil
-    stopWaiting()
+    if next.status != .active { restSkip.endWorkout() }
+    persistSkip()
+    // A context about the still-ticked set has not acknowledged Done yet.
+    if next.status != .active || next.workoutId != previous?.workoutId || next.currentSet?.setId != tickedSetId {
+      localRestEndsAt = nil
+      localRestId = nil
+      tickedSetId = nil
+      stopWaiting()
+    }
     if next.status != .active || next.workoutId != previous?.workoutId {
       finishAsked = false
     }
@@ -124,8 +162,10 @@ final class WorkoutModel: NSObject, ObservableObject {
   func tickCurrentSet(reps: Int? = nil) {
     guard let workout = activeWorkout, let set = currentSet else { return }
     let now = Date()
+    let doneId = UUID().uuidString
+    localRestId = doneId
     send(WatchEvent(
-      id: UUID().uuidString,
+      id: doneId,
       kind: .setDone,
       workoutId: workout.workoutId,
       exerciseId: set.exerciseId,
@@ -377,7 +417,12 @@ extension WorkoutModel: WCSessionDelegate {
     let json = session.receivedApplicationContext["context"] as? String
     Task { @MainActor in
       if let json { self.apply(contextJSON: json) }
+      self.resendPendingSkip()
     }
+  }
+
+  nonisolated func sessionReachabilityDidChange(_ session: WCSession) {
+    if session.isReachable { Task { @MainActor in self.resendPendingSkip() } }
   }
 
   nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {

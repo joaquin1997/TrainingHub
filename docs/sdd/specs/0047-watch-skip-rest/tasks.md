@@ -1,12 +1,12 @@
 ---
 spec: 0047
-status: draft
+status: in-progress
 created: 2026-11-03
 ---
 
 # Tasks — Skip rest from the watch
 
-Task gate self-reviewed; implementation not started. Every unchecked row is
+Task gate self-reviewed; implementation tasks 1–4 completed locally 2026-11-04. Every unchecked row is
 one independently committable change with its own verification. Additive
 contracts land before consumers; no task requires committing broken callers.
 Run `pnpm -r typecheck` and `pnpm -r test` before every implementation commit.
@@ -21,10 +21,10 @@ they are not claims that deployment happened during planning.
 
 | # | Task | Area | Verify | Commit message |
 |---|---|---|---|---|
-| 1 | [ ] Add optional rest identity/capability/acknowledgement snapshot fields and skip event to domain; existing consumers remain valid. | domain | Typecheck old callers; no required fields added to existing snapshots. | `feat(domain): define watch rest skip protocol` |
-| 2 | [ ] Encode/decode new wire fields and apply matching-rest skip on phone with state/controller deduplication. | mobile/protocol | AC-1–AC-3, AC-5–AC-6; malformed/stale/newer rest, paused/no rest, same-set retick, event acknowledgement and runner alert cancellation. | `feat(mobile): handle watch requests to skip a rest` |
-| 3 | [ ] Update Swift wire/model queue with Done-derived rest ID, local suppression and explicit pending acknowledgement. | watch | AC-3–AC-4, EF-1–EF-3; Done then immediate Skip before context, old context, queue reconnect/restart, capability absent. Compile watch target. | `feat(watch): queue and reconcile specific rest skips` |
-| 4 | [ ] Add accessible translated Skip control and pending state without affecting Done or workout order. | watch/mobile | AC-1, AC-4–AC-6; enabled only when supported/unpaused/running; 44 pt and no extra confirmation. | `feat(watch): skip rests from the wrist` |
+| 1 | [x] Add optional rest identity/capability/acknowledgement snapshot fields and skip event to domain; existing consumers remain valid. | domain | Typecheck old callers; no required fields added to existing snapshots. | `feat(domain): define watch rest skip protocol` |
+| 2 | [x] Encode/decode new wire fields and apply matching-rest skip on phone with state/controller deduplication. | mobile/protocol | AC-1–AC-3, AC-5–AC-6; malformed/stale/newer rest, paused/no rest, same-set retick, event acknowledgement and runner alert cancellation. | `feat(mobile): handle watch requests to skip a rest` |
+| 3 | [x] Update Swift wire/model queue with Done-derived rest ID, local suppression and explicit pending acknowledgement. | watch | AC-3–AC-4, EF-1–EF-3; Done then immediate Skip before context, old context, queue reconnect/restart, capability absent. Compile watch target. | `feat(watch): queue and reconcile specific rest skips` |
+| 4 | [x] Add accessible translated Skip control and pending state without affecting Done or workout order. | watch/mobile | AC-1, AC-4–AC-6; enabled only when supported/unpaused/running; 44 pt and no extra confirmation. | `feat(watch): skip rests from the wrist` |
 | 5 | [ ] Rebuild/install phone and watch and document physical locked/offline/expiry checks. | docs/device | AC-1–AC-6; <=5 s connected cancellation, no former alert, old/new version matrix and no 0045 regression. | `docs(sdd): record watch rest skip acceptance` |
 
 ## Rollout and device acceptance
@@ -43,3 +43,8 @@ Native watch and paired phone build/install required. No API migration. Physical
 
 - 2026-11-03 — Implementation plan and task breakdown prepared and self-reviewed.
   No implementation task completed; no deployment or device acceptance in this pass.
+
+- 2026-11-04 — Tasks 1–4 implemented with shared optional wire fields, phone
+  identity/ack handling, durable native suppression/pending state and ES/EN
+  accessible control. Native typecheck and Release build pass; task 5 remains
+  open for installation/physical acceptance. See verification.md.

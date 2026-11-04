@@ -40,6 +40,9 @@ struct WatchContext: Codable, Equatable {
     var reps: String? = nil
     /// Spec 0045: in place of the set while the next one has not arrived.
     var waitingPhone: String? = nil
+    var skipRest: String? = nil
+    var skipPending: String? = nil
+    var skipUnsupported: String? = nil
 
     static let fallback = Labels(
       done: "Done",
@@ -76,6 +79,10 @@ struct WatchContext: Codable, Equatable {
   let pausedAtMs: Double?
   let pausedSeconds: Double?
   let restEndsAtMs: Double?
+  var restId: String? = nil
+  var canSkipRest: Bool? = nil
+  var restSkipVersion: Int? = nil
+  var lastProcessedSkipId: String? = nil
   let currentSet: CurrentSet?
   /// Sets done, and the discard confirmation's message naming them (spec 0035).
   let setsDone: Int?
@@ -86,6 +93,7 @@ struct WatchContext: Codable, Equatable {
 /// Watch → phone: user info `["event": json]`, queued and delivered in order.
 struct WatchEvent: Codable {
   enum Kind: String, Codable {
+    case skipRest
     case setDone
     case pause
     case resume
@@ -97,6 +105,7 @@ struct WatchEvent: Codable {
   let id: String
   let kind: Kind
   let workoutId: String
+  var restId: String? = nil
   var exerciseId: String? = nil
   var setId: String? = nil
   var atMs: Double? = nil

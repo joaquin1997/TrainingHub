@@ -137,6 +137,7 @@ export function completeSetInRounds(
   workoutSetId: string,
   defaultRestSeconds: number,
   now: Date = new Date(),
+  restId?: string,
 ): WorkoutSessionDraft {
   const set = draft.exercises
     .find((item) => item.id === workoutExerciseId)
@@ -164,5 +165,6 @@ export function completeSetInRounds(
     next = skipRest(toggleWorkoutSetDone(draft, workoutExerciseId, workoutSetId, 0));
   }
 
+  if (restId && next.rest && next.rest !== draft.rest) next = { ...next, rest: { ...next.rest, id: restId } };
   return { ...next, lastTickedExerciseId: workoutExerciseId };
 }

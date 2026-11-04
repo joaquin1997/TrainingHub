@@ -6,8 +6,9 @@ created: 2026-11-03
 
 # Plan — Skip rest on the watch
 
-Self-reviewed against the constitution and the owner's spec review. Design
-only: no implementation, migration, external activation or device acceptance.
+Self-reviewed against the constitution and the owner's spec review. Implementation
+tasks 1–4 completed locally 2026-11-04; native compilation checked separately.
+No deployment or physical-device acceptance.
 
 ## Constitution check
 
@@ -108,3 +109,14 @@ Test locked phone, disconnected phone, natural expiry and immediate Done/Skip.
 No API deployment. Rollback watch/phone preserves old queue decoding; unknown
 new events are ignored by old phone and the new watch must show unsupported
 instead of claiming synchronization. 0045's battery/Health behaviour unchanged.
+
+## Implementation refinement — 2026-11-04
+
+Mirrored, immediate and queued copies can cross: remember a bounded list of
+specifically skipped Done/rest IDs on the phone, so an early Skip followed by
+its Done cannot create an alertable rest. Rest-ID matching remains the guard
+against cancelling a newer rest, independently of controller deduplication.
+The watch persists pending request, skipped IDs and latest accepted context
+time. A matching acknowledgement that still contains the targeted rest means
+the phone refused the skip (e.g. paused), so its countdown is restored.
+No routine/order/Health ownership is moved to the watch.

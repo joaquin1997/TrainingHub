@@ -93,6 +93,10 @@ describe('toWatchSnapshot', () => {
       pausedAt: undefined,
       pausedSeconds: 0,
       restEndsAt: undefined,
+      restId: undefined,
+      restSkipVersion: 1,
+      canSkipRest: false,
+      lastProcessedSkipId: undefined,
       currentSet: {
         workoutExerciseId: 'a',
         workoutSetId: 'a2',

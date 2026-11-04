@@ -156,6 +156,9 @@ export type WorkoutSessionDraft = {
   pausedSeconds?: number;
   /** The rest counting down now; absent when none runs (spec 0018). */
   rest?: RunningRest;
+  lastProcessedWatchSkipId?: string;
+  /** Specific watch rests already skipped, including Skip delivered before Done. */
+  watchSkippedRestIds?: string[];
   /** The exercise of the last set ticked; anchors "next set" (spec 0029). */
   lastTickedExerciseId?: string;
   /** Exact latest undo, subject to superset round order. */

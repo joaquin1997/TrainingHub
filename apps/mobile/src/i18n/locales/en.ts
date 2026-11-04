@@ -331,6 +331,9 @@ export const en = {
     noLongerAvailable: 'This exercise is no longer available. The list has been refreshed.',
   },
   workouts: {
+    watchSkipRest: 'Skip rest',
+    watchSkipPending: 'Waiting for your iPhone to confirm the skip…',
+    watchSkipUnsupported: 'Skip this rest on your iPhone',
     recordComparison: {"historical": "Personal record", "lastSession": "Better than last session", "previous": "previous best {{value}}", "lastValue": "last session {{value}}", "moreRecords": "and {{count}} more records", "moreImprovements": "and {{count}} more improvements", "sameOrHeavier": "At this weight or heavier", "exactWeight": "At exactly this weight", "sessionDate": "Previous session: {{date}}", "details": "Comparison details", "historicalSource": "All-time records", "lastSessionSource": "Last session", "loading": "Checking records…", "offline": "Unavailable: no connection", "unavailable": "Unavailable: service could not answer", "refused": "Unavailable: service refused the comparison"},
     recordsAnnounce_one: '{{count}} record today',
     recordsAnnounce_other: '{{count}} records today',

@@ -1,7 +1,7 @@
 ---
 id: 0047
 title: Skip a rest from the watch
-status: planned
+status: in-progress
 roadmap: docs/roadmap/08-integrations-and-platform.md
 created: 2026-11-03
 ---

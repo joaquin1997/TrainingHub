@@ -135,6 +135,12 @@ export function parsePersistedActiveWorkout(
 
   // Optional interaction metadata never makes an otherwise valid draft unreadable.
   const validId = (value: unknown): value is string => typeof value === 'string' && value.length > 0;
+  if (draft.lastProcessedWatchSkipId !== undefined && !validId(draft.lastProcessedWatchSkipId)) {
+    draft = { ...draft, lastProcessedWatchSkipId: undefined };
+  }
+  if (draft.watchSkippedRestIds !== undefined) {
+    draft = { ...draft, watchSkippedRestIds: Array.isArray(draft.watchSkippedRestIds) ? draft.watchSkippedRestIds.filter(validId).slice(-200) : undefined };
+  }
   const selection = draft.undoSelection;
   const selectedExercise = isRecord(selection) && validId(selection.workoutExerciseId)
     ? draft.exercises.find((exercise) => exercise.id === selection.workoutExerciseId) : undefined;

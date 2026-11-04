@@ -24,6 +24,17 @@ struct WorkoutView: View {
           metrics
           if let restEndsAt = model.restEndsAt {
             RestRow(label: model.labels.rest, endsAt: restEndsAt)
+            if model.canSkipRest {
+              Button(model.labels.skipRest ?? "Skip rest") { model.skipRest() }
+                .frame(maxWidth: .infinity, minHeight: 44)
+            } else if !model.isPaused {
+              Text(model.labels.skipUnsupported ?? "Skip this rest on your iPhone")
+                .font(.footnote).foregroundStyle(textMuted)
+            }
+          }
+          if model.skipPending {
+            Text(model.labels.skipPending ?? "Waiting for your iPhone to confirm the skip…")
+              .font(.footnote).foregroundStyle(textMuted)
           }
           currentSet
           controls

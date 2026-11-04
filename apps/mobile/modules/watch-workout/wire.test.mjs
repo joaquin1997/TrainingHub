@@ -40,6 +40,7 @@ const labels = {
   cancel: 'c',
   connectToDiscard: 'c',
   waitingPhone: 'w',
+  skipRest: 'Skip', skipPending: 'Pending', skipUnsupported: 'Phone',
   reps: 'r',
   discardLost: (count) => `${count}`,
 };
@@ -52,6 +53,7 @@ describe('watch wire format (spec 0025)', () => {
       encodeActiveContext(
         {
           workoutSessionId: 'c1',
+          restId: 'rest-1', canSkipRest: true, restSkipVersion: 1, lastProcessedSkipId: 'skip-1',
           routineName: 'Push',
           startedAt: '2026-10-17T09:00:00.000Z',
           pausedAt: '2026-10-17T09:01:00.000Z',
@@ -85,7 +87,8 @@ describe('watch wire format (spec 0025)', () => {
     expect([...keysOf(setDone), ...keysOf(metrics)].filter((key) => !declared(key))).toEqual([]);
     expect(decodeWatchMessage('event', JSON.stringify(setDone))).toMatchObject({ kind: 'setDone', reps: 8 });
     expect(decodeWatchMessage('metrics', JSON.stringify(metrics))?.kind).toBe('activeEnergy');
-    for (const kind of ['setDone', 'pause', 'resume', 'finishRequested', 'discardRequested']) {
+    expect(decodeWatchMessage('event', JSON.stringify({ v: 1, id: 'skip-1', kind: 'skipRest', workoutId: 'c1', restId: 'rest-1', atMs: 0 }))).toMatchObject({ kind: 'skipRest', restId: 'rest-1' });
+    for (const kind of ['skipRest', 'setDone', 'pause', 'resume', 'finishRequested', 'discardRequested']) {
       expect(swift).toContain(`case ${kind}`);
     }
   });

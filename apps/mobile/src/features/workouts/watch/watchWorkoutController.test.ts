@@ -244,3 +244,20 @@ describe('watch workout controller (spec 0025)', () => {
     expect(bridge.endWatchWorkout).not.toHaveBeenCalled();
   });
 });
+
+it('acknowledges an obsolete skip without cancelling a newer rest, including replay', async () => {
+  const first = completeSet(draft('c1'), 'a', 'a1', 90);
+  const store = fakeStore(first);
+  const bridge = fakeBridge();
+  const controller = startWatchWorkoutController({ bridge, store, defaultRestSeconds: () => 90 });
+  const event: WatchWorkoutEvent = { kind: 'skipRest', id: 'skip-old', workoutSessionId: 'c1', restId: first.rest!.id!, at: new Date().toISOString() };
+  bridge.emit(event);
+  await controller.idle();
+  expect(bridge.updateWatchWorkout.mock.calls.at(-1)?.[0]).toMatchObject({ lastProcessedSkipId: 'skip-old', restEndsAt: undefined });
+  const second = completeSet(store.get()!, 'a', 'a2', 90);
+  store.replace(second);
+  bridge.emit(event);
+  await controller.idle();
+  expect(store.get()?.rest).toBe(second.rest);
+  controller.stop();
+});

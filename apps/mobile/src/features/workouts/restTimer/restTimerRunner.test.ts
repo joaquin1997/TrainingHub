@@ -1,3 +1,4 @@
+import { applyWatchEvent } from '../watch/watchProtocol';
 import type { Routine } from '@workout/domain';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -89,6 +90,21 @@ describe('rest timer runner (spec 0018)', () => {
     runner?.stop();
     clearActiveWorkout();
     vi.useRealTimers();
+  });
+
+  it('watch Skip cancels the matching system alert and timer (0047)', async () => {
+    const r = start();
+    const exercise = workout().exercises[0]!;
+    setActiveWorkout(completeSet(workout(), exercise.id, exercise.entries[0]!.id, 90, new Date()));
+    await r.idle();
+    setActiveWorkout(applyWatchEvent(workout(), {
+      kind: 'skipRest', id: 'skip-1', workoutSessionId: workout().clientId,
+      restId: workout().rest!.id!, at: new Date().toISOString(),
+    }, 90));
+    await r.idle();
+    expect(alerts.cancel).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(120_000);
+    expect(vibrate).not.toHaveBeenCalled();
   });
 
   it('undo cancels its scheduled alert and timeout without a later buzz (0046)', async () => {
