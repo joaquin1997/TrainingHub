@@ -6,8 +6,9 @@ created: 2026-11-03
 
 # Plan — Correct a saved workout
 
-Self-reviewed against the constitution and the owner's spec review. Design
-only: no implementation, migration, external activation or device acceptance.
+Self-reviewed against the constitution and the owner's spec review. Tasks 1–5
+implemented locally 2026-11-04, including generated additive migration and
+isolated PostgreSQL tests. No production migration/deployment or device acceptance.
 
 ## Constitution check
 
@@ -136,3 +137,26 @@ Old clients can read with an extra revision; old API does not expose Edit.
 Legacy normalization must preserve exactly the previously displayed performed
 sets. No remote Health rewrite. Rollback disables correction UI while retaining
 revision/data; do not restore stale client edits into the active-workout store.
+
+## Implementation notes — 2026-11-04
+
+The UI uses the installed Expo Router’s removal-prevention hook for back,
+gesture and browser-unload protection. Pending drafts are owner/workout-scoped
+in memory for same-owner reauthentication; closing the process is not a new
+offline correction queue. Unsaved fields remain separate from active drafts.
+Untouched formatted weight strings retain exact original kg instead of being
+converted back from rounded display figures. Shape comes from the stored row,
+or a recorded sibling for an empty row, never today’s catalog type.
+
+The server’s existing legacy semantics are preserved for unchanged previously
+performed blank/zero rows. New blank completion is rejected. Exercise/set
+identities are updated in place, with one conditional revision increment and
+canonical mutation hash in the same transaction. Unexpected persistence errors
+are logged by operation/code only; submitted notes/values are not exposed.
+
+Post-save summary readers keep the actual POST-returned saved ID and reload
+that session; the read DTO also carries an optional client ID for stable lookup.
+History/detail/progress/comparisons refresh on owned invalidation/focus. The
+widget invalidates corrected cached history before refetch and uses its
+existing message slot if refresh fails, without requiring new native code.
+An active workout’s existing suggestions/starting references stay frozen.

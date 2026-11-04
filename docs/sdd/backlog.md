@@ -51,7 +51,7 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0047](specs/0047-watch-skip-rest/spec.md) | Skip a rest from the watch | `in-progress` — tasks 1–4 implemented locally 2026-11-04: specific-rest identity, acknowledgement, durable native pending/suppression and translated Skip; API-first/paired Release delivery completed 2026-11-04; owner confirmed connected Skip works, remaining offline/expiry/device acceptance pending. | 2 + 8 |
 | [0048](specs/0048-trustworthy-live-records/spec.md) | Trustworthy live records and last-session feedback | `in-progress` — tasks 1–5 implemented locally 2026-11-04: independent frozen sources, clear PR/last-session comparisons and retry/error states. API and paired Release apps delivered 2026-11-04; device checks pending and original-case investigation explicitly deferred by owner. | 4 — Progress |
 | [0049](specs/0049-weight-per-side/spec.md) | Configurable weight per side | `planned` — Owner-reviewed; plan/tasks prepared 2026-11-03: same-side quantities, explicit shared-load selection, lesser-load warm-ups and older-client capability guards. | 1 — Live workout logging |
-| [0050](specs/0050-correct-saved-workout/spec.md) | Correct mistakes in a saved workout | `planned` — Owner-reviewed; plan/tasks prepared 2026-11-03: atomic versioned correction, legacy completion normalization and derived-view refresh; structural edits/deletion deferred. | 1 — Live workout logging |
+| [0050](specs/0050-correct-saved-workout/spec.md) | Correct mistakes in a saved workout | `in-progress` — tasks 1–5 implemented locally 2026-11-04: atomic revision/idempotency correction, isolated editor and owned derived-view refresh. Fresh/upgrade PostgreSQL checks pass; migration/API/app rollout and device acceptance pending. Structural edits/deletion deferred. | 1 — Live workout logging |
 | [0051](specs/0051-offer-routine-update/spec.md) | Offer to update the routine after training | `planned` — Owner-reviewed; plan/tasks prepared 2026-11-03: selected changes after workout save, versioned stable-ID routine updates and preserved history links. | 5 — Routines |
 | [0052](specs/0052-app-errors-and-service-monitoring/spec.md) | App errors and service availability monitoring | `planned` — Owner-reviewed; plan/tasks prepared 2026-11-03: diagnostic adapter and independent probe observer; native privacy/expiry proof and external configuration remain acceptance gates. | 9 — Production readiness |
 | [0053](specs/0053-records-grouped-by-exercise/spec.md) | Group records by exercise | `planned` — Owner-reviewed; plan/tasks prepared 2026-11-03: summary grouping by identity/order, all figures visible and improvement-only feedback excluded from PR counts. | 4 — Progress |
@@ -231,3 +231,12 @@ launched on the owner's iPhone/Watch. Fresh verified backup and stopped
 previous container/image preserved for rollback; runtime credentials unchanged.
 No new migration or training-data rewrite. Physical acceptance remains open;
 0048 investigation stays deferred. Detailed evidence is in each verification.md.
+
+## 0050 implementation — 2026-11-04
+
+At the owner’s request, 0050 was implemented before 0053. Tasks 1–5 and
+Health limitation copy are local and verified (1,407 tests, including isolated
+PostgreSQL concurrency/rollback/legacy/PR tests). Production migration and
+API/app delivery remain pending, followed by physical acceptance. No training
+rows were repaired in production. Next planned work remains 0053, then 0051
+and 0049; 0052 is separate. See 0050 verification for rollout order and limits.

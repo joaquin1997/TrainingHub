@@ -116,3 +116,10 @@ API-first rollout and paired Release installation completed from 6655b1f.
 Both apps launched; health/database and authentication boundary checked.
 Physical acceptance and original-record investigation retain their separate
 status in the task lists. No new schema migration or training-row rewrite.
+
+## Owner-selected 0050 — 2026-11-04
+
+Owner chose 0050 before 0053. Tasks 1–5 are implemented locally; the generated
+additive migration, atomic writer and isolated editor/owned refresh pass local
+checks. No production migration or deployment in this pass. Apply migration/API
+before app delivery; physical acceptance remains open in the task list.

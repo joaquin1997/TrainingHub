@@ -1,7 +1,7 @@
 ---
 id: 0050
 title: Correct mistakes in a saved workout
-status: planned
+status: in-progress
 roadmap: docs/roadmap/01-live-workout-logging.md
 created: 2026-11-03
 ---
@@ -132,3 +132,11 @@ with implementation and acceptance checks still pending.
 - Builds on 0013, 0014, 0021, 0022, 0023, 0032 and 0001.
 - Coordinates with 0049; updating a routine is separate (0051).
 - Constitution articles engaged: 2, 3, 4, 8, 11.
+
+## Local implementation — 2026-11-04
+
+Correction of existing values/completion/type/notes is implemented locally;
+rollout and device acceptance remain pending. An already performed legacy row
+with unchanged blank/zero measurements can retain its recorded status; newly
+marking a blank row performed or clearing its measurements still fails
+validation. No quantities are invented to normalize older completion.

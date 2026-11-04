@@ -1,12 +1,12 @@
 ---
 spec: 0050
-status: draft
+status: in-progress
 created: 2026-11-03
 ---
 
 # Tasks — Correct saved workout errors
 
-Task gate self-reviewed; implementation not started. Every unchecked row is
+Task gate self-reviewed; tasks 1–5 implemented locally 2026-11-04. Every unchecked row is
 one independently committable change with its own verification. Additive
 contracts land before consumers; no task requires committing broken callers.
 Run `pnpm -r typecheck` and `pnpm -r test` before every implementation commit.
@@ -21,11 +21,11 @@ Independent of 0049 for current shared-weight sessions. Its later side fields mu
 
 | # | Task | Area | Verify | Commit message |
 |---|---|---|---|---|
-| 1 | [ ] Add optional read revision and dedicated correction/mutation/conflict DTOs; existing create contract unchanged. | domain | Compile all current consumers; correction IDs/allowed quantities have explicit types. | `feat(domain): define saved workout corrections` |
-| 2 | [ ] Add generated revision and last-correction mutation/hash schema fields. | api/schema | Fresh/upgrade DB generation; existing workout identities/data preserved and revision defaults zero. | `feat(api): version saved workout corrections` |
-| 3 | [ ] Implement authenticated scalar-only correction parser/writer with atomic owner+revision guard, idempotent retry and legacy completion normalization. | api | AC-1–AC-2, AC-4–AC-7; real transaction rollback/two writers, duplicate/wrong child IDs, 401/404/409, no POST/identity/structure change. | `feat(api): atomically correct owned workout values` |
-| 4 | [ ] Add isolated correction draft/client/screen and navigation Save/Discard/Keep editing, preserving pending edit on errors. | mobile | AC-2–AC-6; old API read-only, unit snapshot, offline/reauth/conflict, no dirty exit prompt without edits, active draft untouched. | `feat(mobile): edit saved workout measurements` |
-| 5 | [ ] Refresh affected history/progress/last-time/summary/widget readers through owned invalidation/focus reload. | mobile | AC-1, AC-6–AC-7; later PR chronology updates, stale refresh explicitly labelled; active reference snapshots remain unchanged. | `fix(mobile): refresh training views after corrections` |
+| 1 | [x] Add optional read revision and dedicated correction/mutation/conflict DTOs; existing create contract unchanged. | domain | Compile all current consumers; correction IDs/allowed quantities have explicit types. | `feat(domain): define saved workout corrections` |
+| 2 | [x] Add generated revision and last-correction mutation/hash schema fields. | api/schema | Fresh/upgrade DB generation; existing workout identities/data preserved and revision defaults zero. | `feat(api): version saved workout corrections` |
+| 3 | [x] Implement authenticated scalar-only correction parser/writer with atomic owner+revision guard, idempotent retry and legacy completion normalization. | api | AC-1–AC-2, AC-4–AC-7; real transaction rollback/two writers, duplicate/wrong child IDs, 401/404/409, no POST/identity/structure change. | `feat(api): atomically correct owned workout values` |
+| 4 | [x] Add isolated correction draft/client/screen and navigation Save/Discard/Keep editing, preserving pending edit on errors. | mobile | AC-2–AC-6; old API read-only, unit snapshot, offline/reauth/conflict, no dirty exit prompt without edits, active draft untouched. | `feat(mobile): edit saved workout measurements` |
+| 5 | [x] Refresh affected history/progress/last-time/summary/widget readers through owned invalidation/focus reload. | mobile | AC-1, AC-6–AC-7; later PR chronology updates, stale refresh explicitly labelled; active reference snapshots remain unchanged. | `fix(mobile): refresh training views after corrections` |
 | 6 | [ ] Add explicit existing-Health-export limitation copy and record acceptance/rollout. | docs/mobile | AC-1–AC-7, real legacy session and widget refresh; no invented export status, Health artifact untouched, errors retain edits. | `docs(sdd): record saved workout correction acceptance` |
 
 ## Rollout and device acceptance
@@ -44,3 +44,8 @@ Migration/API before bundle; no native rebuild. Use isolated DB integration test
 
 - 2026-11-03 — Implementation plan and task breakdown prepared and self-reviewed.
   No implementation task completed; no deployment or device acceptance in this pass.
+
+- 2026-11-04 — Tasks 1–5 implemented. Task 6’s neutral existing-Health-entry
+  limitation copy is included; its deployment and actual device acceptance
+  remain open. See verification.md for local PostgreSQL/build evidence.
+  No production correction/migration/deployment was performed.

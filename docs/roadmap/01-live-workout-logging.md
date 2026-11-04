@@ -170,3 +170,14 @@ hidden set-type cycling with visible choices. Task breakdown is next.
 - Earlier planning-only entries are historical. 0043 tasks 1–7 are now
   implemented locally, with migration/API/bundle rollout and device acceptance
   still pending in that spec’s task list.
+
+## Local implementation — 2026-11-04 (0050)
+
+Saved workout values/completion/type/workout and exercise notes now have an
+independent correction editor with explicit save/cancel/exit choices. The
+owner-scoped revision/idempotency writer is atomic and normalizes legacy
+completion only on that workout’s explicit correction. Derived readers refresh;
+routine targets, active references and existing Health exports stay unchanged.
+Generated migration and fresh/upgrade isolated-DB tests pass. Production
+migration/API/app delivery and real device checks remain open in
+[0050 verification](../sdd/specs/0050-correct-saved-workout/verification.md).
