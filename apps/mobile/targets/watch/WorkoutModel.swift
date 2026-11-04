@@ -33,6 +33,7 @@ final class WorkoutModel: NSObject, ObservableObject {
 
   private let healthStore = HKHealthStore()
   private var session: HKWorkoutSession?
+  private let mirroringRecovery = WorkoutMirroringRecovery()
   private var builder: HKLiveWorkoutBuilder?
   /// The workout the running session belongs to.
   private var sessionWorkoutId: String?
@@ -191,6 +192,11 @@ final class WorkoutModel: NSObject, ObservableObject {
     }
     // Queued by the system and delivered in order, also after lost contact (EF-1).
     WCSession.default.transferUserInfo(["event": json])
+    // A failed initial mirror must not leave a reachable phone waiting for a
+    // background transfer. The same event ID makes this live copy harmless.
+    if WCSession.default.isReachable {
+      WCSession.default.sendMessage(["event": json], replyHandler: nil, errorHandler: { _ in })
+    }
   }
 
   // MARK: Waiting for the phone (spec 0045 FR-4)
@@ -271,7 +277,7 @@ final class WorkoutModel: NSObject, ObservableObject {
       // The iPhone app runs in the background while the session is mirrored,
       // so a tick here is applied with the phone locked (spec 0045). Without
       // it everything works as before, over the queue.
-      Task { try? await session.startMirroringToCompanionDevice() }
+      mirroringRecovery.start { try await session.startMirroringToCompanionDevice() }
       // The phone may have ended the workout while the session was starting.
       if let ended = context, ended.workoutId == workout.workoutId, ended.status != .active {
         await endSession(workoutId: workout.workoutId, save: ended.status == .finished)
@@ -279,6 +285,7 @@ final class WorkoutModel: NSObject, ObservableObject {
       }
       syncPause(paused: isPaused)
     } catch {
+      mirroringRecovery.stop()
       self.session = nil
       self.builder = nil
       sessionWorkoutId = nil
@@ -313,6 +320,7 @@ final class WorkoutModel: NSObject, ObservableObject {
     stopWaiting()
     // A session still starting is ended by `ensureSession` once it is up.
     guard let session, let builder, sessionWorkoutId == workoutId else { return }
+    mirroringRecovery.stop()
     self.session = nil
     self.builder = nil
     sessionWorkoutId = nil
@@ -392,7 +400,10 @@ extension WorkoutModel: HKWorkoutSessionDelegate, HKLiveWorkoutBuilderDelegate {
 
   nonisolated func workoutSession(_ workoutSession: HKWorkoutSession, didFailWithError error: Error) {
     Task { @MainActor in
+      // Ignore a delayed delegate callback from a superseded session.
+      guard self.session === workoutSession else { return }
       // The phone's workout goes on; this watch stops measuring it.
+      self.mirroringRecovery.stop()
       self.session = nil
       self.builder = nil
       self.sessionWorkoutId = nil

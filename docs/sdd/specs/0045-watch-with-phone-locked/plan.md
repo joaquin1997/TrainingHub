@@ -1,6 +1,6 @@
 ---
 spec: 0045
-status: done         # self-approved 2026-11-03; shipped and checked on the device the same day
+status: in-progress # regression follow-up 2026-11-04; original acceptance recorded below
 created: 2026-11-03
 ---
 

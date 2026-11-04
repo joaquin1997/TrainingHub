@@ -150,6 +150,22 @@ describe('watch workout controller (spec 0025)', () => {
     expect(bridge.startWatchWorkout).toHaveBeenCalledTimes(3);
   });
 
+  it('applies mirrored, live and queued copies of a tick only once', async () => {
+    const store = fakeStore(draft('c1'));
+    const bridge = fakeBridge();
+    const controller = startWatchWorkoutController({ bridge, store, defaultRestSeconds: () => 90 });
+    const event = tick('same-event', 'a1', new Date().toISOString());
+    bridge.emit(event);
+    const completed = store.get();
+    bridge.emit(event);
+    bridge.emit(event);
+    await controller.idle();
+    expect(store.get()).toBe(completed);
+    expect(store.get()!.exercises[0]!.entries[0]!.done).toBe(true);
+    expect(store.get()!.exercises[0]!.entries[1]!.done).toBe(false);
+    controller.stop();
+  });
+
   it('applies queued ticks in order and ignores a repeat (AC-3, EF-1)', async () => {
     const store = fakeStore(draft('c1'));
     const bridge = fakeBridge();
