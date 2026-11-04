@@ -53,6 +53,7 @@ export function startRestTimerRunner({
 }) {
   /** The end whose alert is scheduled, or null when none is. */
   let scheduledEndsAt: string | null = null;
+  let scheduledContent: string | null = null;
   let permissionAsked = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
   let queue: Promise<void> = Promise.resolve();
@@ -84,6 +85,7 @@ export function startRestTimerRunner({
     clearTimer();
     if (scheduledEndsAt !== null) {
       scheduledEndsAt = null;
+      scheduledContent = null;
       run(() => alerts.cancel());
     }
   };
@@ -111,7 +113,9 @@ export function startRestTimerRunner({
       return;
     }
 
-    if (rest.endsAt === scheduledEndsAt) {
+    const content = alertContent(draft);
+    const contentKey = JSON.stringify(content);
+    if (rest.endsAt === scheduledEndsAt && contentKey === scheduledContent) {
       if (timer === null) {
         armTimer(rest.endsAt);
       }
@@ -120,7 +124,7 @@ export function startRestTimerRunner({
 
     scheduledEndsAt = rest.endsAt;
     const at = new Date(rest.endsAt);
-    const content = alertContent(draft);
+    scheduledContent = contentKey;
     const askPermission = !permissionAsked;
     permissionAsked = true;
     run(async () => {

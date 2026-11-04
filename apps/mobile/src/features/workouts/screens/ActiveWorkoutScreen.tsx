@@ -1,3 +1,4 @@
+import { createWorkoutFinishGuard } from '@/features/workouts/utils/workoutFinishGuard';
 import { warmUpMetadataOf } from '@/lib/warmUpContext';
 import { SetTypeSheet } from '@/features/workouts/components/SetTypeSheet';
 import { Ionicons } from '@expo/vector-icons';
@@ -149,6 +150,7 @@ export function ActiveWorkoutScreen() {
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
+  const finishGuard = useRef(createWorkoutFinishGuard(() => getActiveWorkout()?.clientId)).current;
   const [finishError, setFinishError] = useState<string | null>(null);
   // The server refused the workout itself; retrying cannot help (EF-5).
   const [finishRefused, setFinishRefused] = useState(false);
@@ -230,13 +232,14 @@ export function ActiveWorkoutScreen() {
     }
 
     router.setParams({ action: undefined });
+    const clientId = workoutDraft.clientId;
     void confirmAction({
       title: t('workouts.finishTitle'),
       message: t('workouts.finishConfirm'),
       confirmLabel: t('workouts.finishWorkout'),
       cancelLabel: t('common.cancel'),
     }).then((confirmed) => {
-      if (confirmed) {
+      if (confirmed && getActiveWorkout()?.clientId === clientId) {
         void finishRef.current?.();
       }
     });
@@ -498,7 +501,7 @@ export function ActiveWorkoutScreen() {
    * Saves the workout. Goes to the summary, or with `nextRoutineId` starts that
    * routine instead (spec 0019). Resolves whether the save succeeded.
    */
-  const finishWorkout = async (nextId?: string) => {
+  const finishWorkout = (nextId?: string) => finishGuard.save(workoutDraft.clientId, async () => {
     if (countWorkoutSets(workoutDraft).done === 0) {
       setFinishError(t('workouts.markOneSet'));
       return false;
@@ -511,6 +514,8 @@ export function ActiveWorkoutScreen() {
 
       await workoutsClient.create(toCreateWorkoutSessionInput(workoutDraft));
 
+      // A delayed save must never clear or navigate away from a replacement workout.
+      if (getActiveWorkout()?.clientId !== workoutDraft.clientId) return false;
       const workoutSession = toWorkoutSessionSkeleton(workoutDraft);
 
       saveCompletedWorkout(workoutDraft);
@@ -525,6 +530,7 @@ export function ActiveWorkoutScreen() {
       }
       return true;
     } catch (error) {
+      if (getActiveWorkout()?.clientId !== workoutDraft.clientId) return false;
       setFinishError(
         error instanceof Error ? error.message : t('workouts.saveError'),
       );
@@ -533,9 +539,23 @@ export function ActiveWorkoutScreen() {
     } finally {
       setIsFinishing(false);
     }
-  };
+  });
 
   finishRef.current = () => finishWorkout();
+
+  const handleTopFinish = async () => {
+    const clientId = workoutDraft.clientId;
+    if (countWorkoutSets(workoutDraft).done === 0) {
+      setFinishError(t('workouts.markOneSet'));
+      return;
+    }
+    await finishGuard.confirm(clientId, () => confirmAction({
+      title: t('workouts.finishTitle'),
+      message: t('workouts.finishConfirm'),
+      confirmLabel: t('workouts.finishWorkout'),
+      cancelLabel: t('common.cancel'),
+    }), async () => finishRef.current?.());
+  };
 
   /** Drops the finished workout and lets the entry effect fetch the next one. */
   const startNextRoutine = (nextId: string) => {
@@ -581,6 +601,7 @@ export function ActiveWorkoutScreen() {
   };
 
   const handleToggleDone = (workoutExerciseId: string, workoutSetId: string) => {
+    const workoutDraft = getActiveWorkout();
     if (!workoutDraft) {
       return;
     }
@@ -595,7 +616,7 @@ export function ActiveWorkoutScreen() {
     // Ticking starts the exercise's rest in this workout, else the Settings
     // default (FR-1); in a superset only a tick that completes the round rests
     // (spec 0029) — the same rule as a tick from the watch (spec 0025).
-    // Un-ticking leaves a running rest alone.
+    // Undo selects the exact set and cancels only its own originating rest.
     const nextDraft = becomingDone
       ? completeSetInRounds(
           workoutDraft,
@@ -911,6 +932,25 @@ export function ActiveWorkoutScreen() {
 
   return (
     <View style={styles.screen}>
+      <View style={styles.finishHeader}>
+        <Button
+          label={isFinishing ? t('workouts.savingWorkout') : t('workouts.finishWorkout')}
+          icon="flag"
+          variant="secondary"
+          onPress={() => void handleTopFinish()}
+          disabled={isFinishing}
+          fullWidth
+        />
+        {finishError ? <Text accessibilityRole="alert" style={styles.errorText}>{finishError}</Text> : null}
+        {finishRefused ? (
+          <>
+            <Text style={styles.meta}>{t('workouts.saveRefusedHint')}</Text>
+            <Button label={t('workouts.discardWorkout')} variant="ghost" destructive
+              onPress={() => void handleDiscard()} disabled={isFinishing} />
+          </>
+        ) : null}
+      </View>
+      <View style={styles.workoutBody}>
       <ScrollView
         ref={scrollRef}
         style={styles.scroll}
@@ -1070,6 +1110,7 @@ export function ActiveWorkoutScreen() {
         onPressUpNext={scrollToSet}
         onLayout={(event) => setStickyHeaderHeight(event.nativeEvent.layout.height)}
       />
+      </View>
       {workoutDraft.rest ? (
         <RestBar
           rest={workoutDraft.rest}
@@ -1148,6 +1189,13 @@ export function ActiveWorkoutScreen() {
 }
 
 const styles = createStyles(() => ({
+  finishHeader: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
+    backgroundColor: colors.surface,
+    gap: spacing.xs,
+  },
+  workoutBody: { flex: 1 },
   screen: {
     ...commonStyles.screen,
   },

@@ -123,9 +123,37 @@ export function parsePersistedActiveWorkout(
     return valid ? exercise : { ...exercise, warmUpMetadata: undefined };
   }) };
 
+  // Optional interaction metadata never makes an otherwise valid draft unreadable.
+  const validId = (value: unknown): value is string => typeof value === 'string' && value.length > 0;
+  const selection = draft.undoSelection;
+  const selectedExercise = isRecord(selection) && validId(selection.workoutExerciseId)
+    ? draft.exercises.find((exercise) => exercise.id === selection.workoutExerciseId) : undefined;
+  const selectedSet = isRecord(selection) && validId(selection.workoutSetId)
+    ? selectedExercise?.entries.find((set) => set.id === selection.workoutSetId) : undefined;
+  if (selection !== undefined && (!selectedSet || selectedSet.done)) {
+    draft = { ...draft, undoSelection: undefined };
+  }
+  draft = { ...draft, exercises: draft.exercises.map((exercise) => ({
+    ...exercise,
+    entries: exercise.entries.map((set) => validId(set.completionId) || set.completionId === undefined
+      ? set : { ...set, completionId: undefined }),
+  })) };
+
   // A malformed rest is dropped; the workout itself is kept.
   if (draft.rest !== undefined && !looksLikeRest(draft.rest)) {
     return { kind: 'ok', draft: { ...draft, rest: undefined } };
+  }
+
+  if (draft.rest) {
+    const rest = { ...draft.rest };
+    if (!validId(rest.id)) delete rest.id;
+    const origin = validId(rest.originExerciseId) && validId(rest.originSetId) && validId(rest.originCompletionId);
+    if (!origin) {
+      delete rest.originExerciseId;
+      delete rest.originSetId;
+      delete rest.originCompletionId;
+    }
+    draft = { ...draft, rest };
   }
 
   return { kind: 'ok', draft };

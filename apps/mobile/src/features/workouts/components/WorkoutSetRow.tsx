@@ -301,7 +301,7 @@ export function WorkoutSetRow({
             keyboardType="decimal-pad"
             value={set.weightKg}
             placeholder={set.weightPlaceholder ?? '–'}
-            placeholderTextColor={colors.textSubtle}
+            placeholderTextColor={set.done ? colors.text : colors.textSubtle}
             onChangeText={(value) => onChange(DRAFT_FIELD[field], value)}
             style={inputStyle}
           />
@@ -314,7 +314,7 @@ export function WorkoutSetRow({
             keyboardType="number-pad"
             value={set.reps}
             placeholder={set.repsPlaceholder ?? '–'}
-            placeholderTextColor={colors.textSubtle}
+            placeholderTextColor={set.done ? colors.text : colors.textSubtle}
             onChangeText={(value) => onChange(DRAFT_FIELD[field], value)}
             style={inputStyle}
           />
@@ -330,7 +330,7 @@ export function WorkoutSetRow({
             accessibilityLabel={t(side === 'left' ? 'workouts.repsLeft' : 'workouts.repsRight')}
             value={set[field] ?? ''}
             placeholder={sideRepsPlaceholder(set, side) ?? '–'}
-            placeholderTextColor={colors.textSubtle}
+            placeholderTextColor={set.done ? colors.text : colors.textSubtle}
             onChangeText={(value) => onChange(field, value)}
             style={inputStyle}
           />
@@ -344,7 +344,7 @@ export function WorkoutSetRow({
             keyboardType="decimal-pad"
             value={set.distance ?? ''}
             placeholder={set.distancePlaceholder ?? 'm'}
-            placeholderTextColor={colors.textSubtle}
+            placeholderTextColor={set.done ? colors.text : colors.textSubtle}
             onChangeText={(value) => onChange(DRAFT_FIELD[field], value)}
             style={inputStyle}
           />
@@ -361,7 +361,7 @@ export function WorkoutSetRow({
               editable={!timer.isRunning}
               value={timer.isRunning ? formatDuration(timer.displaySeconds) : (set.duration ?? '')}
               placeholder={set.durationPlaceholder ?? '–'}
-              placeholderTextColor={colors.textSubtle}
+              placeholderTextColor={set.done ? colors.text : colors.textSubtle}
               onChangeText={(value) => onChange(DRAFT_FIELD[field], value)}
               onBlur={normaliseDuration}
               style={[

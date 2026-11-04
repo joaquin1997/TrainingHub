@@ -6,8 +6,9 @@ created: 2026-11-03
 
 # Plan — Completed values, undo selection and top Finish
 
-Self-reviewed against the constitution and the owner's spec review. Design
-only: no implementation, migration, external activation or device acceptance.
+Self-reviewed against the constitution and the owner's spec review. Implementation tasks 1–4 completed locally on 2026-11-04;
+see verification.md. No migration or external activation. Physical-device
+acceptance and mobile bundle delivery remain pending.
 
 ## Constitution check
 

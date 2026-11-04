@@ -65,7 +65,7 @@ production.
 | **Haptic language** | The fixed set of haptic patterns and the events that trigger them — set done, record, rest over, destructive confirm — and nothing else (spec 0034). |
 | **Skeleton** | Neutral placeholder shapes shown while a list's first load is in flight, laid out like the content to come; never invented data (spec 0034). |
 | **Set status area** | The one fixed place on an active-workout set row that shows its state: record, done, generated warm-up, up next, or nothing (spec 0034). |
-| **Up next** | The first set of the active workout, in workout order, not yet done — in a superset, the next set of the current round. At most one at a time (spec 0034). |
+| **Up next** | The active workout’s next unfinished set, normally anchored to the last completion. The latest explicitly undone set takes priority; inside a superset, warm-up and lowest unfinished round order still apply. At most one at a time (specs 0034, 0046). |
 | **Record celebration** | The one-off lime flash and *record* haptic behind "Records today" on the post-workout summary of a workout that beat records; once per workout, never blocking; a static highlight under Reduce Motion (spec 0037). |
 | **Theme** | One complete set of values for the named palette: Dark (the original) or Light. Every colour token has a value in each; accent meanings are the same in both (spec 0038). |
 | **Appearance** | The setting that picks the theme: System (follow the device's light/dark appearance), Light or Dark. Kept on the account like the other settings; presentation only (spec 0038). |

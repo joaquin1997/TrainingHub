@@ -2,6 +2,7 @@ import { runAt } from '@/features/routines/utils/supersetGroups';
 import {
   completeSet,
   resolveRestSeconds,
+  restOriginOf,
   resolveSetRestSeconds,
   skipRest,
   startRest,
@@ -150,11 +151,13 @@ export function completeSetInRounds(
     next = completeSet(draft, workoutExerciseId, workoutSetId, defaultRestSeconds, now);
   } else if (plan.completes) {
     const rest = resolveRestSeconds(plan.owner, defaultRestSeconds);
+    const completed = toggleWorkoutSetDone(draft, workoutExerciseId, workoutSetId, rest);
     next = startRest(
-      toggleWorkoutSetDone(draft, workoutExerciseId, workoutSetId, rest),
+      completed,
       plan.owner.id,
       rest,
       now,
+      restOriginOf(completed, workoutExerciseId, workoutSetId),
     );
   } else {
     // The person has moved on within the round: no rest, and none running.

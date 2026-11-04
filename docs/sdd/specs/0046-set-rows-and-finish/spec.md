@@ -1,7 +1,7 @@
 ---
 id: 0046
 title: Set rows that read right, undo that selects, Finish within reach
-status: planned
+status: in-progress
 roadmap: docs/roadmap/01-live-workout-logging.md
 created: 2026-11-03
 revises-draft: 2026-10-27

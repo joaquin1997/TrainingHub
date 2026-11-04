@@ -156,3 +156,17 @@ hidden set-type cycling with visible choices. Task breakdown is next.
   Migration verified on isolated PostgreSQL and web flows checked in EN/dark
   and ES/light at 320 pt. Production migration/API/app delivery and physical
   device checks remain pending; see the spec's verification.md.
+
+## Local implementation — 2026-11-04
+
+- [0046](../sdd/specs/0046-set-rows-and-finish/spec.md) tasks 1–4 implemented:
+  completed suggestions use normal text colour; exact undo selection survives
+  reopening and respects superset rounds; only the originating completion’s
+  rest is cancelled; a persistent secondary Finish action confirms and shares
+  the guarded save/error recovery flow. Automated checks are recorded in
+  [verification](../sdd/specs/0046-set-rows-and-finish/verification.md).
+  Bundle delivery, 320 pt/large-text layout and actual phone/watch cancellation
+  acceptance remain pending; no schema/API change or native dependency.
+- Earlier planning-only entries are historical. 0043 tasks 1–7 are now
+  implemented locally, with migration/API/bundle rollout and device acceptance
+  still pending in that spec’s task list.

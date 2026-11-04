@@ -7,7 +7,7 @@ import type {
 import { describe, expect, it, vi } from 'vitest';
 
 import type { ActiveWorkoutStore } from '@/features/workouts/liveActivity/liveWorkoutController';
-import type { WorkoutSessionDraft } from '@/features/workouts/state/workoutDraftStore';
+import { completeSet, undoWorkoutSetDone, type WorkoutSessionDraft } from '@/features/workouts/state/workoutDraftStore';
 
 import { startWatchWorkoutController } from './watchWorkoutController';
 
@@ -96,6 +96,21 @@ describe('watch workout controller (spec 0025)', () => {
       currentSet: { workoutSetId: 'a1', target: '50 kg × 8', restSeconds: 60 },
     });
     expect(bridge.updateWatchWorkout).not.toHaveBeenCalled();
+  });
+
+  it('sends the cleared rest and exact undone set to the watch (0046)', async () => {
+    const initial = completeSet(draft('c1'), 'a', 'a2', 90);
+    const store = fakeStore(initial);
+    const bridge = fakeBridge();
+    const controller = startWatchWorkoutController({ bridge, store, defaultRestSeconds: () => 90 });
+    await controller.idle();
+    store.replace(undoWorkoutSetDone(initial, 'a', 'a2'));
+    await controller.idle();
+    expect(bridge.updateWatchWorkout).toHaveBeenLastCalledWith(expect.objectContaining({
+      restEndsAt: undefined,
+      currentSet: expect.objectContaining({ workoutExerciseId: 'a', workoutSetId: 'a2' }),
+    }));
+    controller.stop();
   });
 
   it('sends a change of what the watch shows', async () => {

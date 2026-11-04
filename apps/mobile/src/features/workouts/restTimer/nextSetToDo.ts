@@ -81,6 +81,18 @@ export function nextSetToDo(
  * set left. Null when every set is done.
  */
 export function currentSetToDo(draft: WorkoutSessionDraft): SetToDo | null {
+  const selected = draft.undoSelection;
+  if (selected) {
+    const index = draft.exercises.findIndex((exercise) => exercise.id === selected.workoutExerciseId);
+    const exercise = draft.exercises[index];
+    const set = exercise?.entries.find((entry) => entry.id === selected.workoutSetId);
+    if (set && !set.done) {
+      const run = runAt(draft.exercises, index);
+      return run?.isSuperset
+        ? nextInSuperset(draft.exercises.slice(run.start, run.end))
+        : selected;
+    }
+  }
   const anchor =
     draft.lastTickedExerciseId ??
     draft.rest?.workoutExerciseId ??
