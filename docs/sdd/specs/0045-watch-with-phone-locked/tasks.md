@@ -1,6 +1,6 @@
 ---
 spec: 0045
-status: in-progress
+status: done
 created: 2026-11-03
 ---
 
@@ -94,7 +94,11 @@ alongside the mirrored and queued copies, using the same deduplication ID.
   generation, late completion. Triple-delivery controller regression passes.
 - [x] Rebuild/install and launch the paired Release apps (2026-11-04);
   signed bundle/background mode and included retry helper verified.
-- [ ] Recheck AC-1/AC-3 across several sets with the phone locked. The original incident was not
-  captured in native logs, so this is a resilience fix, not a proven root cause.
+- [x] Owner rechecked the reported next-set regression on 2026-11-04: after
+  being asked to mark 2–3 sets with the iPhone locked, confirmed the Watch
+  advances without reopening the phone app (AC-1). Original full-routine
+  and other acceptance evidence remains the 2026-11-03 check above.
+  The original incident was not captured in native logs; its exact cause
+  remains unproven, while the reported behavior is restored.
 
 Apple reference: [mirrored-session disconnection/reconnection](https://developer.apple.com/documentation/healthkit/hkworkoutsessiondelegate/workoutsession(_:diddisconnectfromremotedevicewitherror:)).

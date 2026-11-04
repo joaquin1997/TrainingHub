@@ -45,7 +45,7 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0042](specs/0042-readable-exercise-progress/spec.md) | Progress per exercise that is easy to read and to find | `in-progress` — code complete locally 2026-11-03 (tasks 1–7): trained-exercise search, coherent per-workout evidence, explicit metrics/periods and preserved navigation; API and paired Release apps delivered 2026-11-04; physical-device acceptance pending | 4 — Progress |
 | [0043](specs/0043-smarter-warm-ups/spec.md) | Smarter warm-ups and warm-ups marked by hand | `in-progress` — code complete 2026-11-03 (tasks 1–7): personal preferences, configurable ramps and explained pickers; isolated-DB migration/tests and web smoke checks passed; migration observed applied; API/paired Release apps delivered 2026-11-04, physical-device acceptance pending | 1 — Live workout logging |
 | [0044](specs/0044-curated-exercise-catalog/spec.md) | A curated exercise catalog | `done` — applied on the server 2026-10-21: 763 reviewed exercises (195 by hand + 568 from free-exercise-db), 847 imported ones retired, 14 own duplicates merged with their history; API deployed, names in the app's language, search by other names | 6 — Exercises |
-| [0045](specs/0045-watch-with-phone-locked/spec.md) | The watch keeps going with the phone locked | `in-progress` — original device acceptance passed 2026-11-03; reopened 2026-11-04 after next-set updates stalled until opening the phone app. Initial-mirror retry/live-delivery resilience fix rebuilt, installed and launched on the paired Release apps; regression acceptance pending | 8 — Integrations & platform |
+| [0045](specs/0045-watch-with-phone-locked/spec.md) | The watch keeps going with the phone locked | `done` — original device acceptance 2026-11-03; regression fix deployed 2026-11-04 (initial-mirror retry/live delivery), owner confirmed next-set advancement with the iPhone locked. Exact original failure cause not captured | 8 — Integrations & platform |
 
 | [0046](specs/0046-set-rows-and-finish/spec.md) | Readable completed sets, undo selection and Finish at the top | `in-progress` — tasks 1–4 implemented locally 2026-11-04: completed figures, exact undo selection/rest origin and guarded top Finish; paired Release delivered 2026-11-04; visual/device acceptance and connected-watch cancellation pending. | 1 — Live workout logging |
 | [0047](specs/0047-watch-skip-rest/spec.md) | Skip a rest from the watch | `planned` — Owner-reviewed; plan/tasks prepared 2026-11-03: specific-rest skip with acknowledgement; paired native rebuild and device checks pending. | 2 + 8 |
@@ -204,8 +204,9 @@ remain explicit implementation/acceptance gates, not inferred successes.
 ## Delivery follow-up — 2026-11-04
 
 The API and paired iPhone/Watch Release apps are deployed; 0042/0043/0046
-delivery is complete, with their physical acceptance still open. 0045 is
-reopened for the reported locked-phone regression and includes an installed
-initial-mirror retry/live-event fallback fix (69d27ee). The original failure
-has not been captured in logs; owner recheck is pending. Remaining legacy
+delivery is complete, with their physical acceptance still open. 0045’s
+reported locked-phone regression is restored after the installed
+initial-mirror retry/live-event fallback fix (69d27ee): the owner confirmed
+next-set advancement with the iPhone locked. The original failure was not
+captured in logs, so its exact cause remains unproven. Remaining legacy
 account data was not moved. No push was performed.

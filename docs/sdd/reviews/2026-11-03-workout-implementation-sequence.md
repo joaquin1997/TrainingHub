@@ -95,7 +95,7 @@ operational/device acceptance tasks has been executed yet.
 ## Delivery update — 2026-11-04
 
 0042/0043 API and paired Release app delivery, plus 0046 app delivery, are
-complete. Feature-specific physical acceptance remains open. The owner’s
-0045 locked-phone regression is reopened; its initial-mirror retry and
-immediate-event fallback are included in both installed apps. See each
+complete. Feature-specific physical acceptance remains open. The owner confirmed
+0045 next-set advancement with the iPhone locked after installing the
+initial-mirror retry and immediate-event fallback in the paired apps. See each
 spec’s verification/tasks for the distinction between delivery and acceptance.

@@ -1,6 +1,6 @@
 ---
 spec: 0045
-status: in-progress # regression follow-up 2026-11-04; original acceptance recorded below
+status: done # regression rechecked by owner 2026-11-04
 created: 2026-11-03
 ---
 
