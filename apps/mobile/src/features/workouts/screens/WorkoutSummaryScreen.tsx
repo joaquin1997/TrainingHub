@@ -1,9 +1,9 @@
 import { useAuth } from '@/features/auth/AuthContext';
 import { isPerformedSet } from '../utils/performedSet';
-import { useWorkoutInvalidationVersion } from '../corrections/useWorkoutInvalidationVersion';
-import type { WorkoutSession } from '@workout/domain';
+import { useProgressResource } from '@/features/progress/useExerciseProgress';
+import { groupSessionRecords, groupedRecordCount } from '@/features/progress/utils/groupSessionRecords';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import type { TFunction } from 'i18next';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -11,7 +11,7 @@ import { ScrollView, Text, View } from 'react-native';
 
 import { workoutsClient } from '../api/workoutsClient';
 import { progressClient } from '@/features/progress/api/progressClient';
-import { RecordsCard } from '@/features/progress/components/RecordsCard';
+import { GroupedRecordsCard } from '@/features/progress/components/GroupedRecordsCard';
 import { RecordCelebration } from '@/features/workouts/components/RecordCelebration';
 import {
   clearLatestCompletedWorkout,
@@ -42,7 +42,7 @@ import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import { CardHeader } from '@/ui/CardHeader';
-import type { SessionRecord, WeightUnit, WorkoutSetType } from '@workout/domain';
+import type { WeightUnit, WorkoutSetType } from '@workout/domain';
 
 function setTypeLabel(type: WorkoutSetType, t: TFunction) {
   switch (type) {
@@ -98,30 +98,22 @@ export function WorkoutSummaryScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
-  const correctionVersion = useWorkoutInvalidationVersion();
-  const [savedSession, setSavedSession] = useState<WorkoutSession | null>(null);
-  const [summaryError, setSummaryError] = useState(false);
-  const [summaryLoading, setSummaryLoading] = useState(true);
-  const [retry, setRetry] = useState(0);
   const workoutDraft = getLatestCompletedWorkout();
   const clientId = workoutDraft?.clientId;
-  const [records, setRecords] = useState<SessionRecord[]>([]);
   const [isShareOpen, setIsShareOpen] = useState(false);
-
-  useFocusEffect(useCallback(() => {
-    if (!clientId || !user) return;
-    let active = true;
-    setSummaryLoading(true); setSummaryError(false);
+  const readSummary = useCallback(async () => {
+    if (!clientId || !user) return undefined;
     const readSaved = workoutDraft?.savedSessionId ? workoutsClient.getById(workoutDraft.savedSessionId)
       : workoutsClient.list().then((sessions) => sessions.find((session) => session.clientId === clientId));
-    void Promise.all([readSaved, progressClient.sessionRecords()]).then(([saved, allRecords]) => {
-      if (!active) return;
-      if (!saved || saved.userId !== user.id) { setSummaryError(true); return; }
-      setSavedSession(saved);
-      setRecords(allRecords.find((entry) => entry.workoutId === saved.id)?.records ?? []);
-    }).catch(() => { if (active) setSummaryError(true); }).finally(() => { if (active) setSummaryLoading(false); });
-    return () => { active = false; };
-  }, [clientId, workoutDraft?.savedSessionId, user?.id, correctionVersion, retry]));
+    const [saved, allRecords] = await Promise.all([readSaved, progressClient.sessionRecords()]);
+    if (!saved || saved.userId !== user.id) throw new Error('Saved workout unavailable');
+    return { saved, records: allRecords.find((entry) => entry.workoutId === saved.id)?.records ?? [] };
+  }, [clientId, workoutDraft?.savedSessionId, user?.id, i18n.language]);
+  const summaryState = useProgressResource(`${user?.id}:${clientId}:${workoutDraft?.savedSessionId ?? ''}`, readSummary);
+  const savedSession = summaryState.data?.saved;
+  const records = summaryState.data?.records ?? [];
+  const groups = groupSessionRecords(records, savedSession?.exercises ?? []);
+  const recordCount = groupedRecordCount(groups);
 
   // Volume versus last time (FR-24): the workout as saved, compared with the
   // history once; nothing is shown until (and unless) it loads (EF-5).
@@ -149,9 +141,12 @@ export function WorkoutSummaryScreen() {
     router.replace(path);
   };
 
-  if (summaryLoading || summaryError) return <View style={styles.screen}><StateView kind={summaryError ? 'error' : 'loading'}
-    message={t(summaryError ? 'workouts.correction.refreshFailed' : 'workouts.loadingWorkout')}
-    actionLabel={summaryError ? t('common.retry') : undefined} onAction={() => setRetry((value) => value + 1)} /></View>;
+  if (!workoutSession && (summaryState.loading || summaryState.error || summaryState.notFound)) {
+    const failed = !!summaryState.error || summaryState.notFound;
+    return <View style={styles.screen}><StateView kind={failed ? 'error' : 'loading'}
+      message={t(failed ? 'progress.records.summaryLoadFailed' : 'workouts.loadingWorkout')}
+      actionLabel={failed ? t('common.retry') : undefined} onAction={() => void summaryState.reload()} /></View>;
+  }
 
   if (!workoutDraft || !workoutSession || !compared) {
     return (
@@ -167,9 +162,7 @@ export function WorkoutSummaryScreen() {
     );
   }
 
-  // Rendered from the skeleton so the summary shows what was saved, ghosted
-  // placeholders included, formatted back into the session unit (spec 0013).
-  // The skeleton stamps every set; "done" comes from the draft.
+  // Saved values and performed flags are authoritative, including corrections.
   const stats = summarizeSession(compared);
   const duration = activeDurationSeconds(
     workoutSession.startedAt,
@@ -208,19 +201,13 @@ export function WorkoutSummaryScreen() {
         <Text style={styles.heroTitle}>{workoutDraft.routineName}</Text>
         <Chip icon="checkmark-circle" tone="done" label={t('workouts.savedToHistory')} />
       </View>
-      {/* Records of the day lead (FR-24); the block appears when they arrive. */}
-      {records.length > 0 ? (
-        <RecordCelebration workoutId={clientId} recordCount={records.length}>
-          <RecordsCard
-            title={t('progress.records.today')}
-            unit={unit}
-            variant="highlight"
-            items={records.map((record, index) => ({
-              key: `${record.exerciseId}-${record.type}-${index}`,
-              record,
-              meta: record.exerciseName,
-            }))}
-          />
+      {summaryState.error ? <StateView kind="error" message={t('progress.records.summaryRefreshFailed')}
+        actionLabel={t('common.retry')} onAction={() => void summaryState.reload()} /> : null}
+      {summaryState.loading ? <Text style={styles.sectionLabel}>{t('progress.records.summaryRefreshing')}</Text> : null}
+      {recordCount > 0 ? (
+        <RecordCelebration workoutId={clientId} recordCount={recordCount}>
+          <GroupedRecordsCard title={t('progress.records.today')} groups={groups} unit={unit} highlight
+            onPressWorkout={() => router.push({ pathname: '/workouts/[workoutId]', params: { workoutId: workoutSession.id } })} />
         </RecordCelebration>
       ) : null}
       <View style={styles.tiles}>

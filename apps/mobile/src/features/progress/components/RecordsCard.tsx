@@ -30,8 +30,6 @@ interface RecordsCardProps {
 /** A card of personal records (spec 0023): trophy, what it is, its figure. */
 export function RecordsCard({ title, items, unit, variant = 'default', stacked = false }: RecordsCardProps) {
   useTheme();
-  const { t } = useTranslation();
-
   if (items.length === 0) {
     return null;
   }
@@ -39,26 +37,31 @@ export function RecordsCard({ title, items, unit, variant = 'default', stacked =
   return (
     <View style={[styles.card, variant === 'highlight' ? styles.highlight : null]}>
       <CardHeader title={title} />
-      {items.map(({ key, record, meta }) => {
-        const label = describeRecord(record, unit, t);
-        const caption = [label.set, meta].filter(Boolean).join(' · ');
-
-        return (
-          <View key={key} style={styles.row}>
-            <View style={styles.icon}>
-              <Ionicons name="trophy" size={14} color={colors.accentInk} />
-            </View>
-            <View style={styles.text}>
-              <Text style={styles.title}>{label.title}</Text>
-              {caption ? <Text style={styles.caption}>{caption}</Text> : null}
-              {stacked ? <Text style={styles.value}>{label.value}</Text> : null}
-            </View>
-            {!stacked ? <Text style={styles.value}>{label.value}</Text> : null}
-          </View>
-        );
-      })}
+      {items.map(({ key, record, meta }) => <RecordRow key={key} record={record} meta={meta} unit={unit} stacked={stacked} />)}
     </View>
   );
+}
+
+/** Shared record row: grouped summaries stack values for narrow/large-text layouts. */
+export function RecordRow({ record, meta, unit, stacked = false, accessible = false }: {
+  record: ExerciseRecord; meta?: string; unit: WeightUnit; stacked?: boolean; accessible?: boolean;
+}) {
+  useTheme();
+  const { t } = useTranslation();
+  const label = describeRecord(record, unit, t);
+  const caption = [label.set, meta].filter(Boolean).join(' · ');
+  return <View style={styles.row} accessible={accessible}
+    accessibilityLabel={accessible ? [label.title, label.value, caption].filter(Boolean).join(', ') : undefined}>
+    <View style={styles.icon} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <Ionicons name="trophy" size={14} color={colors.accentInk} />
+    </View>
+    <View style={styles.text}>
+      <Text style={styles.title}>{label.title}</Text>
+      {caption ? <Text style={styles.caption}>{caption}</Text> : null}
+      {stacked ? <Text style={styles.value}>{label.value}</Text> : null}
+    </View>
+    {!stacked ? <Text style={styles.value}>{label.value}</Text> : null}
+  </View>;
 }
 
 const styles = createStyles(() => ({
@@ -85,6 +88,7 @@ const styles = createStyles(() => ({
   },
   text: {
     flex: 1,
+    minWidth: 0,
     gap: spacing.xxs,
   },
   title: {
