@@ -33,3 +33,23 @@ The API additionally excludes deleted/retired catalog rows without owned
 history from confirmed-empty visibility and rejects calendar-overflow start
 boundaries. Owned historical rows remain readable, including held identities;
 no name-based merges or training-row repair was performed.
+
+## Delivery — 2026-11-04 (6655b1f)
+
+API image `c9ba5f4183fe` (`traininghub-api:deploy-6655b1f`) was deployed first.
+A fresh database backup was verified with gzip integrity and the complete-dump
+footer; previous image/container retained as `rollback-6655b1f`. Runtime
+credentials were copied without printing or changing them. Health reports
+service/database up, and anonymous comparison reads return 401. The deployed
+compiled routes SHA-256 matches the locally verified API build. All 27
+migrations remain applied; no new migration or training-row rewrite.
+
+Then the phone Release build completed, deep/strict signature verification
+passed, and `workout-processing` remains in its compiled Info.plist. The
+embedded Watch binary contains the new rest-skip implementation. Phone and
+Watch apps were installed successfully and launched on the owner's devices.
+No Metro connection is required. No push was performed.
+
+Delivery is complete. Feature-specific locked/offline/expiry/accessibility
+acceptance is still open; no physical outcome is inferred from installation.
+The original-record investigation remains explicitly deferred.

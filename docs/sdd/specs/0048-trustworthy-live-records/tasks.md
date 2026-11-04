@@ -49,3 +49,7 @@ API before bundle, no native rebuild. Verify both 50/45/47 and 52 kg scenarios; 
 - 2026-11-04 — Tasks 1–5 implemented and locally tested; see verification.md.
   Owner explicitly deferred investigation task 6 (no concrete remembered case).
   Task 7 remains open for API/bundle delivery and physical/visual acceptance.
+
+- 2026-11-04 — API-first rollout and paired phone/Watch Release installation
+  completed from source 6655b1f; both apps launched. Delivery part of the
+  final task is complete; physical cases remain unchecked. See verification.md.

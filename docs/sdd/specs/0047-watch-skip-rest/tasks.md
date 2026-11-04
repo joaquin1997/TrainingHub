@@ -48,3 +48,7 @@ Native watch and paired phone build/install required. No API migration. Physical
   identity/ack handling, durable native suppression/pending state and ES/EN
   accessible control. Native typecheck and Release build pass; task 5 remains
   open for installation/physical acceptance. See verification.md.
+
+- 2026-11-04 — API-first rollout and paired phone/Watch Release installation
+  completed from source 6655b1f; both apps launched. Delivery part of the
+  final task is complete; physical cases remain unchecked. See verification.md.

@@ -48,8 +48,8 @@ checklist and progress log per area; this table tracks **which work has a spec**
 | [0045](specs/0045-watch-with-phone-locked/spec.md) | The watch keeps going with the phone locked | `done` — original device acceptance 2026-11-03; regression fix deployed 2026-11-04 (initial-mirror retry/live delivery), owner confirmed next-set advancement with the iPhone locked. Exact original failure cause not captured | 8 — Integrations & platform |
 
 | [0046](specs/0046-set-rows-and-finish/spec.md) | Readable completed sets, undo selection and Finish at the top | `in-progress` — tasks 1–4 implemented locally 2026-11-04: completed figures, exact undo selection/rest origin and guarded top Finish; paired Release delivered 2026-11-04; visual/device acceptance and connected-watch cancellation pending. | 1 — Live workout logging |
-| [0047](specs/0047-watch-skip-rest/spec.md) | Skip a rest from the watch | `in-progress` — tasks 1–4 implemented locally 2026-11-04: specific-rest identity, acknowledgement, durable native pending/suppression and translated Skip; Release build passed, installation/device acceptance pending. | 2 + 8 |
-| [0048](specs/0048-trustworthy-live-records/spec.md) | Trustworthy live records and last-session feedback | `in-progress` — tasks 1–5 implemented locally 2026-11-04: independent frozen sources, clear PR/last-session comparisons and retry/error states. API/app delivery and device checks pending; owner explicitly deferred original-case investigation. | 4 — Progress |
+| [0047](specs/0047-watch-skip-rest/spec.md) | Skip a rest from the watch | `in-progress` — tasks 1–4 implemented locally 2026-11-04: specific-rest identity, acknowledgement, durable native pending/suppression and translated Skip; API-first/paired Release delivery completed 2026-11-04; physical acceptance pending. | 2 + 8 |
+| [0048](specs/0048-trustworthy-live-records/spec.md) | Trustworthy live records and last-session feedback | `in-progress` — tasks 1–5 implemented locally 2026-11-04: independent frozen sources, clear PR/last-session comparisons and retry/error states. API and paired Release apps delivered 2026-11-04; device checks pending and original-case investigation explicitly deferred by owner. | 4 — Progress |
 | [0049](specs/0049-weight-per-side/spec.md) | Configurable weight per side | `planned` — Owner-reviewed; plan/tasks prepared 2026-11-03: same-side quantities, explicit shared-load selection, lesser-load warm-ups and older-client capability guards. | 1 — Live workout logging |
 | [0050](specs/0050-correct-saved-workout/spec.md) | Correct mistakes in a saved workout | `planned` — Owner-reviewed; plan/tasks prepared 2026-11-03: atomic versioned correction, legacy completion normalization and derived-view refresh; structural edits/deletion deferred. | 1 — Live workout logging |
 | [0051](specs/0051-offer-routine-update/spec.md) | Offer to update the routine after training | `planned` — Owner-reviewed; plan/tasks prepared 2026-11-03: selected changes after workout save, versioned stable-ID routine updates and preserved history links. | 5 — Routines |
@@ -223,3 +223,11 @@ remains deferred at the owner's request; do not mark 0048 done from UI tests.
 Owner reports deployed 0042/0043/0046 testing has gone well; this general
 confirmation does not invent individual accessibility/account/offline results.
 Next implementation after these two is 0053 (group records by exercise).
+
+## 0048/0047 delivery — 2026-11-04
+
+API deployed first (`c9ba5f4183fe`), then both Release apps installed and
+launched on the owner's iPhone/Watch. Fresh verified backup and stopped
+previous container/image preserved for rollback; runtime credentials unchanged.
+No new migration or training-data rewrite. Physical acceptance remains open;
+0048 investigation stays deferred. Detailed evidence is in each verification.md.

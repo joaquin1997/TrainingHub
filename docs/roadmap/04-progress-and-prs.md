@@ -125,3 +125,7 @@ are reused rather than reintroduced.
 ## Local implementation — 2026-11-04 (0048)
 
 Independent frozen historical/last-session references, explicit retry/loading/unavailable states, actual/baseline values and accessible comparison detail are implemented locally. API/bundle rollout and device acceptance remain pending; original discrepancy investigation is deferred by the owner.
+
+Delivery follow-up (2026-11-04): 0048 API deployed first, then 0047/0048
+paired Release apps installed and launched on the owner's phone/Watch.
+Physical acceptance remains separate; no new migration or training-data change.

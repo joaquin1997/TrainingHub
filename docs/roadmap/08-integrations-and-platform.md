@@ -96,3 +96,7 @@
 ## Local implementation — 2026-11-04 (0047)
 
 Watch Skip is implemented behind the existing bridge, with optional capability, exact rest identity and durable pending/suppression state. Native Release build passes; installed-device and 0045 regression acceptance remain pending.
+
+Delivery follow-up (2026-11-04): 0048 API deployed first, then 0047/0048
+paired Release apps installed and launched on the owner's phone/Watch.
+Physical acceptance remains separate; no new migration or training-data change.

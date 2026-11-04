@@ -109,3 +109,10 @@ Phone state keeps rest identity from 0046; Watch Skip remains an acknowledged
 request against that identity, including out-of-order Done/Skip delivery.
 No automatic deployment, original-data repair or native device acceptance
 is inferred from this implementation pass. Next planned slice is 0053.
+
+## 0048/0047 delivery — 2026-11-04
+
+API-first rollout and paired Release installation completed from 6655b1f.
+Both apps launched; health/database and authentication boundary checked.
+Physical acceptance and original-record investigation retain their separate
+status in the task lists. No new schema migration or training-row rewrite.
