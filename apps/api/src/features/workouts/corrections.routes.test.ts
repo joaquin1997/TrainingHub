@@ -21,6 +21,11 @@ describe('PUT workout correction', () => {
     expect((await app.inject({ method: 'PUT', url: '/workouts/w/correction', payload: { ...payload, startedAt: 'changed' }, headers: headers() })).statusCode).toBe(400);
     expect(correctWorkoutSession).not.toHaveBeenCalled();
   });
+  it('does not expose database errors containing submitted private values', async () => {
+    vi.mocked(correctWorkoutSession).mockRejectedValue(new Error('synthetic private note'));
+    const response = await app.inject({ method: 'PUT', url: '/workouts/w/correction', payload, headers: headers() });
+    expect(response.statusCode).toBe(503); expect(response.body).not.toContain('synthetic private note');
+  });
   it.each([400, 404, 409] as const)('returns explicit %s without recreating the workout', async (status) => {
     vi.mocked(correctWorkoutSession).mockRejectedValue(new WorkoutCorrectionError(status, 2));
     const response = await app.inject({ method: 'PUT', url: '/workouts/w/correction', payload, headers: headers() });

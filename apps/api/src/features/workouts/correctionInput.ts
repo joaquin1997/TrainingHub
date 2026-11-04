@@ -1,4 +1,4 @@
-import type { UpdateWorkoutSessionInput, WorkoutSetCorrectionInput } from '@workout/domain';
+import type { UpdateWorkoutSessionInput } from '@workout/domain';
 import { CORRECTION_QUANTITIES } from '@workout/domain';
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 const exact = (value: Record<string, unknown>, keys: string[]) => Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key));

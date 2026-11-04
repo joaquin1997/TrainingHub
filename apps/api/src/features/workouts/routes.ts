@@ -222,7 +222,11 @@ export async function registerWorkoutRoutes(app: FastifyInstance) {
     try {
       return await correctWorkoutSession(await resolveUserPublicId(request), request.params.id, input);
     } catch (error) {
-      if (!(error instanceof WorkoutCorrectionError)) throw error;
+      if (!(error instanceof WorkoutCorrectionError)) {
+        // Prisma errors may embed submitted values; log only operation/code.
+        request.log.error({ operation: 'workoutCorrection', databaseCode: error instanceof Prisma.PrismaClientKnownRequestError ? error.code : undefined }, 'Workout correction failed');
+        return reply.code(503).send({ message: 'Workout correction unavailable; retry later' });
+      }
       return reply.code(error.status).send(error.status === 409
         ? { code: 'WORKOUT_CORRECTION_CONFLICT', message: 'Workout changed; review the current version', currentRevision: error.currentRevision }
         : { message: error.status === 404 ? 'Workout not found' : 'Invalid correction values or set identities' });
