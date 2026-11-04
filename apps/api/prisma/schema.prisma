@@ -226,6 +226,9 @@ model RoutineExerciseSet {
 }
 
 model WorkoutSession {
+  revision Int @default(0)
+  lastCorrectionMutationId String?
+  lastCorrectionPayloadHash String?
   id          BigInt            @id @default(autoincrement())
   publicId    String            @unique @default(cuid())
   userId      BigInt

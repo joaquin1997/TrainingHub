@@ -307,6 +307,9 @@ export type UpdateRoutineInput = CreateRoutineInput;
  * Represents a real workout session performed by a user.
  */
 export interface WorkoutSession {
+  /** Absent on older servers: corrections are read-only. */
+  revision?: number;
+  clientId?: string;
   id: EntityId;
   userId: EntityId;
   routineId?: EntityId;
@@ -636,4 +639,28 @@ export interface HealthSyncRecord {
   errorMessage?: string;
   createdAt: ISODateString;
   updatedAt: ISODateString;
+}
+
+/** Full scalar correction of existing performed rows; identities/structure stay fixed. */
+export interface WorkoutSetCorrectionInput {
+  id: EntityId;
+  type: WorkoutSetType;
+  performed: boolean;
+  reps: number | null;
+  repsLeft: number | null;
+  repsRight: number | null;
+  weightKg: number | null;
+  durationSeconds: number | null;
+  distanceMeters: number | null;
+}
+export interface UpdateWorkoutSessionInput {
+  expectedRevision: number;
+  mutationId: string;
+  notes: string | null;
+  exercises: Array<{ id: EntityId; notes: string | null; sets: WorkoutSetCorrectionInput[] }>;
+}
+export interface WorkoutCorrectionConflict {
+  code: 'WORKOUT_CORRECTION_CONFLICT';
+  message: string;
+  currentRevision: number;
 }
