@@ -52,3 +52,7 @@ Native watch and paired phone build/install required. No API migration. Physical
 - 2026-11-04 — API-first rollout and paired phone/Watch Release installation
   completed from source 6655b1f; both apps launched. Delivery part of the
   final task is complete; physical cases remain unchecked. See verification.md.
+
+- 2026-11-04 — Owner confirmed connected Skip appears and works after the
+  locked-phone/two-countdown check (AC-1); initial absence was a mistaken test.
+  No additional code fix was established. Remaining task-5 cases stay open.

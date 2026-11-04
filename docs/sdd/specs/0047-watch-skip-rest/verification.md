@@ -62,3 +62,16 @@ No Metro connection is required. No push was performed.
 Delivery is complete. Feature-specific locked/offline/expiry/accessibility
 acceptance is still open; no physical outcome is inferred from installation.
 The original-record investigation remains explicitly deferred.
+
+## Owner connected-device check — 2026-11-04
+
+After being asked to skip a running rest with the iPhone locked and check
+both countdowns within five seconds, the owner initially could not see the
+control. Read-only inspection confirmed the newly installed Watch application
+was running and its new rest-skip state was receiving contexts. The owner
+then clarified that the initial test was mistaken and explicitly confirmed:
+Skip now appears and works. No corrective code change or reinstall was needed.
+
+Record the connected Skip check (AC-1) as passed. Do not infer offline/queue,
+natural-expiry/no-former-alert, accessibility or full 0045 Health/battery
+acceptance from this single confirmation. Task 5 remains partially open.
