@@ -1,6 +1,7 @@
 {
   "name": "@workout/mobile",
   "private": true,
+  "license": "UNLICENSED",
   "version": "0.0.0",
   "main": "expo-router/entry",
   "scripts": {

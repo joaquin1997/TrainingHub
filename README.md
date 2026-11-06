@@ -110,6 +110,7 @@ The [spec backlog](docs/sdd/backlog.md) is the detailed status reference.
 - [Security and repository sharing](SECURITY.md)
 - [Third-party data and assets](docs/data-sources.md)
 
-This repository does not currently grant an open-source license for the
-application code. Third-party packages, data and assets retain their own
-licenses; see the source notes before redistribution.
+The project is proprietary and all rights are reserved. Use, modification and
+distribution require prior express written authorization from the copyright
+holder; see [LICENSE](LICENSE). Third-party packages, data and assets retain
+their respective licenses; see [source notes](docs/data-sources.md).

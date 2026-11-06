@@ -1,6 +1,7 @@
 {
   "name": "@workout/domain",
   "private": true,
+  "license": "UNLICENSED",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",

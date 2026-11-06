@@ -2,7 +2,7 @@
 #
 # Daily re-sign and reinstall of the iPhone and Apple Watch apps, so the free
 # team's 7-day profiles never run out. Run by the launchd agent
-# ~/Library/LaunchAgents/com.joaquin.traininghub.renew-iphone.plist at 09:00.
+# ~/Library/LaunchAgents/com.joaquin.traininghub.renew-iphone.plist at 05:00.
 #
 #   ./scripts/renew-iphone.sh
 #
