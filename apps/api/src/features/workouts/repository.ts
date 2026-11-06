@@ -30,7 +30,7 @@ import {
  */
 const LAST_PERFORMANCE_LOOKBACK = 10;
 
-const workoutSessionInclude = {
+export const workoutSessionInclude = {
   routine: { select: { publicId: true } },
   exercises: {
     include: {
@@ -50,7 +50,7 @@ function logRepository(action: string, payload?: Record<string, unknown>) {
   console.info('[workoutsRepository]', action, payload ?? {});
 }
 
-function mapWorkoutSession(
+export function mapWorkoutSession(
   userPublicId: string,
   record: WorkoutSessionRecord,
 ): WorkoutSession {
@@ -59,6 +59,8 @@ function mapWorkoutSession(
   );
 
   return {
+    revision: record.revision,
+    clientId: record.clientId ?? undefined,
     id: record.publicId,
     userId: userPublicId,
     routineId: record.routine?.publicId ?? undefined,

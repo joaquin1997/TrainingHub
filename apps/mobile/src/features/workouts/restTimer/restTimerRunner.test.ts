@@ -1,8 +1,12 @@
+import { applyWatchEvent } from '../watch/watchProtocol';
 import type { Routine } from '@workout/domain';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   adjustRest,
+  addSetToWorkoutExercise,
+  completeSet,
+  undoWorkoutSetDone,
   clearActiveWorkout,
   getActiveWorkout,
   hydrateActiveWorkout,
@@ -86,6 +90,56 @@ describe('rest timer runner (spec 0018)', () => {
     runner?.stop();
     clearActiveWorkout();
     vi.useRealTimers();
+  });
+
+  it('watch Skip cancels the matching system alert and timer (0047)', async () => {
+    const r = start();
+    const exercise = workout().exercises[0]!;
+    setActiveWorkout(completeSet(workout(), exercise.id, exercise.entries[0]!.id, 90, new Date()));
+    await r.idle();
+    setActiveWorkout(applyWatchEvent(workout(), {
+      kind: 'skipRest', id: 'skip-1', workoutSessionId: workout().clientId,
+      restId: workout().rest!.id!, at: new Date().toISOString(),
+    }, 90));
+    await r.idle();
+    expect(alerts.cancel).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(120_000);
+    expect(vibrate).not.toHaveBeenCalled();
+  });
+
+  it('undo cancels its scheduled alert and timeout without a later buzz (0046)', async () => {
+    const r = start();
+    const exercise = workout().exercises[0]!;
+    const setId = exercise.entries[0]!.id;
+    setActiveWorkout(completeSet(workout(), exercise.id, setId, 90, new Date()));
+    await r.idle();
+    setActiveWorkout(undoWorkoutSetDone(workout(), exercise.id, setId));
+    await r.idle();
+    expect(alerts.cancel).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(120_000);
+    expect(vibrate).not.toHaveBeenCalled();
+    expect(workout().rest).toBeUndefined();
+  });
+
+  it('updates up-next alert text after unrelated undo without moving the rest end (0046)', async () => {
+    const exercise = workout().exercises[0]!;
+    let draft = addSetToWorkoutExercise(workout(), exercise.id);
+    const [first, second] = draft.exercises[0]!.entries;
+    draft = completeSet(draft, exercise.id, first!.id, 90, new Date());
+    draft = completeSet(draft, exercise.id, second!.id, 90, new Date());
+    setActiveWorkout(draft);
+    runner = startRestTimerRunner({
+      alerts, vibrate, isAppActive: () => true,
+      alertContent: (current) => ({ title: 'Rest over', body: current.undoSelection?.workoutSetId ?? 'Next' }),
+    });
+    await runner.idle();
+    setActiveWorkout(undoWorkoutSetDone(workout(), exercise.id, first!.id));
+    await runner.idle();
+    expect(workout().rest).toBe(draft.rest);
+    expect(alerts.cancel).not.toHaveBeenCalled();
+    expect(alerts.schedule).toHaveBeenLastCalledWith(new Date(draft.rest!.endsAt), {
+      title: 'Rest over', body: first!.id,
+    });
   });
 
   it('schedules the alert at the end when a rest starts', async () => {

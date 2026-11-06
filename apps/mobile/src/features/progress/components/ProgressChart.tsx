@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
 
+import { Button } from '@/ui/Button';
 import { ProgressBars } from '@/features/progress/components/ProgressBars';
 import {
   pointLabel,
@@ -51,6 +52,7 @@ const SVG_AVAILABLE = canDrawSvg(Platform.OS, UIManager);
 
 interface ProgressChartProps {
   title: string;
+  inspectable?: boolean;
   unit?: string;
   series: ChartSeries;
   /** Formats a point's ISO date into a short axis label (also the readout's date). */
@@ -76,10 +78,11 @@ export function ProgressChart({
   series,
   formatLabel,
   formatValue = roundValue,
+  inspectable = false,
 }: ProgressChartProps) {
   useTheme();
   const { t } = useTranslation();
-  const [selected, setSelected] = useState<number | null>(null);
+  const [selected, setSelected] = useState<number | null>(inspectable ? 0 : null);
 
   if (series.points.length === 0) {
     return null;
@@ -94,7 +97,7 @@ export function ProgressChart({
       <CardHeader
         title={title}
         trailing={
-          point ? (
+          inspectable ? undefined : point ? (
             <View style={styles.readout} accessibilityLiveRegion="polite">
               {point.isRecord ? (
                 <Ionicons name="trophy" size={RECORD_ICON} color={colors.accentInk} />
@@ -115,6 +118,15 @@ export function ProgressChart({
           )
         }
       />
+      {inspectable && point ? <Text style={[styles.range, styles.readoutText]} accessibilityLiveRegion="polite">
+        {pointReadout(point, format, t)}{point.isRecord ? ` · ${t('progress.chart.record')}` : ''}
+      </Text> : null}
+      {inspectable ? <View style={styles.controls}>
+        <Button label={t('progress.readable.previousPoint')} variant="secondary" disabled={selected === 0}
+          onPress={() => setSelected(Math.max(0, (selected ?? 1) - 1))} />
+        <Button label={t('progress.readable.nextPoint')} variant="secondary" disabled={selected === series.points.length - 1}
+          onPress={() => setSelected(Math.min(series.points.length - 1, (selected ?? -1) + 1))} />
+      </View> : null}
       {SVG_AVAILABLE ? (
         <LineChart
           series={series}
@@ -123,7 +135,7 @@ export function ProgressChart({
           onSelect={setSelected}
         />
       ) : (
-        <ProgressBars series={series} formatLabel={formatLabel} formatValue={formatValue} />
+        <ProgressBars series={series} formatLabel={formatLabel} formatValue={formatValue} onSelect={inspectable ? setSelected : undefined} unit={unit} />
       )}
     </View>
   );
@@ -338,6 +350,7 @@ function LineChart({
 }
 
 const styles = createStyles(() => ({
+  controls: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   container: {
     ...commonStyles.card,
     gap: spacing.md,

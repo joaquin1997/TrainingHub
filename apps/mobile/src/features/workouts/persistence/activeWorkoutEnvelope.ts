@@ -1,3 +1,5 @@
+import { isStartingRecords, isLastSessionReference } from '@workout/domain/records';
+import { isWarmUpPreferences } from '@/lib/warmUpContext';
 import type { WorkoutSessionDraft } from '@/features/workouts/state/workoutDraftStore';
 
 /**
@@ -101,11 +103,73 @@ export function parsePersistedActiveWorkout(
     return { kind: 'foreign' };
   }
 
-  const draft = parsed.draft;
+  let draft = parsed.draft;
+  if (draft.warmUpPreferences) {
+    const entries = typeof draft.warmUpPreferences === 'object'
+      ? Object.entries(draft.warmUpPreferences).filter(([, entry]) => entry && isWarmUpPreferences(entry.value) && typeof entry.pending === 'boolean')
+      : [];
+    draft = { ...draft, warmUpPreferences: Object.fromEntries(entries) };
+  }
+  // Optional metadata is untrusted in an older/tampered envelope. Retain the
+  // workout but discard invalid context before the pure normalizer reads it.
+  draft = { ...draft, exercises: draft.exercises.map((exercise) => {
+    const m = exercise.warmUpMetadata;
+    if (!m) return exercise;
+    const strings = (v: unknown) => v === undefined || (Array.isArray(v) && v.every((x) => typeof x === 'string'));
+    const valid = typeof m === 'object' && !Array.isArray(m) &&
+      (m.name === undefined || typeof m.name === 'string') &&
+      (m.category === undefined || typeof m.category === 'string') &&
+      (m.loadingKind === undefined || ['barbell', 'dumbbell', 'machine'].includes(m.loadingKind)) &&
+      strings(m.aliases) && strings(m.equipment) && strings(m.primaryMuscleGroups);
+    return valid ? exercise : { ...exercise, warmUpMetadata: undefined };
+  }) };
+
+  if (draft.startingRecords !== undefined) {
+    const entries = isRecord(draft.startingRecords) ? Object.entries(draft.startingRecords) : [];
+    draft = { ...draft, startingRecords: Object.fromEntries(entries.filter(([id, value]) => isStartingRecords(value, id))) };
+  }
+  if (draft.lastSessionReferences !== undefined) {
+    const entries = isRecord(draft.lastSessionReferences) ? Object.entries(draft.lastSessionReferences) : [];
+    draft = { ...draft, lastSessionReferences: Object.fromEntries(entries.filter(([id, value]) => isLastSessionReference(value, id, draft.startedAt))) };
+  }
+
+  // Optional interaction metadata never makes an otherwise valid draft unreadable.
+  const validId = (value: unknown): value is string => typeof value === 'string' && value.length > 0;
+  if (draft.lastProcessedWatchSkipId !== undefined && !validId(draft.lastProcessedWatchSkipId)) {
+    draft = { ...draft, lastProcessedWatchSkipId: undefined };
+  }
+  if (draft.watchSkippedRestIds !== undefined) {
+    draft = { ...draft, watchSkippedRestIds: Array.isArray(draft.watchSkippedRestIds) ? draft.watchSkippedRestIds.filter(validId).slice(-200) : undefined };
+  }
+  const selection = draft.undoSelection;
+  const selectedExercise = isRecord(selection) && validId(selection.workoutExerciseId)
+    ? draft.exercises.find((exercise) => exercise.id === selection.workoutExerciseId) : undefined;
+  const selectedSet = isRecord(selection) && validId(selection.workoutSetId)
+    ? selectedExercise?.entries.find((set) => set.id === selection.workoutSetId) : undefined;
+  if (selection !== undefined && (!selectedSet || selectedSet.done)) {
+    draft = { ...draft, undoSelection: undefined };
+  }
+  draft = { ...draft, exercises: draft.exercises.map((exercise) => ({
+    ...exercise,
+    entries: exercise.entries.map((set) => validId(set.completionId) || set.completionId === undefined
+      ? set : { ...set, completionId: undefined }),
+  })) };
 
   // A malformed rest is dropped; the workout itself is kept.
   if (draft.rest !== undefined && !looksLikeRest(draft.rest)) {
     return { kind: 'ok', draft: { ...draft, rest: undefined } };
+  }
+
+  if (draft.rest) {
+    const rest = { ...draft.rest };
+    if (!validId(rest.id)) delete rest.id;
+    const origin = validId(rest.originExerciseId) && validId(rest.originSetId) && validId(rest.originCompletionId);
+    if (!origin) {
+      delete rest.originExerciseId;
+      delete rest.originSetId;
+      delete rest.originCompletionId;
+    }
+    draft = { ...draft, rest };
   }
 
   return { kind: 'ok', draft };

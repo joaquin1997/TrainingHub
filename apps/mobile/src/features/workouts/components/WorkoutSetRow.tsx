@@ -1,3 +1,5 @@
+import { ComparisonBadge } from '@/features/workouts/liveRecords/ComparisonBadge';
+import type { RecordComparisonHit } from '@workout/domain';
 import { Ionicons } from '@expo/vector-icons';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
@@ -219,10 +221,11 @@ type RowProps = {
   isUpNext?: boolean;
   /** Records this done set beat (spec 0032), if any. */
   recordHits?: LiveRecordHit[];
+  comparisonHits?: RecordComparisonHit[];
   /** The tick that just happened earned the record: it pops (FR-7). */
   recordPop?: boolean;
   onChange: (field: SetDraftField, value: string) => void;
-  onCycleType: () => void;
+  onSelectType: () => void;
   onToggleDone: () => void;
   onRemove: () => void;
 };
@@ -245,9 +248,10 @@ export function WorkoutSetRow({
   previousLabel,
   isUpNext = false,
   recordHits,
+  comparisonHits,
   recordPop = false,
   onChange,
-  onCycleType,
+  onSelectType,
   onToggleDone,
   onRemove,
 }: RowProps) {
@@ -260,7 +264,7 @@ export function WorkoutSetRow({
   const doneProgress = useDoneTransition(set.done);
   const hasRecord = Boolean(recordHits && recordHits.length > 0);
   const status = setStatus(set, { hasRecord, isUpNext });
-  const recordText = hasRecord && set.done ? recordBadgeLabel(recordHits!, unit, t) : null;
+  const recordText = !comparisonHits && hasRecord && set.done ? recordBadgeLabel(recordHits!, unit, t) : null;
   const lastText = previousLabel !== '–' ? t('workouts.setStatus.last', { value: previousLabel }) : null;
   const statusLabel =
     status === 'record'
@@ -301,7 +305,7 @@ export function WorkoutSetRow({
             keyboardType="decimal-pad"
             value={set.weightKg}
             placeholder={set.weightPlaceholder ?? '–'}
-            placeholderTextColor={colors.textSubtle}
+            placeholderTextColor={set.done ? colors.text : colors.textSubtle}
             onChangeText={(value) => onChange(DRAFT_FIELD[field], value)}
             style={inputStyle}
           />
@@ -314,7 +318,7 @@ export function WorkoutSetRow({
             keyboardType="number-pad"
             value={set.reps}
             placeholder={set.repsPlaceholder ?? '–'}
-            placeholderTextColor={colors.textSubtle}
+            placeholderTextColor={set.done ? colors.text : colors.textSubtle}
             onChangeText={(value) => onChange(DRAFT_FIELD[field], value)}
             style={inputStyle}
           />
@@ -330,7 +334,7 @@ export function WorkoutSetRow({
             accessibilityLabel={t(side === 'left' ? 'workouts.repsLeft' : 'workouts.repsRight')}
             value={set[field] ?? ''}
             placeholder={sideRepsPlaceholder(set, side) ?? '–'}
-            placeholderTextColor={colors.textSubtle}
+            placeholderTextColor={set.done ? colors.text : colors.textSubtle}
             onChangeText={(value) => onChange(field, value)}
             style={inputStyle}
           />
@@ -344,7 +348,7 @@ export function WorkoutSetRow({
             keyboardType="decimal-pad"
             value={set.distance ?? ''}
             placeholder={set.distancePlaceholder ?? 'm'}
-            placeholderTextColor={colors.textSubtle}
+            placeholderTextColor={set.done ? colors.text : colors.textSubtle}
             onChangeText={(value) => onChange(DRAFT_FIELD[field], value)}
             style={inputStyle}
           />
@@ -361,7 +365,7 @@ export function WorkoutSetRow({
               editable={!timer.isRunning}
               value={timer.isRunning ? formatDuration(timer.displaySeconds) : (set.duration ?? '')}
               placeholder={set.durationPlaceholder ?? '–'}
-              placeholderTextColor={colors.textSubtle}
+              placeholderTextColor={set.done ? colors.text : colors.textSubtle}
               onChangeText={(value) => onChange(DRAFT_FIELD[field], value)}
               onBlur={normaliseDuration}
               style={[
@@ -401,7 +405,7 @@ export function WorkoutSetRow({
               ? t('workouts.generatedWarmupLabel', { type: setTypeLabel(set.type, t) })
               : setTypeLabel(set.type, t)
           }
-          onPress={onCycleType}
+          onPress={onSelectType}
           hitSlop={MARKER_HIT}
           style={[
             styles.marker,
@@ -440,6 +444,7 @@ export function WorkoutSetRow({
             <Ionicons name="close" size={18} color={colors.textMuted} />
           </Pressable>
         </View>
+        <ComparisonBadge hits={comparisonHits} unit={unit} />
         {lastText || recordText ? (
           <Text style={styles.secondLine}>
             {lastText}

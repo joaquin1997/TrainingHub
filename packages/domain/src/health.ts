@@ -103,6 +103,10 @@ export interface WatchWorkoutSnapshot {
   pausedSeconds: number;
   /** End of the running rest, absent when none runs. */
   restEndsAt?: ISODateString;
+  restId?: string;
+  canSkipRest?: boolean;
+  restSkipVersion?: 1;
+  lastProcessedSkipId?: string;
   /** The set to do now; absent when every set is done. */
   currentSet?: WatchWorkoutSet;
   /** Sets done so far, warm-ups included: named by the watch's discard confirmation (spec 0035). */
@@ -150,6 +154,7 @@ export type WatchWorkoutEvent =
       /** Reps chosen on the watch (spec 0041 FR-12); absent from older watch builds. */
       reps?: number;
     }
+  | { kind: 'skipRest'; id: string; workoutSessionId: string; restId: string; at: ISODateString }
   | { kind: 'pause' | 'resume'; id: string; workoutSessionId: string; at: ISODateString }
   | { kind: 'finishRequested'; id: string; workoutSessionId: string }
   /** Confirmed on the watch; never queued while the phone is unreachable (spec 0035 EF-8). */

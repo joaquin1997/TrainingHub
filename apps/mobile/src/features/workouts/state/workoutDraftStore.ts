@@ -1,7 +1,10 @@
+import { warmUpMetadataOf } from '@/lib/warmUpContext';
 import type {
   CreateWorkoutSessionInput,
   ExerciseLastPerformance,
   ExerciseTrackingType,
+  ExerciseWarmUpPreferences,
+  WarmUpExerciseMetadata,
   Routine,
   WeightUnit,
   WorkoutSession,
@@ -60,6 +63,8 @@ export type WorkoutSetDraft = {
   repsLeftPlaceholder?: string;
   repsRightPlaceholder?: string;
   done: boolean;
+  /** Identifies this particular completion, rather than a later re-tick. */
+  completionId?: string;
   /** Rest configured when this set was marked done, in seconds. */
   restSeconds?: number;
   type: WorkoutSetType;
@@ -111,6 +116,7 @@ export function effectiveSetValue(value: string, placeholder?: string): string {
 }
 
 export type WorkoutExerciseDraft = {
+  warmUpMetadata?: WarmUpExerciseMetadata;
   id: string;
   exerciseId: string;
   exerciseName: string;
@@ -127,6 +133,8 @@ export type WorkoutExerciseDraft = {
 };
 
 export type WorkoutSessionDraft = {
+  /** Authoritative saved identity for post-save readers, absent while active. */
+  savedSessionId?: string;
   id: string;
   /**
    * Workout identity sent with the save, unique per workout (spec 0014). The
@@ -150,8 +158,13 @@ export type WorkoutSessionDraft = {
   pausedSeconds?: number;
   /** The rest counting down now; absent when none runs (spec 0018). */
   rest?: RunningRest;
+  lastProcessedWatchSkipId?: string;
+  /** Specific watch rests already skipped, including Skip delivered before Done. */
+  watchSkippedRestIds?: string[];
   /** The exercise of the last set ticked; anchors "next set" (spec 0029). */
   lastTickedExerciseId?: string;
+  /** Exact latest undo, subject to superset round order. */
+  undoSelection?: { workoutExerciseId: string; workoutSetId: string };
   /** The warm-up block's checklist; absent when the routine has none (spec 0024). */
   warmUp?: WarmUpItemDraft[];
   /**
@@ -161,6 +174,8 @@ export type WorkoutSessionDraft = {
    * `features/workouts/liveRecords`.
    */
   startingRecords?: Record<string, import('@workout/domain').StartingRecords>;
+  lastSessionReferences?: Record<string, import('@workout/domain').LastSessionReference | null>;
+  warmUpPreferences?: Record<string, { value: ExerciseWarmUpPreferences; pending: boolean }>;
   exercises: WorkoutExerciseDraft[];
 };
 
@@ -173,11 +188,19 @@ export type WarmUpItemDraft = {
   done: boolean;
 };
 
+/** The particular set completion that started a rest. */
+export type RestOrigin = {
+  originSetId: string;
+  originExerciseId: string;
+  originCompletionId: string;
+};
+
 /**
- * A rest started by ticking a set (spec 0018). The end is absolute, so it
- * survives leaving the screen and restarting the app.
+ * A rest started by ticking a set (spec 0018). The absolute end survives an
+ * app restart; optional origin fields keep older drafts readable (0046).
  */
-export type RunningRest = {
+export type RunningRest = Partial<RestOrigin> & {
+  id?: string;
   /** ISO instant the rest ends. */
   endsAt: string;
   /** Length of the rest, grown by extra time; for the progress line. */
@@ -231,6 +254,7 @@ function buildExerciseDrafts(
       routineExerciseId: routineExercise.id,
       restSeconds: routineExercise.restSeconds,
       supersetGroup: routineExercise.supersetGroup,
+      warmUpMetadata: routineExercise.warmUpMetadata,
       trackingType: routineExercise.trackingType,
       isUnilateral: routineExercise.isUnilateral,
       order: routineExercise.orderIndex,
@@ -334,12 +358,18 @@ export function addExerciseToWorkout(
     name: string;
     trackingType?: ExerciseTrackingType;
     isUnilateral?: boolean;
+    loadingKind?: import('@workout/domain').ExerciseLoadingKind;
+    equipment?: string[];
+    category?: string;
+    aliases?: string[];
+    primaryMuscleGroups?: string[];
   },
 ): WorkoutSessionDraft {
   const newExercise: WorkoutExerciseDraft = {
     id: nextDraftId('we'),
     exerciseId: exercise.id,
     exerciseName: exercise.name,
+    warmUpMetadata: warmUpMetadataOf(exercise),
     trackingType: exercise.trackingType,
     isUnilateral: exercise.isUnilateral,
     order: workoutDraft.exercises.length + 1,
@@ -364,6 +394,8 @@ export function removeExerciseFromWorkout(
 ): WorkoutSessionDraft {
   return {
     ...workoutDraft,
+    undoSelection: workoutDraft.undoSelection?.workoutExerciseId === workoutExerciseId
+      ? undefined : workoutDraft.undoSelection,
     exercises: renumberExercises(
       workoutDraft.exercises.filter(
         (exercise) => exercise.id !== workoutExerciseId,
@@ -522,6 +554,9 @@ export function removeSetFromWorkoutExercise(
 ): WorkoutSessionDraft {
   return {
     ...workoutDraft,
+    undoSelection: workoutDraft.undoSelection?.workoutExerciseId === workoutExerciseId &&
+      workoutDraft.undoSelection.workoutSetId === workoutSetId
+      ? undefined : workoutDraft.undoSelection,
     exercises: workoutDraft.exercises.map((exercise) => {
       if (exercise.id !== workoutExerciseId) {
         return exercise;
@@ -599,31 +634,51 @@ export function moveWorkoutSet(
   };
 }
 
-export function cycleWorkoutSetType(
-  workoutDraft: WorkoutSessionDraft,
+export function setWorkoutSetType(
+  draft: WorkoutSessionDraft,
+  exerciseId: string,
+  setId: string,
+  type: WorkoutSetType,
+): WorkoutSessionDraft {
+  const exercise = draft.exercises.find((item) => item.id === exerciseId);
+  const set = exercise?.entries.find((item) => item.id === setId);
+  if (!set || set.type === type || !WORKOUT_SET_TYPES.includes(type)) return draft;
+  return { ...draft, exercises: draft.exercises.map((item) => item.id === exerciseId
+    ? { ...item, entries: item.entries.map((entry) => entry.id === setId
+      ? { ...entry, type, generatedWarmup: undefined } : entry) }
+    : item) };
+}
+
+export function cycleWorkoutSetType(draft: WorkoutSessionDraft, exerciseId: string, setId: string): WorkoutSessionDraft {
+  const set = draft.exercises.find((item) => item.id === exerciseId)?.entries.find((item) => item.id === setId);
+  return set ? setWorkoutSetType(draft, exerciseId, setId, WORKOUT_SET_TYPES[(WORKOUT_SET_TYPES.indexOf(set.type) + 1) % WORKOUT_SET_TYPES.length]!) : draft;
+}
+
+/** Undo only the specified completion; stale/repeated requests cannot undo a re-tick. */
+export function undoWorkoutSetDone(
+  draft: WorkoutSessionDraft,
   workoutExerciseId: string,
   workoutSetId: string,
+  expectedCompletionId?: string,
 ): WorkoutSessionDraft {
+  const set = draft.exercises.find((exercise) => exercise.id === workoutExerciseId)
+    ?.entries.find((entry) => entry.id === workoutSetId);
+  if (!set?.done || (expectedCompletionId !== undefined && set.completionId !== expectedCompletionId)) {
+    return draft;
+  }
+  const rest = draft.rest;
+  const cancelsRest = set.completionId !== undefined &&
+    rest?.originCompletionId === set.completionId &&
+    rest.originExerciseId === workoutExerciseId && rest.originSetId === workoutSetId;
   return {
-    ...workoutDraft,
-    exercises: workoutDraft.exercises.map((exercise) => {
-      if (exercise.id !== workoutExerciseId) {
-        return exercise;
-      }
-
-      return {
-        ...exercise,
-        entries: exercise.entries.map((set) => {
-          if (set.id !== workoutSetId) {
-            return set;
-          }
-
-          const nextIndex =
-            (WORKOUT_SET_TYPES.indexOf(set.type) + 1) % WORKOUT_SET_TYPES.length;
-          // A re-typed generated warm-up is the person's own (spec 0031 FR-7).
-          return { ...set, type: WORKOUT_SET_TYPES[nextIndex]!, generatedWarmup: undefined };
-        }),
-      };
+    ...draft,
+    undoSelection: { workoutExerciseId, workoutSetId },
+    rest: cancelsRest ? undefined : rest,
+    exercises: draft.exercises.map((exercise) => exercise.id !== workoutExerciseId ? exercise : {
+      ...exercise,
+      entries: exercise.entries.map((entry) => entry.id !== workoutSetId ? entry : {
+        ...entry, done: false, completionId: undefined, restSeconds: undefined,
+      }),
     }),
   };
 }
@@ -634,27 +689,30 @@ export function toggleWorkoutSetDone(
   workoutSetId: string,
   restSeconds?: number,
 ): WorkoutSessionDraft {
+  const set = workoutDraft.exercises.find((exercise) => exercise.id === workoutExerciseId)
+    ?.entries.find((entry) => entry.id === workoutSetId);
+  if (!set) return workoutDraft;
+  if (set.done) return undoWorkoutSetDone(workoutDraft, workoutExerciseId, workoutSetId);
+  const completionId = nextDraftId(`completion-${createWorkoutClientId()}`);
   return {
     ...workoutDraft,
-    exercises: workoutDraft.exercises.map((exercise) => {
-      if (exercise.id !== workoutExerciseId) {
-        return exercise;
-      }
-
-      return {
-        ...exercise,
-        entries: exercise.entries.map((set) => {
-          if (set.id !== workoutSetId) {
-            return set;
-          }
-
-          const done = !set.done;
-          // Record the rest used when marking done; clear it when un-marking.
-          return { ...set, done, restSeconds: done ? restSeconds : undefined };
-        }),
-      };
+    undoSelection: undefined,
+    exercises: workoutDraft.exercises.map((exercise) => exercise.id !== workoutExerciseId ? exercise : {
+      ...exercise,
+      entries: exercise.entries.map((entry) => entry.id !== workoutSetId ? entry : {
+        ...entry, done: true, completionId, restSeconds,
+      }),
     }),
   };
+}
+
+/** Origin of a newly completed set, independent of a superset's rest owner. */
+export function restOriginOf(draft: WorkoutSessionDraft, exerciseId: string, setId: string): RestOrigin | undefined {
+  const set = draft.exercises.find((exercise) => exercise.id === exerciseId)
+    ?.entries.find((entry) => entry.id === setId);
+  return set?.done && set.completionId ? {
+    originExerciseId: exerciseId, originSetId: setId, originCompletionId: set.completionId,
+  } : undefined;
 }
 
 const secondsBetween = (fromIso: string, to: Date) =>
@@ -750,6 +808,7 @@ export function startRest(
   workoutExerciseId: string,
   seconds: number,
   now: Date = new Date(),
+  origin?: RestOrigin,
 ): WorkoutSessionDraft {
   if (!(seconds > 0)) {
     return workoutDraft;
@@ -758,6 +817,8 @@ export function startRest(
   return {
     ...workoutDraft,
     rest: {
+      id: nextDraftId(`rest-${createWorkoutClientId()}`),
+      ...origin,
       endsAt: new Date(now.getTime() + seconds * 1000).toISOString(),
       totalSeconds: seconds,
       workoutExerciseId,
@@ -785,11 +846,13 @@ export function completeSet(
   }
 
   const rest = resolveSetRestSeconds(exercise, set, defaultRestSeconds);
+  const completed = toggleWorkoutSetDone(workoutDraft, workoutExerciseId, workoutSetId, rest);
   return startRest(
-    toggleWorkoutSetDone(workoutDraft, workoutExerciseId, workoutSetId, rest),
+    completed,
     workoutExerciseId,
     rest,
     now,
+    restOriginOf(completed, workoutExerciseId, workoutSetId),
   );
 }
 

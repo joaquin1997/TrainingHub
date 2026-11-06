@@ -740,8 +740,8 @@ describe('rest timer (spec 0018)', () => {
     const first = startRest(fresh(), 'we-a', 90, at(0));
     const second = startRest(first, 'we-b', 60, at(10));
 
-    expect(first.rest).toEqual({ endsAt: at(90).toISOString(), totalSeconds: 90, workoutExerciseId: 'we-a' });
-    expect(second.rest).toEqual({ endsAt: at(70).toISOString(), totalSeconds: 60, workoutExerciseId: 'we-b' });
+    expect(first.rest).toMatchObject({ endsAt: at(90).toISOString(), totalSeconds: 90, workoutExerciseId: 'we-a' });
+    expect(second.rest).toMatchObject({ endsAt: at(70).toISOString(), totalSeconds: 60, workoutExerciseId: 'we-b' });
   });
 
   it('starts nothing for a rest of 0 seconds', () => {
@@ -754,7 +754,7 @@ describe('rest timer (spec 0018)', () => {
     const draft = startRest(fresh(), 'we-a', 60, at(0));
 
     const longer = adjustRest(draft, 15, at(10));
-    expect(longer.rest).toEqual({ endsAt: at(75).toISOString(), totalSeconds: 75, workoutExerciseId: 'we-a' });
+    expect(longer.rest).toMatchObject({ endsAt: at(75).toISOString(), totalSeconds: 75, workoutExerciseId: 'we-a' });
     expect(longer.exercises).toBe(draft.exercises);
 
     const shorter = adjustRest(draft, -15, at(50));
@@ -1023,7 +1023,7 @@ describe('completeSet (spec 0018 FR-1, spec 0025)', () => {
     const next = completeSet(draft, bench.id, bench.entries[0]!.id, 90, at(10));
 
     expect(next.exercises[0]!.entries[0]).toMatchObject({ done: true, restSeconds: 120 });
-    expect(next.rest).toEqual({
+    expect(next.rest).toMatchObject({
       endsAt: at(130).toISOString(),
       totalSeconds: 120,
       workoutExerciseId: bench.id,

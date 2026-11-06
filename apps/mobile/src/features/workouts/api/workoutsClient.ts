@@ -2,17 +2,22 @@ import type {
   CreateWorkoutSessionInput,
   ExerciseLastPerformance,
   WorkoutSession,
+  UpdateWorkoutSessionInput,
 } from '@workout/domain';
 
 import { apiRequest } from '@/lib/http';
 
-// TODO: Add auth headers here once the mobile app exchanges provider credentials for app sessions.
 export const workoutsClient = {
   list() {
     return apiRequest<WorkoutSession[]>('/workouts');
   },
   getById(workoutId: string) {
     return apiRequest<WorkoutSession>(`/workouts/${workoutId}`);
+  },
+  correct(workoutId: string, input: UpdateWorkoutSessionInput) {
+    return apiRequest<WorkoutSession>(`/workouts/${encodeURIComponent(workoutId)}/correction`, {
+      method: 'PUT', body: JSON.stringify(input),
+    }, { timeoutMs: 20_000 });
   },
   create(input: CreateWorkoutSessionInput) {
     return apiRequest<WorkoutSession>('/workouts', {

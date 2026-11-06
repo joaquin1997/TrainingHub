@@ -1,5 +1,8 @@
+import { useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useWorkoutInvalidationVersion } from '../corrections/useWorkoutInvalidationVersion';
 import type { WeightUnit } from '@workout/domain';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import {
@@ -17,13 +20,15 @@ export function useWorkoutComparison(
   current: ComparedWorkout | null,
   unit: WeightUnit,
 ): WorkoutComparison | null {
+  const correctionVersion = useWorkoutInvalidationVersion();
   const [comparison, setComparison] = useState<WorkoutComparison | null>(null);
   // The workout is rebuilt on every render; load once per finished workout.
   const latest = useRef(current);
   latest.current = current;
-  const key = current ? `${current.routineId ?? ''}|${current.startedAt}` : null;
+  const key = current ? JSON.stringify(current) : null;
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
+    setComparison(null);
     const workout = latest.current;
     if (!key || !workout) {
       setComparison(null);
@@ -40,7 +45,7 @@ export function useWorkoutComparison(
     return () => {
       isActive = false;
     };
-  }, [key, unit]);
+  }, [key, unit, correctionVersion]));
 
   return comparison;
 }

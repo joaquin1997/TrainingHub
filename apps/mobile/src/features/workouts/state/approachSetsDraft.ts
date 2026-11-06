@@ -1,6 +1,6 @@
 import type { WeightUnit } from '@workout/domain';
 
-import { approachSets, type ApproachSet } from '@/lib/approachSets';
+import { approachSets, type ApproachSet, type WarmUpRampOptions } from '@/lib/approachSets';
 import { trackingFields } from '@/lib/tracking';
 
 import {
@@ -29,6 +29,7 @@ export type ApproachSetsPreview = {
   unit: WeightUnit;
   /** Warm-up sets already ahead of the first working set; they stay (FR-4). */
   keptWarmUps: number;
+  context?: WarmUpRampOptions;
 };
 
 export type ApproachSetsPreviewResult =
@@ -68,6 +69,7 @@ function firstWorkingIndex(entries: readonly WorkoutSetDraft[]) {
 export function previewApproachSets(
   workoutDraft: WorkoutSessionDraft,
   workoutExerciseId: string,
+  context?: WarmUpRampOptions,
 ): ApproachSetsPreviewResult {
   const exercise = workoutDraft.exercises.find((item) => item.id === workoutExerciseId);
   const firstWorking = exercise ? firstWorkingIndex(exercise.entries) : -1;
@@ -77,13 +79,13 @@ export function previewApproachSets(
     return { outcome: 'noWeight' };
   }
 
-  const workingWeight = Number(effectiveSetValue(working.weightKg, working.weightPlaceholder));
-  if (!(workingWeight > 0)) {
+  const workingWeight = Number(effectiveSetValue(working.weightKg, working.weightPlaceholder).replace(',', '.'));
+  if (!Number.isFinite(workingWeight) || !(workingWeight > 0)) {
     return { outcome: 'noWeight' };
   }
 
   const unit = workoutDraft.unit ?? 'kg';
-  const sets = approachSets(workingWeight, unit);
+  const sets = approachSets(workingWeight, unit, context);
   if (sets.length === 0) {
     return { outcome: 'tooLight' };
   }
@@ -95,6 +97,7 @@ export function previewApproachSets(
     workingWeight,
     unit,
     keptWarmUps: firstWorking,
+    ...(context ? { context } : {}),
   };
 }
 
@@ -115,6 +118,10 @@ export function confirmApproachSets(
     return workoutDraft;
   }
 
+  if (preview.context) {
+    const latest = previewApproachSets(workoutDraft, workoutExerciseId, preview.context);
+    if (latest.outcome !== 'preview' || latest.workingWeight !== preview.workingWeight || latest.unit !== preview.unit) return workoutDraft;
+  }
   const firstWorking = firstWorkingIndex(exercise.entries);
   const at = firstWorking === -1 ? exercise.entries.length : firstWorking;
   const newSets: WorkoutSetDraft[] = preview.sets.map((set) => ({
@@ -167,4 +174,12 @@ function replaceEntries(
       item.id === workoutExerciseId ? { ...item, entries } : item,
     ),
   };
+}
+
+/** Only already performed working sets establish workout warmth. */
+export function precedingWorkoutWarmUpMetadata(draft: WorkoutSessionDraft, exerciseId: string) {
+  const index = draft.exercises.findIndex((exercise) => exercise.id === exerciseId);
+  return draft.exercises.slice(0, Math.max(0, index))
+    .filter((exercise) => exercise.entries.some((set) => set.done && set.type !== 'warmup'))
+    .map((exercise) => ({ ...exercise.warmUpMetadata, name: exercise.warmUpMetadata?.name ?? exercise.exerciseName }));
 }

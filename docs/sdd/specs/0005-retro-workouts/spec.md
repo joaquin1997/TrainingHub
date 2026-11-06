@@ -58,8 +58,10 @@ cannot reinterpret numbers already typed.
   worth knowing before touching that code.
 - **An unedited set logs its placeholder.** Same load-bearing behaviour as the
   routine builder.
-- **A saved workout is immutable history.** Editing the routine afterwards must
-  not touch it.
+- **Routine edits never rewrite performed history.** Editing the routine
+  afterwards must not touch a saved workout. Spec 0050 adds explicit
+  owner corrections of existing values/notes, preserving identity, timing
+  and structure; its delivery/acceptance status is tracked separately.
 - **No empty workouts.** Enforced on the server, not only in the UI.
 
 ## Known gaps

@@ -7,7 +7,7 @@ import type {
 import { describe, expect, it, vi } from 'vitest';
 
 import type { ActiveWorkoutStore } from '@/features/workouts/liveActivity/liveWorkoutController';
-import type { WorkoutSessionDraft } from '@/features/workouts/state/workoutDraftStore';
+import { completeSet, undoWorkoutSetDone, type WorkoutSessionDraft } from '@/features/workouts/state/workoutDraftStore';
 
 import { startWatchWorkoutController } from './watchWorkoutController';
 
@@ -98,6 +98,21 @@ describe('watch workout controller (spec 0025)', () => {
     expect(bridge.updateWatchWorkout).not.toHaveBeenCalled();
   });
 
+  it('sends the cleared rest and exact undone set to the watch (0046)', async () => {
+    const initial = completeSet(draft('c1'), 'a', 'a2', 90);
+    const store = fakeStore(initial);
+    const bridge = fakeBridge();
+    const controller = startWatchWorkoutController({ bridge, store, defaultRestSeconds: () => 90 });
+    await controller.idle();
+    store.replace(undoWorkoutSetDone(initial, 'a', 'a2'));
+    await controller.idle();
+    expect(bridge.updateWatchWorkout).toHaveBeenLastCalledWith(expect.objectContaining({
+      restEndsAt: undefined,
+      currentSet: expect.objectContaining({ workoutExerciseId: 'a', workoutSetId: 'a2' }),
+    }));
+    controller.stop();
+  });
+
   it('sends a change of what the watch shows', async () => {
     const store = fakeStore(draft('c1'));
     const bridge = fakeBridge();
@@ -133,6 +148,22 @@ describe('watch workout controller (spec 0025)', () => {
       ['c2', 'discarded'],
     ]);
     expect(bridge.startWatchWorkout).toHaveBeenCalledTimes(3);
+  });
+
+  it('applies mirrored, live and queued copies of a tick only once', async () => {
+    const store = fakeStore(draft('c1'));
+    const bridge = fakeBridge();
+    const controller = startWatchWorkoutController({ bridge, store, defaultRestSeconds: () => 90 });
+    const event = tick('same-event', 'a1', new Date().toISOString());
+    bridge.emit(event);
+    const completed = store.get();
+    bridge.emit(event);
+    bridge.emit(event);
+    await controller.idle();
+    expect(store.get()).toBe(completed);
+    expect(store.get()!.exercises[0]!.entries[0]!.done).toBe(true);
+    expect(store.get()!.exercises[0]!.entries[1]!.done).toBe(false);
+    controller.stop();
   });
 
   it('applies queued ticks in order and ignores a repeat (AC-3, EF-1)', async () => {
@@ -212,4 +243,21 @@ describe('watch workout controller (spec 0025)', () => {
 
     expect(bridge.endWatchWorkout).not.toHaveBeenCalled();
   });
+});
+
+it('acknowledges an obsolete skip without cancelling a newer rest, including replay', async () => {
+  const first = completeSet(draft('c1'), 'a', 'a1', 90);
+  const store = fakeStore(first);
+  const bridge = fakeBridge();
+  const controller = startWatchWorkoutController({ bridge, store, defaultRestSeconds: () => 90 });
+  const event: WatchWorkoutEvent = { kind: 'skipRest', id: 'skip-old', workoutSessionId: 'c1', restId: first.rest!.id!, at: new Date().toISOString() };
+  bridge.emit(event);
+  await controller.idle();
+  expect(bridge.updateWatchWorkout.mock.calls.at(-1)?.[0]).toMatchObject({ lastProcessedSkipId: 'skip-old', restEndsAt: undefined });
+  const second = completeSet(store.get()!, 'a', 'a2', 90);
+  store.replace(second);
+  bridge.emit(event);
+  await controller.idle();
+  expect(store.get()?.rest).toBe(second.rest);
+  controller.stop();
 });

@@ -64,6 +64,27 @@ export type ExerciseTrackingType =
  */
 export type ExerciseLoadingKind = 'barbell' | 'dumbbell' | 'machine';
 
+/** Catalog context captured for offline warm-up generation. */
+export interface WarmUpExerciseMetadata {
+  name?: string;
+  aliases?: string[];
+  loadingKind?: ExerciseLoadingKind;
+  equipment?: string[];
+  category?: string;
+  primaryMuscleGroups?: string[];
+}
+
+export type ApproachSetCount = 1 | 2 | 3 | 4 | 5;
+
+/** Personal overrides; null restores the catalog/context default. */
+export interface ExerciseWarmUpPreferences {
+  loadingKind: ExerciseLoadingKind | null;
+  approachSetCount: ApproachSetCount | null;
+  incrementKg: number | null;
+}
+
+export type UpdateExerciseWarmUpPreferencesInput = ExerciseWarmUpPreferences;
+
 export interface Exercise {
   id: EntityId;
   /** In the app's language for a reviewed catalog exercise (spec 0044). */
@@ -187,6 +208,7 @@ export interface RoutineWarmUpItemInput {
  * Represents one exercise definition inside a routine template.
  */
 export interface RoutineExercise {
+  warmUpMetadata?: WarmUpExerciseMetadata;
   id: EntityId;
   routineId: EntityId;
   exerciseId: EntityId;
@@ -285,6 +307,9 @@ export type UpdateRoutineInput = CreateRoutineInput;
  * Represents a real workout session performed by a user.
  */
 export interface WorkoutSession {
+  /** Absent on older servers: corrections are read-only. */
+  revision?: number;
+  clientId?: string;
   id: EntityId;
   userId: EntityId;
   routineId?: EntityId;
@@ -424,9 +449,29 @@ export interface CreateWorkoutSessionInput {
 }
 
 /**
- * One progress data point for an exercise, aggregated from a single session.
+ * Original quantities from one performed working set.
  */
+export interface ProgressSetEvidence {
+  workoutExerciseId?: EntityId;
+  setId?: EntityId;
+  exerciseOrder?: number;
+  setOrder?: number;
+  weightKg?: number;
+  reps?: number;
+  repsLeft?: number;
+  repsRight?: number;
+  durationSeconds?: number;
+  distanceMeters?: number;
+}
+
+/** One point per saved workout, combining repeated exercise occurrences. */
 export interface ExerciseProgressPoint {
+  workoutId?: EntityId;
+  /** One actual working set, sorted by weight, reps and logged order. */
+  heaviestWorkingSet?: ProgressSetEvidence;
+  totalWorkingReps?: number;
+  /** Absent when no performed set records both weight and reps. Includes warm-ups. */
+  sessionVolumeKg?: number;
   date: ISODateString;
   bestWeightKg?: number;
   bestReps?: number;
@@ -448,6 +493,8 @@ export interface ExerciseProgressPoint {
  * Progress summary for one exercise, used by the progress overview list.
  */
 export interface ExerciseProgressSummary {
+  /** Allowed names/aliases of this trained exercise, for local search. */
+  searchNames?: string[];
   exerciseId: EntityId;
   exerciseName: string;
   sessionCount: number;
@@ -526,6 +573,7 @@ export interface SessionRecords {
  * Full progress detail for one exercise: the summary plus per-session points.
  */
 export interface ExerciseProgressDetail extends ExerciseProgressSummary {
+  readableProgressVersion?: 1;
   points: ExerciseProgressPoint[];
   /**
    * Current best of each record type, then most reps at the three heaviest
@@ -591,4 +639,28 @@ export interface HealthSyncRecord {
   errorMessage?: string;
   createdAt: ISODateString;
   updatedAt: ISODateString;
+}
+
+/** Full scalar correction of existing performed rows; identities/structure stay fixed. */
+export interface WorkoutSetCorrectionInput {
+  id: EntityId;
+  type: WorkoutSetType;
+  performed: boolean;
+  reps: number | null;
+  repsLeft: number | null;
+  repsRight: number | null;
+  weightKg: number | null;
+  durationSeconds: number | null;
+  distanceMeters: number | null;
+}
+export interface UpdateWorkoutSessionInput {
+  expectedRevision: number;
+  mutationId: string;
+  notes: string | null;
+  exercises: Array<{ id: EntityId; notes: string | null; sets: WorkoutSetCorrectionInput[] }>;
+}
+export interface WorkoutCorrectionConflict {
+  code: 'WORKOUT_CORRECTION_CONFLICT';
+  message: string;
+  currentRevision: number;
 }

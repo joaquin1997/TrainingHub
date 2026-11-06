@@ -65,7 +65,7 @@ production.
 | **Haptic language** | The fixed set of haptic patterns and the events that trigger them — set done, record, rest over, destructive confirm — and nothing else (spec 0034). |
 | **Skeleton** | Neutral placeholder shapes shown while a list's first load is in flight, laid out like the content to come; never invented data (spec 0034). |
 | **Set status area** | The one fixed place on an active-workout set row that shows its state: record, done, generated warm-up, up next, or nothing (spec 0034). |
-| **Up next** | The first set of the active workout, in workout order, not yet done — in a superset, the next set of the current round. At most one at a time (spec 0034). |
+| **Up next** | The active workout’s next unfinished set, normally anchored to the last completion. The latest explicitly undone set takes priority; inside a superset, warm-up and lowest unfinished round order still apply. At most one at a time (specs 0034, 0046). |
 | **Record celebration** | The one-off lime flash and *record* haptic behind "Records today" on the post-workout summary of a workout that beat records; once per workout, never blocking; a static highlight under Reduce Motion (spec 0037). |
 | **Theme** | One complete set of values for the named palette: Dark (the original) or Light. Every colour token has a value in each; accent meanings are the same in both (spec 0038). |
 | **Appearance** | The setting that picks the theme: System (follow the device's light/dark appearance), Light or Dark. Kept on the account like the other settings; presentation only (spec 0038). |
@@ -101,3 +101,26 @@ production.
 `"program" or "training plan" (a multi-week structure above Routine), "cycle",`
 `"deload", and whatever social concepts arrive with roadmap area 7 (follow,`
 `feed, shared routine). Define them when the first spec needs them, not before.`
+
+## Specified follow-ups (not yet implemented)
+
+| Term | Intended meaning | Spec |
+|---|---|---|
+| **Undo selection** | The latest explicitly unticked set selected as up next, subject to superset round order; ordinary next-set behaviour resumes when it is completed or removed. | 0046 |
+| **Records unavailable** | An exercise's starting records could not be obtained; distinct from a confirmed empty history or a set that did not beat a record. | 0048 |
+| **Weight per side** | Optional left/right weights paired with their own reps on unilateral weight-and-reps targets or performed sets. | 0049 |
+| **Workout correction** | An owner's explicitly saved correction of existing performed measurements, completion, type or notes, without editing routine targets. | 0050 |
+| **Routine update after training** | Selected changes retained as future intended training after the performed workout has already been saved. | 0051 |
+
+The implemented **Up next** definition above describes today's baseline.
+0046 amends it with explicit undo selection when that feature ships.
+
+## Live comparison feedback (0048)
+
+- **Records unavailable**: an exercise has a missing comparison source;
+  loading, connection failure, refusal and confirmed empty history are distinct.
+- **Last-session improvement**: a strict improvement against a metric of the
+  latest saved exercise session before workout start. It is separate from a
+  personal record and never increases PR counts or celebrations.
+- **Pending rest skip**: a request targeting one rest, locally suppressed on
+  the Watch until the phone acknowledges and reconciles its authoritative state.

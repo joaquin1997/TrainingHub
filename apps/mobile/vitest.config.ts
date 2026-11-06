@@ -15,6 +15,7 @@ export default defineConfig({
       '@workout/domain/records': fileURLToPath(
         new URL('../../packages/domain/src/records.ts', import.meta.url),
       ),
+      '@workout/domain/workoutCorrections': fileURLToPath(new URL('../../packages/domain/src/workoutCorrections.ts', import.meta.url)),
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },

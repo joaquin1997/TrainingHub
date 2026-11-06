@@ -11,6 +11,7 @@ import {
   effectiveSideReps,
   pauseWorkout,
   resumeWorkout,
+  skipRest,
   updateWorkoutSetDraft,
   type RunningRest,
   type WorkoutSetDraft,
@@ -109,6 +110,10 @@ export function toWatchSnapshot(
     pausedAt: draft.pausedAt,
     pausedSeconds: draft.pausedSeconds ?? 0,
     restEndsAt: draft.rest?.endsAt,
+    restId: draft.rest?.id,
+    restSkipVersion: 1,
+    canSkipRest: !!draft.rest?.id && !draft.pausedAt,
+    lastProcessedSkipId: draft.lastProcessedWatchSkipId,
     setsDone: countWorkoutSets(draft).done,
     currentSet:
       exercise && set
@@ -188,13 +193,16 @@ export function applyWatchEvent(
               event.reps > 0 ? String(Math.round(event.reps)) : '',
             )
           : draft;
-      const next = completeSetInRounds(
+      const completed = completeSetInRounds(
         withReps,
         event.workoutExerciseId,
         event.workoutSetId,
         defaultRestSeconds,
         new Date(event.at),
+        event.id,
       );
+      const next = completed.rest?.id === event.id && draft.watchSkippedRestIds?.includes(event.id)
+        ? skipRest(completed) : completed;
       const running = draft.rest;
       const keepRest =
         next !== draft &&
@@ -207,6 +215,14 @@ export function applyWatchEvent(
         return draft;
       }
       return keepRest ? { ...next, rest: running } : next;
+    }
+    case 'skipRest': {
+      const matches = !draft.pausedAt && draft.rest?.id === event.restId && Date.parse(draft.rest.endsAt) > Date.now();
+      const next = matches ? skipRest(draft) : draft;
+      const remember = !draft.pausedAt && !draft.watchSkippedRestIds?.includes(event.restId);
+      if (!remember && next.lastProcessedWatchSkipId === event.id) return next;
+      return { ...next, lastProcessedWatchSkipId: event.id,
+        watchSkippedRestIds: remember ? [...(draft.watchSkippedRestIds ?? []), event.restId].slice(-200) : draft.watchSkippedRestIds };
     }
     case 'pause':
       return pauseWorkout(draft, new Date(event.at));

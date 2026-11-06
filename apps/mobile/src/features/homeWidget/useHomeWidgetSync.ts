@@ -1,3 +1,4 @@
+import { subscribeWorkoutInvalidation } from '../workouts/corrections/workoutInvalidation';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppState, Platform } from 'react-native';
@@ -124,6 +125,8 @@ export function useHomeWidgetSync({
       return;
     }
 
+    let correctionStale = false;
+    let generation = 0;
     const push = () => {
       const history = lastHistory.current?.userId === userId ? lastHistory.current.history : null;
       void homeWidgetBridge.push({
@@ -131,29 +134,41 @@ export function useHomeWidgetSync({
         signedIn: true,
         history,
         active: activeOf(getActiveWorkout(), roundLabel),
-        labels: labels(history?.today?.name, history?.today?.exercises?.length),
+        labels: { ...labels(history?.today?.name, history?.today?.exercises?.length),
+          ...(correctionStale ? { openApp: tRef.current('workouts.correction.refreshFailed') } : {}),
+        },
       });
     };
 
     let alive = true;
     const refresh = async () => {
+      const request = ++generation;
       try {
         const [routines, sessions] = await Promise.all([
           routinesClient.list(),
           workoutsClient.list(),
         ]);
-        if (alive) {
+        if (alive && request === generation) {
+          correctionStale = false;
           lastHistory.current = { userId, history: widgetHistory(routines, sessions, new Date()) };
         }
       } catch {
         // Offline or a server error: the last figures stay (EF-8).
       }
-      if (alive) {
+      if (alive && request === generation) {
         push();
       }
     };
 
     void refresh();
+    const unsubscribeCorrections = subscribeWorkoutInvalidation((event) => {
+      if (event.ownerId !== userId) return;
+      generation += 1;
+      correctionStale = true;
+      lastHistory.current = null;
+      push();
+      void refresh();
+    });
 
     let shown = activeKey(getActiveWorkout(), roundLabel);
     const unsubscribe = subscribeActiveWorkout(() => {
@@ -179,6 +194,7 @@ export function useHomeWidgetSync({
 
     return () => {
       alive = false;
+      unsubscribeCorrections();
       unsubscribe();
       subscription.remove();
     };

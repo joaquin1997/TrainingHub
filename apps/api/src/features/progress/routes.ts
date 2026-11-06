@@ -1,8 +1,10 @@
+import { parseComparisonBefore } from './comparisonReferences.js';
 import type { FastifyInstance } from 'fastify';
 
 import { resolveUserPublicId } from '../../infrastructure/userContext.js';
 import {
   getExerciseProgress,
+  listComparisonReferences,
   listExerciseProgress,
   listMuscleGroupVolume,
   listSessionRecords,
@@ -39,6 +41,17 @@ export async function registerProgressRoutes(app: FastifyInstance) {
       }
 
       return listStartingRecords(await resolveUserPublicId(request), exerciseIds);
+    },
+  );
+
+  app.get<{ Querystring: { exerciseIds?: string; before?: string } }>(
+    '/progress/comparison-references', async (request, reply) => {
+      const ids = parseExerciseIds(request.query.exerciseIds);
+      const before = parseComparisonBefore(request.query.before);
+      if (!ids || !before) {
+        return reply.code(400).send({ message: 'Invalid exerciseIds or before' });
+      }
+      return listComparisonReferences(await resolveUserPublicId(request), ids, before);
     },
   );
 

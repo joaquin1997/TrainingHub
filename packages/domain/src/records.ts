@@ -217,3 +217,96 @@ export function sessionVolumeHit(
     ? { type: 'bestSessionVolume', value: total }
     : undefined;
 }
+
+/** Independently readable comparison sources (0048); unavailable is never empty. */
+export type ComparisonSource<T> = { status: 'ready'; value: T } | { status: 'unavailable' };
+export interface LastSessionReference {
+  sessionId: string;
+  date: string;
+  records: StartingRecords;
+}
+export interface ExerciseComparisonReference {
+  exerciseId: string;
+  historical: ComparisonSource<StartingRecords>;
+  lastSession: ComparisonSource<LastSessionReference | null>;
+}
+export type RecordComparisonHit = LiveRecordHit & {
+  baselineValue: number;
+  baselineScope: 'historical' | 'lastSession';
+  referenceDate?: string;
+  referenceSessionId?: string;
+  lastSessionValue?: number;
+};
+
+/** Read a metric in its declared scope: historical reps includes heavier loads. */
+export function comparisonBaseline(hit: LiveRecordHit, records: StartingRecords, exactWeight = false): number | undefined {
+  if (hit.type !== 'repsAtWeight') return records.bests[hit.type];
+  if (hit.weightKg === undefined) return undefined;
+  return exactWeight
+    ? records.repsAtWeight.find((entry) => entry.weightKg === hit.weightKg)?.reps
+    : repsAtOrAbove(records.repsAtWeight, hit.weightKg);
+}
+
+/** Best working-set metrics of one exercise session; never combine independent maxima. */
+export function recordsFromSets(exerciseId: string, sets: RecordSetValues[]): StartingRecords {
+  const bests: StartingRecords['bests'] = {};
+  const weights = new Map<number, number>();
+  for (const set of sets) {
+    for (const type of SET_RECORD_TYPES) {
+      const value = SET_RECORD_VALUES[type](set);
+      if (value !== undefined && (bests[type] === undefined || value > bests[type]!)) bests[type] = value;
+    }
+    const pair = repsAtWeightOf(set);
+    if (pair) weights.set(pair.weightKg, Math.max(weights.get(pair.weightKg) ?? 0, pair.reps));
+  }
+  const volume = sessionVolumeKg(sets);
+  if (volume !== undefined) bests.bestSessionVolume = volume;
+  return { exerciseId, bests, repsAtWeight: [...weights].map(([weightKg, reps]) => ({ weightKg, reps })) };
+}
+
+/** Historic hits take priority; a last-session-only improvement is never a PR. */
+export function comparisonHits(
+  candidates: LiveRecordHit[],
+  historical?: StartingRecords,
+  last?: LastSessionReference | null,
+): RecordComparisonHit[] {
+  return candidates.flatMap<RecordComparisonHit>((hit) => {
+    const historic = historical ? comparisonBaseline(hit, historical) : undefined;
+    const previous = last ? comparisonBaseline(hit, last.records, true) : undefined;
+    const scope = historic !== undefined && hit.value > historic ? 'historical'
+      : previous !== undefined && hit.value > previous ? 'lastSession' : undefined;
+    if (!scope) return [];
+    return [{ ...hit, baselineScope: scope, baselineValue: scope === 'historical' ? historic! : previous!,
+      referenceDate: last?.date, referenceSessionId: last?.sessionId, lastSessionValue: previous }];
+  }).sort((a, b) => (a.baselineScope === b.baselineScope ? 0 : a.baselineScope === 'historical' ? -1 : 1) || byRecordOrder(a, b));
+}
+
+/** Candidates include metrics without a known baseline, to allow independent sources. */
+export function setComparisonHits(set: RecordSetValues, historical?: StartingRecords, last?: LastSessionReference | null): RecordComparisonHit[] {
+  const candidates: LiveRecordHit[] = SET_RECORD_TYPES.flatMap((type) => {
+    const value = SET_RECORD_VALUES[type](set);
+    return value === undefined ? [] : [{ type, value, weightKg: set.weightKg ?? undefined }];
+  });
+  const pair = repsAtWeightOf(set);
+  if (pair) candidates.push({ type: 'repsAtWeight', value: pair.reps, weightKg: pair.weightKg });
+  return comparisonHits(candidates, historical, last);
+}
+
+/** Validate persisted/network references before they can become comparison baselines. */
+export function isStartingRecords(value: unknown, exerciseId?: string): value is StartingRecords {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const record = value as StartingRecords;
+  const validNumber = (n: unknown) => typeof n === 'number' && Number.isFinite(n) && n > 0;
+  return typeof record.exerciseId === 'string' && (!exerciseId || record.exerciseId === exerciseId) &&
+    !!record.bests && typeof record.bests === 'object' && !Array.isArray(record.bests) &&
+    Object.entries(record.bests).every(([type, n]) => RECORD_TYPE_ORDER.includes(type as RecordType) && type !== 'repsAtWeight' && validNumber(n)) &&
+    Array.isArray(record.repsAtWeight) && record.repsAtWeight.every((entry) => entry && validNumber(entry.weightKg) && validNumber(entry.reps));
+}
+export function isLastSessionReference(value: unknown, exerciseId: string, before: string): value is LastSessionReference | null {
+  if (value === null) return true;
+  if (!value || typeof value !== 'object') return false;
+  const last = value as LastSessionReference;
+  return typeof last.sessionId === 'string' && last.sessionId.length > 0 &&
+    typeof last.date === 'string' && Number.isFinite(Date.parse(last.date)) && Date.parse(last.date) < Date.parse(before) &&
+    isStartingRecords(last.records, exerciseId);
+}

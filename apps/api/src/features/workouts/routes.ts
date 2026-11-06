@@ -1,3 +1,5 @@
+import { correctWorkoutSession, WorkoutCorrectionError } from './correctionsRepository.js';
+import { parseWorkoutCorrection } from './correctionInput.js';
 import { Prisma } from '@prisma/client';
 import type { FastifyInstance } from 'fastify';
 import type {
@@ -214,6 +216,22 @@ function parseCreateWorkoutSessionInput(
 }
 
 export async function registerWorkoutRoutes(app: FastifyInstance) {
+  app.put<{ Params: { id: string } }>('/workouts/:id/correction', async (request, reply) => {
+    const input = parseWorkoutCorrection(request.body);
+    if (!input) return reply.code(400).send({ message: 'Invalid workout correction' });
+    try {
+      return await correctWorkoutSession(await resolveUserPublicId(request), request.params.id, input);
+    } catch (error) {
+      if (!(error instanceof WorkoutCorrectionError)) {
+        // Prisma errors may embed submitted values; log only operation/code.
+        request.log.error({ operation: 'workoutCorrection', databaseCode: error instanceof Prisma.PrismaClientKnownRequestError ? error.code : undefined }, 'Workout correction failed');
+        return reply.code(503).send({ message: 'Workout correction unavailable; retry later' });
+      }
+      return reply.code(error.status).send(error.status === 409
+        ? { code: 'WORKOUT_CORRECTION_CONFLICT', message: 'Workout changed; review the current version', currentRevision: error.currentRevision }
+        : { message: error.status === 404 ? 'Workout not found' : 'Invalid correction values or set identities' });
+    }
+  });
   app.get('/workouts', async (request) => {
     return listWorkoutSessions(await resolveUserPublicId(request));
   });

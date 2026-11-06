@@ -1,346 +1,144 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import type { ExerciseProgressPoint } from '@workout/domain';
 
-import { ProgressChart } from '@/features/progress/components/ProgressChart';
-import { RecordsCard } from '@/features/progress/components/RecordsCard';
-import { TimedProgressDetail } from '@/features/progress/components/TimedProgress';
-import { progressClient } from '@/features/progress/api/progressClient';
-import { buildProgressSeries } from '@/features/progress/utils/chartData';
-import { extractPersonalRecords } from '@/features/progress/utils/personalRecords';
+import { useAuth } from '@/features/auth/AuthContext';
 import { useSettings } from '@/features/settings/SettingsContext';
-import { formatDate, formatShortDate } from '@/lib/format';
-import { isTimedOrDistance } from '@/lib/tracking';
-import { formatWeightValue, fromKg, roundWeight } from '@/lib/weight';
-import { Chip } from '@/ui/Chip';
-import { StatTile } from '@/ui/StatTile';
+import { progressClient } from '../api/progressClient';
+import { ProgressChart } from '../components/ProgressChart';
+import { RecordsCard } from '../components/RecordsCard';
+import { useProgressResource } from '../useExerciseProgress';
+import {
+  detailSeries, filterProgressPeriod, formatMetricValue, formatProgressDuration, heaviestSetText,
+  metricsFor, metricUnit, PROGRESS_PERIODS, standaloneWeight,
+  type DetailMetric, type ProgressPeriod,
+} from '../utils/progressMetrics';
+import { formatDateTime } from '@/lib/format';
+import { formatDistance, sideLabels } from '@/lib/tracking';
+import { Button } from '@/ui/Button';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
-import { CardHeader } from '@/ui/CardHeader';
-import type { ExerciseProgressDetail, WeightUnit } from '@workout/domain';
+import { colors, commonStyles, createStyles, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 
-function formatValue(value?: number) {
-  return value === undefined ? '-' : String(value);
-}
-
-/** kg → rounded display-unit number (used for charted/volume values). */
-function toDisplay(kg: number, unit: WeightUnit) {
-  return roundWeight(fromKg(kg, unit));
-}
-
-export function ExerciseProgressDetailScreen() {
-  useTheme();
-  const { t, i18n } = useTranslation();
-  const router = useRouter();
+export function ExerciseProgressDetailScreen({ origin = 'progress' }: { origin?: 'progress' | 'exercise' }) {
   const { exerciseId } = useLocalSearchParams<{ exerciseId?: string }>();
-  const [progress, setProgress] = useState<ExerciseProgressDetail | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string>();
+  const { user } = useAuth();
+  const { i18n } = useTranslation();
+  // Remount local choices only on identity change, not on focus/refresh/unit change.
+  return <ExerciseProgressView key={`${user?.id}:${exerciseId}`} exerciseId={exerciseId}
+    language={i18n.language} origin={origin} />;
+}
+
+function ExerciseProgressView({ exerciseId, language, origin }: {
+  exerciseId?: string; language: string; origin: 'progress' | 'exercise';
+}) {
+  useTheme();
+  const { t } = useTranslation();
+  const router = useRouter();
+  const { user } = useAuth();
   const { settings } = useSettings();
   const unit = settings.unit;
+  const [selectedMetric, setMetric] = useState<DetailMetric>();
+  const [period, setPeriod] = useState<ProgressPeriod>('threeMonths');
+  const read = useCallback(() => {
+    if (!exerciseId || !user) return Promise.reject(new Error(t('progress.notAvailable')));
+    return progressClient.getByExerciseId(exerciseId);
+  }, [exerciseId, user?.id, language]);
+  const state = useProgressResource(`${user?.id}:${exerciseId}`, read);
+  const progress = state.data;
+  const goBack = () => router.canGoBack() ? router.back() :
+    router.replace(origin === 'exercise' && exerciseId ? `/exercises/${exerciseId}` : '/progress');
+  const available = metricsFor(progress?.trackingType);
+  const metric = selectedMetric && available.includes(selectedMetric) ? selectedMetric : available[0];
+  const points = filterProgressPeriod(progress?.points ?? [], period, new Date());
+  const series = detailSeries(points, metric);
+  const latest = progress?.points.at(-1);
+  const readable = progress?.readableProgressVersion === 1;
+  const labels = sideLabels(t);
+  const date = (value: string) => formatDateTime(value, language);
 
-  const loadProgress = useCallback(
-    async (shouldUpdate: () => boolean = () => true) => {
-      if (shouldUpdate()) {
-        setIsLoading(true);
-        setErrorMessage(undefined);
-        setProgress(null);
-      }
-
-      if (!exerciseId) {
-        if (shouldUpdate()) {
-          setErrorMessage(t('exercises.missingId'));
-          setIsLoading(false);
-        }
-        return;
-      }
-
-      try {
-        const nextProgress = await progressClient.getByExerciseId(exerciseId);
-
-        if (shouldUpdate()) {
-          setProgress(nextProgress);
-        }
-      } catch (error) {
-        if (shouldUpdate()) {
-          setErrorMessage(
-            error instanceof Error
-              ? error.message
-              : t('progress.notAvailable'),
-          );
-        }
-      } finally {
-        if (shouldUpdate()) {
-          setIsLoading(false);
-        }
-      }
-    },
-    [exerciseId, t],
-  );
-
-  useEffect(() => {
-    let isActive = true;
-
-    void loadProgress(() => isActive);
-
-    return () => {
-      isActive = false;
-    };
-  }, [loadProgress]);
-
-  if (isLoading) {
-    return (
-      <View style={styles.screen}>
-        <StateView kind="loading" message={t('progress.loading')} />
-      </View>
-    );
+  function figures(point: ExerciseProgressPoint) {
+    const lines: string[] = [];
+    const paired = heaviestSetText(point, unit, labels);
+    if (paired && progress?.trackingType !== 'reps') lines.push(`${t('progress.readable.metrics.weight')}: ${paired}`);
+    // Separate labels never suggest independent maxima were one performed set.
+    if (point.bestReps !== undefined) lines.push(`${t('progress.readable.metrics.reps')}: ${point.bestReps}`);
+    if (point.totalWorkingReps !== undefined) lines.push(`${t('progress.readable.metrics.totalReps')}: ${point.totalWorkingReps}`);
+    if (point.bestDurationSeconds !== undefined) lines.push(`${t('progress.readable.metrics.duration')}: ${formatProgressDuration(point.bestDurationSeconds)}`);
+    if (point.bestDistanceMeters !== undefined) lines.push(`${t('progress.readable.metrics.distance')}: ${formatDistance(point.bestDistanceMeters)}`);
+    if (progress?.trackingType === 'weight_reps' && point.sessionVolumeKg !== undefined)
+      lines.push(`${t('progress.readable.metrics.volume')}: ${standaloneWeight(point.sessionVolumeKg, unit)}`);
+    return lines.length ? lines.join('\n') : t('progress.readable.noWorkingFigures');
   }
-
-  if (!progress) {
-    return (
-      <View style={styles.screen}>
-        <StateView
-          kind="empty"
-          icon="trending-up-outline"
-          message={errorMessage ?? t('progress.notAvailable')}
-          actionLabel={t('progress.backToProgress')}
-          onAction={() => router.replace('/progress')}
-        />
-      </View>
-    );
-  }
-
-  // Timed and distance exercises read in time or distance (spec 0021).
-  if (isTimedOrDistance(progress.trackingType)) {
-    return <TimedProgressDetail progress={progress} unit={unit} />;
-  }
-
-  // Convert the kg-scaled metrics into the user's display unit up front so the
-  // charts, records and per-session list all read in the same unit.
-  const displayPoints = progress.points.map((point) => ({
-    ...point,
-    bestWeightKg:
-      point.bestWeightKg !== undefined
-        ? toDisplay(point.bestWeightKg, unit)
-        : point.bestWeightKg,
-    totalVolume:
-      point.totalVolume !== undefined
-        ? toDisplay(point.totalVolume, unit)
-        : point.totalVolume,
-    estimatedOneRepMax:
-      point.estimatedOneRepMax !== undefined
-        ? toDisplay(point.estimatedOneRepMax, unit)
-        : point.estimatedOneRepMax,
-  }));
-
-  // A session without a 1RM or with no volume (reps-only, timed) is a gap in
-  // the line, never a zero (spec 0034 EF-7); record sessions keep their flag.
-  const oneRepMaxSeries = buildProgressSeries(displayPoints, 'estimatedOneRepMax', {
-    positiveOnly: true,
-  });
-  const volumeSeries = buildProgressSeries(displayPoints, 'totalVolume', {
-    positiveOnly: true,
-  });
-  const personalRecords = extractPersonalRecords(progress.points);
-  // Current best of each record type (spec 0023); absent from older servers.
-  const records = progress.records ?? [];
-  const heaviest = records.find((record) => record.type === 'heaviestWeight');
-
-  const formatAxisDate = (date: string) => formatShortDate(date, i18n.language);
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{progress.exerciseName}</Text>
-        <View style={styles.headerMeta}>
-          <Text style={styles.meta}>{t('progress.sessionsCount', { count: progress.sessionCount })}</Text>
-          {progress.isRecordSession ? (
-            <Chip icon="trophy" tone="record" size="sm" label={t('progress.recentPrLabel')} />
-          ) : null}
+    <ScrollView style={styles.screen} contentContainerStyle={styles.container}
+      refreshControl={<RefreshControl refreshing={state.loading && !!progress} onRefresh={() => void state.reload()} />}>
+      <Button label={t('progress.readable.back')} variant="ghost" onPress={goBack} />
+      <Text style={styles.title}>{progress?.exerciseName ?? t('nav.exerciseProgress')}</Text>
+      {state.loading && !progress ? <StateView kind="loading" message={t('progress.loading')} /> : null}
+      {state.error ? <StateView kind="error" message={t(progress ? 'progress.readable.refreshFailed' : 'progress.loadError')}
+        actionLabel={t('common.retry')} onAction={() => void state.reload()} /> : null}
+      {state.notFound ? <StateView kind="empty" message={t('progress.readable.noHistory')} /> : null}
+      {progress && !readable ? <StateView kind="error" message={t('progress.readable.updateRequired')}
+        actionLabel={t('common.retry')} onAction={() => void state.reload()} /> : null}
+      {progress && readable ? <>
+        <Text style={styles.meta}>{t('progress.sessionsCount', { count: progress.sessionCount })}</Text>
+        {latest ? <View style={styles.card}>
+          <Text style={styles.heading}>{t('progress.readable.latest')}</Text>
+          <Text style={styles.meta}>{date(latest.date)}</Text>
+          <Text style={styles.figures}>{figures(latest)}</Text>
+        </View> : null}
+        <Text style={styles.heading}>{t('progress.readable.metric')}</Text>
+        <View style={styles.controls} accessibilityRole="radiogroup" accessibilityLabel={t('progress.readable.metric')}>
+          {available.map((choice) => <Pressable key={choice} accessibilityRole="radio"
+            aria-checked={metric === choice} accessibilityState={{ checked: metric === choice }} onPress={() => setMetric(choice)}
+            style={[styles.choice, metric === choice && styles.selected]}>
+            <Text style={metric === choice ? styles.selectedText : styles.choiceText}>{t(`progress.readable.metrics.${choice}`)}</Text>
+          </Pressable>)}
         </View>
-      </View>
-      <View style={styles.tiles}>
-        <StatTile
-          label={t('progress.latestLabel')}
-          value={formatWeightValue(progress.latestWeightKg, unit)}
-          unit={unit}
-          caption={t('progress.repsCaption', { reps: formatValue(progress.latestReps) })}
-        />
-        <StatTile
-          label={t('progress.bestLabel')}
-          value={formatWeightValue(progress.personalBestWeightKg, unit)}
-          unit={unit}
-          caption={t('progress.repsCaption', {
-            reps: formatValue(heaviest ? heaviest.reps : progress.personalBestReps),
-          })}
-          tone="record"
-        />
-      </View>
-      <View style={styles.tiles}>
-        <StatTile
-          icon="flash-outline"
-          label={t('progress.estimated1rm')}
-          value={formatWeightValue(progress.bestEstimatedOneRepMax, unit)}
-          unit={unit}
-        />
-      </View>
-      {oneRepMaxSeries.points.length > 0 ? (
-        <ProgressChart
-          title={t('progress.estimated1rm')}
-          unit={unit}
-          series={oneRepMaxSeries}
-          formatLabel={formatAxisDate}
-          formatValue={(value) => String(roundWeight(value))}
-        />
-      ) : volumeSeries.points.length > 0 ? (
-        <ProgressChart
-          title={t('progress.volumePerSession')}
-          unit={unit}
-          series={volumeSeries}
-          formatLabel={formatAxisDate}
-        />
-      ) : null}
-      <RecordsCard
-        title={t('progress.records.title')}
-        unit={unit}
-        items={records.map((record, index) => ({
-          key: `${record.type}-${index}`,
-          record,
-          meta: formatDate(record.date, i18n.language),
-        }))}
-      />
-      {personalRecords.length > 0 ? (
-        <View style={styles.card}>
-          <CardHeader title={t('progress.heaviestOverTime')} />
-          {personalRecords
-            .slice()
-            .reverse()
-            .map((record, index) => (
-              <View key={`${record.date}-${index}`} style={styles.recordRow}>
-                <View style={styles.recordIcon}>
-                  <Ionicons name="trophy" size={14} color={colors.accentInk} />
-                </View>
-                <Text style={styles.recordValue}>
-                  {`${formatWeightValue(record.weightKg, unit)} ${unit}${record.reps !== undefined ? ` × ${record.reps}` : ''}`}
-                </Text>
-                <Text style={styles.recordDate}>{formatDate(record.date, i18n.language)}</Text>
-              </View>
-            ))}
+        {metric === 'volume' || metric === 'estimate' ? <Text style={styles.meta}>
+          {t(`progress.readable.${metric}Explanation`)}</Text> : null}
+        <Text style={styles.heading}>{t('progress.readable.period')}</Text>
+        <View style={styles.controls} accessibilityRole="radiogroup" accessibilityLabel={t('progress.readable.period')}>
+          {PROGRESS_PERIODS.map((choice) => <Pressable key={choice} accessibilityRole="radio"
+            aria-checked={period === choice} accessibilityState={{ checked: period === choice }} onPress={() => setPeriod(choice)}
+            style={[styles.choice, period === choice && styles.selected]}>
+            <Text style={period === choice ? styles.selectedText : styles.choiceText}>{t(`progress.readable.periods.${choice}`)}</Text>
+          </Pressable>)}
         </View>
-      ) : null}
-      <Text style={styles.sectionLabel}>{t('progress.sessionsLabel')}</Text>
-      {displayPoints
-        .slice()
-        .reverse()
-        .map((point, index) => (
-          <View key={`${point.date}-${index}`} style={styles.sessionRow}>
-            <Text style={styles.sessionDate}>{formatDate(point.date, i18n.language)}</Text>
-            <View style={styles.sessionFigures}>
-              <Text style={styles.sessionValue}>
-                {`${formatValue(point.bestWeightKg)} ${unit} × ${formatValue(point.bestReps)}`}
-              </Text>
-              <Text style={styles.sessionMeta}>
-                {t('progress.sessionMeta', {
-                  volume: formatValue(point.totalVolume),
-                  oneRepMax: formatValue(point.estimatedOneRepMax),
-                  unit,
-                })}
-              </Text>
-            </View>
-          </View>
-        ))}
+        {series.points.length ? <ProgressChart key={`${metric}:${period}:${points.map((p) => p.workoutId).join(',')}`}
+          title={t(`progress.readable.metrics.${metric}`)} series={series} unit={metricUnit(metric, unit)}
+          inspectable formatLabel={date} formatValue={(value) => formatMetricValue(value, metric, unit, t('progress.readable.repsUnit'))} />
+          : <StateView kind="empty" message={t('progress.readable.noPoints')}
+            actionLabel={t('progress.readable.periods.all')} onAction={() => setPeriod('all')} />}
+        <RecordsCard stacked title={t('progress.readable.allTimeRecords')} unit={unit}
+          items={(progress.records ?? []).map((record, index) => ({ key: `${record.type}:${index}`, record, meta: date(record.date) }))} />
+        <Text style={styles.heading}>{t('progress.sessionsLabel')} · {t(`progress.readable.periods.${period}`)}</Text>
+        {points.slice().reverse().map((point) => <View key={point.workoutId ?? point.date} style={styles.card}>
+          <Text style={styles.heading}>{date(point.date)}</Text>
+          <Text style={styles.figures}>{figures(point)}</Text>
+          {point.workoutId ? <Button label={t('progress.readable.openWorkout')} variant="secondary"
+            onPress={() => router.push(`/workouts/${point.workoutId}`)} /> : null}
+        </View>)}
+      </> : null}
     </ScrollView>
   );
 }
 
 const styles = createStyles(() => ({
-  screen: {
-    ...commonStyles.screen,
-  },
-  container: {
-    ...commonStyles.scrollContent,
-  },
-  header: {
-    gap: spacing.xs,
-  },
-  title: {
-    ...commonStyles.title,
-  },
-  headerMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  meta: {
-    ...commonStyles.meta,
-  },
-  tiles: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  card: {
-    ...commonStyles.card,
-  },
-  recordRow: {
-    minHeight: 40,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  recordIcon: {
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radii.round,
-    backgroundColor: colors.accentSoft,
-  },
-  recordValue: {
-    flex: 1,
-    color: colors.text,
-    fontFamily: fonts.displayBold,
-    ...typeScale.body,
-    fontVariant: ['tabular-nums'],
-  },
-  recordDate: {
-    color: colors.textMuted,
-    ...typeScale.caption,
-  },
-  sectionLabel: {
-    ...commonStyles.sectionLabel,
-    marginTop: spacing.sm,
-  },
-  sessionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    padding: spacing.md,
-  },
-  sessionDate: {
-    width: 96,
-    color: colors.textMuted,
-    ...typeScale.caption,
-  },
-  sessionFigures: {
-    flex: 1,
-    alignItems: 'flex-end',
-    gap: spacing.xxs,
-  },
-  sessionValue: {
-    color: colors.text,
-    fontFamily: fonts.displayBold,
-    ...typeScale.body,
-    fontVariant: ['tabular-nums'],
-  },
-  sessionMeta: {
-    color: colors.textSubtle,
-    ...typeScale.caption,
-    fontVariant: ['tabular-nums'],
-  },
+  screen: { ...commonStyles.screen },
+  container: { ...commonStyles.scrollContent },
+  title: { ...commonStyles.title },
+  heading: { color: colors.text, ...typeScale.body, fontWeight: '700' },
+  meta: { ...commonStyles.meta },
+  figures: { color: colors.text, ...typeScale.body },
+  card: { ...commonStyles.card, gap: spacing.sm },
+  controls: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  choice: { padding: spacing.md, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surfaceRaised, maxWidth: '100%', minHeight: 44, justifyContent: 'center' },
+  selected: { backgroundColor: colors.primary, borderColor: colors.primaryInk },
+  choiceText: { color: colors.text, ...typeScale.caption, flexShrink: 1 },
+  selectedText: { color: colors.onPrimary, ...typeScale.caption, flexShrink: 1, fontWeight: '700' },
 }));

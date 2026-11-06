@@ -1,6 +1,6 @@
 ---
 spec: 0045
-status: done         # self-approved 2026-11-03; shipped and checked on the device the same day
+status: done # regression rechecked by owner 2026-11-04
 created: 2026-11-03
 ---
 

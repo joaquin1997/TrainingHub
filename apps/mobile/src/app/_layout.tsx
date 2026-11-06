@@ -147,6 +147,7 @@ function RootNavigator() {
       <Stack.Screen name="first-run" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="workouts/active" options={{ title: t('nav.activeWorkout') }} />
       <Stack.Screen name="workouts/summary" options={{ title: t('nav.workoutSaved') }} />
+      <Stack.Screen name="workouts/correct" options={{ title: t('workouts.correction.title') }} />
       <Stack.Screen name="workouts/[workoutId]" options={{ title: t('nav.workout') }} />
     </Stack>
     </FirstRunContext.Provider>

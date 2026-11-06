@@ -1,333 +1,131 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState, type ComponentRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
 
-import { FrequencySummary } from '@/features/progress/components/FrequencySummary';
-import { LatestRecordCard } from '@/features/progress/components/LatestRecordCard';
-import { WeekSummaryCard } from '@/features/progress/components/WeekSummaryCard';
-import { MuscleDistribution } from '@/features/progress/components/MuscleDistribution';
-import { ProgressChart } from '@/features/progress/components/ProgressChart';
-import { progressClient } from '@/features/progress/api/progressClient';
-import { buildWeeklyVolumeSeries } from '@/features/progress/utils/chartData';
-import { summarizeTrainingFrequency } from '@/features/progress/utils/trainingFrequency';
-import { latestRecord, weekVolumeComparison } from '@/features/progress/utils/weekComparison';
-import { workoutsClient } from '@/features/workouts/api/workoutsClient';
+import { useAuth } from '@/features/auth/AuthContext';
 import { useSettings } from '@/features/settings/SettingsContext';
-import { formatShortDate } from '@/lib/format';
-import { TimedProgressFigures } from '@/features/progress/components/TimedProgress';
-import { isTimedOrDistance } from '@/lib/tracking';
-import { formatWeightValue, fromKg, roundWeight } from '@/lib/weight';
-import { useRefresh } from '@/lib/useRefresh';
+import { workoutsClient } from '@/features/workouts/api/workoutsClient';
+import { progressClient } from '../api/progressClient';
+import { FrequencySummary } from '../components/FrequencySummary';
+import { LatestRecordCard } from '../components/LatestRecordCard';
+import { WeekSummaryCard } from '../components/WeekSummaryCard';
+import { MuscleDistribution } from '../components/MuscleDistribution';
+import { ProgressChart } from '../components/ProgressChart';
+import { buildWeeklyVolumeSeries } from '../utils/chartData';
+import { searchTrainedExercises } from '../utils/exerciseSearch';
+import { summarizeTrainingFrequency } from '../utils/trainingFrequency';
+import { latestRecord, weekVolumeComparison } from '../utils/weekComparison';
+import { useProgressResource } from '../useExerciseProgress';
+import { formatDateTime, formatShortDate } from '@/lib/format';
+import { fromKg, roundWeight } from '@/lib/weight';
 import { weekStreak } from '@/lib/week';
-import { CardHeader } from '@/ui/CardHeader';
-import { Chip } from '@/ui/Chip';
+import { Button } from '@/ui/Button';
 import { ScreenTitle } from '@/ui/ScreenTitle';
 import { StateView } from '@/ui/StateView';
-import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
-import { SkeletonProgress } from '@/ui/Skeleton';
-import type {
-  ExerciseProgressSummary,
-  MuscleGroupVolumePoint,
-  SessionRecords,
-  WeeklyVolumePoint,
-  WorkoutSession,
-} from '@workout/domain';
-
-function formatValue(value?: number) {
-  return value === undefined ? '-' : String(value);
-}
+import { colors, commonStyles, createStyles, radii, keyboardAppearance, spacing, typeScale, useTheme } from '@/ui/theme';
 
 export function ProgressOverviewScreen() {
+  const { user } = useAuth();
+  return <ProgressOverview key={user?.id ?? 'signed-out'} />;
+}
+function ProgressOverview() {
   useTheme();
   const { t, i18n } = useTranslation();
-  const router = useRouter();
-  const [progress, setProgress] = useState<ExerciseProgressSummary[]>([]);
-  const [weeklyVolume, setWeeklyVolume] = useState<WeeklyVolumePoint[]>([]);
-  const [muscleVolume, setMuscleVolume] = useState<MuscleGroupVolumePoint[]>([]);
-  // The week summary and latest record (spec 0035 FR-11); null when they could
-  // not be loaded, which hides them (EF-3).
-  const [sessions, setSessions] = useState<WorkoutSession[] | null>(null);
-  const [sessionRecords, setSessionRecords] = useState<SessionRecords[] | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string>();
+  const { user } = useAuth();
   const { settings } = useSettings();
-  const unit = settings.unit;
+  const router = useRouter();
+  const [query, setQuery] = useState('');
+  const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  const offset = useRef(0);
+  const restoring = useRef(false);
+  const read = useCallback(() => user ? progressClient.list() : Promise.resolve([]), [user?.id, i18n.language]);
+  const state = useProgressResource(`${user?.id}:lookup`, read);
+  const readSummary = useCallback(async () => {
+    if (!user) return undefined;
+    const [weekly, muscle, sessions, records] = await Promise.all([
+      progressClient.weeklyVolume(), progressClient.muscleDistribution(), workoutsClient.list(), progressClient.sessionRecords(),
+    ]);
+    return { weekly, muscle, sessions, records };
+  }, [user?.id, i18n.language]);
+  const summaryState = useProgressResource(`${user?.id}:summary`, readSummary);
+  const summary = summaryState.data;
+  useFocusEffect(useCallback(() => {
+    restoring.current = true;
+    const frame = requestAnimationFrame(() => {
+      scroll.current?.scrollTo({ y: offset.current, animated: false });
+      restoring.current = false;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []));
+  const results = searchTrainedExercises(state.data ?? [], query, i18n.language);
+  const filtering = query.trim().length > 0;
+  const refresh = async () => { await Promise.all([state.reload(), summaryState.reload()]); };
+  const restorePosition = () => {
+    if (restoring.current) {
+      restoring.current = false;
+      scroll.current?.scrollTo({ y: offset.current, animated: false });
+    }
+  };
+  const weeklySeries = buildWeeklyVolumeSeries((summary?.weekly ?? []).map((point) => ({
+    ...point, totalVolume: roundWeight(fromKg(point.totalVolume, settings.unit)),
+  })));
+  const frequency = summary ? {
+    ...summarizeTrainingFrequency(summary.weekly, new Date()),
+    currentStreak: weekStreak(summary.sessions.map((session) => new Date(session.startedAt)), new Date()),
+  } : undefined;
+  const comparison = summary ? weekVolumeComparison(summary.sessions, new Date()) : undefined;
+  const record = summary ? latestRecord(summary.records) : undefined;
 
-  const loadProgress = useCallback(
-    async (shouldUpdate: () => boolean = () => true) => {
-      setIsLoading(true);
-      setErrorMessage(undefined);
-
-      try {
-        const [nextProgress, nextWeeklyVolume, nextMuscleVolume, nextSessions, nextRecords] =
-          await Promise.all([
-            progressClient.list(),
-            progressClient.weeklyVolume(),
-            progressClient.muscleDistribution(),
-            workoutsClient.list().catch(() => null),
-            progressClient.sessionRecords().catch(() => null),
-          ]);
-
-        if (shouldUpdate()) {
-          setProgress(nextProgress);
-          setWeeklyVolume(nextWeeklyVolume);
-          setMuscleVolume(nextMuscleVolume);
-          setSessions(nextSessions);
-          setSessionRecords(nextRecords);
-        }
-      } catch (error) {
-        if (shouldUpdate()) {
-          setErrorMessage(
-            error instanceof Error ? error.message : t('progress.loadError'),
-          );
-        }
-      } finally {
-        if (shouldUpdate()) {
-          setIsLoading(false);
-        }
-      }
-    },
-    [t],
-  );
-
-  useFocusEffect(
-    useCallback(() => {
-      let isActive = true;
-
-      void loadProgress(() => isActive);
-
-      return () => {
-        isActive = false;
-      };
-    }, [loadProgress]),
-  );
-
-  const { isRefreshing, onRefresh } = useRefresh(loadProgress);
-  const weeklyVolumeSeries = buildWeeklyVolumeSeries(
-    weeklyVolume.map((point) => ({
-      ...point,
-      totalVolume: roundWeight(fromKg(point.totalVolume, unit)),
-    })),
-  );
-  const now = new Date();
-  const summary = summarizeTrainingFrequency(weeklyVolume, now);
-  // The same week streak as the Routines chip (spec 0035 FR-4), in local weeks.
-  const frequency = sessions
-    ? {
-        ...summary,
-        currentStreak: weekStreak(
-          sessions.map((session) => new Date(session.startedAt)),
-          now,
-        ),
-      }
-    : summary;
-  const comparison = sessions && sessions.length > 0 ? weekVolumeComparison(sessions, now) : null;
-  const record = sessionRecords ? latestRecord(sessionRecords) : null;
-  const showLoading = isLoading && progress.length === 0;
-  const hasEmptyState = !isLoading && !errorMessage && progress.length === 0;
-  const hasListState = !errorMessage && progress.length > 0;
-
-  const formatAxisDate = (date: string) => formatShortDate(date, i18n.language);
-
-  return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
-      }
-    >
-      <ScreenTitle title={t('nav.progress')} />
-      {/* First load only: tiles, chart and cards to come (spec 0034 FR-15). */}
-      {showLoading && !errorMessage ? (
-        <SkeletonProgress />
-      ) : (
-        <>
-          {comparison ? <WeekSummaryCard comparison={comparison} unit={unit} /> : null}
-          {record ? (
-            <LatestRecordCard
-              record={record}
-              unit={unit}
-              onPress={() => router.push(`/progress/exercises/${record.exerciseId}`)}
-            />
-          ) : null}
-          <FrequencySummary summary={frequency} />
-          {weeklyVolumeSeries.points.length > 0 ? (
-            <ProgressChart
-              title={t('progress.weeklyVolume')}
-              unit={unit}
-              series={weeklyVolumeSeries}
-              formatLabel={formatAxisDate}
-            />
-          ) : null}
-          <MuscleDistribution points={muscleVolume} unit={unit} />
-        </>
-      )}
-      {errorMessage ? (
-        <StateView
-          kind="error"
-          message={errorMessage}
-          actionLabel={t('common.retry')}
-          onAction={() => void onRefresh()}
-        />
-      ) : null}
-      {hasEmptyState ? (
-        <StateView
-          kind="empty"
-          icon="stats-chart-outline"
-          title={t('progress.emptyTitle')}
-          message={t('progress.emptySubtitle')}
-          actionLabel={t('progress.emptyAction')}
-          onAction={() => router.push('/routines')}
-        />
-      ) : null}
-      {hasListState ? (
-        <View style={styles.list}>
-          <Text style={styles.sectionLabel}>{t('progress.byExercise')}</Text>
-          {progress.map((exercise) => (
-            <Pressable
-              key={exercise.exerciseId}
-              accessibilityRole="button"
-              onPress={() => router.push(`/progress/exercises/${exercise.exerciseId}`)}
-              style={({ pressed }) => [styles.card, pressed ? styles.cardPressed : null]}
-            >
-              <CardHeader
-                title={exercise.exerciseName}
-                trailing={
-                  <View style={styles.cardTrailing}>
-                    {exercise.isRecordSession ? (
-                      <Chip icon="trophy" tone="record" size="sm" label={t('progress.pr')} />
-                    ) : null}
-                    <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
-                  </View>
-                }
-              />
-              {isTimedOrDistance(exercise.trackingType) ? (
-                <TimedProgressFigures summary={exercise} />
-              ) : (
-                <View style={styles.figures}>
-                  <Figure
-                    label={t('progress.latestLabel')}
-                    value={formatWeightValue(exercise.latestWeightKg, unit)}
-                    unit={unit}
-                    reps={formatValue(exercise.latestReps)}
-                  />
-                  <Figure
-                    label={t('progress.bestLabel')}
-                    value={formatWeightValue(exercise.personalBestWeightKg, unit)}
-                    unit={unit}
-                    reps={formatValue(exercise.personalBestReps)}
-                  />
-                  <Figure
-                    label={t('progress.est1rmShort')}
-                    value={formatWeightValue(exercise.bestEstimatedOneRepMax, unit)}
-                    unit={unit}
-                  />
-                </View>
-              )}
-              <Text style={styles.meta}>
-                {t('progress.sessionsCount', { count: exercise.sessionCount })}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
-    </ScrollView>
-  );
+  return <ScrollView ref={scroll} style={styles.screen} contentContainerStyle={styles.container}
+    keyboardShouldPersistTaps="handled" onContentSizeChange={restorePosition}
+    onScroll={(event) => { if (!restoring.current) offset.current = event.nativeEvent.contentOffset.y; }} scrollEventThrottle={32}
+    refreshControl={<RefreshControl refreshing={state.loading && !!state.data} onRefresh={() => void refresh()} />}>
+    <ScreenTitle title={t('nav.progress')} />
+    <Text style={styles.heading}>{t('progress.readable.findExercise')}</Text>
+    <TextInput keyboardAppearance={keyboardAppearance()} accessibilityLabel={t('progress.readable.search')} placeholder={t('progress.readable.search')}
+      placeholderTextColor={colors.textMuted} value={query}
+      onChangeText={(value) => { setQuery(value); offset.current = 0; }} style={styles.input} autoCorrect={false} />
+    {state.loading && !state.data ? <StateView kind="loading" message={t('progress.loading')} /> : null}
+    {state.error ? <StateView kind="error" message={t(state.data ? 'progress.readable.refreshFailed' : 'progress.loadError')}
+      actionLabel={t('common.retry')} onAction={() => void state.reload()} /> : null}
+    {state.data && results.length === 0 ? <StateView kind="empty"
+      message={t(filtering ? 'progress.readable.noMatches' : 'progress.emptySubtitle')}
+      actionLabel={t(filtering ? 'progress.readable.clearSearch' : 'progress.emptyAction')}
+      onAction={() => filtering ? setQuery('') : router.push('/routines')} /> : null}
+    {results.map((exercise) => <Pressable key={exercise.exerciseId} accessibilityRole="button"
+      onPress={() => router.push(`/progress/exercises/${exercise.exerciseId}`)}
+      style={({ pressed }) => [styles.card, pressed && commonStyles.pressed]}>
+      <View style={styles.row}>
+        <Text style={styles.resultName}>{exercise.exerciseName}</Text>
+        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+      </View>
+      <Text style={styles.meta}>{exercise.lastPerformedAt ? formatDateTime(exercise.lastPerformedAt, i18n.language) : ''}</Text>
+      <Text style={styles.meta}>{t('progress.sessionsCount', { count: exercise.sessionCount })}</Text>
+    </Pressable>)}
+    {!filtering ? <>
+      <Text style={styles.heading}>{t('progress.readable.overview')}</Text>
+      {summaryState.error ? <StateView kind="error" message={t('progress.readable.refreshFailed')}
+        actionLabel={t('common.retry')} onAction={() => void summaryState.reload()} /> : null}
+      {comparison ? <WeekSummaryCard comparison={comparison} unit={settings.unit} /> : null}
+      {record ? <LatestRecordCard record={record} unit={settings.unit}
+        onPress={() => router.push(`/progress/exercises/${record.exerciseId}`)} /> : null}
+      {frequency ? <FrequencySummary summary={frequency} /> : null}
+      {weeklySeries.points.length ? <ProgressChart title={t('progress.weeklyVolume')} unit={settings.unit} series={weeklySeries}
+        formatLabel={(date) => formatShortDate(date, i18n.language)} /> : null}
+      {summary ? <MuscleDistribution points={summary.muscle} unit={settings.unit} /> : null}
+    </> : <Button label={t('progress.readable.clearSearch')} variant="ghost" onPress={() => setQuery('')} />}
+  </ScrollView>;
 }
-
-function Figure({
-  label,
-  value,
-  unit,
-  reps,
-}: {
-  label: string;
-  value: string;
-  unit: string;
-  reps?: string;
-}) {
-  useTheme();
-  return (
-    <View style={styles.figure}>
-      <Text style={styles.figureLabel} numberOfLines={1}>
-        {label}
-      </Text>
-      <Text style={styles.figureValue}>
-        {value}
-        <Text style={styles.figureUnit}>{` ${unit}`}</Text>
-      </Text>
-      {reps !== undefined ? <Text style={styles.figureReps}>{`× ${reps}`}</Text> : null}
-    </View>
-  );
-}
-
 const styles = createStyles(() => ({
-  screen: {
-    ...commonStyles.screen,
-  },
-  container: {
-    ...commonStyles.scrollContent,
-  },
-  sectionLabel: {
-    ...commonStyles.sectionLabel,
-    marginTop: spacing.sm,
-  },
-  list: {
-    gap: spacing.md,
-  },
-  card: {
-    ...commonStyles.card,
-    gap: spacing.md,
-  },
-  cardPressed: {
-    ...commonStyles.pressed,
-  },
-  cardTrailing: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  figures: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  figure: {
-    flex: 1,
-    gap: spacing.xxs,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceRaised,
-    padding: spacing.sm,
-  },
-  figureLabel: {
-    ...commonStyles.sectionLabel,
-  },
-  figureValue: {
-    color: colors.text,
-    fontFamily: fonts.displayBold,
-    ...typeScale.body,
-    fontVariant: ['tabular-nums'],
-  },
-  figureReps: {
-    color: colors.textMuted,
-    fontFamily: fonts.display,
-    ...typeScale.caption,
-    fontVariant: ['tabular-nums'],
-  },
-  figureUnit: {
-    color: colors.textMuted,
-    fontFamily: fonts.display,
-    ...typeScale.caption,
-  },
-  meta: {
-    ...commonStyles.meta,
-  },
+  screen: { ...commonStyles.screen },
+  container: { ...commonStyles.scrollContent },
+  heading: { color: colors.text, ...typeScale.body, fontWeight: '700' },
+  input: { ...typeScale.body, color: colors.text, borderColor: colors.border, borderWidth: 1,
+    borderRadius: radii.md, padding: spacing.md, minHeight: 48, backgroundColor: colors.surfaceRaised },
+  card: { ...commonStyles.card, gap: spacing.xs },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  resultName: { color: colors.text, ...typeScale.body, fontWeight: '700', flex: 1 },
+  meta: { ...commonStyles.meta },
 }));

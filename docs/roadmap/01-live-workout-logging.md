@@ -130,3 +130,54 @@ implemented. Reuse reviewed loading kinds/muscles from 0044; add provenance
 so curation cannot overwrite a person's correction. The plan separates
 completed-workout muscle context from planned-routine context and replaces
 hidden set-type cycling with visible choices. Task breakdown is next.
+
+## Spec review — 2026-11-03
+
+- 0043 remains planned and now includes explanations for every offered set type.
+- Ready specs: [0046](../sdd/specs/0046-set-rows-and-finish/spec.md) for completed
+  figures, undo selection and top Finish; [0049](../sdd/specs/0049-weight-per-side/spec.md)
+  for optional side weights; [0050](../sdd/specs/0050-correct-saved-workout/spec.md)
+  for correcting existing saved set values and notes. No implementation in this pass.
+
+- Owner review of 0043 (2026-11-03): confirmed configurable approach count
+  up to five, adjustable increments (including cable 2.5/5 kg), and personal
+  preferences. Spec/plan revised; shared catalog provenance proposal replaced
+  with an isolated per-user/exercise preference. Still planning, no code change.
+
+- Planning update (2026-11-03): 0043, 0046, 0049 and 0050 now have approved plans and
+  ordered unchecked tasks. No implementation/rollout in this pass; consult
+  [the execution sequence](../sdd/reviews/2026-11-03-workout-implementation-sequence.md)
+  for dependencies and acceptance gates. Earlier ready-state entries above
+  record the spec-review stage, not the current planning state.
+
+- Implementation update (2026-11-03): 0043 tasks 1–7 complete. Personal
+  preferences are isolated by user/exercise; preview supports Automatic/1–5
+  and editable increments; workout/routine type pickers show names/meanings.
+  Migration verified on isolated PostgreSQL and web flows checked in EN/dark
+  and ES/light at 320 pt. Production migration/API/app delivery and physical
+  device checks remain pending; see the spec's verification.md.
+
+## Local implementation — 2026-11-04
+
+- [0046](../sdd/specs/0046-set-rows-and-finish/spec.md) tasks 1–4 implemented:
+  completed suggestions use normal text colour; exact undo selection survives
+  reopening and respects superset rounds; only the originating completion’s
+  rest is cancelled; a persistent secondary Finish action confirms and shares
+  the guarded save/error recovery flow. Automated checks are recorded in
+  [verification](../sdd/specs/0046-set-rows-and-finish/verification.md).
+  Bundle delivery, 320 pt/large-text layout and actual phone/watch cancellation
+  acceptance remain pending; no schema/API change or native dependency.
+- Earlier planning-only entries are historical. 0043 tasks 1–7 are now
+  implemented locally, with migration/API/bundle rollout and device acceptance
+  still pending in that spec’s task list.
+
+## Local implementation — 2026-11-04 (0050)
+
+Saved workout values/completion/type/workout and exercise notes now have an
+independent correction editor with explicit save/cancel/exit choices. The
+owner-scoped revision/idempotency writer is atomic and normalizes legacy
+completion only on that workout’s explicit correction. Derived readers refresh;
+routine targets, active references and existing Health exports stay unchanged.
+Generated migration and fresh/upgrade isolated-DB tests pass. Production
+migration/API/app delivery and real device checks remain open in
+[0050 verification](../sdd/specs/0050-correct-saved-workout/verification.md).

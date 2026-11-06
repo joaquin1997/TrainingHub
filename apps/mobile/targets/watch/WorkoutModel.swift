@@ -33,6 +33,7 @@ final class WorkoutModel: NSObject, ObservableObject {
 
   private let healthStore = HKHealthStore()
   private var session: HKWorkoutSession?
+  private let mirroringRecovery = WorkoutMirroringRecovery()
   private var builder: HKLiveWorkoutBuilder?
   /// The workout the running session belongs to.
   private var sessionWorkoutId: String?
@@ -46,6 +47,35 @@ final class WorkoutModel: NSObject, ObservableObject {
   /// the mirrored session and as application context (spec 0045).
   private var lastContextJSON: String?
   private var waitingTimer: Timer?
+  private var localRestId: String?
+  private static let skipStorageKey = "traininghub.rest-skip.v1"
+  @Published private var restSkip = (UserDefaults.standard.data(forKey: skipStorageKey)
+    .flatMap { try? JSONDecoder().decode(WatchRestSkipState.self, from: $0) }) ?? WatchRestSkipState()
+
+  var skipPending: Bool { restSkip.pending != nil && restSkip.workoutId == activeWorkout?.workoutId }
+  var canSkipRest: Bool {
+    activeWorkout?.restSkipVersion == 1 && !isPaused && restEndsAt != nil &&
+      (localRestId != nil || activeWorkout?.canSkipRest == true)
+  }
+  private func persistSkip() {
+    if let data = try? JSONEncoder().encode(restSkip) { UserDefaults.standard.set(data, forKey: Self.skipStorageKey) }
+  }
+  func skipRest() {
+    guard canSkipRest, let workout = activeWorkout, let restId = localRestId ?? workout.restId else { return }
+    let requestId = UUID().uuidString
+    let now = Date().epochMs
+    restSkip.skip(workoutId: workout.workoutId, restId: restId, requestId: requestId, atMs: now)
+    persistSkip()
+    localRestEndsAt = nil
+    restTimer?.invalidate()
+    restTimer = nil
+    send(WatchEvent(id: requestId, kind: .skipRest, workoutId: workout.workoutId, restId: restId, atMs: now))
+  }
+  private func resendPendingSkip() {
+    guard activeWorkout?.restSkipVersion == 1, restSkip.workoutId == activeWorkout?.workoutId,
+          let pending = restSkip.pending, let workoutId = restSkip.workoutId else { return }
+    send(WatchEvent(id: pending.requestId, kind: .skipRest, workoutId: workoutId, restId: pending.restId, atMs: pending.atMs))
+  }
   /// How long after a tick the watch says it is waiting (spec 0045 FR-4).
   private static let waitingAfter: TimeInterval = 5
 
@@ -60,8 +90,9 @@ final class WorkoutModel: NSObject, ObservableObject {
 
   /// The rest to count down: the local one until the phone confirms it.
   var restEndsAt: Date? {
+    if restSkip.suppresses(localRestId ?? activeWorkout?.restId) { return nil }
     let fromPhone = activeWorkout?.restEndsAtMs.map(Date.init(epochMs:))
-    let end = localRestEndsAt ?? fromPhone
+    let end = localRestId != nil ? localRestEndsAt : fromPhone
     guard let end, end > Date() else { return nil }
     return end
   }
@@ -90,6 +121,8 @@ final class WorkoutModel: NSObject, ObservableObject {
   private func apply(contextJSON json: String) {
     // A copy arriving late must not undo a tick made since (spec 0045).
     guard json != lastContextJSON, let next = WatchWire.decodeContext(json) else { return }
+    guard restSkip.acceptContext(workoutId: next.workoutId, sentAtMs: next.sentAtMs,
+      acknowledgement: next.lastProcessedSkipId, restId: next.restId) else { return }
     // Application context is latest-wins, but keep the newest if two cross.
     let previous = context
     if let previous, previous.workoutId == next.workoutId, previous.sentAtMs > next.sentAtMs {
@@ -97,9 +130,15 @@ final class WorkoutModel: NSObject, ObservableObject {
     }
     context = next
     lastContextJSON = json
-    localRestEndsAt = nil
-    tickedSetId = nil
-    stopWaiting()
+    if next.status != .active { restSkip.endWorkout() }
+    persistSkip()
+    // A context about the still-ticked set has not acknowledged Done yet.
+    if next.status != .active || next.workoutId != previous?.workoutId || next.currentSet?.setId != tickedSetId {
+      localRestEndsAt = nil
+      localRestId = nil
+      tickedSetId = nil
+      stopWaiting()
+    }
     if next.status != .active || next.workoutId != previous?.workoutId {
       finishAsked = false
     }
@@ -123,8 +162,10 @@ final class WorkoutModel: NSObject, ObservableObject {
   func tickCurrentSet(reps: Int? = nil) {
     guard let workout = activeWorkout, let set = currentSet else { return }
     let now = Date()
+    let doneId = UUID().uuidString
+    localRestId = doneId
     send(WatchEvent(
-      id: UUID().uuidString,
+      id: doneId,
       kind: .setDone,
       workoutId: workout.workoutId,
       exerciseId: set.exerciseId,
@@ -191,6 +232,11 @@ final class WorkoutModel: NSObject, ObservableObject {
     }
     // Queued by the system and delivered in order, also after lost contact (EF-1).
     WCSession.default.transferUserInfo(["event": json])
+    // A failed initial mirror must not leave a reachable phone waiting for a
+    // background transfer. The same event ID makes this live copy harmless.
+    if WCSession.default.isReachable {
+      WCSession.default.sendMessage(["event": json], replyHandler: nil, errorHandler: { _ in })
+    }
   }
 
   // MARK: Waiting for the phone (spec 0045 FR-4)
@@ -271,7 +317,7 @@ final class WorkoutModel: NSObject, ObservableObject {
       // The iPhone app runs in the background while the session is mirrored,
       // so a tick here is applied with the phone locked (spec 0045). Without
       // it everything works as before, over the queue.
-      Task { try? await session.startMirroringToCompanionDevice() }
+      mirroringRecovery.start { try await session.startMirroringToCompanionDevice() }
       // The phone may have ended the workout while the session was starting.
       if let ended = context, ended.workoutId == workout.workoutId, ended.status != .active {
         await endSession(workoutId: workout.workoutId, save: ended.status == .finished)
@@ -279,6 +325,7 @@ final class WorkoutModel: NSObject, ObservableObject {
       }
       syncPause(paused: isPaused)
     } catch {
+      mirroringRecovery.stop()
       self.session = nil
       self.builder = nil
       sessionWorkoutId = nil
@@ -313,6 +360,7 @@ final class WorkoutModel: NSObject, ObservableObject {
     stopWaiting()
     // A session still starting is ended by `ensureSession` once it is up.
     guard let session, let builder, sessionWorkoutId == workoutId else { return }
+    mirroringRecovery.stop()
     self.session = nil
     self.builder = nil
     sessionWorkoutId = nil
@@ -369,7 +417,12 @@ extension WorkoutModel: WCSessionDelegate {
     let json = session.receivedApplicationContext["context"] as? String
     Task { @MainActor in
       if let json { self.apply(contextJSON: json) }
+      self.resendPendingSkip()
     }
+  }
+
+  nonisolated func sessionReachabilityDidChange(_ session: WCSession) {
+    if session.isReachable { Task { @MainActor in self.resendPendingSkip() } }
   }
 
   nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
@@ -392,7 +445,10 @@ extension WorkoutModel: HKWorkoutSessionDelegate, HKLiveWorkoutBuilderDelegate {
 
   nonisolated func workoutSession(_ workoutSession: HKWorkoutSession, didFailWithError error: Error) {
     Task { @MainActor in
+      // Ignore a delayed delegate callback from a superseded session.
+      guard self.session === workoutSession else { return }
       // The phone's workout goes on; this watch stops measuring it.
+      self.mirroringRecovery.stop()
       self.session = nil
       self.builder = nil
       self.sessionWorkoutId = nil

@@ -88,10 +88,12 @@ real database, signed native-build or device acceptance checks.
 - Strict authentication, 90-day credentials and startup validation/offline
   retry are implemented in this checkout. The existing server still needs the
   ordered legacy-data reassignment and rollout described in [0001](docs/sdd/specs/0001-auth-session-hardening/tasks.md).
-- [0043](docs/sdd/specs/0043-smarter-warm-ups/plan.md) is planned: warm-up ramps
-  based on loading kind and prior work, plus explicit set-type selection.
-- [0042](docs/sdd/specs/0042-readable-exercise-progress/spec.md) is ready to
-  plan: easier exercise search and clearer progress metrics.
+- [0043](docs/sdd/specs/0043-smarter-warm-ups/tasks.md) is code complete locally:
+  configurable personal warm-ups and explained set types. Production rollout
+  and physical-device acceptance remain pending.
+- [0042](docs/sdd/specs/0042-readable-exercise-progress/tasks.md) is code complete
+  locally: trained-exercise search, coherent saved-set evidence and explicit
+  progress metrics/periods. API/bundle rollout and device acceptance are pending.
 - Apple sign-in, session revocation, production distribution and full offline
   synchronization remain outside the completed scope. Google sign-in requires
   the owner's OAuth configuration.
@@ -108,6 +110,7 @@ The [spec backlog](docs/sdd/backlog.md) is the detailed status reference.
 - [Security and repository sharing](SECURITY.md)
 - [Third-party data and assets](docs/data-sources.md)
 
-This repository does not currently grant an open-source license for the
-application code. Third-party packages, data and assets retain their own
-licenses; see the source notes before redistribution.
+The project is proprietary and all rights are reserved. Use, modification and
+distribution require prior express written authorization from the copyright
+holder; see [LICENSE](LICENSE). Third-party packages, data and assets retain
+their respective licenses; see [source notes](docs/data-sources.md).

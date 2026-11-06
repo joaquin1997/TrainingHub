@@ -1,5 +1,6 @@
 import type {
   ExerciseTrackingType,
+  ProgressSetEvidence,
   ExerciseProgressDetail,
   ExerciseProgressPoint,
   ExerciseProgressSummary,
@@ -22,7 +23,7 @@ import {
 } from './records.js';
 import { recordReps } from '../workouts/sides.js';
 
-type ProgressSetInput = {
+type ProgressSetInput = Pick<ProgressSetEvidence, 'workoutExerciseId' | 'setId' | 'exerciseOrder' | 'setOrder'> & {
   /** For a unilateral set, left + right (spec 0022): volume reads it as is. */
   reps?: number | null;
   repsLeft?: number | null;
@@ -41,12 +42,14 @@ type ProgressSetInput = {
  */
 export type ProgressSessionInput = {
   date: string;
+  startedAt?: string;
   /** The workout's public id; needed only to list the records it beat. */
   workoutId?: string;
   clientId?: string | null;
   exercises: Array<{
     exerciseId: string;
     exerciseName: string;
+    searchNames?: string[];
     category?: string | null;
     /** The exercise's current tracking type; absent = weight & reps. */
     trackingType?: ExerciseTrackingType;
@@ -83,6 +86,7 @@ type ProgressAccumulator = {
   exerciseId: string;
   exerciseName: string;
   trackingType?: ExerciseTrackingType;
+  searchNames?: string[];
   points: ExerciseProgressPoint[];
   /**
    * `pointSessions[i]`: index of point `i`'s workout in the chronological
@@ -92,7 +96,7 @@ type ProgressAccumulator = {
 };
 
 function maxDefined(values: Array<number | null | undefined>): number | undefined {
-  const defined = values.filter((value): value is number => typeof value === 'number');
+  const defined = values.filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
   return defined.length > 0 ? Math.max(...defined) : undefined;
 }
 
@@ -102,36 +106,60 @@ function buildAccumulators(
   const byExercise = new Map<string, ProgressAccumulator>();
 
   ordered.forEach((session, sessionIndex) => {
+    // One saved workout is one point, even with repeated exercise occurrences.
+    const grouped = new Map<string, ProgressSessionInput['exercises'][number]>();
     for (const exercise of session.exercises) {
+      const previous = grouped.get(exercise.exerciseId);
+      grouped.set(exercise.exerciseId, previous
+        ? { ...previous, sets: [...previous.sets, ...exercise.sets] }
+        : { ...exercise, sets: [...exercise.sets] });
+    }
+    for (const exercise of grouped.values()) {
       const accumulator = byExercise.get(exercise.exerciseId) ?? {
         exerciseId: exercise.exerciseId,
         exerciseName: exercise.exerciseName,
         points: [],
         pointSessions: [],
       };
-
-      // Warmups add volume but never set a best, a 1RM or a record.
       const workingSets = exercise.sets.filter((set) => !isWarmupSet(set));
-
+      const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
+      const heaviest = workingSets.filter((set) => finite(set.weightKg)).slice().sort((a, b) =>
+        b.weightKg! - a.weightKg! || (recordReps(b) ?? -1) - (recordReps(a) ?? -1) ||
+        (a.exerciseOrder ?? 0) - (b.exerciseOrder ?? 0) || (a.setOrder ?? 0) - (b.setOrder ?? 0),
+      )[0];
+      const evidence: ProgressSetEvidence | undefined = heaviest ? {
+        workoutExerciseId: heaviest.workoutExerciseId,
+        setId: heaviest.setId,
+        exerciseOrder: heaviest.exerciseOrder,
+        setOrder: heaviest.setOrder,
+        weightKg: heaviest.weightKg ?? undefined,
+        reps: heaviest.reps ?? undefined,
+        repsLeft: heaviest.repsLeft ?? undefined,
+        repsRight: heaviest.repsRight ?? undefined,
+        durationSeconds: heaviest.durationSeconds ?? undefined,
+        distanceMeters: heaviest.distanceMeters ?? undefined,
+      } : undefined;
+      const reps = workingSets.filter((set) => finite(set.reps));
+      const weighted = exercise.sets.filter((set) => finite(set.weightKg) && finite(set.reps));
       accumulator.exerciseName = exercise.exerciseName;
+      accumulator.searchNames = exercise.searchNames;
       accumulator.trackingType = exercise.trackingType;
       accumulator.points.push({
         date: session.date,
+        workoutId: session.workoutId,
+        heaviestWorkingSet: evidence,
         bestWeightKg: maxDefined(workingSets.map((set) => set.weightKg)),
-        // The better side of a unilateral set (spec 0022 assumption).
         bestReps: maxDefined(workingSets.map(recordReps)),
-        totalVolume: exercise.sets.reduce(
-          (sum, set) => sum + (set.reps ?? 0) * (set.weightKg ?? 0),
-          0,
-        ),
-        estimatedOneRepMax: maxDefined(
-          workingSets.map((set) => estimateOneRepMax(recordReps(set), set.weightKg)),
-        ),
+        totalWorkingReps: reps.length ? reps.reduce((sum, set) => sum + set.reps!, 0) : undefined,
+        sessionVolumeKg: weighted.length ? weighted.reduce((sum, set) => sum + set.weightKg! * set.reps!, 0) : undefined,
+        totalVolume: exercise.sets.reduce((sum, set) => sum + (set.reps ?? 0) * (set.weightKg ?? 0), 0),
+        estimatedOneRepMax: maxDefined(workingSets.filter((set) =>
+          set.durationSeconds == null && set.distanceMeters == null,
+        ).map((set) => estimateOneRepMax(recordReps(set), set.weightKg))),
         bestDurationSeconds: maxDefined(workingSets.map((set) => set.durationSeconds)),
         bestDistanceMeters: maxDefined(workingSets.map((set) => set.distanceMeters)),
       });
       accumulator.pointSessions.push(sessionIndex);
-
       byExercise.set(exercise.exerciseId, accumulator);
     }
   });
@@ -148,7 +176,8 @@ type ExerciseRecordSessions = {
 function chronological(sessions: ProgressSessionInput[]): ProgressSessionInput[] {
   return sessions
     .slice()
-    .sort((left, right) => left.date.localeCompare(right.date));
+    .sort((left, right) => left.date.localeCompare(right.date) ||
+      (left.workoutId ?? '').localeCompare(right.workoutId ?? ''));
 }
 
 /**
@@ -237,10 +266,12 @@ function toSummary(
   return {
     exerciseId: accumulator.exerciseId,
     exerciseName: accumulator.exerciseName,
+    searchNames: accumulator.searchNames,
     sessionCount: points.length,
     lastPerformedAt: lastPoint?.date,
     latestWeightKg: lastPoint?.bestWeightKg,
-    latestReps: lastPoint?.bestReps,
+    latestReps: lastPoint?.heaviestWorkingSet
+      ? recordReps(lastPoint.heaviestWorkingSet) : lastPoint?.bestReps,
     personalBestWeightKg: maxDefined(points.map((point) => point.bestWeightKg)),
     personalBestReps: maxDefined(points.map((point) => point.bestReps)),
     bestEstimatedOneRepMax: maxDefined(
@@ -275,7 +306,7 @@ export function buildExerciseProgressSummaries(
 /**
  * Marks the points whose workout beat at least one of the exercise's records
  * (spec 0034 FR-22, any record type, as `isRecordSession`). Records are per
- * workout, so two entries of the exercise in one workout are both flagged.
+ * workout, so repeated occurrences share a single combined flagged point.
  * The flag is present only when true.
  */
 function flagRecordPoints(
@@ -308,6 +339,7 @@ export function buildExerciseProgressDetail(
 
   return {
     ...toSummary(accumulator, records),
+    readableProgressVersion: 1,
     points: flagRecordPoints(accumulator, records),
     records: records?.history.bests ?? [],
   };

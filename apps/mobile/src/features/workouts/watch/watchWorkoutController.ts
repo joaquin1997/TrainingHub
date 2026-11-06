@@ -135,7 +135,7 @@ export function startWatchWorkoutController({
         }
         return;
       default: {
-        if (!firstTime(event.id)) {
+        if (event.kind !== 'skipRest' && !firstTime(event.id)) {
           return;
         }
         const next = applyWatchEvent(draft, event, defaultRestSeconds());

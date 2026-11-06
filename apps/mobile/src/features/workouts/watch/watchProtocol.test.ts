@@ -93,6 +93,10 @@ describe('toWatchSnapshot', () => {
       pausedAt: undefined,
       pausedSeconds: 0,
       restEndsAt: undefined,
+      restId: undefined,
+      restSkipVersion: 1,
+      canSkipRest: false,
+      lastProcessedSkipId: undefined,
       currentSet: {
         workoutExerciseId: 'a',
         workoutSetId: 'a2',
@@ -168,7 +172,7 @@ describe('applyWatchEvent (spec 0025 AC-3, EF-1)', () => {
     const draft = applyWatchEvent(workout(exercise('a', [false, false], { restSeconds: 120 })), tick('a', 'a1', 0), 90);
 
     expect(draft.exercises[0]!.entries[0]!.done).toBe(true);
-    expect(draft.rest).toEqual({ endsAt: at(120), totalSeconds: 120, workoutExerciseId: 'a' });
+    expect(draft.rest).toMatchObject({ endsAt: at(120), totalSeconds: 120, workoutExerciseId: 'a' });
   });
 
   it('applies queued ticks in order, and a replay changes nothing', () => {
@@ -206,7 +210,7 @@ describe('applyWatchEvent (spec 0025 AC-3, EF-1)', () => {
     expect(offered.currentSet).toMatchObject({ workoutSetId: 'row1', restSeconds: 60 });
 
     const afterRow = applyWatchEvent(afterBench, tick('row', 'row1', 20), 90);
-    expect(afterRow.rest).toEqual({ endsAt: at(80), totalSeconds: 60, workoutExerciseId: 'row' });
+    expect(afterRow.rest).toMatchObject({ endsAt: at(80), totalSeconds: 60, workoutExerciseId: 'row' });
     expect(toWatchSnapshot(afterRow, 90).currentSet).toMatchObject({ workoutSetId: 'bench2' });
   });
 

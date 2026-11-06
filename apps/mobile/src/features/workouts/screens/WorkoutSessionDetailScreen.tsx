@@ -1,12 +1,15 @@
+import { useAuth } from '@/features/auth/AuthContext';
+import { useProgressResource } from '@/features/progress/useExerciseProgress';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { TFunction } from 'i18next';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, Text, View } from 'react-native';
 
 import { progressClient } from '@/features/progress/api/progressClient';
-import { RecordsCard } from '@/features/progress/components/RecordsCard';
+import { GroupedRecordsCard } from '@/features/progress/components/GroupedRecordsCard';
+import { groupSessionRecords } from '@/features/progress/utils/groupSessionRecords';
 import { useSettings } from '@/features/settings/SettingsContext';
 import { workoutsClient } from '@/features/workouts/api/workoutsClient';
 import { ShareSheet } from '@/features/workouts/components/ShareSheet';
@@ -35,7 +38,7 @@ import { StatTile } from '@/ui/StatTile';
 import { StateView } from '@/ui/StateView';
 import { colors, commonStyles, createStyles, fonts, radii, spacing, typeScale, useTheme } from '@/ui/theme';
 import { CardHeader } from '@/ui/CardHeader';
-import type { SessionRecord, WeightUnit, WorkoutSession, WorkoutSet } from '@workout/domain';
+import type { WeightUnit, WorkoutSet } from '@workout/domain';
 
 /**
  * The figure beside an exercise: its volume, or for time and distance work
@@ -73,77 +76,29 @@ function setTypeLabel(type: WorkoutSet['type'], t: TFunction) {
 export function WorkoutSessionDetailScreen() {
   useTheme();
   const { t, i18n } = useTranslation();
+  const { user } = useAuth();
   const router = useRouter();
   const { workoutId } = useLocalSearchParams<{ workoutId?: string }>();
-  const [session, setSession] = useState<WorkoutSession | null>(null);
-  const [records, setRecords] = useState<SessionRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string>();
   const [isShareOpen, setIsShareOpen] = useState(false);
   const { settings } = useSettings();
   const unit = settings.unit;
+  const readSession = useCallback(async () => {
+    if (!workoutId || !user) throw new Error(t('workouts.missingId'));
+    return workoutsClient.getById(workoutId);
+  }, [workoutId, user?.id, i18n.language]);
+  const readRecords = useCallback(async () => {
+    if (!workoutId || !user) return [];
+    const allRecords = await progressClient.sessionRecords();
+    return allRecords.find((entry) => entry.workoutId === workoutId)?.records ?? [];
+  }, [workoutId, user?.id, i18n.language]);
+  const sessionState = useProgressResource(`${user?.id}:${workoutId}:saved-session`, readSession);
+  const recordsState = useProgressResource(`${user?.id}:${workoutId}:saved-records`, readRecords);
+  const session = sessionState.data?.userId === user?.id ? sessionState.data : null;
+  const records = recordsState.data ?? [];
+  const loadSession = () => Promise.all([sessionState.reload(), recordsState.reload()]);
+  const errorMessage = sessionState.error instanceof Error ? sessionState.error.message : undefined;
 
-  const loadSession = useCallback(
-    async (shouldUpdate: () => boolean = () => true) => {
-      if (shouldUpdate()) {
-        setIsLoading(true);
-        setErrorMessage(undefined);
-        setSession(null);
-        setRecords([]);
-      }
-
-      if (!workoutId) {
-        if (shouldUpdate()) {
-          setErrorMessage(t('workouts.missingId'));
-          setIsLoading(false);
-        }
-        return;
-      }
-
-      try {
-        // The records it beat (spec 0023); failing to load them hides only the card.
-        const [nextSession, sessionRecords] = await Promise.all([
-          workoutsClient.getById(workoutId),
-          progressClient.sessionRecords().catch(() => []),
-        ]);
-
-        if (shouldUpdate()) {
-          if (!nextSession) {
-            setErrorMessage(t('workouts.notFound'));
-            return;
-          }
-
-          setSession(nextSession);
-          setRecords(
-            sessionRecords.find((entry) => entry.workoutId === nextSession.id)?.records ?? [],
-          );
-        }
-      } catch (error) {
-        if (shouldUpdate()) {
-          setErrorMessage(
-            error instanceof Error ? error.message : t('workouts.detailLoadError'),
-          );
-        }
-      } finally {
-        if (shouldUpdate()) {
-          setIsLoading(false);
-        }
-      }
-    },
-    [workoutId, t],
-  );
-
-  useEffect(() => {
-    let isActive = true;
-
-    void loadSession(() => isActive);
-
-    return () => {
-      isActive = false;
-    };
-  }, [loadSession]);
-
-  if (isLoading) {
+  if (sessionState.loading && !session) {
     return (
       <View style={styles.screen}>
         <StateView kind="loading" message={t('workouts.loadingWorkout')} />
@@ -151,7 +106,7 @@ export function WorkoutSessionDetailScreen() {
     );
   }
 
-  if (!session) {
+  if (!session || session.userId !== user?.id) {
     return (
       <View style={styles.screen}>
         <StateView
@@ -203,6 +158,8 @@ export function WorkoutSessionDetailScreen() {
         </View>
       </View>
 
+      {sessionState.error ? <StateView kind="error" message={t('progress.records.summaryRefreshFailed')}
+        actionLabel={t('common.retry')} onAction={() => void sessionState.reload()} /> : null}
       {/* Session summary of what was actually done. */}
       <View style={styles.tiles}>
         <StatTile
@@ -247,15 +204,11 @@ export function WorkoutSessionDetailScreen() {
         </View>
       ) : null}
 
-      <RecordsCard
-        title={t('progress.records.beaten')}
-        unit={unit}
-        items={records.map((record, index) => ({
-          key: `${record.exerciseId}-${record.type}-${index}`,
-          record,
-          meta: record.exerciseName,
-        }))}
-      />
+      {recordsState.error || recordsState.notFound ? <StateView kind="error"
+        message={t(recordsState.data ? 'progress.records.recordsRefreshFailed' : 'progress.records.recordsLoadFailed')}
+        actionLabel={t('common.retry')} onAction={() => void recordsState.reload()} /> : null}
+      <GroupedRecordsCard title={t('progress.records.beaten')} unit={unit}
+        groups={groupSessionRecords(records, session.exercises)} />
 
       {session.notes ? (
         <View style={styles.notesCard}>
@@ -267,6 +220,10 @@ export function WorkoutSessionDetailScreen() {
         </View>
       ) : null}
 
+      {Number.isSafeInteger(session.revision) ? <Button
+        label={t('workouts.correction.edit')} icon="create-outline" variant="secondary" fullWidth
+        onPress={() => router.push({ pathname: '/workouts/correct', params: { workoutId: session.id } })}
+      /> : <Text style={styles.meta}>{t('workouts.correction.unsupported')}</Text>}
       <Button
         label={t('workouts.share.action')}
         icon="share-outline"
@@ -295,6 +252,7 @@ export function WorkoutSessionDetailScreen() {
             title={exercise.exerciseName}
             trailing={<Text style={styles.exerciseVolume}>{exerciseHeadline(exercise, unit)}</Text>}
           />
+          {exercise.notes ? <Text style={styles.notes}>{exercise.notes}</Text> : null}
           {exercise.sets.map((set) => {
             const type = setTypeLabel(set.type, t);
             const done = isPerformedSet(set);

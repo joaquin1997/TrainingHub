@@ -9,6 +9,7 @@ export type ProgressMetric =
   | 'bestDistanceMeters';
 
 export interface ChartPoint {
+  workoutId?: string;
   /** ISO date of the session (or week) this point represents. */
   date: string;
   value: number;
@@ -27,6 +28,7 @@ export interface ChartSeries {
 }
 
 export interface ChartEntry {
+  workoutId?: string;
   date: string;
   value: number;
   isRecord?: boolean;
@@ -60,6 +62,7 @@ export function scaleSeries(entries: ChartEntry[], maxPoints: number): ChartSeri
 
   const points = recent.map((entry, index) => ({
     date: entry.date,
+    ...(entry.workoutId ? { workoutId: entry.workoutId } : {}),
     value: entry.value,
     isRecord: entry.isRecord === true,
     x: last === 0 ? 0.5 : index / last,

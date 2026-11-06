@@ -1,3 +1,8 @@
+import { ComparisonBadge } from '@/features/workouts/liveRecords/ComparisonBadge';
+import { ComparisonStatus } from '@/features/workouts/liveRecords/ComparisonStatus';
+import { createWorkoutFinishGuard } from '@/features/workouts/utils/workoutFinishGuard';
+import { warmUpMetadataOf } from '@/lib/warmUpContext';
+import { SetTypeSheet } from '@/features/workouts/components/SetTypeSheet';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import type { TFunction } from 'i18next';
@@ -24,16 +29,15 @@ import {
   WorkoutSetRow,
 } from '@/features/workouts/components/WorkoutSetRow';
 import { useExerciseReplacement } from '@/features/workouts/hooks/useExerciseReplacement';
-import { RecordBadge } from '@/features/workouts/liveRecords/RecordBadge';
 import { RecordNotice } from '@/features/workouts/liveRecords/RecordNotice';
 import { useLiveRecords } from '@/features/workouts/liveRecords/useLiveRecords';
 import {
   canAddApproachSets,
   confirmApproachSets,
   previewApproachSets,
+  precedingWorkoutWarmUpMetadata,
   removeGeneratedWarmUps,
   warmUpActionFor,
-  type ApproachSetsNotice,
   type ApproachSetsPreview,
 } from '@/features/workouts/state/approachSetsDraft';
 import { pairedPerformance } from '@/features/workouts/state/lastTimeByKind';
@@ -90,7 +94,7 @@ import {
   applyLastPerformance,
   clearActiveWorkout,
   countWorkoutSets,
-  cycleWorkoutSetType,
+  setWorkoutSetType,
   getActiveWorkout,
   pauseWorkout,
   removeSetFromWorkoutExercise,
@@ -147,6 +151,7 @@ export function ActiveWorkoutScreen() {
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
+  const finishGuard = useRef(createWorkoutFinishGuard(() => getActiveWorkout()?.clientId)).current;
   const [finishError, setFinishError] = useState<string | null>(null);
   // The server refused the workout itself; retrying cannot help (EF-5).
   const [finishRefused, setFinishRefused] = useState(false);
@@ -154,17 +159,13 @@ export function ActiveWorkoutScreen() {
   const replacement = useExerciseReplacement(workoutDraft);
   // The exercise whose rest is being changed (spec 0018 FR-2).
   const [restEditorFor, setRestEditorFor] = useState<string | null>(null);
-  // Why approach sets could not be added to an exercise (spec 0024 EF-1).
-  const [approachNotice, setApproachNotice] = useState<{
-    workoutExerciseId: string;
-    outcome: ApproachSetsNotice;
-  } | null>(null);
   // The approach sets about to be added, shown before anything changes (spec
   // 0031 FR-1). Screen state only, so a restart reopens without it (EF-5).
   const [approachPreview, setApproachPreview] = useState<{
     workoutExerciseId: string;
-    preview: ApproachSetsPreview;
+    exerciseId: string;
   } | null>(null);
+  const [typePicker, setTypePicker] = useState<{ exerciseId: string; setId: string } | null>(null);
   const [lastByExercise, setLastByExercise] = useState<
     Record<string, ExerciseLastPerformance | null>
   >({});
@@ -232,13 +233,14 @@ export function ActiveWorkoutScreen() {
     }
 
     router.setParams({ action: undefined });
+    const clientId = workoutDraft.clientId;
     void confirmAction({
       title: t('workouts.finishTitle'),
       message: t('workouts.finishConfirm'),
       confirmLabel: t('workouts.finishWorkout'),
       cancelLabel: t('common.cancel'),
     }).then((confirmed) => {
-      if (confirmed) {
+      if (confirmed && getActiveWorkout()?.clientId === clientId) {
         void finishRef.current?.();
       }
     });
@@ -334,6 +336,12 @@ export function ActiveWorkoutScreen() {
           if (active && exercise.imageUrl) {
             setImageByExercise((current) => ({ ...current, [id]: exercise.imageUrl as string }));
           }
+          const current = getActiveWorkout();
+          if (active && current?.clientId === workoutDraft?.clientId &&
+              current?.exercises.some((item) => item.exerciseId === id && !item.warmUpMetadata)) {
+            setActiveWorkout({ ...current, exercises: current.exercises.map((item) => item.exerciseId === id && !item.warmUpMetadata
+              ? { ...item, warmUpMetadata: warmUpMetadataOf(exercise) } : item) });
+          }
         })
         .catch(() => undefined);
     }
@@ -341,7 +349,7 @@ export function ActiveWorkoutScreen() {
     return () => {
       active = false;
     };
-  }, [exerciseIdsKey]);
+  }, [exerciseIdsKey, workoutDraft?.clientId]);
 
   useEffect(() => {
     if (!exerciseIdsKey) {
@@ -369,7 +377,7 @@ export function ActiveWorkoutScreen() {
       // Seed each set's ghosted placeholder from its last performance so an
       // unedited set still logs what you did last time.
       const current = getActiveWorkout();
-      if (!current) {
+      if (!current || current.clientId !== workoutDraft?.clientId) {
         return;
       }
 
@@ -388,7 +396,7 @@ export function ActiveWorkoutScreen() {
     return () => {
       active = false;
     };
-  }, [exerciseIdsKey]);
+  }, [exerciseIdsKey, workoutDraft?.clientId, user?.id]);
 
   // "Last time" pairs by kind and position within the kind (spec 0031), so a
   // set whose type changes, or sets added or removed ahead of it, re-pair.
@@ -494,7 +502,7 @@ export function ActiveWorkoutScreen() {
    * Saves the workout. Goes to the summary, or with `nextRoutineId` starts that
    * routine instead (spec 0019). Resolves whether the save succeeded.
    */
-  const finishWorkout = async (nextId?: string) => {
+  const finishWorkout = (nextId?: string) => finishGuard.save(workoutDraft.clientId, async () => {
     if (countWorkoutSets(workoutDraft).done === 0) {
       setFinishError(t('workouts.markOneSet'));
       return false;
@@ -505,11 +513,13 @@ export function ActiveWorkoutScreen() {
       setFinishError(null);
       setFinishRefused(false);
 
-      await workoutsClient.create(toCreateWorkoutSessionInput(workoutDraft));
+      const saved = await workoutsClient.create(toCreateWorkoutSessionInput(workoutDraft));
 
+      // A delayed save must never clear or navigate away from a replacement workout.
+      if (getActiveWorkout()?.clientId !== workoutDraft.clientId) return false;
       const workoutSession = toWorkoutSessionSkeleton(workoutDraft);
 
-      saveCompletedWorkout(workoutDraft);
+      saveCompletedWorkout({ ...workoutDraft, savedSessionId: saved.id });
       void syncWorkoutCompletionToAppleHealth(workoutSession);
 
       if (nextId) {
@@ -521,6 +531,7 @@ export function ActiveWorkoutScreen() {
       }
       return true;
     } catch (error) {
+      if (getActiveWorkout()?.clientId !== workoutDraft.clientId) return false;
       setFinishError(
         error instanceof Error ? error.message : t('workouts.saveError'),
       );
@@ -529,9 +540,23 @@ export function ActiveWorkoutScreen() {
     } finally {
       setIsFinishing(false);
     }
-  };
+  });
 
   finishRef.current = () => finishWorkout();
+
+  const handleTopFinish = async () => {
+    const clientId = workoutDraft.clientId;
+    if (countWorkoutSets(workoutDraft).done === 0) {
+      setFinishError(t('workouts.markOneSet'));
+      return;
+    }
+    await finishGuard.confirm(clientId, () => confirmAction({
+      title: t('workouts.finishTitle'),
+      message: t('workouts.finishConfirm'),
+      confirmLabel: t('workouts.finishWorkout'),
+      cancelLabel: t('common.cancel'),
+    }), async () => finishRef.current?.());
+  };
 
   /** Drops the finished workout and lets the entry effect fetch the next one. */
   const startNextRoutine = (nextId: string) => {
@@ -577,6 +602,7 @@ export function ActiveWorkoutScreen() {
   };
 
   const handleToggleDone = (workoutExerciseId: string, workoutSetId: string) => {
+    const workoutDraft = getActiveWorkout();
     if (!workoutDraft) {
       return;
     }
@@ -591,7 +617,7 @@ export function ActiveWorkoutScreen() {
     // Ticking starts the exercise's rest in this workout, else the Settings
     // default (FR-1); in a superset only a tick that completes the round rests
     // (spec 0029) — the same rule as a tick from the watch (spec 0025).
-    // Un-ticking leaves a running rest alone.
+    // Undo selects the exact set and cancels only its own originating rest.
     const nextDraft = becomingDone
       ? completeSetInRounds(
           workoutDraft,
@@ -630,38 +656,29 @@ export function ActiveWorkoutScreen() {
   const handleWarmUpAction = (workoutExerciseId: string) => {
     const exercise = workoutDraft.exercises.find((item) => item.id === workoutExerciseId);
     if (exercise && warmUpActionFor(exercise) === 'remove') {
-      setApproachNotice(null);
+
       applyDraft(removeGeneratedWarmUps(workoutDraft, workoutExerciseId));
       return;
     }
 
-    const result = previewApproachSets(workoutDraft, workoutExerciseId);
-    if (result.outcome === 'preview') {
-      setApproachNotice(null);
-      setApproachPreview({ workoutExerciseId, preview: result });
-    } else {
-      setApproachNotice({ workoutExerciseId, outcome: result.outcome });
+    if (exercise) {
+
+      setApproachPreview({ workoutExerciseId, exerciseId: exercise.exerciseId });
     }
   };
 
-  const confirmApproachPreview = () => {
+  const confirmApproachPreview = (preview: ApproachSetsPreview) => {
     const current = getActiveWorkout();
-    if (current && approachPreview) {
-      setActiveWorkout(
-        confirmApproachSets(current, approachPreview.workoutExerciseId, approachPreview.preview),
-      );
+    if (current && current.clientId === workoutDraft.clientId && approachPreview) {
+      setActiveWorkout(confirmApproachSets(current, approachPreview.workoutExerciseId, preview));
     }
     setApproachPreview(null);
   };
 
-  // Hidden once its exercise is removed or replaced (EF-1).
   const previewedExercise = approachPreview
-    ? workoutDraft.exercises.find(
-        (item) =>
-          item.id === approachPreview.workoutExerciseId &&
-          item.exerciseId === approachPreview.preview.exerciseId,
-      )
+    ? workoutDraft.exercises.find((item) => item.id === approachPreview.workoutExerciseId && item.exerciseId === approachPreview.exerciseId)
     : undefined;
+  const typePickerSet = typePicker ? workoutDraft.exercises.find((item) => item.id === typePicker.exerciseId)?.entries.find((set) => set.id === typePicker.setId) : undefined;
 
   const handleAddExercise = (exercise: Exercise) => {
     if (!workoutDraft) {
@@ -670,10 +687,7 @@ export function ActiveWorkoutScreen() {
 
     applyDraft(
       addExerciseToWorkout(workoutDraft, {
-        id: exercise.id,
-        name: exercise.name,
-        trackingType: exercise.trackingType,
-        isUnilateral: exercise.isUnilateral,
+        ...exercise,
       }),
     );
   };
@@ -699,17 +713,8 @@ export function ActiveWorkoutScreen() {
     );
   };
 
-  const handleCycleSetType = (
-    workoutExerciseId: string,
-    workoutSetId: string,
-  ) => {
-    if (!workoutDraft) {
-      return;
-    }
-
-    applyDraft(
-      cycleWorkoutSetType(workoutDraft, workoutExerciseId, workoutSetId),
-    );
+  const handleSelectSetType = (workoutExerciseId: string, workoutSetId: string) => {
+    setTypePicker({ exerciseId: workoutExerciseId, setId: workoutSetId });
   };
 
   const handleRemoveSet = (
@@ -827,12 +832,8 @@ export function ActiveWorkoutScreen() {
               onPress={() => setRestEditorFor(exercise.id)}
             />
           </View>
-          {liveRecords.badges.sessionVolumeByExercise[exercise.exerciseId] ? (
-            <RecordBadge
-              hits={[liveRecords.badges.sessionVolumeByExercise[exercise.exerciseId]!]}
-              unit={unit}
-            />
-          ) : null}
+          <ComparisonStatus draft={workoutDraft} exerciseId={exercise.exerciseId} states={liveRecords.states} retry={liveRecords.retry} />
+          <ComparisonBadge hits={liveRecords.feedback.byExercise[exercise.exerciseId]} unit={unit} />
         </CardHeader>
         <View style={[styles.setList, inSuperset ? styles.indented : null]}>
           <WorkoutSetHeader
@@ -880,9 +881,10 @@ export function ActiveWorkoutScreen() {
                 // One status per set, in the row (spec 0034 FR-19, FR-20).
                 isUpNext={upNext?.workoutSetId === set.id}
                 recordHits={liveRecords.badges.bySet[set.id]}
+                comparisonHits={liveRecords.feedback.bySet[set.id]}
                 recordPop={recordPopSetId === set.id}
                 onChange={(field, value) => handleSetChange(exercise.id, set.id, field, value)}
-                onCycleType={() => handleCycleSetType(exercise.id, set.id)}
+                onSelectType={() => handleSelectSetType(exercise.id, set.id)}
                 onToggleDone={() => handleToggleDone(exercise.id, set.id)}
                 onRemove={() => handleRemoveSet(exercise.id, set.id)}
               />
@@ -921,13 +923,6 @@ export function ActiveWorkoutScreen() {
               style={styles.compactButton}
             />
           </View>
-          {approachNotice?.workoutExerciseId === exercise.id ? (
-            <Text style={styles.meta}>
-              {approachNotice.outcome === 'noWeight'
-                ? t('workouts.approachNoWeight')
-                : t('workouts.approachTooLight')}
-            </Text>
-          ) : null}
         </View>
       </View>
     );
@@ -935,6 +930,25 @@ export function ActiveWorkoutScreen() {
 
   return (
     <View style={styles.screen}>
+      <View style={styles.finishHeader}>
+        <Button
+          label={isFinishing ? t('workouts.savingWorkout') : t('workouts.finishWorkout')}
+          icon="flag"
+          variant="secondary"
+          onPress={() => void handleTopFinish()}
+          disabled={isFinishing}
+          fullWidth
+        />
+        {finishError ? <Text accessibilityRole="alert" style={styles.errorText}>{finishError}</Text> : null}
+        {finishRefused ? (
+          <>
+            <Text style={styles.meta}>{t('workouts.saveRefusedHint')}</Text>
+            <Button label={t('workouts.discardWorkout')} variant="ghost" destructive
+              onPress={() => void handleDiscard()} disabled={isFinishing} />
+          </>
+        ) : null}
+      </View>
+      <View style={styles.workoutBody}>
       <ScrollView
         ref={scrollRef}
         style={styles.scroll}
@@ -1094,6 +1108,7 @@ export function ActiveWorkoutScreen() {
         onPressUpNext={scrollToSet}
         onLayout={(event) => setStickyHeaderHeight(event.nativeEvent.layout.height)}
       />
+      </View>
       {workoutDraft.rest ? (
         <RestBar
           rest={workoutDraft.rest}
@@ -1114,14 +1129,37 @@ export function ActiveWorkoutScreen() {
         />
       ) : null}
       <ApproachSetsPreviewSheet
-        preview={
-          approachPreview && previewedExercise
-            ? { ...approachPreview.preview, exerciseName: previewedExercise.exerciseName }
-            : null
-        }
+        target={approachPreview && previewedExercise ? {
+          key: `${workoutDraft.clientId}:${previewedExercise.id}`,
+          exerciseId: previewedExercise.exerciseId, exerciseName: previewedExercise.exerciseName,
+          metadata: previewedExercise.warmUpMetadata, unit,
+          preceding: precedingWorkoutWarmUpMetadata(workoutDraft, previewedExercise.id),
+          seed: workoutDraft.warmUpPreferences?.[previewedExercise.exerciseId],
+        } : null}
+        buildPreview={(context) => previewApproachSets(workoutDraft, previewedExercise?.id ?? '', context)}
+        onSnapshot={(snapshot) => {
+          const current = getActiveWorkout();
+          if (!current || current.clientId !== workoutDraft.clientId || !previewedExercise ||
+              !current.exercises.some((item) => item.id === previewedExercise.id && item.exerciseId === previewedExercise.exerciseId)) return;
+          if (JSON.stringify(current.warmUpPreferences?.[previewedExercise.exerciseId]) === JSON.stringify(snapshot)) return;
+          setActiveWorkout({ ...current, warmUpPreferences: { ...current.warmUpPreferences, [previewedExercise.exerciseId]: snapshot } });
+        }}
+        onMetadata={(metadata) => {
+          const current = getActiveWorkout();
+          if (!current || current.clientId !== workoutDraft.clientId || !previewedExercise) return;
+          setActiveWorkout({ ...current, exercises: current.exercises.map((item) => item.id === previewedExercise.id && item.exerciseId === previewedExercise.exerciseId
+            ? { ...item, warmUpMetadata: metadata } : item) });
+        }}
         onConfirm={confirmApproachPreview}
         onCancel={() => setApproachPreview(null)}
       />
+      <SetTypeSheet selection={typePickerSet ? { type: typePickerSet.type } : null}
+        onClose={() => setTypePicker(null)} onSelect={(type) => {
+          const current = getActiveWorkout();
+          if (current && current.clientId === workoutDraft.clientId && typePicker) {
+            setActiveWorkout(setWorkoutSetType(current, typePicker.exerciseId, typePicker.setId, type));
+          }
+        }} />
       <RecordNotice
         notice={liveRecords.notice}
         unit={unit}
@@ -1149,6 +1187,13 @@ export function ActiveWorkoutScreen() {
 }
 
 const styles = createStyles(() => ({
+  finishHeader: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
+    backgroundColor: colors.surface,
+    gap: spacing.xs,
+  },
+  workoutBody: { flex: 1 },
   screen: {
     ...commonStyles.screen,
   },

@@ -34,6 +34,9 @@ export interface WatchLabels {
   reps: string;
   /** Spec 0045: in place of the set while the next one has not arrived. */
   waitingPhone: string;
+  skipRest?: string;
+  skipPending?: string;
+  skipUnsupported?: string;
   /** "3 sets done will be lost." / "No sets done yet." */
   discardLost: (count: number) => string;
 }
@@ -48,6 +51,10 @@ export interface WatchContextWire {
   pausedAtMs?: number;
   pausedSeconds?: number;
   restEndsAtMs?: number;
+  restId?: string;
+  canSkipRest?: boolean;
+  restSkipVersion?: 1;
+  lastProcessedSkipId?: string;
   currentSet?: {
     exerciseId: string;
     setId: string;
@@ -86,6 +93,10 @@ export function encodeActiveContext(
     pausedAtMs: ms(snapshot.pausedAt),
     pausedSeconds: snapshot.pausedSeconds,
     restEndsAtMs: ms(snapshot.restEndsAt),
+    restId: snapshot.restId,
+    canSkipRest: snapshot.canSkipRest,
+    restSkipVersion: snapshot.restSkipVersion,
+    lastProcessedSkipId: snapshot.lastProcessedSkipId,
     currentSet: set
       ? {
           exerciseId: set.workoutExerciseId,
@@ -118,8 +129,9 @@ export function encodeEndContext(
 export interface WatchEventWire {
   v: number;
   id: string;
-  kind: 'setDone' | 'pause' | 'resume' | 'finishRequested' | 'discardRequested';
+  kind: 'skipRest' | 'setDone' | 'pause' | 'resume' | 'finishRequested' | 'discardRequested';
   workoutId: string;
+  restId?: string;
   exerciseId?: string;
   setId?: string;
   atMs?: number;
@@ -166,9 +178,11 @@ export function decodeWatchMessage(kind: string, json: string): WatchWorkoutEven
     return null;
   }
   const id = raw.id;
-  const at = isNumber(raw.atMs) ? new Date(raw.atMs).toISOString() : null;
+  const at = isNumber(raw.atMs) && Number.isFinite(new Date(raw.atMs).getTime()) ? new Date(raw.atMs).toISOString() : null;
 
   switch (raw.kind) {
+    case 'skipRest':
+      return raw.v === WATCH_WIRE_VERSION && isString(raw.restId) && at ? { kind: 'skipRest', id, workoutSessionId, restId: raw.restId, at } : null;
     case 'setDone':
       return isString(raw.exerciseId) && isString(raw.setId) && at
         ? {

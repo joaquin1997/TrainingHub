@@ -3,10 +3,11 @@
 ## Specified next slice
 
 [0042 — Readable exercise progress](../sdd/specs/0042-readable-exercise-progress/spec.md)
-is ready (2026-11-03): search trained exercises before general summaries,
+is implemented locally (2026-11-03): search trained exercises before general summaries,
 explicit metric and period choices, coherent performed-set figures and links
-to the saved workout. Plan and implementation are pending; existing line
-charts from 0034 are reused rather than reintroduced.
+to the saved workout. Tasks 1–7 are complete; API/bundle rollout and physical
+device acceptance remain pending (task 8). Existing line charts from 0034
+are reused rather than reintroduced.
 
 ## Checklist
 - [x] Personal record (PR) detection (per exercise; recent-record flag + badge)
@@ -23,7 +24,7 @@ charts from 0034 are reused rather than reintroduced.
   - [x] Per-session bar chart (est. 1RM with volume fallback) on the exercise
     detail screen — dependency-free, pure-view bars
   - [x] Smooth line charts and area/readout — spec 0034, using `react-native-svg`
-  - [ ] Explicit metric/period selection and readable exercise lookup — spec 0042 (ready)
+  - [x] Explicit metric/period selection and readable exercise lookup — spec 0042 (code complete locally; rollout/device acceptance pending)
 - [~] Weekly volume, muscle-group distribution
   - [x] Weekly training-volume chart on the progress overview
   - [x] Volume distribution by exercise **category** (a proxy, see notes)
@@ -32,6 +33,17 @@ charts from 0034 are reused rather than reintroduced.
 - [ ] Workout calendar view
 
 ## Progress log
+- (2026-11-03) Spec 0042 — implementation tasks 1–7 complete locally: trained
+  lookup, bilingual aliases, paired saved-set evidence, one point per workout,
+  typed metrics/local-calendar periods, all-time records and saved-workout
+  navigation. Refresh failures preserve visible data and controls. Source/unit
+  verification and browser evidence are recorded in the spec's verification
+  document; deployment and physical-device checks remain pending.
+- (2026-11-03) Spec 0042 — plan and task gates self-reviewed against current
+  code: one point per owned workout, coherent saved-set evidence, allowed
+  bilingual search metadata, explicit metrics/local-calendar periods and
+  origin-preserving navigation. Eight unchecked tasks; no implementation or
+  deployment in this pass. Priority remains 0043 → 0042.
 - PR detection + estimated 1RM in the aggregation (pure, unit-tested) and
   surfaced in the progress overview (🏆 PR badge, est. 1RM) and detail
   (per-session 1RM).
@@ -90,3 +102,40 @@ charts from 0034 are reused rather than reintroduced.
   derive from the same per-session points.
 - Smooth lines now use `react-native-svg` (0034); bars remain the fallback
   for older native binaries. Metric/period controls are the separate 0042 slice.
+
+## Spec review — 2026-11-03
+
+- Ready specs: [0048](../sdd/specs/0048-trustworthy-live-records/spec.md) for
+  explicit record availability and unambiguous figures; [0053](../sdd/specs/0053-records-grouped-by-exercise/spec.md)
+  for grouped summary records. The reported migration/record discrepancy is
+  unconfirmed and requires a concrete case before closure; no data rewrite.
+  0042 retains its existing scope and status.
+
+- Owner review of 0048 (2026-11-03): accepted readable extra-record counts,
+  load/error states, recalculation and no first-session beaten PR. Added
+  distinct historical-record versus last-session-improvement feedback;
+  last-session improvement does not increase PR counts. Specification only.
+
+- Planning update (2026-11-03): 0048 and 0053 now have approved plans and
+  ordered unchecked tasks. No implementation/rollout in this pass; consult
+  [the execution sequence](../sdd/reviews/2026-11-03-workout-implementation-sequence.md)
+  for dependencies and acceptance gates. Earlier ready-state entries above
+  record the spec-review stage, not the current planning state.
+
+## Local implementation — 2026-11-04 (0048)
+
+Independent frozen historical/last-session references, explicit retry/loading/unavailable states, actual/baseline values and accessible comparison detail are implemented locally. API/bundle rollout and device acceptance remain pending; original discrepancy investigation is deferred by the owner.
+
+Delivery follow-up (2026-11-04): 0048 API deployed first, then 0047/0048
+paired Release apps installed and launched on the owner's phone/Watch.
+Physical acceptance remains separate; no new migration or training-data change.
+
+## Local implementation — 2026-11-05 (0053)
+
+Summary and existing saved-detail record lists now group all historical PRs
+by stable exercise identity in saved workout order. Supporting values/dates,
+PR-only counts and saved evidence are retained; failed refresh offers retry
+without clearing loaded groups. Per-exercise Progress and sharing remain
+unchanged. Automated checks and web export pass; bundle delivery, 320 pt,
+large-text, themes and screen-reader acceptance remain open. See
+[0053 verification](../sdd/specs/0053-records-grouped-by-exercise/verification.md).

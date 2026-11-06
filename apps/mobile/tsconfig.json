@@ -12,6 +12,9 @@
       ],
       "@/*": [
         "./src/*"
+      ],
+      "@workout/domain/workoutCorrections": [
+        "../../packages/domain/src/workoutCorrections.ts"
       ]
     }
   },

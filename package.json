@@ -1,6 +1,7 @@
 {
   "name": "traininghub",
   "private": true,
+  "license": "UNLICENSED",
   "version": "0.0.0",
   "packageManager": "pnpm@9.10.0",
   "scripts": {

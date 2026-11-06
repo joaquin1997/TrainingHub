@@ -71,3 +71,34 @@ AC-4 (2, 3, 6), AC-5 (4, 6), AC-6 (3, 4, 6), AC-7 (4, 6).
 - [x] Relevant `docs/roadmap/NN-*.md` checklist and progress log updated
 - [x] `spec.md` status set to `done`; `../backlog.md` updated
 - [x] Constitution amended if this work settled a new invariant — none settled
+
+## Regression follow-up — 2026-11-04
+
+Owner reported that the watch next set only appeared after reopening the
+iPhone app. The installed apps match the successful 2026-11-03 release
+(85a5eb2); the background mode and launch subscriber are still configured.
+The automatic renewal on 2026-11-04 failed before building/installing because
+CoreDevice could not reach the phone. No evidence establishes that renewal
+caused the workout failure.
+
+Code inspection identified a failed initial mirror being silently abandoned.
+The watch now retries that initial connection at 1/2/4/8/16/30-second intervals
+(capped at 30 seconds) during its existing workout session. Retry stops on
+completion/failure; a stale callback cannot mutate a replacement session.
+HealthKit handles reconnection of an established mirror itself; do not
+recreate its workout or duplicate Health exports. A reachable phone also
+receives the same event through WatchConnectivity’s immediate message path,
+alongside the mirrored and queued copies, using the same deduplication ID.
+
+- [x] Pure native regression harness: retries, cap, concurrent starts, stop/new
+  generation, late completion. Triple-delivery controller regression passes.
+- [x] Rebuild/install and launch the paired Release apps (2026-11-04);
+  signed bundle/background mode and included retry helper verified.
+- [x] Owner rechecked the reported next-set regression on 2026-11-04: after
+  being asked to mark 2–3 sets with the iPhone locked, confirmed the Watch
+  advances without reopening the phone app (AC-1). Original full-routine
+  and other acceptance evidence remains the 2026-11-03 check above.
+  The original incident was not captured in native logs; its exact cause
+  remains unproven, while the reported behavior is restored.
+
+Apple reference: [mirrored-session disconnection/reconnection](https://developer.apple.com/documentation/healthkit/hkworkoutsessiondelegate/workoutsession(_:diddisconnectfromremotedevicewitherror:)).
